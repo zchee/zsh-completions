@@ -1,0 +1,23 @@
+#compdef vint
+
+# zsh completions for 'vint'
+
+local arguments
+arguments=(
+    {-h,--help}'[show this help message and exit]'
+    {-v,--version}'[show programs version number and exit]'
+    {-V,--verbose}'[output verbose message]'
+    {-e,--error}'[report only errors]'
+    {-w,--warning}'[report errors and warnings]'
+    {-s,--style-problem}'[report errors, warnings and style problems]'
+    {-m,--max-violations}'[limit max violations count]'
+    {-c,--color}'[colorize output when possible]'
+    {-j,--json}'[output json style]'
+    {-t,--stat}'[output statistic info]'
+    '--enable-neovim[Enable Neovim syntax]'
+    {-f,--format}'[set output format]'
+    '*:filename:_files'
+)
+_arguments -s $arguments
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
