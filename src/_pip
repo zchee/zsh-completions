@@ -1,0 +1,321 @@
+#compdef -P pip[0-9.]#
+#
+# Completion script for pip (http://pypi.python.org/pypi/pip).
+#
+# Taken from https://github.com/zsh-users/zsh-completions/commit/890f3701
+# (where it got removed).  Original source:
+# https://github.com/technolize/zsh-completion-funcs.
+#
+# Currently maintained in https://gist.github.com/blueyed/54a257c411310a28805a.
+
+# Setup $python, based on pip version from word[1].
+# Must get done early, otherwise $words might have been changed already.
+local python pip
+pip=${words[1]}
+python=${${pip}/pip/python}
+[[ $python == $pip ]] && python=python
+
+
+# The index(es) to use.  The simple index only provides a full list, while
+# the xmlrpc index can be queried by "last updated in".
+# This should be probably made configurable through zstyle and then be used
+# in the cache name.
+# For the xmlrpc index, the "days" could be made configurable
+typeset -a ZSH_PIP_INDEXES ZSH_PIP_XMLRPC_INDEXES
+
+# Enabling this would additionally use the simple PyPI index, which does not
+# support limiting by date.
+# ZSH_PIP_INDEXES=(https://pypi.python.org/simple/)
+
+# The XMLRPC index, which supports filtering by "last updated since".
+ZSH_PIP_XMLRPC_INDEXES=(https://pypi.python.org/pypi)
+# Using packages updated in the last year results in ~26798 packages currently.
+local ZSH_PIP_XMLRPC_INDEX_DAYS=365
+
+
+# Get all packages from (remote) indexes.
+_pip_all() {
+  _pip_set_cache_policy
+
+  if ( (( $+__zsh_pip_all_pkgs )) && ! _cache_invalid pip_allpkgs ) \
+      || _retrieve_cache pip_allpkgs; then
+    return
+  fi
+
+  typeset -a -g __zsh_pip_all_pkgs
+  if zstyle -T ":completion:${curcontext}:" remote-access; then
+    typeset -a new_zsh_all_pkgs
+    local ts_xmlrpc_start
+    if zmodload -F zsh/datetime +p:EPOCHSECONDS 2>/dev/null; then
+      ts_xmlrpc_start=$((EPOCHSECONDS - (86400 * ZSH_PIP_XMLRPC_INDEX_DAYS)))
+    else
+      ts_xmlrpc_start=$(date +%s -d @$(($(date +%s) - (86400 * ZSH_PIP_XMLRPC_INDEX_DAYS))))
+    fi
+
+    # Build XMLPC request to pypi.python.org to get a list of packages updated
+    # in the last year.  This is meant to reduce the number of packages.
+    local xml_req="<?xml version='1.0'?><methodCall><methodName>updated_releases</methodName><params><param><value><int>${ts_xmlrpc_start}</int></value></param></params></methodCall>"
+
+    # TODO: Standard error is not redirected
+    for xmlrpc_index in $ZSH_PIP_XMLRPC_INDEXES; do
+      new_zsh_all_pkgs+=($(_call_program fetch-all-xml "echo ${(qqqq)xml_req} \
+        | curl -s --max-time 30 -d @- -H \"Content-Type: text/xml\" $xmlrpc_index \
+        | sed -n '/^<value><string>/p' | sed -n '1~2 s/^<value><string>//p' | sed -n 's/<\/string><\/value>$//p' \
+        | tr '\n' ' '") )
+    done
+
+    for index in $ZSH_PIP_INDEXES; do
+      # All packages, more than 54000!
+      new_zsh_all_pkgs+=( $(curl -s --max-time 30 $index \
+        | sed -n '/<a href/ s/.*>\([^<]\{1,\}\).*/\1/p' \
+        | tr '\n' ' ') )
+    done
+
+    if [[ $new_zsh_all_pkgs ]]; then
+      __zsh_pip_all_pkgs=($new_zsh_all_pkgs)
+      _store_cache pip_allpkgs __zsh_pip_all_pkgs
+    else
+      _message "Could not update package cache."
+    fi
+  fi
+}
+
+# Get installed packages, using pips completion interface.
+_pip_installed() {
+  installed_pkgs=($(_call_program fetch-installed \
+    "env COMP_WORDS='pip uninstall' COMP_CWORD=2 PIP_AUTO_COMPLETE=1 $pip"))
+
+  # TODO: using a cache might be benefical, but needs to cache by the "pip"
+  # being used, which seems not to be worth it.
+  # _pip_set_cache_policy
+  #
+  # if ( ! (( $+__zsh_pip_installed_pkgs )) || _cache_invalid pip_installedpkgs ) &&
+  #   ! _retrieve_cache pip_installedpkgs;
+  # then
+  #   typeset -a -g __zsh_pip_installed_pkgs
+  #   # __zsh_pip_installed_pkgs=($($pip freeze | cut -d '=' -f 1))
+  #    __zsh_pip_installed_pkgs=($(_call_program fetch-installed \
+  #      "env COMP_WORDS='pip uninstall' COMP_CWORD=2 PIP_AUTO_COMPLETE=1 $pip"))
+  #   _store_cache pip_installedpkgs __zsh_pip_installed_pkgs
+  # fi
+}
+
+_pip_set_cache_policy() {
+  local cache_policy
+  zstyle -s ":completion:${curcontext}:" cache-policy cache_policy
+  if [[ -z "$cache_policy" ]]; then
+    zstyle ":completion:${curcontext}:" cache-policy _pip_caching_policy
+  fi
+}
+
+_pip_caching_policy() {
+  if [[ ${1:t} == pip_allpkgs ]]; then
+    # rebuild if cache is more than two weeks old
+    local -a oldp
+    oldp=( "$1"(Nm+14) )
+    (( $#oldp ))
+
+  else  # pip_installedpkgs
+    # Compare cache file's timestamp to the most recently modified sys.path entry.
+    # This gets changed/touched when installing removing packages.
+    local newest_sys_path=$($python -c '
+import sys
+from os.path import exists, getmtime
+print(sorted(sys.path, key=lambda x: exists(x) and getmtime(x))[-1])')
+    [[ $newest_sys_path -nt $1 ]]
+  fi
+}
+
+
+local -a common_ops
+common_ops=(
+  '(* : -)'{-h,--help}"[show help]"
+  \*{-v,--verbose}"[give more output]"
+  {-V,--version}"[show version and exit]"
+  {-q,--quiet}"[give less output]"
+  "--cache-dir=[Store the cache data in <dir>]:dir:_directories"
+  "--cert=[path to alternate CA bundle]:path:_files"
+  "--client-cert=[Path to SSL client certificate]:path:_files"
+  "--disable-pip-version-check[Dont check a new version]"
+  "--exists-action[Default action when a path already exists]:action:(switch ignore wipe backup)"
+  "--isolated[Run pip in an isolated mode]"
+  "--log=[log file where a complete record will be kept]:file:_files"
+  "--no-cache-dir[Disable the cache]"
+  "--proxy=[specify a proxy in the form user:passwd@proxy.server:port]:proxy"
+  "--retries=[Maximum number of retries each connection should attempt (default 5 times)]:retry count:(1 2 3 4 5 6 7 8 9)"
+  "--timeout=[set the socket timeout (default 15 seconds)]:second:(1 2 3 4 5 6 7 8 9)"
+  "--trusted-host[Mark this host as trusted, even though it does not have valid or any HTTPS]:hostname:_urls"
+)
+
+_requirements_file () {
+  # Prefer requirement* and *.txt pattern. This falls back to "all files",
+  # according to the file-patterns style.
+  _wanted files expl file _files -g 'requirement*(-.)' -g '*.txt(-.)' "$@" -
+}
+
+typeset -A opt_args
+local curcontext="$curcontext" state line ret=1
+curcontext="${curcontext%:*}-$words[2]:"
+
+_arguments -C \
+  ':subcommand:->subcommand' \
+  $common_ops \
+  '*::options:->options' && ret=0
+
+case $state in
+  subcommand)
+    local -a subcommands
+    subcommands=(
+      "install:install packages"
+      "uninstall:uninstall packages"
+      "freeze:output installed packages in requirements format"
+      "list:list installed packages"
+      "show:show information about installed packages"
+      "search:search PyPI for packages"
+      "wheel:build wheels from your requirements"
+      "help:show available commands"
+    )
+
+    _describe -t subcommands 'pip subcommand' subcommands && ret=0
+  ;;
+
+  options)
+    local -a args
+    args=(
+      $common_ops
+    )
+
+    local -a pi_ops
+    pi_ops=(
+      {-i,--index-url=}"[base URL of Python Package Index]:URL"
+      "--extra-index-url=[extra URLs of package indexes to use in addition to --index-url]:URL"
+      "--no-index[ignore package index (only looking at --find-links URLs instead)]"
+      {-f,--find-links=}"[URL to look for packages at]:URL"
+      {-M,--use-mirrors}"[use the PyPI mirrors as a fallback in case the main index is down]"
+      "--mirrors=[specific mirror URLs to query when --use-mirrors is used]:URL"
+      "--allow-external=[allow the installation of externally hosted files]:package"
+      "--allow-all-external[allow the installation of all externally hosted files]"
+      "--no-allow-external[disallow the installation of all externally hosted files]"
+      "--allow-insecure=[allow the installation of insecure and unverifiable files]:package"
+      "--no-allow-insecure[disallow the installation of insecure and unverifiable files]"
+    )
+
+    case $words[1] in
+      install | bundle)
+        args+=(
+          {-e,--editable=}"[install a package directly from a checkout]:directory or VCS+REPOS_URL[@REV]#egg=PACKAGE:_files -/"
+          {-r,--requirement=}"[install all the packages listed in the given requirements file]:requirements file:_requirements_file"
+          {-b,--build=}"[unpack packages into DIR]:directory:_directories"
+          {-t,--target=}"[install packages into DIR]:directory:_directories"
+          {-d,--download=}"[download packages into DIR instead of installing them]:directory:_directories"
+          "--download-cache=[cache downloaded packages in DIR]:directory:_directories"
+          "--src=[check out --editable packages into DIR]:directory:_directories"
+          {-U,--upgrade}"[upgrade all packages to the newest available version]"
+          "--force-reinstall[when upgrading, reinstall all packages even if they are already up-to-date]"
+          {-I,--ignore-installed}"[ignore the installed packages]"
+          "--no-deps[don't install package dependencies]"
+          "--no-install[download and unpack all packages, but don't actually install them]"
+          "--no-download[don't download any packages, just install the ones already downloaded]"
+          "--install-option=[extra arguments to be supplied to the setup.py install command]:options"
+          "--global-option=[extra global options to be supplied to the setup.py call before the install command]:options"
+          "--user[install using the user scheme]"
+          "--egg[install as self contained egg file, like easy_install does]"
+          "--root=[install everything relative to this alternate root directory]:directory:_directories"
+          "--use-wheel[find and prefer wheel archives when searching indexes and find-links locations]"
+          "--pre[include pre-release and development versions]"
+          "--no-clean[don't clean up build directories]"
+          ':package name:->pkgs_all_and_dirs'
+
+          $pi_ops
+        )
+      ;;
+
+      uninstall)
+        args+=(
+          {-r,--requirement=}"[install all the packages listed in the given requirements file]::requirements file:_requirements_file"
+          {-y,--yes}"[don't ask for confirmation of uninstall deletions]"
+          ':installed package:->pkgs_installed'
+        )
+      ;;
+
+      freeze)
+        args+=(
+          {-r,--requirement=}"[install all the packages listed in the given requirements file]::requirements file:_requirements_file"
+          {-f,--find-links=}"[URL to look for packages at]:URL"
+          {-l,--local}"[If in a virtualenv that has global access, do not list globally-installed packages]"
+        )
+      ;;
+
+      list)
+        args+=(
+          {-o,--outdated}"[list outdated packages (excluding editables)]"
+          {-u,--uptodated}"[list uptodated packages (excluding editables)]"
+          {-e,--editable}"[list editable projects]"
+          {-l,--local}"[If in a virtualenv that has global access, do not list globally-installed packages]"
+          "--pre[include pre-release and development versions]"
+          $pi_ops
+        )
+      ;;
+
+      show)
+        args+=(
+          {-f,--files}"[show the full list of installed files for each package]"
+          ':installed package:->pkgs_installed'
+        )
+      ;;
+
+      search)
+        args+=(
+          "--index[base URL of Python Package Index]:URL"
+        )
+      ;;
+
+      wheel)
+        args+=(
+          {-w,--wheel-dir=}"[build wheels into DIR, where the default is '<cwd>/wheelhouse']:directory:_directories"
+          "--use-wheel[find and prefer wheel archives when searching indexes and find-links locations]"
+          "--build-option=[extra arguments to be supplied to 'setup.py bdist_wheel']:options"
+          {-r,--requirement=}"[install all the packages listed in the given requirements file]::requirements file:_requirements_file"
+          "--download-cache=[cache downloaded packages in DIR]:directory:_directories"
+          "--no-deps[don't install package dependencies]"
+          {-b,--build=}"[directory to unpack packages into and build in]:directory:_directories"
+          "--global-option=[extra global options to be supplied to the setup.py call before the 'bdist_wheel' command]:options"
+          "--pre[include pre-release and development versions]"
+          "--no-clean[don't clean up build directories]"
+          $pi_ops
+        )
+      ;;
+
+      unzip | zip)
+        args+=(
+          "--unzip[unzip a package]"
+          "--no-pyc[do not include .pyc files in zip files]"
+          {-l,--list}"[list the packages available, and their zip status]"
+          "--sort-files[with --list, sort packages according to how many files they contain]"
+          "--path=[restrict operation to the given paths]:paths"
+          {-n,--simulate}"[do not actually perform the zip/unzip operation]"
+        )
+      ;;
+    esac
+
+    _arguments $args && ret=0
+
+    # Additional states for expensive actions.
+    case $state in
+      pkgs_all_and_dirs)
+          _pip_all
+          _wanted all-packages expl 'packages' compadd -a __zsh_pip_all_pkgs && ret=0
+          # TODO: only let _files fallback to dirs?  Use **/setup.py with _path_files and some limiting?
+          _wanted directories expl 'directory with setup.py' _files -g '*/setup.py(:h/)' -s /setup.py && ret=0
+        ;;
+
+      pkgs_installed)
+        local -a installed_pkgs
+        _pip_installed
+        _wanted installed-package expl 'installed packages' compadd -a installed_pkgs && ret=0
+        ;;
+    esac
+  ;;
+esac
+
+return ret
