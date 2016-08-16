@@ -1,0 +1,40 @@
+#compdef flake8
+
+_flake8() {
+  _arguments \
+    '--version[show programs version number and exit]' \
+    {-h,--help}'[show this help message and exit]' \
+    {-v,-vv,--verbose}'[print status messages, or debug with -vv]' \
+    {-q,-qq,--quiet}'[report only file names, or nothing with -qq]' \
+    '--first[show first occurrence of each error]' \
+    '--exclude[exclude files or directories which match these comma separated patterns (default: .svn,CVS,.bzr,.hg,.git,__pycache__,.tox)]':patterns \
+    '--filename=[when parsing directories, only check filenames matching these comma separated patterns (default: *.py)]':patterns \
+    '--select=[select errors and warnings (e.g. E,W6)]':'select errors': \
+    '--ignore=[skip errors and warnings (e.g. E4,W) (default: E121,E123,E126,E226,E24,E704,W503)]':'ignore errors' \
+    '--show-source[show source code for each error]' \
+    '--show-pep8[show text of PEP 8 for each error (implies --first)]' \
+    '--statistics[count errors and warnings]' \
+    '--count[print total number of errors and warnings to standard error and set exit code to 1 if total is not null]' \
+    '--max-line-length=[set maximum allowed line length (default: 79)]:number' \
+    '--hang-closing[hang closing bracket instead of matching indentation of opening brackets line]' \
+    '--format=[set the error format \[default|pylint|<custom>\]]':format \
+    '--diff[report changes only within line number ranges in the unified diff received on STDIN]' \
+    {-j,--jobs}="[number of jobs to run simultaneously, or 'auto'. This=JOBS is ignored on Windows]:number of jos" \
+    '--exit-zero[exit with code 0 even if there are errors]' \
+    '--builtins=[define more built-ins, comma separated]:BUILTINS' \
+    '--doctests[check syntax of the doctests]' \
+    '--include-in-doctest=[Run doctests only on these files]:INCLUDE_IN_DOCTEST' \
+    '--exclude-from-doctest=[Skip these files when running doctests]:EXCLUDE_FROM_DOCTEST:_files' \
+    '--application-import-names=[Import names to consider as application specific]:APPLICATION_IMPORT_NAMES' \
+    '--import-order-style=[Style to follow. Available: cryptography, google, smarkets, pep8]:IMPORT_ORDER_STYLE:(cryptography google smarkets pep8)' \
+    '--show-pep257[show explanation of each PEP 257 error]' \
+    '--max-complexity=[McCabe complexity threshold]:MAX_COMPLEXITY' \
+    '--install-hook[Install the appropriate hook for this repository]' \
+    '--output-file=[Redirect report to a file]:OUTPUT_FILE' \
+    '--enable-extensions=[Enable plugins and extensions that are disabled by default]:ENABLE_EXTENSIONS' \
+    '--benchmark[measure processing speed]' \
+    '--config[user config file location]:_files' \
+    '*:filename:_files'
+}
+
+_flake8
