@@ -1,0 +1,189 @@
+#compdef man apropos whatis
+
+_man() {
+  local dirs expl mrd awk
+
+  if (( $words[(I)-M] == (( $CURRENT - 1 )) )); then
+    _directories && return 0
+  fi
+
+  if [[ $service == man ]] && (( $words[(I)-l] + $words[(I)--local-file] )); then
+    _files || return 0
+  fi
+
+  if (( ! $#_manpath )); then
+    local mp
+    mp=( ${(s.:.)$(manpath 2>/dev/null)} )
+    [[ "$mp" == *:* ]] && mp=( ${(s.:.)mp} )
+    if (( $#mp )); then
+      _manpath=( $mp )
+    elif (( $#manpath )); then
+      _manpath=( $manpath )
+    fi
+  fi
+
+  (( $#_manpath )) ||
+      _manpath=( /usr/man(-/) /(opt|usr)/(pkg|dt|share|X11R6|local)/(cat|)man(-/) )
+
+  integer index=$words[(I)-M]
+  if (( index )); then
+    local opt
+    opt=$words[index+1]
+    _manpath=($opt)
+  fi
+
+  # `sman' is the SGML manual directory for Solaris 7.
+  # 1M is system administrator commands on SVR4
+
+  mrd=(${^_manpath/\%L/${LANG:-En_US.ASCII}}/mandb(N))
+
+  # $sect is from the command line, the "3p" in "man 3p memcpy"
+  # $sect_dirname is from the filesystem, the "3" in "/usr/share/man/man3"
+  # These are used by _man_pages
+  local sect sect_dirname
+  if [[ $OSTYPE = solaris* ]]; then
+    sect=${${words[(R)-s*]#-s}:-$words[$words[(i)-s]+1]}
+  elif [[ -n ${sect:=$words[$words[(i)-S]+1]} || -n ${sect:=$MANSECT} ]]; then
+    if [[ $sect != ${sect::="${sect//:/|}"} ]]; then
+      sect="($sect)"
+    fi
+  elif (( CURRENT > 2 )); then
+    sect=$words[2]
+  fi
+
+  if [[ $sect = (<->*|1M|l|n) || $sect = \(*\|*\) ]]; then
+    dirs=( $^_manpath/(sman|man|cat)${~sect%%[^0-9]#}/ )
+    awk="\$2 == \"$sect\" {print \$1}"
+  else
+    dirs=( $^_manpath/(sman|man|cat)*/ )
+    awk='{print $1}'
+  fi
+  if [[ $OSTYPE = solaris* && ( $words[CURRENT] = -s* || $words[CURRENT-1] == -s ) ]]; then
+    [[ $words[CURRENT] = -s* ]] && compset -P '-s'
+    sects=( ${(o)${dirs##*(man|cat)}%/} )
+    _wanted sections expl 'section' compadd -a sects
+  elif zstyle -t ":completion:${curcontext}:manuals" separate-sections; then
+    typeset -U sects
+    local ret=1
+
+    sects=( ${(o)${dirs##*(man|cat)}%/} )
+
+    (( $#sects )) || return 1
+
+    _tags manuals.${^sects}
+    while _tags; do
+      for sect_dirname in $sects; do
+        _requested manuals.$sect_dirname expl "manual page, section $sect_dirname" _man_pages &&
+            ret=0
+      done
+      (( ret )) || return 0
+    done
+
+    return 1
+  else
+    sect_dirname=
+    _wanted manuals expl 'manual page' _man_pages
+  fi
+}
+
+_man_pages() {
+  local matcher pages dummy sopt
+
+  # What files corresponding to manual pages can end in.
+  local suf='.((?|<->*)(|.gz|.bz2|.Z|.lzma))'
+
+  if [[ $PREFIX$SUFFIX = */* ]]; then
+    # Easy way to test for versions of man that allow file names.
+    # This can't be a normal man page reference.
+    # Try to complete by glob first.
+    _path_files -g "*$suf" && return
+    _path_files
+    return
+  fi
+
+  zparseopts -E M+:=matcher
+
+  if (( $#matcher )); then
+    matcher=( ${matcher:#-M} )
+    matcher="$matcher"
+  else
+    matcher=
+  fi
+
+  pages=( ${(M)dirs:#*$sect_dirname/} )
+  compfiles -p pages '' '' "$matcher" '' dummy "*${(b)sect}*"
+  pages=( ${^~pages}(N:t) )
+
+  (($#mrd)) && pages[$#pages+1]=($(awk $awk $mrd))
+
+  # Remove any compression suffix, then remove the minimum possible string
+  # beginning with .<->: that handles problem cases like files called
+  # `POSIX.1.5'.
+
+  [[ $OSTYPE = solaris* ]] && sopt='-s '
+  if ((CURRENT > 2)) ||
+      ! zstyle -t ":completion:${curcontext}:manuals.$sect_dirname" insert-sections
+  then
+    compadd "$@" - ${pages%$~suf}
+  else
+    compadd "$@" -P "$sopt$sect_dirname " - ${pages%$~suf}
+  fi
+}
+
+_man "$@"
+
+# -C  config_file
+#        Specify the configuration file to use; the default is /private/etc/man.conf.  (See man.conf(5).)
+#
+# -M  path
+#        Specify the list of directories to search for man pages.  Separate the directories with colons.  An empty list is the same as not specifying -M at all.  See SEARCH PATH FOR MANUAL PAGES.
+#
+# -P  pager
+#        Specify which pager to use.  This option overrides the MANPAGER environment variable, which in turn overrides the PAGER variable.  By default, man uses /usr/bin/less -is.
+#
+# -B     Specify which browser to use on HTML files.  This option overrides the BROWSER environment variable. By default, man uses /usr/bin/less-is,
+#
+# -H     Specify a command that renders HTML files as text.  This option overrides the HTMLPAGER environment variable. By default, man uses /bin/cat,
+#
+# -S  section_list
+#        List is a colon separated list of manual sections to search.  This option overrides the MANSECT environment variable.
+#
+# -a     By default, man will exit after displaying the first manual page it finds.  Using this option forces man to display all the manual pages that match name, not just the first.
+#
+# -c     Reformat the source man page, even when an up-to-date cat page exists.  This can be meaningful if the cat page was formatted for a screen with a different number of columns, or if the preformatted page is corrupted.
+#
+# -d     Don't actually display the man pages, but do print gobs of debugging information.
+#
+# -D     Both display and print debugging info.
+#
+# -f     Equivalent to whatis.
+#
+# -F or --preformat
+#        Format only - do not display.
+#
+# -h     Print a help message and exit.
+#
+# -k     Equivalent to apropos.
+#
+# -K     Search for the specified string in *all* man pages. Warning: this is probably very slow! It helps to specify a section.  (Just to give a rough idea, on my machine this takes about a minute per 500 man pages.)
+#
+# -m  system
+#        Specify an alternate set of man pages to search based on the system name given.
+#
+# -p  string
+#        Specify the sequence of preprocessors to run before nroff or troff.  Not all installations will have a full set of preprocessors.  Some of the preprocessors and the letters used to designate them are: eqn (e), grap (g), pic (p), tbl  (t),
+#        vgrind (v), refer (r).  This option overrides the MANROFFSEQ environment variable.
+#
+# -t     Use /usr/bin/groff -Tps -mandoc -c to format the manual page, passing the output to stdout.  The default output format of /usr/bin/groff -Tps -mandoc -c is Postscript, refer to the manual page of /usr/bin/groff -Tps -mandoc -c for ways to
+#        pick an alternate format.
+#
+# Depending on the selected format and the availability of printing devices, the output may need to be passed through some filter or another before being printed.
+#
+# -w or --path
+#        Don't actually display the man pages, but do print the location(s) of the files that would be formatted or displayed. If no argument is given: display (on stdout) the list of directories that is searched by man for man pages.  If  manpath
+#        is a link to man, then "manpath" is equivalent to "man --path".
+#
+# -W     Like -w, but print file names one per line, without additional information.  This is useful in shell commands like man -aW man | xargs ls -l
+
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
