@@ -1,0 +1,105 @@
+#compdef prlctl
+#
+# Parallels prlctl zsh completion
+#
+# Using this PDF as a reference for the available commands and parameters:
+# http://www.parallels.com/fileadmin/parallels/documents/support/pdfm/Parallels_Command_Line_Reference_Guide.pdf
+
+local -a _1st_arguments
+_1st_arguments=(
+  'set'
+  'backup'
+  'backup-delete'
+  'backup-list'
+  'capture'
+  'change-password'
+  'clone'
+  'create'
+  'delete'
+  'encrypt'
+  'decrypt'
+  'enter'
+  'exec'
+  'installtools'
+  'list'
+  'migrate'
+  'pause'
+  'suspend'
+  'resume'
+  'problem-report'
+  'register'
+  'unregister'
+  'restore'
+  'server'
+  'snapshot'
+  'snapshot-delete'
+  'snapshot-list'
+  'snapshot-switch'
+  'start'
+  'stop'
+  'reset'
+)
+
+_prlmachines() {
+  prlctl list --all --no-header -o name 2>/dev/null | while read machine; do
+    _wanted 'machine' expl 'machine' compadd $machine
+  done
+}
+
+_arguments '*:: :->subcmds' && return 0
+
+if (( CURRENT == 1 )); then
+  _describe -t commands "prctl commands" _1st_arguments -V1
+  return
+fi
+
+case "$words[1]" in
+  installtools)
+    _arguments \
+      :machine:_prlmachines
+  ;;
+
+  list)
+    _arguments \
+      {-a,--all}'[List all, running, stopped, suspended, and paused virtual machines]' \
+      {-t,--template}'[List the available virtual machine templates]' \
+      '--no-header[Do not display column headers]' \
+      {-o,--output}'[Specify field(s) to output]:type:(uuid name status)' \
+      {-s,--sort}'[Sort output in ascending order by specified field]:type:(uuid name status)' \
+      {-i,--info}'[Display detailed information about a virtual machine]'
+  ;;
+
+  start)
+    _arguments \
+      :machine:_prlmachines
+  ;;
+
+  stop)
+    _arguments \
+      :machine:_prlmachines \
+      '--kill'
+  ;;
+
+  reset)
+    _arguments \
+      :machine:_prlmachines
+  ;;
+
+  pause)
+    _arguments \
+      :machine:_prlmachines
+  ;;
+
+  suspend)
+    _arguments \
+      :machine:_prlmachines
+  ;;
+
+  resume)
+    _arguments \
+      :machine:_prlmachines
+  ;;
+
+esac
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
