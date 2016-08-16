@@ -1,0 +1,82 @@
+#compdef nvim vim
+
+(( $+functions[_nvim_files] )) ||
+_nvim_files () {
+  case $PREFIX in
+    (+*) _files -P './' $* && return 0 ;;
+    ((scp|http(|s)|(|s)ftp):*) _urls ;;
+    (*) _files $* ;;
+  esac
+  case $PREFIX in
+    (+) _message -e 'Start at end of file' ;;
+    (+<1->) _message -e 'Start at line <linenum>' ;;
+    (+/\<a-\>) _message -e 'Start at first occurrence of <pattern>' ;;
+  esac
+}
+
+local curcontext="$curcontext" state line expl
+typeset -A opt_args
+
+local arguments
+
+arguments=(
+  '(-E -d -y)-e[ex mode]'
+  '(-e -d -y)-E[improved ex mode]'
+  '-s[Silent (batch) mode (only for ex mode)]'
+  '-R[Read-only mode]'
+  '-Z[Restricted mode]'
+  '-m[Modifications (writing files) not allowed]'
+  '-M[Modifications in text not allowed]'
+  '-b[Binary mode]'
+  '-l[Lisp mode]'
+  '-V-[Be verbose]::level:((0\:"do not display any messages"
+                            1\:"display when viminfo file is read or written"
+                            2\:"display sourced files"
+                            5\:"display every searched tag-file"
+                            8\:"display files that trigger autocommands"
+                            9\:"display every triggered autocommand (default)"
+                           12\:"display every executed function"
+                           13\:"report every thrown, caught, finished, or discarded exception"
+                           14\:"display anything pending in a \:finally clause"
+                           15\:"display every executed ex-command")):log file:_files'
+  '-D[Debugging mode]'
+  '-n[No swap file, use memory only]'
+  {-r,-L}'[List swap files and exit or Recover crashed session]::swap file:_nvim_files() -g "*.sw?(-.)"'
+  '(   -H -F)-A[Arabic mode]'
+  '(-A    -F)-H[Hebrew mode]'
+  '(-A -H   )-F[Farsi mode]'
+  '-T[set terminal type]:::_terminals'
+  '-u[Use <init.vim> instead of the default]::init file:_files'
+  "--noplugin[Don't load plugin scripts]"
+  '-o-[Open N windows (default: one for each file)]::window count: '
+  '-O-[Like -o but split vertically]::window count: '
+  '-p-[Open N tab pages (default: one for each file)]::tab count: '
+  '(* -t)-q-[Edit file with first error]:*:file:_nvim_files()'
+  '*--cmd[Execute <command> before loading any init.vim]:command: '
+  '-c[Execute <command> after loading the first file]:command: '
+  '-S[Source <session> after loading the first file]:session file:_files'
+  '(-e -E -d)-s[Read Normal mode commands from <scriptin>]:scriptin file:_files'
+  '-w[Append all typed characters to <scriptout>]:scriptout file:_files'
+  '-W[Write all typed characters to <scriptout>]:scriptout file:_files'
+  '--startuptime[Write startup timing messages to <file>]:log file:_files'
+  '-i[Use <shada> instead of the default]:shada file:_files'
+  '(- *)--api-info[Dump API metadata serialized to msgpack and exit]'
+  '(- *)--embed[Use stdin/stdout as a msgpack-rpc channel]'
+  "(- *)--headless[Don't start a user interface]"
+  '(- *)'{-h,--help}'[Print this help message and exit]'
+  {-v,--version}'[Print version information and exit]'
+  '(* -q)-t[Edit file where tag is defined]:tag:_complete_tag'
+  '+[Start at end of file]'
+  '(*)+-[Start at line <linenum>]::line'
+  '(+/)+/-[Start at first occurrence of <pattern>]::pattern'
+  '(-t -q)*:files:_files'
+)
+[[ $service != *diff ]] && arguments+='(-v -e -E -s -y)-d[Diff mode]'
+[[ $service != *view ]] && arguments+='-R[Read-only mode]'
+[[ $line != *view ]] && arguments+='-R[Read-only mode]'
+
+_arguments -C -S $arguments && return
+
+return 1
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
