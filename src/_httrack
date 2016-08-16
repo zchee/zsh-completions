@@ -1,0 +1,26 @@
+#compdef httrack
+
+# zsh completions for 'httrack'
+# automatically generated with http://github.com/RobSis/zsh-completion-generator
+local arguments
+
+arguments=(
+    '--mirror[<URLs> *make a mirror of site(s) (default)]'
+    '--get[<URLs>  get the files indicated, do not seek other URLs (-qg)]'
+    '--list[<text file>  add all URL located in this text file (-%L)]'
+    '--mirrorlinks[mirror all links in 1st level pages (-Y)]'
+    '--testlinks[<URLs>  test links in pages (-r1p0C0I0t)]'
+    '--spider[<URLs>  spider site(s), to test links: reports Errors & Warnings (-p0C0I0t)]'
+    '--testsite[<URLs>  identical to --spider]'
+    '--skeleton[<URLs>  make a mirror, but gets only html files (-p1)]'
+    '--update[update a mirror, without confirmation (-iC2)]'
+    '--continue[continue a mirror, without confirmation (-iC1)]'
+    '--catchurl[create a temporary proxy to capture an URL or a form post URL]'
+    '--clean[erase cache & log files]'
+    '--http10[force http/1.0 requests (-%h)]'
+    '*:filename:_files'
+)
+
+_arguments -s $arguments
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
