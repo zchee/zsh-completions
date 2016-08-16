@@ -1,0 +1,261 @@
+#compdef prlsrvctl
+#
+# zsh completion for prlsrvctl (http://www.parallels.com/products/desktop/)
+#
+# version:  1.0.0
+# github:   https://github.com/zchee/parallels-zsh-completion
+#
+# ------------------------------------------------------------------------------
+# Description
+# -----------
+#
+#  zsh completion for prlsrvctl
+#  Parallels official command line refarrence for Parallels Desktop v10
+#  http://download.parallels.com/desktop/v10/docs/en_US/Parallels%20Desktop%20Enterprise%20for%20IT%20Administrators.pdf
+#  http://download.parallels.com/desktop/v10/docs/en_US/Parallels%20Desktop%20Enterprise%20for%20IT%20Administrators/toc3773474.htm
+#
+# ------------------------------------------------------------------------------
+# Contributers
+# -------
+#   - zchee (https://github.com/zchee)
+#
+# ------------------------------------------------------------------------------
+# License
+# -----------
+# The MIT License (MIT)
+#
+# Copyright (c) 2015 zchee
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+_prlsrvctl() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C \
+    ':command:->command' \
+    '*::options:->options'
+
+  case $state in
+    (command)
+
+      local -a subcommands
+      subcommands=(
+        'info:Displays the host computer and Parallels Desktop configuration information.' \
+        'set:Allows to modify Parallels Desktop preferences.' \
+        'shutdown:Shuts down Parallels Desktop.' \
+        'user:Displays and configure user.' \
+        'problem-report:Obtains the Parallels Desktop problem report and displays it on the screen.' \
+        'net:Create and configure virtual networks.' \
+        'usb:Prmanently assign a USB device to a specific virtual machine.' \
+        'plugin:Displays the installed plugin list.' \
+        'statistics:Obtains Parallels Desktop statistics.'
+      )
+      _describe -t commands 'prlsrvctl subcommands' subcommands
+    ;;
+
+    (options)
+      case $line[1] in
+
+        (init)
+          _arguments \
+            -f'[Force setting of gitflow branches, even if already configured]' \
+            -d'[Use defualt branch naming conventions and prefixes]'
+          ;;
+
+          (info)
+            _arguments \
+              -j'[json format output.]' \
+              --json'[json format output.]' \
+              --license'[Displays the installed licenses.]' \
+              -f'[Displays the full information]' \
+              --full'[Displays the full information]' \
+              --activation-id'[Ask activation id]' \
+              --deactivation-id'[Ask deactivation id]' \
+          ;;
+
+          (net)
+            __prlsrvctl_net
+          ;;
+
+          (preoblem-report)
+          ;;
+
+          (set)
+            _arguments \
+              --mem-limit'[Sets the upper limit of the memory size that can be reserved for Parallels Desktop operations]:auto size:(auto size)' \
+              -s'[The lowest allowable security level that can be used to connect to the Parallels Desktop]:low normal high:(low normal high)' \
+              --min-security-level'[The lowest allowable security level that can be used to connect to the Parallels Desktop]:low normal high:(low normal high)' \
+              --mng-settings'[Allows to grant or deny permission to new users to modify Parallels Desktop preferences.]:allow deny:(allow deny)' \
+              --device'[Allows to set the assignment mode for the specified VTd device.]: :__prlsrvctl_set_device' \
+              -c'[Enables/disables the participation in the Customer Experience Program.]:on off:(on off)' \
+              --cep'[Enables/disables the participation in the Customer Experience Program.]:on off:(on off)' \
+              --backup-path'[Name and path of the default directory on the backup server where virtual machines backups will be stored.]:filename:_files' \
+              --backup-timeout'[<timeout>]: :' \
+              --backup-tmpdir'[<tmpdir>]: :_files' \
+              --backup-storage'[<user:passwd@server:port> The default backup server where virtual machine backups will be stored.]' \
+              --defualt-encryption-plugin'[<plugin-id> Allows to specify which encryption plug-in should be used by default.]' \
+              --reset-default-encryption-plugin': :' \
+              --verbose-log'[Show verbose log]:on off:(on off)' \
+              --cpu-features-mask':mask off:(mask off)' \
+              --connect-to-pm'[<user|deploy-id>]: :' \
+              --disconnect-from-pm': :' \
+              --turn-off-pm-connect': :' \
+              --turn-on-pm-connect': :' \
+              --cleanup-proxy-creds': :' \
+              --allow-direct-mobile': :' \
+              --log-rotation': :(on off)' \
+              --advanced-security-mode': :(off auth)' \
+              --proxy-manager-url'[<url>]: :' \
+              --default-proxy-manager-url': :' \
+              --web-portal-domain'[<domain>]: :' \
+              --default-web-portal-domain': :' \
+              --allow-attach-screenshots': :(on off)' \
+              --require-pwd':create-vm add-vm remove-vm clone-vm:(create-vm\:on create-vm\:off add-vm\:on add-vm\:off remove-vm\:on remove-vm\:off clone-vm\:on clone-vm\:off)' \
+              --lock-edit-settings'[<on|off --host-admin name>]:on off:(on off): :(--host-admin)'
+          ;;
+
+          (shutdown)
+            _arguments \
+              -f'Force shutdown.' \
+              --force'Force shutdown.'
+          ;;
+
+          (statistics)
+          ;;
+
+          (usb)
+          ;;
+
+          (user)
+          _arguments \
+            list'[Displays the installed plugin list.]' \
+            refresh'[Refresh installed plugin list]'
+          ;;
+
+          (plugin)
+          _arguments \
+            list'[Displays the installed plugin list.]' \
+            refresh'[Refresh installed plugin list]'
+          ;;
+
+          *)
+          _arguments \
+            -j'[json format output]'
+          ;;
+      esac
+    ;;
+  esac
+}
+
+__prlsrvctl_net() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C \
+    ':command:->command' \
+    '*::options:->options'
+
+  case $state in
+    (command)
+
+      local -a subcommands
+      subcommands=(
+        'add:Create a new virtual network.'
+        'set:Configures the parameters of an existing virtual network.'
+        'del:Removes an existing virtual network.'
+        'list:List thu avaliable virtual network.'
+      )
+      _describe -t commands 'prlsrvctl net' subcommands
+    ;;
+
+    (options)
+      case $line[1] in
+
+        (add)
+          _arguments \
+            -i'[<Network ID> The name of a physical network adapter ID.]' \
+            --ifname'[<Network ID> The name of a physical network adapter ID.]' \
+            -m'[<MAC address> The MAC address of a virtual network adapter.]' \
+            --mac'[<MAC address> The MAC address of a virtual network adapter.]' \
+            -t'[<host_only|bridged|shared> The type of the virtual network to create.]:network type:(host_only bridged shared)' \
+            --type'[<host_only|bridged|shared> The type of the virtual network to create.]:network type:(host_only bridged shared)' \
+            -d'[<description> A user-defined name description.]' \
+            --description'[<description> A user-defined name description.]' \
+            --ip-scope-start'[<ip_address> Sets the start ip address for the DHCP pool.]' \
+            --ip-scope-end'[<ip_address> Sets the end ip address for the DHCP pool.]' \
+            --nat-tcp-add'[<rule_name,src_port,<dest_ip|dest_vm>,dest_port> Add TCP protcol port forwarding.]: :__prlsrvctl_net_tcp_dest_vm:' \
+            --nat-udp-add'[<rule_name,src_port,<dest_ip|dest_vm>,dest_port> Add UDP protcol port forwarding.]' \
+            ':vnetwork_id:__prlsrvctl_net_vnetwork_id_list'
+        ;;
+
+        (set)
+          _arguments \
+            -i'[<Network ID> The name of a physical network adapter ID.]' \
+            --ifname'[<Network ID> The name of a physical network adapter ID.]' \
+            -m'[<MAC address> The MAC address of a virtual network adapter.]' \
+            --mac'[<MAC address> The MAC address of a virtual network adapter.]' \
+            -t'[<host_only|bridged|shared> The type of the virtual network to create.]:network type:(host_only bridged shared)' \
+            --type'[<host_only|bridged|shared> The type of the virtual network to create.]:network type:(host_only bridged shared)' \
+            -d'[<description> A user-defined name description.]' \
+            --description'[<description> A user-defined name description.]' \
+            --ip-scope-start'[<ip_address> Sets the start ip address for the DHCP pool.]' \
+            --ip-scope-end'[<ip_address> Sets the end ip address for the DHCP pool.]' \
+            --nat-tcp-add'[<rule_name,src_port,<dest_ip|dest_vm>,dest_port> Add TCP protcol port forwarding.]: :__prlsrvctl_net_tcp_dest_vm:' \
+            --nat-udp-add'[<rule_name,src_port,<dest_ip|dest_vm>,dest_port> Add UDP protcol port forwarding.]' \
+            ':vnetwork_id:__prlsrvctl_net_vnetwork_id_list'
+        ;;
+
+        (del)
+          _arguments \
+            ':version:__git_flow_version_list'
+        ;;
+
+        (list)
+          _arguments \
+            ':version:__git_flow_version_list'
+        ;;
+      esac
+    ;;
+  esac
+}
+
+__prlsrvctl_net_tcp_dest_vm() {
+  local expl
+  declare -a net_tcp_dest_ip
+
+  net_tcp_dest_vm=(${(f)"$(_call_program commands prlctl list --all --no-header -o name 2>/dev/null)}')"})
+
+  _describe -t prlsrvctl_net_tcp 'prlsrvctl_net_tcp dest_vm' net_tcp_dest_vm
+}
+
+__prlsrvctl_net_vnetwork_id_list() {
+  local expl
+  declare -a vnetwork_id
+
+  vnetwork_id=(${(f)"$(_call_program commands prlsrvctl net list -j | awk -F \" '{print $2$4}' | awk '/Network/{print $0}' | sed -E "s/Network ID/ /g" | sed -E "s/[[:space:]]+//g")}')"})
+
+  _describe -t prlsrvctl_vnetwork_id_list 'vnetwork_id' vnetwork_id
+
+}
+
+_prlsrvctl "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
