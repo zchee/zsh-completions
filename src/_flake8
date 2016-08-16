@@ -38,3 +38,5 @@ _flake8() {
 }
 
 _flake8
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
