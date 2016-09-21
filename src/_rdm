@@ -1,0 +1,135 @@
+#compdef rdm
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+_rdm() {
+  _arguments \
+    {--Weverything,-u}'[Use -Weverything]' \
+    "--allow-Werror[Don't strip out -Werror and -Wfatal-error. By default these are stripped out]" \
+    {--allow-Wpedantic,-P}"[Don't strip out -Wpedantic. This can cause problems in certain projects]" \
+    {--arg-transform,-V}'[Use arg to transform arguments.\[arg\] should be executable with (execv(3))]:args:' \
+    {--block-argument,-G}'[Block this argument from being passed to clang. E.g. rdm --block-argument -fno-inline]:args:' \
+    {--clean-slate,-C}'[Clear out all data]' \
+    "--compiler-wrappers[Consider these filenames compiler wrappers (split on ;), default ccache]:args:" \
+    {--completion-cache-size,-i}'[Number of translation units to cache (default 10)]:args:' \
+    '--completion-logs[Log more info about completions]' \
+    "--completion-no-filter[Don't filter private members and destructors from completions]" \
+    {--config,-c}'[Use this file (instead of ~/.rdmrc)]:args:' \
+    '--crash-dump-file[File to dump crash log to (default is <datadir>/crash.dump)]:args:' \
+    '--daemon[Run as daemon (detach from terminal)]' \
+    {--data-dir,-d}'[Use this directory to store persistent data (default ~/.rtags)]:args:' \
+    '--debug-locations[Set debug locations]' \
+    {--define,-D}'[Add additional define directive to clang]:args:' \
+    {--disable-sighandler,-x}'[Disable signal handler to dump stack for crashes]' \
+    {--disallow-multiple-sources,-m}'[With this setting different sources will be merged for each source file]' \
+    {--enable-compiler-manager,-R}'[Query compilers for their actual include paths instead of letting clang use its own]' \
+    {--enable-NDEBUG,-g}"[Don't remove -DNDEBUG from compile lines]" \
+    {--error-limit,-f}"[Set error limit to argument (-ferror-limit={arg}' (default 50)]:args:" \
+    {--exclude-filter,-X}'[Files to exclude from rdm, default "*/CMakeFiles/*;*/cmake*/Modules/*;*/conftest.c*;/tmp/*;/private/tmp/*;/private/var/*"]:args:' \
+    {--header-error-job-count,-H}'[Allow this many concurrent header error jobs (default std::max(1, --job-count / 2))]:args:' \
+    {--help,-h}'[Display this page]' \
+    {--ignore-compiler,-b}'[Ignore this compiler]:args:' \
+    {--ignore-printf-fixits,-F}"[Disregard any clang fixit that looks like it's trying to fix format for printf and friends]" \
+    "--inactivity-timeout[Time in seconds after which rdm will quit if there's been no activity (N.B., once rdm has quit, something will need to re-run it!)]:args:" \
+    {--include-path,-I}'[Add additional include path to clang]:args:' \
+    {--isystem,-s}'[Add additional system include path to clang]:args:' \
+    {--job-count,-j}'[Spawn this many concurrent processes for indexing (default 8)]:args:' \
+    {--large-by-value-copy,-r}'[Use -Wlarge-by-value-copy=\[arg\] when invoking clang]:args:' \
+    "--launchd[Run as a launchd job (use launchd API to retrieve socket opened by launchd on rdm's behalf)]" \
+    {--log-file,-L}'[Log to this file]' \
+    '--log-file-log-level[Log level for log file (default is error), options are: error, warning, debug or verbose-debug]:args:' \
+    '--log-timestamp[Add timestamp to logs]' \
+    {--max-crash-count,-K}'[Max number of crashes before giving up a sourcefile (default 5)]:args:' \
+    {--max-file-map-cache-size,-y}'[Max files to cache per query (Should not exceed maximum number of open file descriptors allowed per process) (default 500)]:args:' \
+    '--max-include-completion-depth[Max recursion depth for header completion (default 3)]:args:' \
+    "--no-comments[Don't parse/store doxygen comments]" \
+    '--no-file-lock[Disable file locking. Not entirely safe but might improve performance on certain systems]' \
+    {--no-filemanager-watch,-M}"[Don't use a file system watcher for filemanager]" \
+    "--no-filemanager[Don't scan project directory for files. (rc -P won't work)]" \
+    {--no-filesystem-watcher,-B}'[Disable file system watching altogether. Reindexing has to be triggered manually]' \
+    {--no-no-unknown-warnings-option,-Y}"[Don't pass -Wno-unknown-warning-option]" \
+    {--no-rc,-N}"[Don't load any rc files]" \
+    {--no-spell-checking,-l}"[Don't pass -fspell-checking]" \
+    {--no-startup-project,-o}"[Don't restore the last current project on startup]" \
+    {--no-Wall,-W}"[Don't use -Wall]" \
+    '--pch-enabled[Enable PCH (experimental)]' \
+    {--progress,-p}'[Report compilation progress in diagnostics output]' \
+    '--rp-connect-attempts[Number of times rp attempts to connect to rdm before giving up. (default 3)]:args:' \
+    {--rp-connect-timeout,-O}'[Timeout for connection from rp to rdm in ms (0 means no timeout) (default 0)]:args:' \
+    {--rp-indexer-message-timeout,-T}'[Timeout for rp indexer-message in ms (0 means no timeout) (default 60000)]:args:' \
+    '--rp-log-to-syslog[Make rp log to syslog]' \
+    {--rp-nice-value,-a}'[Nice value to use for rp (nice(2)) (default is no nicing)]:args:' \
+    '--rp-path[Path to rp (default /usr/local/bin/rp)]:args:' \
+    {--rp-visit-file-timeout,-Z}'[Timeout for rp visitfile commands in ms (0 means no timeout) (default 60000)]:args:' \
+    '--sandbox-root[Create index using relative paths by stripping dir (enables copying of tag index db files without need to reindex)]:args:' \
+    {--separate-debug-and-release,-E}"[Normally rdm doesn't consider release and debug as different builds. Pass this if you want it to]" \
+    {--setenv,-e}'[Set this environment variable (--setenv "foobar=1")]:args:' \
+    {--silent,-S}'[No logging to stdout/stderr]' \
+    {--socket-file,-n}'[Use this file for the server socket (default ~/.rdm)]:args:' \
+    {--start-suspended,-Q}'[Start out suspended (no reindexing enabled)]' \
+    {--suspend-rp-on-crash,-q}'[Suspend rp in SIGSEGV handler (default off)]' \
+    '--tcp-port[Listen on this tcp socket (default none)]:args:' \
+    {--test,-t}'[Run this test]:args:' \
+    {--test-timeout,-z}'[Timeout for test to complete]:args:' \
+    '--validate-file-maps[Spend some time validating project data on startup]' \
+    {--verbose,-v}"[Change verbosity, multiple -v's are allowed]" \
+    '--version[Display version]' \
+    '--watch-sources-only[Only watch source files (not dependencies)]' \
+    {--watch-system-paths,-w}'[Watch system paths for changes]' \
+    '*:: :->args'
+
+  case $state in
+    subcommand1)
+      _arguments \
+        '-plist[output user-readable property list]'
+        '*:devices:__devices'
+      ;;
+    subcommand2)
+      _arguments \
+        '-plist[output user-readable property list]' \
+        '-all[output the all disks whole disks and their partitions]'
+        '*:devices:__devices'
+      ;;
+    subcommand3)
+      _arguments \
+      ;;
+    listFilesystems)
+      _arguments \
+        '-plist[output user-readable property list]'
+      ;;
+  esac
+}
+
+_rdm
+# vim:ft=zsh:et:sts=2:sw=2

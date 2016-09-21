@@ -1,0 +1,181 @@
+#compdef rc
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+_rc() {
+  local -a __options __rdm __project_management __indexing_commands __query_commands __command_flags
+
+  __options=(
+  {--verbose,-v}:'Be more verbose'
+  '--version:Print current version'
+  {--silent,-Q}:'Be silent'
+  {--help,-h}:'Display this help'
+  )
+
+  __rdm=(
+  {--quit-rdm,-q}:'Tell server to shut down with optional exit code as argument'
+  '--connect-timeout:Timeout for connecting to rdm in ms (default 1000). [arg]'
+  )
+
+  __project_management=(
+  {--clear,-C}:'Clear projects'
+  {--project,-w}:'With arg, select project matching that if unique, otherwise list all projects [optional]'
+  {--delete-project,-W}:'Delete all projects matching regex [arg]'
+  {--job-count,-j}:'Set or query current job count. (Prefix with l to set low-priority-job-count) [optional]'
+  )
+
+  __indexing_commands=(
+  {--compile,-c}:'Pass compilation arguments to rdm [optional]'
+  '--guess-flags:Guess compile flags (used with -c)'
+  {--load-compilation-database,-J}:'Load compile_commands.json from directory [optional]'
+  {--suspend,-X}:"Dump suspended files (don't track changes in these files) with no arg. Otherwise toggle suspension for arg [optional]"
+  )
+
+  __query_commands=(
+  {--follow-location,-f}:'Follow this location. [arg]'
+  {--references-name,-R}:'Find references matching arg [arg]'
+  {--references,-r}:'Find references matching this location [arg]'
+  {--list-symbols,-S}:'List symbol names matching arg [optional]'
+  {--find-symbols,-F}:'Find symbols matching arg [optional]'
+  {--symbol-info,-U}:'Get cursor info for this location [arg]'
+  {--status,-s}:'Dump status of rdm. Arg can be symbols or symbolNames [optional]'
+  '--diagnose:Resend diagnostics for file [arg]'
+  '--diagnose-all:Resend diagnostics for all files'
+  {--is-indexed,-T}:'Check if rtags knows about, and is ready to return information about, this source file [arg]'
+  '--is-indexing:Check if rtags is currently indexing files'
+  '--has-filemanager:Check if rtags has info about files in this directory [optional]'
+  {--preprocess,-E}:'Preprocess file [arg]'
+  {--reindex,-V}:'Reindex all files or all files matching pattern. [optional]'
+  {--check-reindex,-x}:'Check if reindexing is necessary for all files matching pattern [optional]'
+  {--path,-P}:'Print files matching pattern [optional]'
+  '--current-project:Print path for current project'
+  {--dump-file,-d}:'Dump source file [arg]'
+  '--check-includes:Check includes for source file [arg]'
+  '--dump-file-maps:Dump file maps for file [arg]'
+  '--generate-test:Generate a test for a given source file [arg]'
+  {--rdm-log,-g}:'Receive logs from rdm'
+  '--fixits:Get fixits for file[arg]'
+  {--remove,-D}:'Remove file from project'
+  '--find-project-root:Use to check behavior of find-project-root'
+  '--find-project-build-root:Use to check behavior of find-project-root for builds'
+  '--include-file:Use to generate include statement for symbol'
+  '--sources:Dump sources for source file. [optional]'
+  '--dependencies:Dump dependencies for source file [(includes, included-by, depends-on, depended-on, tree-depends-on, raw)] [arg]'
+  '--all-dependencies:Dump dependencies for all source files [(includes, included-by, depends-on, depended-on, tree-depends-on, raw)]'
+  {--reload-file-manager,-B}:'Reload file manager'
+  '--man:Output XML for xmltoman to generate man page for rc :-)'
+  {--code-complete-at,-l}:'Code complete at location: arg is file:line:col [arg]'
+  '--send-diagnostics:Only for debugging. Send data to all -G connections [arg]'
+  '--dump-completions:Dump cached completions'
+  '--dump-compilation-database:Dump compilation database for project'
+  '--set-buffers:Set active buffers (list of filenames for active buffers in editor) [optional]'
+  '--list-buffers:List active buffers'
+  '--list-cursor-kinds:List spelling for known cursor kinds'
+  '--class-hierarchy:Dump class hierarcy for struct/class at location [arg]'
+  '--debug-locations:Manipulate debug locations [optional]'
+  '--visit-ast:Visit AST of a source file [arg]'
+  '--tokens:Dump tokens for file. --tokens file.cpp:123-321 for range [arg]'
+  )
+
+  __command_flags=(
+  {--strip-paren,-p}:'Strip parens in various contexts'
+  {--max,-M}:'Max lines of output for queries'
+  {--reverse-sort,-O}:'Sort output reversed'
+  "--rename:Used for --references to indicate that we're using the results to rename symbols"
+  '--unsaved-file:Pass unsaved file on command line. E.g. --unsaved-file=main.cpp:1200 then write 1200 bytes on stdin'
+  {--log-file,-L}:'Log to this file'
+  {--no-context,-N}:'Don't print context for locations'
+  {--path-filter,-i}:'Filter out results not matching with arg'
+  '--dependency-filter:Filter out results unless argument depends on them'
+  '--range-filter:Filter out results not in the specified range'
+  {--filter-system-headers,-H}:'Don't exempt system headers from path filters'
+  {--all-references,-e}:'Include definitions/declarations/constructors/destructors for references. Used for rename symbol'
+  '--all-targets:Print all targets for -f. Used for debugging'
+  {--elisp,-Y}:'Output elisp: (list "one" "two" ...)'
+  '--json:Output json'
+  {--diagnostics,-m}:'Receive async formatted diagnostics from rdm'
+  {--match-regexp,-Z}:'Treat various text patterns as regexps (-P, -i, -V)'
+  {--match-icase,-I}:'Match case insensitively'
+  {--absolute-path,-K}:'Print files with absolute path'
+  {--socket-file,-n}:'Use this socket file (default ~/.rdm)'
+  '--socket-address:Use this host:port combination (instead of --socket-file)'
+  {--timeout,-y}:'Max time in ms to wait for job to finish (default no timeout)'
+  {--find-virtuals,-k}:'Use in combinations with -R or -r to show other implementations of this function'
+  {--find-file-prefer-exact,-A}:'Use to make --find-file prefer exact matches over partial matches'
+  '--symbol-info-include-parents:Use to make --symbol-info include parent symbols'
+  '--symbol-info-include-targets:Use to make --symbol-info include target symbols'
+  '--symbol-info-include-references:Use to make --symbol-info include reference symbols'
+  "--symbol-info-include-base-classes:Use to make --symbol-info include baseclasses' symbols"
+  '--cursor-kind:Include cursor kind in --find-symbols output'
+  '--display-name:Include display name in --find-symbols output'
+  '--current-file:Pass along which file is being edited to give rdm a better chance at picking the right project'
+  '--declaration-only:Filter out definitions (unless inline)'
+  '--definition-only:Filter out declarations (unless inline)'
+  '--kind-filter:Only return results matching this kind'
+  {--containing-function,-o}:'Include name of containing function in output'
+  '--containing-function-location:Include location of containing function in output'
+  "--build-index:For sources with multiple builds, use the arg'th"
+  '--compilation-flags-only:For --source, only print compilation flags'
+  '--compilation-flags-split-line:For --source, print one compilation flag per line'
+  '--dump-include-headers:For --dump-file, also dump dependencies'
+  "--silent-query:Don't log this request in rdm."
+  '--synchronous-completions:Wait for completion results and print them to stdout'
+  '--synchronous-diagnostics:Wait for diagnostics and print them to stdout'
+  '--xml:Output XML'
+  "--no-sort-references-by-input:Don't sort references by input position"
+  '--project-root:Override project root for compile commands'
+  '--rtags-config:Print out .rtags-config for argument'
+  {--wildcard-symbol-names,-a}:'Expand * like wildcards in --list-symbols and --find-symbols'
+  "--no-color:Don't colorize context"
+  '--wait:Wait for reindexing to finish'
+  '--autotest:Turn on behaviors appropriate for running autotests'
+  '--code-complete-include-macros:Include macros in code completion results'
+  '--code-complete-includes:Give includes in completion results'
+  "--code-complete-no-wait:Don't wait for synchronous completion if the translation unit has to be created"
+  {--code-completion-enabled,-b}:"Inform rdm that we're code-completing. Use with --diagnose"
+  "--no-spell-checking:Don't produce spell check info in diagnostics"
+  '--visit-ast-script:Use this script visit AST (@file.js|sourcecode)'
+  '--tokens-include-symbols:Include symbols for tokens'
+  )
+
+  _describe -t options "Options" __options
+  _describe -t rdm "Rdm" __rdm
+  _describe -t project_management "Project management" __project_management
+  _describe -t indexing_commands "Indexing commands" __indexing_commands
+  _describe -t query_commands "Query commands" __query_commands
+  _describe -t command_flags "Command flags" __command_flags
+}
+
+_rc
+# vim:ft=zsh:et:sts=2:sw=2
