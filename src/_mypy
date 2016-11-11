@@ -1,0 +1,75 @@
+#compdef mypy
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+_mypy() {
+  _arguments \
+    {-h,--help}'[show this help message and exit]' \
+    {-v,--verbose}'[more verbose messages]' \
+    {-V,--version}"[show program's version number and exit]" \
+    '--python-version[use Python x.y]:Python version(x.y)' \
+    '--platform[typecheck special-cased code for the given OS platform (defaults to sys.platform)]:PLATFORM' \
+    {-2,--py2}'[use Python 2 mode]' \
+    {-s,--silent-imports}"[don't follow imports to .py files]" \
+    '--almost-silent[like --silent-imports but reports the imports as errors]' \
+    '--disallow-untyped-calls[disallow calling functions without type annotations from functions with type annotations]' \
+    '--disallow-untyped-defs[disallow defining functions without type annotations or with incomplete type annotations]' \
+    '--check-untyped-defs[type check the interior of functions without type annotations]' \
+    '--disallow-subclassing-any[disallow subclassing values of type 'Any' when defining classes]' \
+    '--warn-incomplete-stub[warn if missing type annotation in typeshed, only relevant with --check-untyped-defs enabled]' \
+    '--warn-redundant-casts[warn about casting an expression to its inferred type]' \
+    '--warn-no-return[warn about functions that end without returning]' \
+    "--warn-unused-ignores[warn about unneeded '\# type: ignore' comments]" \
+    '--hide-error-context[Hide context notes before errors]' \
+    '--fast-parser[enable experimental fast parser]' \
+    {-i,--incremental}'[enable experimental module cache]' \
+    "--cache-dir[store module cache info in the given folder in incremental mode (defaults to '.mypy_cache')]:cache directory" \
+    '--strict-optional[enable experimental strict Optional checks]' \
+    '--strict-optional-whitelist[suppress strict Optional errors in all but the provided files]:[GLOB \[GLOB ...\]\]' \
+    '--junit-xml[write junit.xml to the given file]:JUNIT XML:_files' \
+    '--pdb[invoke pdb on fatal error]' \
+    {--show-traceback,--tb}'[show traceback on fatal error]' \
+    '--stats[dump stats]' \
+    '--inferstats[dump type inference stats]' \
+    '--custom-typing[use a custom typing module]:module' \
+    '--custom-typeshed-dir[use the custom typeshed in DIR]:dir' \
+    '--scripts-are-modules[Script x becomes module x instead of __main__]' \
+    '--config-file[Configuration file, must have a \[mypy\] section]:config file' \
+    '--show-column-numbers[Show column numbers in error messages]' \
+    '--find-occurrences CLASS.MEMBER print out all usages of a class member \(experimental\)]' \
+    '*::target python files:_files'
+}
+
+_mypy
+# vim:ft=zsh:et:sts=2:sw=2
