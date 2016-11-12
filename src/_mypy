@@ -67,7 +67,7 @@ _mypy() {
     '--scripts-are-modules[Script x becomes module x instead of __main__]' \
     '--config-file[Configuration file, must have a \[mypy\] section]:config file' \
     '--show-column-numbers[Show column numbers in error messages]' \
-    '--find-occurrences CLASS.MEMBER print out all usages of a class member \(experimental\)]' \
+    '--find-occurrences[CLASS.MEMBER print out all usages of a class member \(experimental\)]' \
     '*::target python files:_files'
 }
 
