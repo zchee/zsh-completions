@@ -1,0 +1,100 @@
+#compdef clang-format
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+_clang-format() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+  
+  local -a __llvm_generic_options
+
+  __llvm_generic_options=(
+    '-help:Display available options (-help-hiddeen for more)'
+    '-help-hidden:Display all available options'
+    '-help-list:Display list of available options (-help-list-hidden for more)'
+    '-help-list-hidden:Display list of all available options'
+    '-print-all-options:Print all option values after command line parsing'
+    '-print-options:Print non-default options after command line parsing'
+    '-version:Display the version of this program'
+  )
+
+  _arguments -C \
+    '-assume-filename=[assumes arg filename to look for a style config file when reading from stdin]:filename:_files' \
+    '-cursor=[The position of the cursor when invoking clang-format from an editor integration]:cursor position <uint>' \
+    '-dump-config[Dump configuration options to stdout and exit. Can be used with -style option]' \
+    '-fallback-style=[The name of the predefined style used as a fallback in case clang-format is invoked with -style=file]:fallback style:->style' \
+    '-i[Inplace edit <file>s, if specified]' \
+    '-length=[Format a range of this length (in bytes). Multiple ranges can be formatted by specifying several -offset and -length pairs]:byte length <uint>' \
+    "-lines=[format a range of lines (both 1-based). Multiple ranges can be formatted by specifying several -lines arguments]: :->lines" \
+    '-offset=[Format a range starting at this byte offset. Multiple ranges can be formatted by specifying several -offset and -length pairs]:bytee offset <uint>' \
+    '-output-replacements-xml[Output replacements as XML]' \
+    '-sort-includes[If set, overrides the include sorting behavior determined by the SortIncludes style flag]' \
+    '-style=[Set coding style or -style=file or set specific parameters]:coding style:->style' \
+    ${__llvm_generic_options[@]} \
+    '*:file:_files' \
+    && ret=0
+
+  case $state in
+    (style)
+      local -a __based_on_style
+
+      __based_on_style=(
+      'LLVM:A style complying with the LLVM coding standards'
+      'Google:A style complying with Google’s C++ style guide'
+      'Chromium:A style complying with Chromium’s style guide'
+      'Mozilla:A style complying with Mozilla’s style guide'
+      'WebKit:A style complying with WebKit’s style guide'
+      )
+
+      _arguments "*:style config file:_files"
+
+      # TODO(zchee): support -style="{BasedOnStyle: llvm, IndentWidth: 8}"
+      _describe -t based_on_style "BasedOnStyle" based_on_style
+      ;;
+
+    (lines)
+      if ! compset -P '*:'; then
+        _arguments "*:start line"
+      else
+        _arguments '*:end line'
+      fi
+      ;:
+  esac
+  
+  return ret
+}
+
+_clang-format
+
+# vim:ft=zsh:et:sts=2:sw=2
