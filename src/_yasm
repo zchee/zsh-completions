@@ -1,0 +1,134 @@
+#compdef yasm
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+# USAGE:
+#
+# yasm [option]* file
+# Options:
+#     --version               show version text
+#     --license               show license text
+#     -h, --help              show help text
+#     --arch=<arch>           select architecture (list with -a help)
+#      -a <arch>
+#     --parser=<parser>       select parser (list with -p help)
+#      -p <parser>
+#     --preproc=<preproc>     select preprocessor (list with -r help)
+#      -r <preproc>
+#     --oformat=<format>      select object format (list with -f help)
+#      -f <format>
+#     --dformat=<debug>       select debugging format (list with -g help)
+#      -g <debug>
+#     --lformat=<list>        select list format (list with -L help)
+#      -L <list>
+#     --list=<listfile>       name of list-file output
+#      -l <listfile>
+#     --objfile=<filename>    name of object-file output
+#      -o <filename>
+#     --mapfile=<filename>    name of map-file output
+#     --machine=<machine>     select machine (list with -m help)
+#      -m <machine>
+#     --force-strict          treat all sized operands as if `strict' was used
+#     -w                      inhibits warning messages
+#     -W                      enables/disables warning
+#     -M                      generate Makefile dependencies on stdout
+#     -Z <file>               redirect error messages to file
+#     -s                      redirect error messages to stdout
+#     -e, --preproc-only      preprocess only (writes output to stdout by default)
+#     -E                      preprocess only (writes output to stdout by default)
+#     -i <path>               add include path
+#     -I <path>               add include path
+#     -P <filename>           pre-include file
+#     -d <macro[=value]>      pre-define a macro, optionally to value
+#     -D <macro[=value]>      pre-define a macro, optionally to value
+#     -u <macro>              undefine a macro
+#     -U <macro>              undefine a macro
+#     -X <style>              select error/warning message style (`gnu' or `vc')
+#     --prefix=<prefix>       prepend argument to name of all external symbols
+#     --suffix=<suffix>       append argument to name of all external symbols
+#     --postfix=<suffix>      append argument to name of all external symbols
+#     --plugin=<plugin>       load plugin module
+#      -N <plugin>
+#
+# Files are asm sources to be assembled.
+#
+# Sample invocation:
+#    yasm -f elf -o object.o source.asm
+# -----------------------------------------------------------------------------
+
+function _yasm() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '--version[show version text]' \
+    '--license[show license text]' \
+    {-h,--help}'[show help text]' \
+    {-a,--arch}'[select architecture (list with -a help)]:arch:(x86 lc3b)' \
+    {-p,--parser}'[select parser (list with -p help)]:parser' \
+    {-r,--preproc}'[select preprocessor (list with -r help)]:preproc' \
+    {-f,--oformat}'[select object format (list with -f help)]:format' \
+    {-g,--dformat}'[select debugging format (list with -g help)]:debug' \
+    {-L,--lformat}'[select list format (list with -L help)]:list' \
+    {-l,--list}'[name of list-file output]:listfile' \
+    {-o,--objfile}'[name of object-file output]:filename' \
+    '--mapfile=[name of map-file output]:filename' \
+    {-m,--machine}'[select machine (list with -m help)]:machine' \
+    "--force-strict[treat all sized operands as if 'strict' was used]" \
+    '-w[inhibits warning messages]' \
+    '-W[enables/disables warning]' \
+    '-M[generate Makefile dependencies on stdout]' \
+    '-Z[redirect error messages to file]:file:_files' \
+    '-s[redirect error messages to stdout]' \
+    {-e,--preproc-only}'[preprocess only (writes output to stdout by default)]' \
+    '-E[preprocess only (writes output to stdout by default)]' \
+    '-i[add include path]:path:_files' \
+    '-I[add include path]:path:_files' \
+    '-P[pre-include file]:filename:_files' \
+    '-d[pre-define a macro, optionally to value]:macro[=value]' \
+    '-D[pre-define a macro, optionally to value]:macro[=value]' \
+    '-u[undefine a macro]:macro' \
+    '-U[undefine a macro]:macro' \
+    '-X[select error/warning message style]:style:(gnu vc)' \
+    '--prefix=[prepend argument to name of all external symbols]:prefix' \
+    '--suffix=[append argument to name of all external symbols]:suffix' \
+    '--postfix=[append argument to name of all external symbols]:suffix' \
+    '*::file:_files' \
+    && ret=0
+
+  return ret
+}
+
+_yasm "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
