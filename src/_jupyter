@@ -193,4 +193,4 @@ _notebook_cmds() {
 
 _jupyter "$@"
 
-# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
+# vim:ft=zsh:et:sts=2:sw=2

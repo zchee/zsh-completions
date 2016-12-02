@@ -66,4 +66,4 @@ _arguments \
   '-t+[Run a subtool (use -t list to list subtools)]:tools:__tools' \
   '*::targets:__targets'
 
-# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
+# vim:ft=zsh:et:sts=2:sw=2

@@ -186,4 +186,4 @@ _man "$@"
 # -W     Like -w, but print file names one per line, without additional information.  This is useful in shell commands like man -aW man | xargs ls -l
 
 
-# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
+# vim:ft=zsh:et:sts=2:sw=2

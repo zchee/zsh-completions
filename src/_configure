@@ -13,4 +13,4 @@ _arguments \
     '*=NAME*executable*:program:_command_names -e' \
     '*=NAME*:file:_files'
 
-# vim:ft=zsh:sts=2:sw=2:ts=2:expandtab
+# vim:ft=zsh:et:sts=2:sw=2
