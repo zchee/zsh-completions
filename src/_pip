@@ -30,7 +30,7 @@ typeset -a ZSH_PIP_INDEXES ZSH_PIP_XMLRPC_INDEXES
 # The XMLRPC index, which supports filtering by "last updated since".
 ZSH_PIP_XMLRPC_INDEXES=(https://pypi.python.org/pypi)
 # Using packages updated in the last year results in ~26798 packages currently.
-local ZSH_PIP_XMLRPC_INDEX_DAYS=365
+local ZSH_PIP_XMLRPC_INDEX_DAYS=14
 
 
 # Get all packages from (remote) indexes.
@@ -173,6 +173,7 @@ case $state in
       "show:show information about installed packages"
       "search:search PyPI for packages"
       "wheel:build wheels from your requirements"
+      "hash:Compute hashes of package archives"
       "help:show available commands"
     )
 
