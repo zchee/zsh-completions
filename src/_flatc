@@ -1,0 +1,137 @@
+#compdef flatc
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+# USAGE: 
+#
+# flatc [OPTION]... FILE... [-- FILE...]
+#   --binary     -b Generate wire format binaries for any data definitions.
+#   --json       -t Generate text output for any data definitions.
+#   --cpp        -c Generate C++ headers for tables/structs.
+#   --go         -g Generate Go files for tables/structs.
+#   --java       -j Generate Java classes for tables/structs.
+#   --js         -s Generate JavaScript code for tables/structs.
+#   --csharp     -n Generate C# classes for tables/structs.
+#   --python     -p Generate Python files for tables/structs.
+#   --php           Generate PHP files for tables/structs.
+#   --grpc          Generate GRPC interfaces.
+#   -o PATH            Prefix PATH to all generated files.
+#   -I PATH            Search for includes in the specified path.
+#   -M                 Print make rules for generated files.
+#   --version          Print the version number of flatc and exit.
+#   --strict-json      Strict JSON: field names must be / will be quoted,
+#                      no trailing commas in tables/vectors.
+#   --allow-non-utf8   Pass non-UTF-8 input through parser and emit nonstandard
+#                      \x escapes in JSON. (Default is to raise parse error on
+#                      non-UTF-8 input.)
+#   --defaults-json    Output fields whose value is the default when
+#                      writing JSON
+#   --unknown-json     Allow fields in JSON that are not defined in the
+#                      schema. These fields will be discared when generating
+#                      binaries.
+#   --no-prefix        Don't prefix enum values with the enum type in C++.
+#   --scoped-enums     Use C++11 style scoped and strongly typed enums.
+#                      also implies --no-prefix.
+#   --gen-includes     (deprecated), this is the default behavior.
+#                      If the original behavior is required (no include
+#                      statements) use --no-includes.
+#   --no-includes      Don't generate include statements for included
+#                      schemas the generated file depends on (C++).
+#   --gen-mutable      Generate accessors that can mutate buffers in-place.
+#   --gen-onefile      Generate single output file for C#.
+#   --gen-name-strings Generate type name functions for C++.
+#   --escape-proto-ids Disable appending '_' in namespaces names.
+#   --gen-object-api   Generate an additional object-based API.
+#   --cpp-ptr-type T   Set object API pointer type (default std::unique_ptr)
+#   --raw-binary       Allow binaries without file_indentifier to be read.
+#                      This may crash flatc given a mismatched schema.
+#   --proto            Input is a .proto, translate to .fbs.
+#   --schema           Serialize schemas instead of JSON (use with -b)
+#   --conform FILE     Specify a schema the following schemas should be
+#                      an evolution of. Gives errors if not.
+#   --conform-includes Include path for the schema given with --conform
+#     PATH
+# FILEs may be schemas, or JSON files (conforming to preceding schema)
+# FILEs after the -- must be binary flatbuffer format files.
+# Output files are named using the base file name of the input,
+# and written to the current directory or the path given by -o.
+# example: flatc -c -b schema1.fbs schema2.fbs data.json
+# -----------------------------------------------------------------------------
+
+function _flatc() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    {--binary,-b}'[Generate wire format binaries for any data definitions]' \
+    {--json,-t}'[Generate text output for any data definitions]' \
+    {--cpp,-c}'[Generate C++ headers for tables/structs]' \
+    {--go,-g}'[Generate Go files for tables/structs]' \
+    {--java,-j}'[Generate Java classes for tables/structs]' \
+    {--js,-s}'[Generate JavaScript code for tables/structs]' \
+    {--csharp,-n}'[Generate C# classes for tables/structs]' \
+    {--python,-p}'[Generate Python files for tables/structs]' \
+    '--php[Generate PHP files for tables/structs]' \
+    '--grpc[Generate GRPC interfaces]' \
+    '-o[Prefix PATH to all generated files]:file_files' \
+    '-I[Search for includes in the specified path]:file_files' \
+    '-M[Print make rules for generated files]' \
+    '--version[Print the version number of flatc and exit]' \
+    '--strict-json[Strict JSON: field names must be / will be quoted, no trailing commas in tables/vectors]' \
+    '--allow-non-utf8[Pass non-UTF-8 input through parser and emit nonstandard \x escapes in JSON. (Default is to raise parse error on non-UTF-8 input)]' \
+    '--defaults-json[Output fields whose value is the default when writing JSON]' \
+    '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries]' \
+    "--no-prefix[Don't prefix enum values with the enum type in C++]" \
+    '--scoped-enums[Use C++11 style scoped and strongly typed enums. also implies --no-prefix]' \
+    '--gen-includes[(deprecated), this is the default behavior. If the original behavior is required (no include statements) use --no-includes]' \
+    "--no-includes[Don't generate include statements for included schemas the generated file depends on (C++)]" \
+    '--gen-mutable[Generate accessors that can mutate buffers in-place]' \
+    '--gen-onefile[Generate single output file for C#]' \
+    '--gen-name-strings[Generate type name functions for C++]' \
+    '--escape-proto-ids[Disable appending '_' in namespaces names]' \
+    '--gen-object-api[Generate an additional object-based API]' \
+    '--cpp-ptr-type[Set object API pointer type (default std::unique_ptr)]:type' \
+    '--raw-binary[Allow binaries without file_indentifier to be read. This may crash flatc given a mismatched schema]' \
+    '--proto[Input is a .proto, translate to .fbs]' \
+    '--schema[Serialize schemas instead of JSON (use with -b)]' \
+    '--conform[Specify a schema the following schemas should be an evolution of. Gives errors if not]:file:_files' \
+    '--conform-includes[Include path for the schema given with --conform]' \
+    '*:file:_path_files -g "*.(fbs|json)"' \
+    && ret=0
+
+  return ret
+}
+
+_flatc "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
