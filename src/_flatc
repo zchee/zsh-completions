@@ -103,8 +103,8 @@ function _flatc() {
     {--python,-p}'[Generate Python files for tables/structs]' \
     '--php[Generate PHP files for tables/structs]' \
     '--grpc[Generate GRPC interfaces]' \
-    '-o[Prefix PATH to all generated files]:file_files' \
-    '-I[Search for includes in the specified path]:file_files' \
+    '-o[Prefix PATH to all generated files]:output dir:_path_files -/' \
+    '-I[Search for includes in the specified path]:include dir:_path_files -/' \
     '-M[Print make rules for generated files]' \
     '--version[Print the version number of flatc and exit]' \
     '--strict-json[Strict JSON: field names must be / will be quoted, no trailing commas in tables/vectors]' \
