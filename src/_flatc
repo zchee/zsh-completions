@@ -93,41 +93,51 @@ function _flatc() {
   declare -A opt_args
 
   _arguments -C \
+    '--allow-non-utf8[Pass non-UTF-8 input through parser and emit nonstandard \x escapes in JSON. (default\: To raise parse error on non-UTF-8 input)]' \
     {--binary,-b}'[Generate wire format binaries for any data definitions]' \
-    {--json,-t}'[Generate text output for any data definitions]' \
     {--cpp,-c}'[Generate C++ headers for tables/structs]' \
-    {--go,-g}'[Generate Go files for tables/structs]' \
-    {--java,-j}'[Generate Java classes for tables/structs]' \
-    {--js,-s}'[Generate JavaScript code for tables/structs]' \
     {--csharp,-n}'[Generate C# classes for tables/structs]' \
-    {--python,-p}'[Generate Python files for tables/structs]' \
-    '--php[Generate PHP files for tables/structs]' \
-    '--grpc[Generate GRPC interfaces]' \
-    '-o[Prefix PATH to all generated files]:output dir:_path_files -/' \
-    '-I[Search for includes in the specified path]:include dir:_path_files -/' \
-    '-M[Print make rules for generated files]' \
-    '--version[Print the version number of flatc and exit]' \
-    '--strict-json[Strict JSON: field names must be / will be quoted, no trailing commas in tables/vectors]' \
-    '--allow-non-utf8[Pass non-UTF-8 input through parser and emit nonstandard \x escapes in JSON. (Default is to raise parse error on non-UTF-8 input)]' \
+    '--cpp-ptr-type[Set object API pointer type (default std::unique_ptr)]:pointer type (default\: std\:\:unique_ptr)' \
+    '--conform[Specify a schema the following schemas should be an evolution of. Gives errors if not]:schema file:_files' \
+    '--conform-includes[Include path for the schema given with --conform]' \
     '--defaults-json[Output fields whose value is the default when writing JSON]' \
-    '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries]' \
-    "--no-prefix[Don't prefix enum values with the enum type in C++]" \
-    '--scoped-enums[Use C++11 style scoped and strongly typed enums. also implies --no-prefix]' \
+    '--escape-proto-ids[Disable appending '_' in namespaces names]' \
+    {--go,-g}'[Generate Go files for tables/structs]' \
+    '--grpc[Generate GRPC interfaces]' \
     '--gen-includes[(deprecated), this is the default behavior. If the original behavior is required (no include statements) use --no-includes]' \
-    "--no-includes[Don't generate include statements for included schemas the generated file depends on (C++)]" \
     '--gen-mutable[Generate accessors that can mutate buffers in-place]' \
     '--gen-onefile[Generate single output file for C#]' \
     '--gen-name-strings[Generate type name functions for C++]' \
-    '--escape-proto-ids[Disable appending '_' in namespaces names]' \
     '--gen-object-api[Generate an additional object-based API]' \
-    '--cpp-ptr-type[Set object API pointer type (default std::unique_ptr)]:type' \
+    '-I[Search for includes in the specified path]:include dir:_path_files -/' \
+    {--json,-t}'[Generate text output for any data definitions]' \
+    {--java,-j}'[Generate Java classes for tables/structs]' \
+    {--js,-s}'[Generate JavaScript code for tables/structs]' \
+    '-M[Print make rules for generated files]' \
+    "--no-prefix[Don't prefix enum values with the enum type in C++]" \
+    "--no-includes[Don't generate include statements for included schemas the generated file depends on (C++)]" \
+    '-o[Prefix PATH to all generated files]:output dir:_path_files -/' \
+    {--python,-p}'[Generate Python files for tables/structs]' \
+    '--php[Generate PHP files for tables/structs]' \
+    '--proto[Input is a .proto, translate to .fbs]:proto:->proto' \
     '--raw-binary[Allow binaries without file_indentifier to be read. This may crash flatc given a mismatched schema]' \
-    '--proto[Input is a .proto, translate to .fbs]' \
+    '--strict-json[Strict JSON: field names must be / will be quoted, no trailing commas in tables/vectors]' \
+    '--scoped-enums[Use C++11 style scoped and strongly typed enums. also implies --no-prefix]' \
     '--schema[Serialize schemas instead of JSON (use with -b)]' \
-    '--conform[Specify a schema the following schemas should be an evolution of. Gives errors if not]:file:_files' \
-    '--conform-includes[Include path for the schema given with --conform]' \
-    '*:file:_path_files -g "*.(fbs|json)"' \
+    '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries]' \
+    '--version[Print the version number of flatc and exit]' \
+    '*::->args' \
+    \
     && ret=0
+
+  case $state in
+    (args)
+      _arguments ':schema or json:_path_files -g "*.(fbs|json)"' && ret=0
+      ;;
+    (proto)
+      _arguments '*:protocol buffers schema:_path_files -g "*.proto"' && ret=0
+      ;;
+  esac
 
   return ret
 }
