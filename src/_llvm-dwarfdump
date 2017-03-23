@@ -1,0 +1,137 @@
+#compdef llvm-dwarfdump
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# OVERVIEW: llvm dwarf dumper
+#
+# USAGE: llvm-dwarfdump [options] <input object files or .dSYM bundles>
+#
+# -----------------------------------------------------------------------------
+
+function _llvm-dwarfdump() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+  _arguments -C \
+    '-as-secure-log-file-name[As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)]' \
+    '-asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros]' \
+    '-color[use colored syntax highlighting default: autodetect]' \
+    '-debug[Enable debug output]' \
+    '-debug-buffer-size=[Buffer the last N characters of debug output until program termination. default: 0 -- immediate print-out]:uint' \
+    '-debug-dump=[Dump of debug sections]: :->section' \
+    '-debug-only=[Enable a specific type of debug output (comma separated list of types):debug string]' \
+    '-debug-pass=[Print PassManager debugging information]: :->pass' \
+    '-filter-print-funcs=[Only print IR for functions whose name match this for all print-\[before|after\]\[-all\] options]:function names' \
+    '-import-full-type-definitions[Import full type definitions for ThinLTO]' \
+    '-info-output-file=[File to append -stats and -timer output to]:filename:_files' \
+    '-opt-bisect-limit=[Maximum optimization to perform]:int' \
+    '-pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:pattern' \
+    '-pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:pattern' \
+    '-pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:pattern' \
+    '-print-after[Print IR after specified passes]' \
+    '-print-after-all[Print IR after each pass]' \
+    '-print-all-options[Print all option values after command line parsing]' \
+    '-print-before[Print IR before specified passes]' \
+    '-print-before-all[Print IR before each pass]' \
+    '-print-summary-global-ids[Print the global id for each value when reading the module summary]' \
+    '-reverse-iterate' \
+    '-rng-seed=[Seed for the random number generator]:seed' \
+    '-stats[Enable statistics output from program (available with Asserts)]' \
+    '-stats-json[Display statistics as json data]' \
+    '-summarize-types[Abbreviate the description of type unit entries]' \
+    '-time-passes[Time each pass, printing elapsed time for each on exit]' \
+    '-track-memory[Enable -time-passes memory tracking (this may be slow)]' \
+    '-verify-debug-info' \
+    '-verify-dom-info[Verify dominator info (time consuming)]' \
+    '-version[Display the version of this program]' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (section)
+      local -a debug_sections
+      debug_sections=(
+      'all:Dump all debug sections'
+      'abbrev:.debug_abbrev'
+      'abbrev.dwo:.debug_abbrev.dwo'
+      'apple_names:.apple_names'
+      'apple_types:.apple_types'
+      'apple_namespace:.apple_namespaces'
+      'apple_objc:.apple_objc'
+      'aranges:.debug_aranges'
+      'info:.debug_info'
+      'info.dwo:.debug_info.dwo'
+      'types:.debug_types'
+      'types.dwo:.debug_types.dwo'
+      'line:.debug_line'
+      'line.dwo:.debug_line.dwo'
+      'loc:.debug_loc'
+      'loc.dwo:.debug_loc.dwo'
+      'frames:.debug_frame'
+      'macro:.debug_macinfo'
+      'ranges:.debug_ranges'
+      'pubnames:.debug_pubnames'
+      'pubtypes:.debug_pubtypes'
+      'gnu_pubnames:.debug_gnu_pubnames'
+      'gnu_pubtypes:.debug_gnu_pubtypes'
+      'str:.debug_str'
+      'str.dwo:.debug_str.dwo'
+      'str_offsets.dwo:.debug_str_offsets.dwo'
+      'cu_index:.debug_cu_index'
+      'gdb_index:.gdb_index'
+      'tu_index:.debug_tu_index'
+      )
+      _describe 'debug sections' debug_sections
+      ;;
+    (pass)
+      local -a debug_sections
+      debug_pass=(
+      'Disabled:disable debug output'
+      "Arguments:print pass arguments to pass to 'opt'"
+      'Structure:print pass structure before run()'
+      'Executions:print pass name before it is executed'
+      'Details:print pass details when it is executed'
+      )
+      _describe 'debug pass' debug_pass
+      ;;
+    (*)
+      _files
+      ;;
+  esac
+
+  return ret
+}
+
+_llvm-dwarfdump "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
