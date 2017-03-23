@@ -22,7 +22,7 @@ __get_targets() {
   then
     eval dir="${opt_args[-C]}"
   fi
-  targets_command="ninja -C \"${dir}\" -t targets"
+  targets_command="ninja -C \"${dir}\" -t targets all"
   eval ${targets_command} 2>/dev/null | cut -d: -f1
 }
 
