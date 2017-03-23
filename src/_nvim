@@ -72,7 +72,7 @@ _nvim() {
     '+[Start at end of file]' \
     '(*)+-[Start at line <linenum>]::line' \
     '(+/)+/-[Start at first occurrence of <pattern>]::pattern' \
-    '(-t -q)*:nvim files:_files'
+    '(-t -q)*:files:_files'
 }
 
 _nvim
