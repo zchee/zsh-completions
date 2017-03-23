@@ -103,7 +103,7 @@ function _flatc() {
     '--defaults-json[Output fields whose value is the default when writing JSON]' \
     '--escape-proto-ids[Disable appending '_' in namespaces names]' \
     {--go,-g}'[Generate Go files for tables/structs]' \
-    '--grpc[Generate GRPC interfaces]' \
+    '--grpc[Generate GRPC interfaces for the specified languages]' \
     '--gen-includes[(deprecated), this is the default behavior. If the original behavior is required (no include statements) use --no-includes]' \
     '--gen-mutable[Generate accessors that can mutate buffers in-place]' \
     '--gen-onefile[Generate single output file for C#]' \
@@ -126,18 +126,9 @@ function _flatc() {
     '--schema[Serialize schemas instead of JSON (use with -b)]' \
     '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries]' \
     '--version[Print the version number of flatc and exit]' \
-    '*::->args' \
+    '*:schema file:_path_files -g "*.(fbs|json|proto)"' \
     \
     && ret=0
-
-  case $state in
-    (args)
-      _arguments ':schema or json:_path_files -g "*.(fbs|json)"' && ret=0
-      ;;
-    (proto)
-      _arguments '*:protocol buffers schema:_path_files -g "*.proto"' && ret=0
-      ;;
-  esac
 
   return ret
 }
