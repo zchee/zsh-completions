@@ -55,6 +55,7 @@ __targets() {
 _arguments \
   {-h,--help}'[Show help]' \
   '--version[Print ninja version]' \
+  '-b[specify input binary build file]:file:_files' \
   '-C+[Change to directory before doing anything else]:directories:_directories' \
   '-f+[Specify input build file (default=build.ninja)]:files:_files' \
   '-j+[Run N jobs in parallel (default=number of CPUs available)]:number of jobs' \
