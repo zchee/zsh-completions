@@ -1,0 +1,170 @@
+#compdef md2gslides
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# usage: md2gslides [-h] [-v] [-u USER] [-a ID] [-e] [-n] [-s STYLE] [-t TITLE]
+#                   file
+#
+# Markdown to Slides converter
+#
+# Positional arguments:
+#   file                  Path to markdown file to convert
+#
+# Optional arguments:
+#   -h, --help            Show this help message and exit.
+#   -v, --version         Show program's version number and exit.
+#   -u USER, --user USER  Email address of user
+#   -a ID, --append ID    Appends slides to an existing presentation
+#   -e, --erase           Erase existing slides prior to appending.
+#   -n, --no-browser      Headless mode - do not launch browsers, just shows
+#                         URLs
+#   -s STYLE, --style STYLE
+#                         Name of highlight.js theme for code formatting
+#   -t TITLE, --title TITLE
+#                         Title of the presentation
+#
+# -----------------------------------------------------------------------------
+
+function _md2gslides() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a _themes
+  _themes=(
+  'agate'
+  'androidstudio'
+  'arduino-light'
+  'arta'
+  'ascetic'
+  'atelier-cave-dark'
+  'atelier-cave-light'
+  'atelier-dune-dark'
+  'atelier-dune-light'
+  'atelier-estuary-dark'
+  'atelier-estuary-light'
+  'atelier-forest-dark'
+  'atelier-forest-light'
+  'atelier-heath-dark'
+  'atelier-heath-light'
+  'atelier-lakeside-dark'
+  'atelier-lakeside-light'
+  'atelier-plateau-dark'
+  'atelier-plateau-light'
+  'atelier-savanna-dark'
+  'atelier-savanna-light'
+  'atelier-seaside-dark'
+  'atelier-seaside-light'
+  'atelier-sulphurpool-dark'
+  'atelier-sulphurpool-light'
+  'atom-one-dark'
+  'atom-one-light'
+  'brown-paper'
+  'brown-papersq.png'
+  'codepen-embed'
+  'color-brewer'
+  'darcula'
+  'dark'
+  'darkula'
+  'default'
+  'docco'
+  'dracula'
+  'far'
+  'foundation'
+  'github-gist'
+  'github'
+  'googlecode'
+  'grayscale'
+  'gruvbox-dark'
+  'gruvbox-light'
+  'hopscotch'
+  'hybrid'
+  'idea'
+  'ir-black'
+  'kimbie.dark'
+  'kimbie.light'
+  'magula'
+  'mono-blue'
+  'monokai-sublime'
+  'monokai'
+  'obsidian'
+  'ocean'
+  'paraiso-dark'
+  'paraiso-light'
+  'pojoaque'
+  'pojoaque.jpg'
+  'purebasic'
+  'qtcreator_dark'
+  'qtcreator_light'
+  'railscasts'
+  'rainbow'
+  'school-book'
+  'school-book.png'
+  'solarized-dark'
+  'solarized-light'
+  'sunburst'
+  'tomorrow-night-blue'
+  'tomorrow-night-bright'
+  'tomorrow-night-eighties'
+  'tomorrow-night'
+  'tomorrow'
+  'vs'
+  'xcode'
+  'xt256'
+  'zenburn'
+  )
+
+  _arguments -s \
+    '(- *)'{-h,--help}'[Show this help message and exit]' \
+    '(- *)'{-v,--version}"[Show program's version number and exit]" \
+    {-u,--user}'[Email address of user]:USER' \
+    {-a,--append}'[Appends slides to an existing presentation]:ID' \
+    {-e,--erase}'[Erase existing slides prior to appending]' \
+    {-n,--no-browser}'[Headless mode - do not launch browsers, just shows URLs]' \
+    {-s,--style}'[Name of highlight.js theme for code formatting]: :->style' \
+    {-t,--title}'[Title of the presentation]:TITLE' \
+    '*:markdown file:_files -g "*.md(-.)"' \
+    && ret=0
+
+  case $state in
+    (style)
+      _describe 'highlight theme' _themes
+      ;;
+  esac
+
+  return ret
+}
+
+_md2gslides "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
