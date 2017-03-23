@@ -1,5 +1,38 @@
 #compdef swig
 
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
 # Target Language Options
 #      -allegrocl      - Generate ALLEGROCL wrappers
 #      -chicken        - Generate CHICKEN wrappers
@@ -131,34 +164,54 @@
 #
 # Note: 'swig -<lang> -help' displays options for a specific target language.
 
-_swig() {
-  _arguments \
-    '-allegrocl[Generate ALLEGROCL wrappers]' \
-    '-chicken[Generate CHICKEN wrappers]' \
-    '-clisp[Generate CLISP wrappers]' \
-    '-cffi[Generate CFFI wrappers]' \
-    '-csharp[Generate C# wrappers]' \
-    '-d[Generate D wrappers]' \
-    '-go[Generate Go wrappers]' \
-    '-guile[Generate Guile wrappers]' \
-    '-java[Generate Java wrappers]' \
-    '-javascript[Generate Javascript wrappers]' \
-    '-lua[Generate Lua wrappers]' \
-    '-modula3[Generate Modula 3 wrappers]' \
-    '-mzscheme[Generate Mzscheme wrappers]' \
-    '-ocaml[Generate Ocaml wrappers]' \
-    '-octave[Generate Octave wrappers]' \
-    '-perl[Generate Perl wrappers]' \
-    '-php[Generate PHP wrappers]' \
-    '-pike[Generate Pike wrappers]' \
-    '-python[Generate Python wrappers]' \
-    '-r[Generate R (aka GNU S) wrappers]' \
-    '-ruby[Generate Ruby wrappers]' \
-    '-scilab[Generate Scilab wrappers]' \
-    '-sexp[Generate Lisp S-Expressions wrappers]' \
-    '-tcl[Generate Tcl wrappers]' \
-    '-uffi[Generate Common Lisp / UFFI wrappers]' \
-    '-xml[Generate XML wrappers]' \
+function _swig() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a _flag_languages
+  local -a _go_options
+
+  _flag_languages=(
+  '-allegrocl:Generate ALLEGROCL wrappers'
+  '-chicken:Generate CHICKEN wrappers'
+  '-clisp:Generate CLISP wrappers'
+  '-cffi:Generate CFFI wrappers'
+  '-csharp:Generate C# wrappers'
+  '-d:Generate D wrappers'
+  '-go:Generate Go wrappers'
+  '-guile:Generate Guile wrappers'
+  '-java:Generate Java wrappers'
+  '-javascript:Generate Javascript wrappers'
+  '-lua:Generate Lua wrappers'
+  '-modula3:Generate Modula 3 wrappers'
+  '-mzscheme:Generate Mzscheme wrappers'
+  '-ocaml:Generate Ocaml wrappers'
+  '-octave:Generate Octave wrappers'
+  '-perl:Generate Perl wrappers'
+  '-php:Generate PHP wrappers'
+  '-pike:Generate Pike wrappers'
+  '-python:Generate Python wrappers'
+  '-r:Generate R (aka GNU S) wrappers'
+  '-ruby:Generate Ruby wrappers'
+  '-scilab:Generate Scilab wrappers'
+  '-sexp:Generate Lisp S-Expressions wrappers'
+  '-tcl:Generate Tcl wrappers'
+  '-uffi:Generate Common Lisp / UFFI wrappers'
+  '-xml:Generate XML wrappers'
+  )
+
+  _go_options=(
+  '-cgo:Generate cgo input files'
+  '-gccgo:Generate code for gccgo rather than 6g/8g'
+  '-go-pkgpath:Like gccgo -fgo-pkgpath option:pkgpath'
+  '-go-prefix:Like gccgo -fgo-prefix option:prefix'
+  '-intgosize <s> :Set size of Go int type--32 or 64 bits:int size:(32 64)'
+  '-package:Set name of the Go package to <name>:package name'
+  '-use-shlib:Force use of a shared library'
+  '-soname:Set shared library holding C/C++ code to <name>:shared library name'
+  )
+
+  _arguments -C \
     '-addextern[Add extra extern declarations]' \
     '-c++[Enable C++ processing]' \
     '-co[Check <file> out of the SWIG library]:file' \
@@ -235,8 +288,42 @@ _swig() {
     '-Wextra[Adds the following additional warnings: 202,309,403,512,321,322]' \
     '-w[Suppress/add warning messages, eg -w401,+321 - see Warnings.html]:list' \
     '-xmlout[Write XML version of the parse tree to <file> after normal processing]:file' \
+    && ret=0
+
+  _describe -t flag_languages "Target Language Options" _flag_language
+  _describe -t go_options "Go Options" _go_options
+
+  # case $state in
+  #   (args)
+  #     if (( CURRENT == 2 )); then
+  #       _arguments '*:after the (( CURRENT == 2 )) comment:'
+  #       return
+  #     fi
+  #     _arguments '*:before the (( CURRENT == 2 )) comment:_files'
+  #     ;;
+  #
+  #     case $words[1] in
+  #       subcommand1)
+  #         _arguments \
+  #           '-foo[subcommand2 -foo argument comment]'
+  #           '*:file:_files'
+  #         ;;
+  #       subcommand2)
+  #         _arguments \
+  #           '-bar[subcommand2 -bar argument comment]' \
+  #           '-baz[subcommand2 -baz argument comment]'
+  #           '*:devices:_devices'
+  #         ;;
+  #       subcommand3)
+  #         _arguments \
+  #         ;;
+  #     esac
+  #     ;;
+  # esac
+
+  return ret
 }
 
-_swig
+_swig "$@"
 
 # vim:ft=zsh:et:sts=2:sw=2
