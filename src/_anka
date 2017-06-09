@@ -1,0 +1,178 @@
+#compdef anka
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+function _anka() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'clone:Clones a VM'
+  'create:Creates a VM'
+  'create-disk:creates an empty disk with unique name'
+  'delete:Deletes a VM (or list of vms)'
+  'describe:Shows all VM info'
+  'list:Shows a list of VMs, ids and names'
+  'list-images:Shows a list of image names available'
+  'modify:Modifies a VM settings'
+  'mount:Mount local folder into VM (filesystem...'
+  'print-config'
+  'reboot:Restarts a VM'
+  'registry:VMs registry'
+  'run:Run commands inside VM environment'
+  'show:Show runtime VM state and properties.'
+  'show-image-infoShows parents of an image'
+  'start:Starts or resumes paused VM'
+  'stop:Shuts down a vm'
+  'suspend:Supsends a VM'
+  'unmount:Unmount shared folder (filesystem...'
+  'usb:Do actions on USB devices'
+  'usb-group:manage usb device groups'
+  'version:prints out version'
+  'view:Open VM display viewer'
+  )
+
+  _arguments \
+    '--machine-readable[Use this option when scripting with ankactl]' \
+    '--log-level:level:(debug info error)' \
+    '--debug' \
+    '--help[Show this message and exit]' \
+    "1: :{_describe 'anka command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+      case $words[1] in
+        modify)
+          local -a modify_commands
+          modify_commands=(
+          'add'
+          'delete'
+          'set'
+          )
+          _arguments \
+            "1: :{_describe 'modify subcommand' modify_commands}" \
+            '2:VM_ID' \
+            '3:COMMAND' \
+            && return
+          ;;
+
+        registry)
+          local -a registry_commands
+          registry_commands=(
+          'add'
+          'check-download-size'
+          'delete'
+          'describe'
+          'list'
+          'list-repos'
+          'pull'
+          'push'
+          'reset'
+          'set'
+          )
+          _arguments \
+            "1: :{_describe 'registry subcommand' registry_commands}" \
+            '*:: :->args' \
+            && ret=0
+          # TODO(zchee): support third-command args
+          # case $state in
+          #   args)
+          #     case $word[1] in
+          #       (add)
+          #         _arguments \
+          #           '1:REG_NAME' \
+          #           '2:REG_ADDR' \
+          #           && return
+          #         ;;
+          #       (check-download-size|pull|reset)
+          #         _arguments \
+          #           '1:VM_ID' \
+          #           && return
+          #         ;;
+          #       (delete|describe|set)
+          #         _arguments \
+          #           '1:REG_NAME' \
+          #           && return
+          #         ;;
+          #       (push)
+          #         _arguments \
+          #           '1:VM_ID' \
+          #           '2:TAG' \
+          #           && return
+          #         ;;
+          #     esac
+          #     ;;
+          # esac
+          ;;
+
+        usb)
+          local -a usb_commands
+          usb_commands=(
+          'claim'
+          'list'
+          'release'
+          )
+          _arguments \
+            "1: :{_describe 'usb subcommand' usb_commands}" \
+            '*:LOCATION_NAME_OR_ID' \
+            && return
+          ;;
+
+        usb-group)
+          local -a usbgroup_commands
+          usbgroup_commands=(
+          'add-device'
+          'create'
+          'delete'
+          'list'
+          'list-group-devices'
+          'remove-device'
+          )
+          _arguments \
+            "1: :{_describe 'usb-group subcommand' usbgroup_commands}" \
+            && return
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_anka "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
