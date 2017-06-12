@@ -37,8 +37,8 @@ function _protoc() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
-  _arguments -C \
-    {-IPATH,--proto_path}='[Specify the directory in which to search for imports]:PATH' \
+  _arguments \
+    {-I,--proto_path}='[Specify the directory in which to search for imports]:PATH' \
     '--version[Show version info and exit]' \
     {-h,--help}'[Show this text and exit]' \
     '--encode=[Read a text-format message of the given type from standard input and write it in binary to standard output]:MESSAGE_TYPE' \
@@ -60,7 +60,7 @@ function _protoc() {
     '--php_out=[Generate PHP source file]:OUT_DIR' \
     '--python_out=[Generate Python source file]:OUT_DIR' \
     '--ruby_out=[Generate Ruby source file]:OUT_DIR' \
-    '1:proto file:_files -g "*.proto(-.)"' \
+    '1::proto file:_files' \
     '*:: :->args' \
     && ret=0
 
