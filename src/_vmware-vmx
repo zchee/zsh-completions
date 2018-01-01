@@ -1,0 +1,90 @@
+#compdef vmware-vmx vmware-vmx-debug
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# To run the user interface, use vmware and not vmware-vmx.
+# Usage: vmware-vmx [<flags>] [configfile]
+# where <flags> are:
+#        -P                   start paused
+#        -q                   exit at power off
+#        -s name=value        set variable NAME to VALUE
+#        -x                   power on when program starts
+#        -X                   as -x, also go to full screen mode
+#        -v                   print program version
+#        -o                   Output GPU capabilities
+#        -#                   Product-specific settings
+#        -e name              extract a resource specified by name
+#        -?                   Usage
+#        -@                   VMDB connection to UI
+# vmware-vmx: this executable should not be invoked directly.
+# Cannot start vmware-vmx.
+# -3 Failed to parse command line options.
+#
+# -----------------------------------------------------------------------------
+
+function _vmware-vmx() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-P[start paused]' \
+    '-q[exit at power off]' \
+    '-s[set variable NAME to VALUE]:->variable' \
+    '-x[power on when program starts]' \
+    '-X[as -x, also go to full screen mode]' \
+    '-v[print program version]' \
+    '-o[Output GPU capabilities]' \
+    '-#[Product-specific settings]' \
+    '-e[extract a resource specified by name]:name' \
+    '-?[Usage]' \
+    '-@[VMDB connection to UI]' \
+    '*:vmx file:_files' \
+    && ret=0
+
+  case $state in
+    (variable)
+      if (( CURRENT == 2 )); then
+        _arguments '*:value'
+        return
+      fi
+      _arguments '*:name'
+      ;;
+  esac
+
+  return ret
+}
+
+_vmware-vmx "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
