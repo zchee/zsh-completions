@@ -1,0 +1,141 @@
+#compdef vmware-vdiskmanager
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# VMware Virtual Disk Manager - build 5192483.
+# Usage: vmware-vdiskmanager OPTIONS <disk-name> | <mount-point>
+# Offline disk manipulation utility
+#   Operations, only one may be specified at a time:
+#      -c                   : create disk.  Additional creation options must
+#                             be specified.  Only local virtual disks can be
+#                             created.
+#      -d                   : defragment the specified virtual disk. Only
+#                             local virtual disks may be defragmented.
+#      -k                   : shrink the specified virtual disk. Only local
+#                             virtual disks may be shrunk.
+#      -n <source-disk>     : rename the specified virtual disk; need to
+#                             specify destination disk-name. Only local virtual
+#                             disks may be renamed.
+#      -p                   : prepare the mounted virtual disk specified by
+#                             the volume path for shrinking.
+#      -r <source-disk>     : convert the specified disk; need to specify
+#                             destination disk-type.  For local destination disks
+#                             the disk type must be specified.
+#      -x <new-capacity>    : expand the disk to the specified capacity. Only
+#                             local virtual disks may be expanded.
+#      -R                   : check a sparse virtual disk for consistency and attempt
+#                             to repair any errors.
+#      -e                   : check for disk chain consistency.
+#      -D                   : make disk deletable.  This should only be used on disks
+#                             that have been copied from another product.
+#
+#   Other Options:
+#      -q                   : do not log messages
+#
+#   Additional options for create and convert:
+#      -a <adapter>         : (for use with -c only) adapter type
+#                             (ide, buslogic, lsilogic). Pass lsilogic for other adapter types.
+#      -s <size>            : capacity of the virtual disk
+#      -t <disk-type>       : disk type id
+#
+#   Disk types:
+#       0                   : single growable virtual disk
+#       1                   : growable virtual disk split in 2GB files
+#       2                   : preallocated virtual disk
+#       3                   : preallocated virtual disk split in 2GB files
+#       4                   : preallocated ESX-type virtual disk
+#       5                   : compressed disk optimized for streaming
+#       6                   : thin provisioned virtual disk - ESX 3.x and above
+#
+#      The capacity can be specified in sectors, KB, MB or GB.
+#      The acceptable ranges:
+#                            ide/scsi adapter : [1MB, 8192.0GB]
+#                            buslogic adapter : [1MB, 2040.0GB]
+#         ex 1: vmware-vdiskmanager -c -s 850MB -a ide -t 0 myIdeDisk.vmdk
+#         ex 2: vmware-vdiskmanager -d myDisk.vmdk
+#         ex 3: vmware-vdiskmanager -r sourceDisk.vmdk -t 0 destinationDisk.vmdk
+#         ex 4: vmware-vdiskmanager -x 36GB myDisk.vmdk
+#         ex 5: vmware-vdiskmanager -n sourceName.vmdk destinationName.vmdk
+#         ex 6: vmware-vdiskmanager -r sourceDisk.vmdk -t 4 -h esx-name.mycompany.com \
+#               -u username -f passwordfile "[storage1]/path/to/targetDisk.vmdk"
+#         ex 7: vmware-vdiskmanager -k myDisk.vmdk
+#         ex 8: vmware-vdiskmanager -p <mount-point>
+#               (A virtual disk first needs to be mounted at <mount-point>)
+#
+# -----------------------------------------------------------------------------
+
+function _vmware-vdiskmanager() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-c[create disk. Additional creation options must be specified. Only local virtual disks can be created]' \
+    '-d[defragment the specified virtual disk. Only local virtual disks may be defragmented]' \
+    '-k[shrink the specified virtual disk. Only local virtual disks may be shrunk]' \
+    '-n[rename the specified virtual disk; need to specify destination disk-name. Only local virtual disks may be renamed]:source-disk' \
+    '-p[prepare the mounted virtual disk specified by the volume path for shrinking]' \
+    '-r[convert the specified disk; need to specify destination disk-type. For local destination disks the disk type must be specified]:source-disk' \
+    '-x[expand the disk to the specified capacity. Only local virtual disks may be expanded]:new-capacity' \
+    '-R[check a sparse virtual disk for consistency and attempt to repair any errors]' \
+    '-e[check for disk chain consistency]' \
+    '-D[make disk deletable. This should only be used on disks that have been copied from another product]' \
+    '-q[do not log messages]' \
+    '-a[(for use with -c only) adapter type. Pass lsilogic for other adapter types]:adapter:(ide buslogic lsilogic)' \
+    '-s[capacity of the virtual disk]:size' \
+    '-t[disk type id]:disk-type:->disktype' \
+    '*:<disk-name> | <mount-point>:_files' \
+    && ret=0
+
+  case $state in
+    (disktype)
+      local -a _disktype
+      _disktype=(
+      '0:single growable virtual disk'
+      '1:growable virtual disk split in 2GB files'
+      '2:preallocated virtual disk'
+      '3:preallocated virtual disk split in 2GB files'
+      '4:preallocated ESX-type virtual disk'
+      '5:compressed disk optimized for streaming'
+      '6:thin provisioned virtual disk - ESX 3.x and above'
+      )
+      _arguments "*: :{_describe 'disk type' _disktype}"
+      ;;
+  esac
+
+  return ret
+}
+
+_vmware-vdiskmanager "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
