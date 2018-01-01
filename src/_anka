@@ -73,9 +73,30 @@ function _anka() {
     '*:: :->args' \
     && ret=0
 
-  case $state in
+  case "$state" in
     args)
-      case $words[1] in
+      case "$words[1]" in
+        clone)
+          _arguments \
+            {-n,--no-snapshot-replace}"[don't replace hard drives when making a snapshot \[default: False\]]" \
+            '--help[Show this message and exit]' \
+            '1:ORIGINAL_UUID' \
+            '2:NAME' \
+            && return
+          ;;
+        create)
+          _arguments \
+            {-m,--ram-size}'[ram size in G \[default: 2G\]]:ram size' \
+            {-o,--optical-drive}'[path to disk file]:diskfile PATH' \
+            {-d,--image-id}'[existing image id to mount as hard drive]:image id' \
+            {-s,--make-snapshot-from-image-id}'[make a snapshot from an image and mount the new snapshot as hard drive]' \
+            {-c,--cpu-count}'[the number of cpu cores  \[default: 2\]]' \
+            '--disk-size[sets the disk size when creating a new disk, use G suffix for GB M suffix for MB or no suffix for bytes \[default: 60G\]]' \
+            {-n,--no-preformat} \
+            '--help[Show this message and exit]' \
+            '*:VM_NAME' \
+            && return
+          ;;
         modify)
           local -a modify_commands
           modify_commands=(
@@ -87,7 +108,52 @@ function _anka() {
             "1: :{_describe 'modify subcommand' modify_commands}" \
             '2:VM_ID' \
             '3:COMMAND' \
+            '4:: :->args' \
             && return
+          case $state in
+            args)
+              case "$word[1]" in
+                add)
+                  local -a add_commands
+                  add_commands=(
+                  'hard-drive'
+                  'network-card'
+                  'optical-drive'
+                  'port-forwarding'
+                  'usb-device'
+                  'usb-group'
+                  )
+                  _arguments "1: :{_describe 'add subcommand' add_commands}"
+                  ;;
+                delete)
+                  local -a delete_commands
+                  delete_commands=(
+                  'hard-drive'
+                  'network-card'
+                  'optical-drive'
+                  'port-forwarding'
+                  'usb-device'
+                  'usb-group'
+                  )
+                  _arguments "1: :{_describe 'delete subcommand' delete_commands}"
+                  ;;
+                set)
+                  local -a set_commands
+                  set_commands=(
+                  'cpu'
+                  'hard-drive'
+                  'headless'
+                  'name'
+                  'network-card'
+                  'optical-drive'
+                  'ram'
+                  'vnc'
+                  )
+                  _arguments "1: :{_describe 'set subcommand' set_commands}"
+                  ;;
+                esac
+              ;;
+            esac
           ;;
 
         registry)
@@ -106,37 +172,36 @@ function _anka() {
           )
           _arguments \
             "1: :{_describe 'registry subcommand' registry_commands}" \
-            '*:: :->args' \
-            && ret=0
-          # TODO(zchee): support third-command args
-          # case $state in
-          #   args)
-          #     case $word[1] in
-          #       (add)
-          #         _arguments \
-          #           '1:REG_NAME' \
-          #           '2:REG_ADDR' \
-          #           && return
-          #         ;;
-          #       (check-download-size|pull|reset)
-          #         _arguments \
-          #           '1:VM_ID' \
-          #           && return
-          #         ;;
-          #       (delete|describe|set)
-          #         _arguments \
-          #           '1:REG_NAME' \
-          #           && return
-          #         ;;
-          #       (push)
-          #         _arguments \
-          #           '1:VM_ID' \
-          #           '2:TAG' \
-          #           && return
-          #         ;;
-          #     esac
-          #     ;;
-          # esac
+            '2:: :->args' \
+            && return
+          case $state in
+            args)
+              case $word[1] in
+                (add)
+                  _arguments \
+                    '1:REG_NAME' \
+                    '2:REG_ADDR' \
+                    && return
+                  ;;
+                (check-download-size|pull|reset)
+                  _arguments \
+                    '1:VM_ID' \
+                    && return
+                  ;;
+                (delete|describe|set)
+                  _arguments \
+                    '1:REG_NAME' \
+                    && return
+                  ;;
+                (push)
+                  _arguments \
+                    '1:VM_ID' \
+                    '2:TAG' \
+                    && return
+                  ;;
+              esac
+              ;;
+          esac
           ;;
 
         usb)
@@ -173,6 +238,6 @@ function _anka() {
   return ret
 }
 
-_anka "$@"
+_anka "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
