@@ -78,6 +78,6 @@ function _protoc() {
   return ret
 }
 
-_protoc "$@"
+_protoc "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

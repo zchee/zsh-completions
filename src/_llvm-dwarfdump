@@ -132,6 +132,6 @@ function _llvm-dwarfdump() {
   return ret
 }
 
-_llvm-dwarfdump "$@"
+_llvm-dwarfdump "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

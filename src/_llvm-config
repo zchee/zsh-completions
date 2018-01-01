@@ -111,6 +111,6 @@ function _llvm-config() {
   return ret
 }
 
-_llvm-config "$@"
+_llvm-config "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

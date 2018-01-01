@@ -165,6 +165,6 @@ function _md2gslides() {
   return ret
 }
 
-_md2gslides "$@"
+_md2gslides "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

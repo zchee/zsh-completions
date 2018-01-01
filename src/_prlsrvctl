@@ -256,6 +256,6 @@ __prlsrvctl_net_vnetwork_id_list() {
 
 }
 
-_prlsrvctl "$@"
+_prlsrvctl "$*"
 
 # vim: ft=zsh sw=2 ts=2 et

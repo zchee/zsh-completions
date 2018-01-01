@@ -1,4 +1,4 @@
-#compdef llvm-dsymutil
+#compdef $BIN
 
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
@@ -32,39 +32,51 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
-#
-# OVERVIEW: manipulate archived DWARF debug symbol files.
-#
-# dsymutil links the DWARF debug information found in the object files
-# for the executable <input file> by using debug symbols information
-# contained in its symbol table.
-#
-# USAGE: llvm-dsymutil [options] <input files>
-#
-# -----------------------------------------------------------------------------
 
-function _llvm-dsymutil() {
+function _$BIN() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
+  local -a commands
+  commands=(
+  'subcommand1:description1'
+  'subcommand2:description2'
+  'subcommand3:description3'
+  )
+
   _arguments -C \
-    '-arch=[Link DWARF debug information only for specified CPU architecture types]' \
-    '-dump-debug-map[Parse and dump the debug map to standard output. Not DWARF link will take place]' \
-    '-flat[Produce a flat dSYM file (not a bundle)]' \
-    '-no-odr[Do not use ODR (One Definition Rule) for type uniquing]' \
-    '-no-output[Do the link in memory, but do not emit the result file]' \
-    '-o=[Specify the output file. default: <input file>.dwarf]:filename:_files' \
-    '-oso-prepend-path=[Specify a directory to prepend to the paths of object files]:path:_files' \
-    '-symtab[Dumps the symbol table found in executable or object file(s) and exits]' \
-    '-verbose[Verbosity level]' \
-    '-version[Display the version of this program]' \
-    '-y[Treat the input file is a YAML debug map rather than a binary]' \
-    '*:file:_files' \
+    "1: :{_describe '$BIN command' commands}" \
+    '*:: :->args' \
     && ret=0
+
+  case $state in
+    (args)
+      if (( CURRENT == 2 )); then
+        _arguments '*:after the (( CURRENT == 2 )) comment:'
+        return
+      fi
+      _arguments '*:before the (( CURRENT == 2 )) comment:_files'
+      ;;
+
+      case $words[1] in
+        subcommand1)
+          _arguments \
+            '-foo[subcommand2 -foo argument comment]'
+            '*:file:_files'
+          ;;
+        subcommand2)
+          _arguments \
+            '-bar[subcommand2 -bar argument comment]' \
+            '-baz[subcommand2 -baz argument comment]'
+            '*:devices:_devices'
+          ;;
+      esac
+      ;;
+  esac
 
   return ret
 }
 
-_llvm-dsymutil "$*"
+_$BIN "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

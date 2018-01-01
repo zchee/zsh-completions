@@ -133,6 +133,6 @@ function _flatc() {
   return ret
 }
 
-_flatc "$@"
+_flatc "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

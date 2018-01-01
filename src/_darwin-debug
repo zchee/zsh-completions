@@ -94,6 +94,6 @@ function _darwin-debug() {
   return ret
 }
 
-_darwin-debug "$@"
+_darwin-debug "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

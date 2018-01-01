@@ -277,4 +277,4 @@ _cmake_compilers() {
 }
 
 
-_cmake "$@"
+_cmake "$*"

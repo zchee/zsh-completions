@@ -37,7 +37,7 @@ function _llvm-objdump() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
-  _arguments -- '*:object file:_files'
+  _arguments -- -help-list-hidden '*:object file:_files'
 
   # _arguments -C \
   #   '*:: :->args' \
@@ -74,6 +74,6 @@ function _llvm-objdump() {
   # return ret
 }
 
-_llvm-objdump "$@"
+_llvm-objdump "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

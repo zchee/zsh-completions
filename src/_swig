@@ -324,6 +324,6 @@ function _swig() {
   return ret
 }
 
-_swig "$@"
+_swig "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2

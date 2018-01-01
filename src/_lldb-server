@@ -93,6 +93,6 @@ function _lldb-server() {
   return ret
 }
 
-_lldb-server "$@"
+_lldb-server "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
