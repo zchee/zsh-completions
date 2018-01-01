@@ -33,8 +33,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 
-_rdm() {
-  _arguments \
+function _rdm() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
     {--Weverything,-u}'[Use -Weverything]' \
     "--allow-Werror[Don't strip out -Werror and -Wfatal-error. By default these are stripped out]" \
     {--allow-Wpedantic,-P}"[Don't strip out -Wpedantic. This can cause problems in certain projects]" \
@@ -107,29 +110,11 @@ _rdm() {
     '--version[Display version]' \
     '--watch-sources-only[Only watch source files (not dependencies)]' \
     {--watch-system-paths,-w}'[Watch system paths for changes]' \
-    '*:: :->args'
+    && ret=0
 
-  case $state in
-    subcommand1)
-      _arguments \
-        '-plist[output user-readable property list]'
-        '*:devices:__devices'
-      ;;
-    subcommand2)
-      _arguments \
-        '-plist[output user-readable property list]' \
-        '-all[output the all disks whole disks and their partitions]'
-        '*:devices:__devices'
-      ;;
-    subcommand3)
-      _arguments \
-      ;;
-    listFilesystems)
-      _arguments \
-        '-plist[output user-readable property list]'
-      ;;
-  esac
+  return ret
 }
 
-_rdm
+_rdm "$*"
+
 # vim:ft=zsh:et:sts=2:sw=2
