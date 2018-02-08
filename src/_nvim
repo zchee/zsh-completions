@@ -1,22 +1,353 @@
 #compdef nvim
 
-_nvim() {
-  # (( $+functions[_nvim_files] )) ||
-  # _nvim_files () {
-  #   case $PREFIX in
-  #     (+*) _files -P './' $* && return 0 ;;
-  #     ((scp|http(|s)|(|s)ftp):*) _urls ;;
-  #     (*) _files $* ;;
-  #   esac
-  #   case $PREFIX in
-  #     (+) _message -e 'Start at end of file' ;;
-  #     (+<1->) _message -e 'Start at line <linenum>' ;;
-  #     (+/\<a-\>) _message -e 'Start at first occurrence of <pattern>' ;;
-  #   esac
-  # }
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/neovim/neovim
+#
+# 							*startup-options*
+# The option arguments may be given in any order.  Single-letter options can be
+# combined after one dash.  There can be no option arguments after the "--"
+# argument.
+#
+# --help							*-h* *--help*
+# -h		Give usage (help) message and exit.
+# 		See |info-message| about capturing the text.
+#
+# --version						*-v* *--version*
+# -v		Print version information and exit.  Same output as for
+# 		|:version| command.
+# 		See |info-message| about capturing the text.
+#
+# 							*--noplugin*
+# --noplugin	Skip loading plugins.  Resets the 'loadplugins' option.
+# 		Note that the |-u| argument may also disable loading plugins:
+# 			argument	load vimrc files	load plugins ~
+# 			(nothing)		yes		    yes
+# 			-u NONE			no		    no
+# 			-u NORC			no		    yes
+# 			--noplugin		yes		    no
+#
+# --startuptime {fname}					*--startuptime*
+# 		During startup write timing messages to the file {fname}.
+# 		This can be used to find out where time is spent while loading
+# 		your |init.vim|, plugins and opening the first file.
+# 		When {fname} already exists new messages are appended.
+# 		(Only available when compiled with the |+startuptime|
+# 		feature).
+#
+# 							*--literal*
+# --literal	Take file names literally, don't expand wildcards.  Not needed
+# 		for Unix, because Vim always takes file names literally (the
+# 		shell expands wildcards).
+# 		Applies to all the names, also the ones that come before this
+# 		argument.
+#
+# 							*-+*
+# +[num]		The cursor will be positioned on line "num" for the first
+# 		file being edited.  If "num" is missing, the cursor will be
+# 		positioned on the last line.
+#
+# 							*-+/*
+# +/{pat}		The cursor will be positioned on the first line containing
+# 		"pat" in the first file being edited (see |pattern| for the
+# 		available search patterns).  The search starts at the cursor
+# 		position, which can be the first line or the cursor position
+# 		last used from |shada|. To force a search from the first
+# 		line use "+1 +/pat".
+#
+# +{command}						*-+c* *-c*
+# -c {command}	{command} will be executed after the first file has been
+# 		read (and after autocommands and modelines for that file have
+# 		been processed).  "command" is interpreted as an Ex command.
+# 		If the "command" contains spaces, it must be enclosed in
+# 		double quotes (this depends on the shell that is used).
+# 		Example: >
+# 			vim  "+set si"  main.c
+# 			vim  "+find stdio.h"
+# 			vim  -c "set ff=dos"  -c wq  mine.mak
+# <
+# 		Note: You can use up to 10 "+" or "-c" arguments in a Vim
+# 		command.  They are executed in the order given.  A "-S"
+# 		argument counts as a "-c" argument as well.
+#
+# --cmd {command}						*--cmd*
+# 		{command} will be executed before processing any vimrc file.
+# 		Otherwise it acts like -c {command}.  You can use up to 10 of
+# 		these commands, independently from "-c" commands.
+#
+# 							*-S*
+# -S {file}	The {file} will be sourced after the first file has been read.
+# 		This is an easy way to do the equivalent of: >
+# 			-c "source {file}"
+# <		It can be mixed with "-c" arguments and repeated like "-c".
+# 		The limit of 10 "-c" arguments applies here as well.
+# 		{file} cannot start with a "-".
+#
+# -S		Works like "-S Session.vim".  Only when used as the last
+# 		argument or when another "-" option follows.
+#
+# -L							*-L* *-r*
+# -r		Recovery mode.  Without a file name argument, a list of
+# 		existing swap files is given.  With a file name, a swap file
+# 		is read to recover a crashed editing session.  See
+# 		|crash-recovery|.
+#
+# 							*-R*
+# -R		Readonly mode.  The 'readonly' option will be set for all the
+# 		files being edited.  You can still edit the buffer, but will
+# 		be prevented from accidentally overwriting a file.  If you
+# 		forgot that you are in View mode and did make some changes,
+# 		you can overwrite a file by adding an exclamation mark to
+# 		the Ex command, as in ":w!".  The 'readonly' option can be
+# 		reset with ":set noro" (see the options chapter, |options|).
+# 		Subsequent edits will not be done in readonly mode.  Calling
+# 		the executable "view" has the same effect as the -R argument.
+# 		The 'updatecount' option will be set to 10000, meaning that
+# 		the swap file will not be updated automatically very often.
+# 		See |-M| for disallowing modifications.
+#
+# 							*-m*
+# -m		Modifications not allowed to be written.  The 'write' option
+# 		will be reset, so that writing files is disabled.  However,
+# 		the 'write' option can be set to enable writing again.
+#
+# 							*-M*
+# -M		Modifications not allowed.  The 'modifiable' option will be
+# 		reset, so that changes are not allowed.  The 'write' option
+# 		will be reset, so that writing files is disabled.  However,
+# 		the 'modifiable' and 'write' options can be set to enable
+# 		changes and writing.
+#
+# 						*-Z* *restricted-mode* *E145*
+# -Z		Restricted mode.  All commands that make use of an external
+# 		shell are disabled.  This includes suspending with CTRL-Z,
+# 		":sh", filtering, the system() function, backtick expansion,
+# 		delete(), rename(), mkdir(), writefile(), libcall(),
+# 		jobstart(), etc.
+#
+# 							*-e*
+# -e		Start Vim in Ex mode |Q|.
+#
+# 							*-E*
+# -E		Start Vim in improved Ex mode |gQ|.
+#
+# 							*-s-ex* *silent-mode*
+# -s		Silent or batch mode.  Only when "-s" is preceded by the "-e"
+# 		argument.  Otherwise see |-s|, which does take an argument
+# 		while this use of "-s" doesn't.  To be used when Vim is used
+# 		to execute Ex commands from a file instead of a terminal.
+# 		Switches off most prompts and informative messages.  Also
+# 		warnings and error messages.  The output of these commands is
+# 		displayed (to stdout):
+# 			:print
+# 			:list
+# 			:number
+# 			:set      to display option values.
+# 		When 'verbose' is non-zero messages are printed (for
+# 		debugging, to stderr).
+# 		|$TERM| is not used.
+# 		If Vim appears to be stuck try typing "qa!<Enter>".  You don't
+# 		get a prompt thus you can't see Vim is waiting for you to type
+# 		something.
+# 		Initializations are skipped (except the ones given with the
+# 		"-u" argument).
+# 		Example: >
+# 			vim -es < thefilter  thefile
+# <
+# 							*-b*
+# -b		Binary mode.  File I/O will only recognize <NL> to separate
+# 		lines.  The 'expandtab' option will be reset.  The 'textwidth'
+# 		option is set to 0.  'modeline' is reset.  The 'binary' option
+# 		is set.  This is done after reading the init.vim/exrc files 
+# 		but before reading any file in the arglist.  See also
+# 		|edit-binary|.
+#
+# 							*-l*
+# -l		Lisp mode.  Sets the 'lisp' and 'showmatch' options on.
+#
+# 							*-A*
+# -A		Arabic mode.  Sets the 'arabic' option on.
+#
+# 							*-F*
+# -F		Farsi mode.  Sets the 'fkmap' and 'rightleft' options on.
+#
+# 							*-H*
+# -H		Hebrew mode.  Sets the 'hkmap' and 'rightleft' options on.
+#
+# 							*-V* *verbose*
+# -V[N]		Verbose.  Sets the 'verbose' option to [N] (default: 10).
+# 		Messages will be given for each file that is ":source"d and
+# 		for reading or writing a ShaDa file.  Can be used to find
+# 		out what is happening upon startup and exit.
+# 		Example: >
+# 			nvim -V8
+#
+# -V[N]{filename}
+# 		Like -V and set 'verbosefile' to {filename}.  Messages are not
+# 		displayed; instead they are written to the file {filename}.
+# 		{filename} must not start with a digit.
+# 		Example: >
+# 			nvim -V20vimlog
+# <
+# 							*-D*
+# -D		Debugging.  Go to debugging mode when executing the first
+# 		command from a script. |debug-mode|
+# 		{not available when compiled without the |+eval| feature}
+#
+# 							*-n*
+# -n		No swap file will be used.  Recovery after a crash will be
+# 		impossible.  Handy if you want to view or edit a file on a
+# 		very slow medium (e.g., a floppy).
+# 		Can also be done with ":set updatecount=0".  You can switch it
+# 		on again by setting the 'updatecount' option to some value,
+# 		e.g., ":set uc=100".
+# 		'updatecount' is set to 0 AFTER executing commands from a
+# 		vimrc file, but before the GUI initializations.  Thus it
+# 		overrides a setting for 'updatecount' in a vimrc file, but not
+# 		in a gvimrc file.  See |startup|.
+# 		When you want to reduce accesses to the disk (e.g., for a
+# 		laptop), don't use "-n", but set 'updatetime' and
+# 		'updatecount' to very big numbers, and type ":preserve" when
+# 		you want to save your work.  This way you keep the possibility
+# 		for crash recovery.
+#
+# 							*-o*
+# -o[N]		Open N windows, split horizontally.  If [N] is not given,
+# 		one window is opened for every file given as argument.  If
+# 		there is not enough room, only the first few files get a
+# 		window.  If there are more windows than arguments, the last
+# 		few windows will be editing an empty file.
+#
+# 							*-O*
+# -O[N]		Open N windows, split vertically.  Otherwise it's like -o.
+# 		If both the -o and the -O option are given, the last one on
+# 		the command line determines how the windows will be split.
+#
+# 							*-p*
+# -p[N]		Open N tab pages.  If [N] is not given, one tab page is opened
+# 		for every file given as argument.  The maximum is set with
+# 		'tabpagemax' pages (default 50).  If there are more tab pages
+# 		than arguments, the last few tab pages will be editing an
+# 		empty file.  Also see |tabpage|.
+# 							*-d*
+# -d		Start in |diff-mode|.
+#
+# 							*-u* *E282*
+# -u {vimrc}	The file {vimrc} is read for initializations.  Most other
+# 		initializations are skipped; see |initialization|.  This can
+# 		be used to start Vim in a special mode, with special
+# 		mappings and settings.  A shell alias can be used to make
+# 		this easy to use.  For example: >
+# 			alias vimc vim -u ~/.config/nvim/c_init.vim !*
+# <		Also consider using autocommands; see |autocommand|.
+# 		When {vimrc} is equal to "NONE" (all uppercase), all
+# 		initializations from files and environment variables are
+# 		skipped, including reading the |ginit.vim| file when the GUI
+# 		starts.  Plugins and syntax highlighting are also skipped.
+# 		When {vimrc} is equal to "NORC" (all uppercase), this has the
+# 		same effect as "NONE", but plugins and syntax highlighting are
+# 		not skipped.
+#
+# 							*-i*
+# -i {shada}	The file {shada} is used instead of the default ShaDa
+# 		file.  If the name "NONE" is used (all uppercase), no ShaDa
+# 		file is read or written, even if 'shada' is set or when
+# 		":rsh" or ":wsh" are used.  See also |shada-file|.
+#
+# 							*-s*
+# -s {scriptin}	The script file "scriptin" is read.  The characters in the
+# 		file are interpreted as if you had typed them.  The same can
+# 		be done with the command ":source! {scriptin}".  If the end
+# 		of the file is reached before the editor exits, further
+# 		characters are read from the keyboard.  Only works when not
+# 		started in Ex mode, see |-s-ex|.  See also |complex-repeat|.
+#
+# 							*-w_nr*
+# -w {number}
+# -w{number}	Set the 'window' option to {number}.
+#
+# 							*-w*
+# -w {scriptout}	All the characters that you type are recorded in the file
+# 		"scriptout", until you exit Vim.  This is useful if you want
+# 		to create a script file to be used with "vim -s" or
+# 		":source!".  When the "scriptout" file already exists, new
+# 		characters are appended.  See also |complex-repeat|.
+# 		{scriptout} cannot start with a digit.
+#
+# 							*-W*
+# -W {scriptout}	Like -w, but do not append, overwrite an existing file.
+#
+# 							*--api-info*
+# --api-info 	Print msgpack-encoded |api-metadata| and exit.
+#
+# 							*--headless*
+# --headless 	Do not start the built-in UI.
+#                 See |channel-stdio| for how to use stdio for other purposes
+#                 instead.
+# 		See also |silent-mode|, which does start a (limited) UI.
+#
+# -----------------------------------------------------------------------------
 
-  local curcontext="$curcontext" state line expl
-  typeset -A opt_args
+function _nvim() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  (( $+functions[_nvim_files] )) ||
+    function _nvim_files() {
+      case $PREFIX in
+        (+*)
+          _files -P './' $* && return 0
+          ;;
+        ((scp|http(|s)|(|s)ftp):*)
+          _urls
+          ;;
+        (*)
+          _files $*
+          ;;
+      esac
+      case $PREFIX in
+        (+)
+          _message -e 'Start at end of file'
+          ;;
+        (+<1->)
+          _message -e 'Start at line <linenum>'
+          ;;
+        (+/\<a-\>)
+          _message -e 'Start at first occurrence of <pattern>'
+          ;;
+      esac
+    }
 
   [[ $service != *diff ]] && arguments+='(-v -e -E -s -y)-d[Diff mode]'
   [[ $service != *view ]] && arguments+='-R[Read-only mode]'
@@ -63,6 +394,7 @@ _nvim() {
     '-W[Write all typed characters to <scriptout>]:scriptout file:_files' \
     '--startuptime[Write startup timing messages to <file>]:log file:_files' \
     '-i[Use <shada> instead of the default]:shada file:_files' \
+    '-N[set nocompatible (no-op on Neovim)]' \
     '(- *)--api-info[Dump API metadata serialized to msgpack and exit]' \
     '(- *)--embed[Use stdin/stdout as a msgpack-rpc channel]' \
     "(- *)--headless[Don't start a user interface]" \
@@ -72,9 +404,12 @@ _nvim() {
     '+[Start at end of file]' \
     '(*)+-[Start at line <linenum>]::line' \
     '(+/)+/-[Start at first occurrence of <pattern>]::pattern' \
-    '(-t -q)*:files:_files'
+    '(-t -q)*:files:_nvim_files' \
+    && ret=0
+
+  return ret
 }
 
-_nvim
+_nvim "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
