@@ -1,0 +1,145 @@
+#compdef grpc_cli
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/grpc/grpc
+#
+# grpc_cli: Warning: SetUsageMessage() never called
+#
+#   Flags from /path/to/gflags-2.2.1/src/gflags.cc:
+#     -flagfile (load flags from file) type: string default: ""
+#     -fromenv (set flags from the environment [use 'export FLAGS_flag1=value'])
+#       type: string default: ""
+#     -tryfromenv (set flags from the environment if present) type: string
+#       default: ""
+#     -undefok (comma-separated list of flag names that it is okay to specify on
+#       the command line even if the program does not define a flag with that
+#       name.  IMPORTANT: flags in this list that have arguments MUST use the
+#       flag=value format) type: string default: ""
+#
+#   Flags from /path/to/gflags-2.2.1/src/gflags_completions.cc:
+#     -tab_completion_columns (Number of columns to use in output for tab
+#       completion) type: int32 default: 80
+#     -tab_completion_word (If non-empty, HandleCommandLineCompletions() will
+#       hijack the process and attempt to do bash-style command line flag
+#       completion on this value.) type: string default: ""
+#
+#   Flags from /path/to/gflags-2.2.1/src/gflags_reporting.cc:
+#     -help (show help on all flags [tip: all flags can have two dashes])
+#       type: bool default: false currently: true
+#     -helpfull (show help on all flags -- same as -help) type: bool
+#       default: false
+#     -helpmatch (show help on modules whose name contains the specified substr)
+#       type: string default: ""
+#     -helpon (show help on the modules named by this flag value) type: string
+#       default: ""
+#     -helppackage (show help on all modules in the main package) type: bool
+#       default: false
+#     -helpshort (show help on only the main module for this program) type: bool
+#       default: false
+#     -helpxml (produce an xml version of help) type: bool default: false
+#     -version (show version and build info and exit) type: bool default: false
+#
+#
+#
+#   Flags from test/cpp/util/cli_credentials.cc:
+#     -access_token (The access token that will be sent to the server to
+#       authenticate RPCs.) type: string default: ""
+#     -enable_ssl (Whether to use ssl/tls.) type: bool default: false
+#     -use_auth (Whether to create default google credentials.) type: bool
+#       default: false
+#
+#   Flags from test/cpp/util/grpc_cli.cc:
+#     -outfile (Output file (default is stdout)) type: string default: ""
+#
+#   Flags from test/cpp/util/grpc_tool.cc:
+#     -batch (Input contains multiple requests. Please do not use this to send
+#       more than a few RPCs. gRPC CLI has very different performance
+#       characteristics compared with normal RPC calls which make it unsuitable
+#       for loadtesting or significant production traffic.) type: bool
+#       default: false
+#     -binary_input (Input in binary format) type: bool default: false
+#     -binary_output (Output in binary format) type: bool default: false
+#     -infile (Input file (default is stdin)) type: string default: ""
+#     -l (Use a long listing format) type: bool default: false
+#     -metadata (Metadata to send to server, in the form of key1:val1:key2:val2)
+#       type: string default: ""
+#     -proto_path (Path to look for the proto file.) type: string default: "."
+#     -protofiles (Name of the proto file.) type: string default: ""
+#     -remotedb (Use server types to parse and format messages) type: bool
+#       default: true
+#
+# -----------------------------------------------------------------------------
+
+function _grpc_cli() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-flagfile[load flags from file]:string' \
+    "-fromenv[set flags from the environment (use 'export FLAGS_flag1=value')]:string" \
+    '-tryfromenv[set flags from the environment if present]:string' \
+    '-undefok[comma-separated list of flag names that it is okay to specify on the command line even if the program does not define a flag with that name]:flag=value' \
+    '-tab_completion_columns[Number of columns to use in output for tab completion]:int32' \
+    '-tab_completion_word[If non-empty, HandleCommandLineCompletions() will hijack the process and attempt to do bash-style command line flag completion on this value.]:string' \
+    '-help[show help on all flags (tip: all flags can have two dashes]:bool' \
+    '-helpfull[show help on all flags -- same as -help]:bool' \
+    '-helpmatch[show help on modules whose name contains the specified substr]:string' \
+    '-helpon[show help on the modules named by this flag value]:string' \
+    '-helppackage[show help on all modules in the main package]:bool' \
+    '-helpshort[show help on only the main module for this program]:bool' \
+    '-helpxml[produce an xml version of help]:bool' \
+    '-version[show version and build info and exit]:bool' \
+    '-access_token[The access token that will be sent to the server to authenticate RPCs.]:string' \
+    '-enable_ssl[Whether to use ssl/tls.]:bool' \
+    '-use_auth[Whether to create default google credentials.]:bool' \
+    '-outfile[Output file]:output file:_files' \
+    '-batch[Input contains multiple requests. Please do not use this to send more than a few RPCs.]:bool' \
+    '-binary_input[Input in binary format]:bool' \
+    '-binary_output[Output in binary format]:bool' \
+    '-infile[Input file]:input:_files' \
+    '-l[Use a long listing format]:bool' \
+    '-metadata[Metadata to send to server, in the form of key1:val1:key2:val2]:string' \
+    '-proto_path[Path to look for the proto file.]:proto file:_files' \
+    '-protofiles[Name of the proto file.]:proto name' \
+    '-remotedb[Use server types to parse and format messages]:bool' \
+    '*:: :->args' \
+    && ret=0
+
+  return ret
+}
+
+_grpc_cli "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
