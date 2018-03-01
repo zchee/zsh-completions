@@ -1,0 +1,344 @@
+#compdef circleci
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# circleci.com
+#
+# The CLI tool to be used in CircleCI.
+#
+# Usage:
+#   circleci [flags]
+#   circleci [command]
+#
+# Available Commands:
+#   build       run a full build locally
+#   config      validate and update configuration files
+#   help        Help about any command
+#   step        execute steps
+#   tests       collect and split files with tests
+#   version     output version info
+#
+# Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#   -h, --help            help for circleci
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# Use "circleci [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# run a full build locally
+# 
+# Usage:
+#   circleci build [flags]
+# 
+# Flags:
+#       --branch string         Git branch
+#       --checkout-key string   Git Checkout key (default "~/.ssh/id_rsa")
+#   -e, --env -e VAR=VAL        Set environment variables, e.g. -e VAR=VAL
+#   -h, --help                  help for build
+#       --index int             node index of parallelism
+#       --job string            job to be executed (default "build")
+#       --parallelism int       parallelism level (default 1)
+#       --repo-url string       Git Url
+#       --revision string       Git Revision
+#       --skip-checkout         use local path as-is (default true)
+#   -v, --volume stringSlice    Volume bind-mounting
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# validate and update configuration files
+# 
+# Usage:
+#   circleci config [command]
+# 
+# Available Commands:
+#   validate    validate config syntax.  Does not currently check workflows configuration.
+# 
+# Flags:
+#   -h, --help   help for config
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+# 
+# Use "circleci config [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+# Simply type circleci help [path to command] for full details.
+# 
+# Usage:
+#   circleci help [command] [flags]
+# 
+# Flags:
+#   -h, --help   help for help
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# execute steps
+# 
+# Usage:
+#   circleci step [command]
+# 
+# Available Commands:
+#   halt        halt current task and treat as a successful
+# 
+# Flags:
+#   -h, --help   help for step
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+# 
+# Use "circleci step [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# halt current task and treat as a successful
+# 
+# Usage:
+#   circleci step halt [flags]
+# 
+# Flags:
+#   -h, --help   help for halt
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# collect and split files with tests
+# 
+# Usage:
+#   circleci tests [command]
+# 
+# Available Commands:
+#   glob        glob files using pattern
+#   split       return a split batch of provided files
+# 
+# Flags:
+#   -h, --help   help for tests
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+# 
+# Use "circleci tests [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# glob files using pattern
+# 
+# Usage:
+#   circleci tests glob [flags]
+# 
+# Flags:
+#   -h, --help   help for glob
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# return a split batch of provided files
+# 
+# Usage:
+#   circleci tests split [flags]
+# 
+# Flags:
+#   -h, --help                  help for split
+#       --index uint            index of node
+#       --show-counts           print test file or test class counts to stderr (default false)
+#       --split-by string       how to weight the split, allowed values are "name", "filesize", and "timings" (default "name")
+#       --timings-file string   JSON file containing historical timing data
+#       --timings-type string   split using historical timings data for "classname"s or "filename"s  (default "filename")
+#       --total uint            number of nodes (default 1)
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# circleci version: 0.0.4685-97f682f
+# output version info
+# 
+# Usage:
+#   circleci version [flags]
+# 
+# Flags:
+#   -h, --help   help for version
+# 
+# Global Flags:
+#   -c, --config string   config file (default is .circleci/config.yml)
+#       --taskId string   TaskID
+#       --verbose         emit verbose logging output
+#
+# -----------------------------------------------------------------------------
+
+function _circleci() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'build:run a full build locally'
+  'config:validate and update configuration files'
+  'help:Help about any command'
+  'step:execute steps'
+  'tests:collect and split files with tests'
+  'version:output version info'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+  {-c,--config}'[config file (default is .circleci/config.yml)]:string'
+  '--taskId[TaskID]:string'
+  '--verbose[emit verbose logging output]'
+  )
+
+  _arguments -C \
+    ${_global_flags[@]} \
+    {-h,--help}'[help for circleci]' \
+    "1: :{_describe 'circleci command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    build)
+      _arguments \
+        '--branch[Git branch]:branch name' \
+        '--checkout-key[Git Checkout key (default "~/.ssh/id_rsa")]:checkout key]:file:_files' \
+        {-e,--env}'[Set environment variables, e.g. -e VAR=VAL]:env key=value' \
+        {-h,--help}'[help for build]' \
+        '--index[node index of parallelism]' \
+        '--job[job to be executed (default "build")]' \
+        '--parallelism[parallelism level (default 1)]:parallelism' \
+        '--repo-url[Git Url]:repository url' \
+        '--revision[Git Revision]:git revision' \
+        '--skip-checkout  [use local path as-is (default true)]' \
+        {-v,--volume}'[Volume bind-mounting]:stringSlice' \
+        && ret=0
+      ;;
+
+    config)
+      _arguments \
+        {-h,--help}'[help for config]' \
+        && ret=0
+      ;;
+
+    step)
+      local -a step_commands
+      step_commands=(
+      'halt:halt current task and treat as a successful'
+      )
+      _arguments \
+        {-h,--help}'[help for step]' \
+        "1: :{_describe 'step subcommand' step_commands}" \
+        && ret=0
+      ;;
+
+    tests)
+      local -a tests_commands
+      tests_commands=(
+      'glob:glob files using pattern]'
+      'split:return a split batch of provided files'
+      )
+      _arguments \
+        {-h,--help}'[help for config]' \
+        "1: :{_describe 'tests subcommand' tests_commands}" \
+        '*:: :->args' \
+        && ret=0
+
+      case $words[1] in
+        glob)
+          _arguments \
+            {-h,--help}'[help for glob]' \
+            && ret=0
+          ;;
+        split)
+          _arguments \
+            {-h,--help}'[help for split]' \
+            '--index[index of node]:index size' \
+            '--show-counts[print test file or test class counts to stderr (default false)]' \
+            '--split-by[how to weight the split, allowed values (default "name")]split type:(name filesize timings)' \
+            '--timings-file[JSON file containing historical timing data]:json file:_files' \
+            '--timings-type[split using historical timings data (default "filename")]:timings type:(classname filename)' \
+            '--total[number of nodes (default 1)]:node size' \
+            && ret=0
+          ;;
+      esac
+      ;;
+
+    version)
+      _arguments \
+        {-h,--help}'[help for version]' \
+        && ret=0
+      ;;
+
+    help)
+      _arguments \
+        {-h,--help}'[help for help]' \
+        "1: :{_describe 'command' commands}" \
+        && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_circleci "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
