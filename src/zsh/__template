@@ -62,6 +62,7 @@ function _$BIN() {
       _arguments '*:before the (( CURRENT == 2 )) comment:_files'
       ;;
 
+    (args)
       case $words[1] in
         subcommand1)
           _arguments \

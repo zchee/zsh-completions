@@ -242,15 +242,17 @@ function _circleci() {
   'version:output version info'
   )
 
-  local -a _global_flags
-  _global_flags=(
-  {-c,--config}'[config file (default is .circleci/config.yml)]:string'
-  '--taskId[TaskID]:string'
-  '--verbose[emit verbose logging output]'
-  )
+  typeset -f _global_flags
+  function _global_flags() {
+    _arguments \
+      {-c,--config}'[config file (default is .circleci/config.yml)]:string' \
+      '--taskId[TaskID]:string' \
+      '--verbose[emit verbose logging output]' \
+      && ret=0
+  }
 
   _arguments -C \
-    ${_global_flags[@]} \
+    $_global_flags \
     {-h,--help}'[help for circleci]' \
     "1: :{_describe 'circleci command' commands}" \
     '*:: :->args' \
