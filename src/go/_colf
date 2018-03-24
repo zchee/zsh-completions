@@ -1,0 +1,120 @@
+#compdef colf
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/pascaldekloe/colfer
+#
+# NAME
+#         colf — compile Colfer schemas
+#
+# SYNOPSIS
+#         colf [ options ] language [ file ... ]
+#
+# DESCRIPTION
+#         Generates source code for a language. The options are: C, Go,
+#         Java and JavaScript.
+#         The file operands specify the input. Directories are scanned for
+#         files with the colf extension. If file is absent, colf includes
+#         the working directory.
+#         A package can have multiple schema files.
+#
+# OPTIONS
+#   -b directory
+#         Use a specific destination base directory. (default ".")
+#   -f    Normalizes schemas on the fly.
+#   -l expression
+#         Sets the default upper limit for the number of elements in a
+#         list. The expression is applied to the target language under the
+#         name ColferListMax. (default "64 * 1024")
+#   -p prefix
+#         Adds a package prefix. Use slash as a separator when nesting.
+#   -s expression
+#         Sets the default upper limit for serial byte sizes. The
+#         expression is applied to the target language under the name
+#         ColferSizeMax. (default "16 * 1024 * 1024")
+#   -v    Enables verbose reporting to the standard error.
+#
+# EXIT STATUS
+#         The command exits 0 on succes, 1 on compilation failure and 2
+#         when invoked without arguments.
+#
+# EXAMPLES
+#         Compile ./api/*.colf into ./src/ as Java:
+#
+#                 colf -p com/example -b src java api
+#
+#         Compile ./io.colf with compact limits as C:
+#
+#                 colf -s 2048 -l 96 c io.colf
+#
+# BUGS
+#         Report bugs at https://github.com/pascaldekloe/colfer/issues
+#
+# SEE ALSO
+#         protoc(1)
+#
+# -----------------------------------------------------------------------------
+
+function _colf() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a languages
+
+  languages=(
+  'c:C language'
+  'go:Go language'
+  'java:Java language'
+  'javascript:JavaScript language'
+  'js:JavaScript language'
+  'ecmascript:JavaScript language'
+  )
+
+  _arguments -C \
+    '-b[Use a specific destination base directory]:directory (default "."):_directories' \
+    '-f[Normalizes schemas on the fly]' \
+    '-l[Sets the default upper limit for the number of elements in a list]:expression (default "64 * 1024")' \
+    '-p[Adds a package prefix. Use slash as a separator when nesting.]:prefix' \
+    '-s[Sets the default upper limit for serial byte sizes]:expression (default "16 * 1024 * 1024")' \
+    '-v[Enables verbose reporting to the standard error]' \
+    "1: :{_describe 'language' languages}" \
+    "2:colf file:_files" \
+    && ret=0
+
+  return ret
+}
+
+_colf "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

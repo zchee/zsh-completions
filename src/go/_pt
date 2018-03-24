@@ -1,0 +1,150 @@
+#compdef pt
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/monochromegane/the_platinum_searcher/cmd/pt
+#
+# Usage:
+#   pt [OPTIONS] PATTERN [PATH]
+#
+# Application Options:
+#       --version             Show version
+#
+# Output Options:
+#       --color               Print color codes in results (default: true)
+#       --nocolor             Don't print color codes in results (default: false)
+#       --color-line-number=  Color codes for line numbers (default: 1;33)
+#       --color-path=         Color codes for path names (default: 1;32)
+#       --color-match=        Color codes for result matches (default: 30;43)
+#       --group               Print file name at header (default: true)
+#       --nogroup             Don't print file name at header (default: false)
+#   -0, --null                Separate filenames with null (for 'xargs -0')
+#                             (default: false)
+#       --column              Print column (default: false)
+#       --numbers             Print Line number. (default: true)
+#   -N, --nonumbers           Omit Line number. (default: false)
+#   -A, --after=              Print lines after match
+#   -B, --before=             Print lines before match
+#   -C, --context=            Print lines before and after match
+#   -l, --files-with-matches  Only print filenames that contain matches
+#   -c, --count               Only print the number of matching lines for each
+#                             input file.
+#   -o, --output-encode=      Specify output encoding (none, jis, sjis, euc)
+#
+# Search Options:
+#   -e                        Parse PATTERN as a regular expression (default:
+#                             false). Accepted syntax is the same as
+#                             https://github.com/google/re2/wiki/Syntax except
+#                             from \C
+#   -i, --ignore-case         Match case insensitively
+#   -S, --smart-case          Match case insensitively unless PATTERN contains
+#                             uppercase characters
+#   -w, --word-regexp         Only match whole words
+#       --ignore=             Ignore files/directories matching pattern (default:
+#                             [.git, .hg, .svn, *tags, *.svg, doxygen, .DS_Store,
+#                             *.zwc, __pycache__, venv, images, *.min.*, img,
+#                             fonts, *.recording])
+#       --vcs-ignore=         VCS ignore files (default: .gitignore)
+#       --global-gitignore    Use git's global gitignore file for ignore patterns
+#       --home-ptignore       Use $Home/.ptignore file for ignore patterns
+#   -U, --skip-vcs-ignores    Don't use VCS ignore file for ignore patterns
+#   -g=                       Print filenames matching PATTERN
+#   -G, --file-search-regexp= PATTERN Limit search to filenames matching PATTERN
+#       --depth=              Search up to NUM directories deep (default: 25)
+#   -f, --follow              Follow symlinks
+#       --hidden              Search hidden files and directories
+#
+# Help Options:
+#   -h, --help                Show this help message
+#
+# -----------------------------------------------------------------------------
+
+function _pt() {
+  local context curcontext=$curcontext state line
+  declare -A opt_args
+  local ret=1
+
+  _arguments -C \
+    {-0,--null}"[Separate filenames with null (for 'xargs -0')]" \
+    {-A,--after}='[Print lines after match]:lines' \
+    {-B,--before}='[Print lines before match]:lines' \
+    {-C,--context}='[Print lines before and after match]' \
+    {-G,--file-search-regexp}='[Limit search to filenames matching PATTERN]:regexp pattern' \
+    {-N,--nonumbers}'[Omit Line number]' \
+    {-S,--smart-case}'[Match case insensitively unless PATTERN contains uppercase characters]' \
+    {-U,--skip-vcs-ignores}"[Don't use VCS ignore file for ignore patterns]" \
+    '--color[Print color codes in results]' \
+    '--color-line-number=[Color codes for line numbers]:color codes (default: 1;33)' \
+    '--color-path=[Color codes for path names]:color codes (default: 1;32)' \
+    '--color-match=[Color codes for result matches]:color codes (default: 30;43)' \
+    '--column[Print column]' \
+    {-c,--count}'[Only print the number of matching lines for each input file]' \
+    '--depth=[Search up to NUM directories deep]:depth (default: 25)' \
+    '-e[Parse PATTERN as a regular expression]' \
+    {-f,--follow}'[Follow symlinks]' \
+    '-g=[Print filenames matching PATTERN]:filename pattern' \
+    '--group[Print file name at header]' \
+    "--global-gitignore[Use git's global gitignore file for ignore patterns]" \
+    '--home-ptignore[Use $Home/.ptignore file for ignore patterns]' \
+    '--hidden[Search hidden files and directories]' \
+    {-h,--help}'[Show this help message]' \
+    {-i,--ignore-case}'[Match case insensitively]' \
+    '--ignore=[Ignore files/directories matching pattern]' \
+    {-l,--files-with-matches}'[Only print filenames that contain matches]' \
+    "--nocolor[Don't print color codes in results]" \
+    "--nogroup[Don't print file name at header]" \
+    '--numbers[Print Line number]' \
+    {-o,--output-encode}='[Specify output encoding]:Output encoding:(none jis sjis euc)]' \
+    '--version[Show version]' \
+    '--vcs-ignore=[VCS ignore files]:vsc ignore file (default: .gitignore)' \
+    {-w,--word-regexp}'[Only match whole words]' \
+    '*: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      if (( CURRENT == 2 )); then
+        _arguments '*:search pattern:'
+        return
+      fi
+      _arguments '*:file:_files'
+      ;;
+  esac
+
+  return ret
+}
+
+_pt
+
+# vim:ft=zsh:sts=2:sw=2

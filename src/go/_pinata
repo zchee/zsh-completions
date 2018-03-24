@@ -1,0 +1,161 @@
+#compdef pinata
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/docker/pinata (private)
+#
+# -----------------------------------------------------------------------------
+
+function _pinata() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  "diagnose:diagnose errors and optionally upload to bugsnag"
+  "doctor:check your system for common problems"
+  "get:query a database key and print its value"
+  "list:list database keys and values"
+  "reset:reset all configuration to defaults"
+  "restart:do a clean restart of the active virtual machine"
+  "set:set database value and reload services with new configuration"
+  )
+
+  _arguments -C \
+    '--db-driver=[Name of the configuration database driver to modify (default: com.docker.driver.amd64-linux)]:driver' \
+    '--db-path=[Path to the configuration database directory (default: /Users/zchee/Library/Containers/com.docker.docker/Data/data)]:database directory' \
+    '--debug[Be more verbose with output]' \
+    '--help[Show this help in format]:format:(pager plain groff)' \
+    '--version[Show version information]' \
+    "1: :{_describe 'pinata command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    local -a key_cmd hypervisor hypervisor_arg network
+    key_cmd=(
+    'daemon:JSON configuration of the local Docker daemon'
+    'filesystem:Controls the mode by which files from the MacOS X host and the container filesystem'
+    'hostname:Hostname of the virtual machine endpoint'
+    'hypervisor:hypervisor parameters settings'
+    'native/port-forwarding:Expose container ports on the Mac, rather than the VM'
+    'network:Controls how local containers can access the external network via the MacOS X host'
+    )
+    _filesystem=(
+    'osxfs:a FUSE-based filesystem that bidirectionally forwards OSX filesystem events into the container'
+    )
+    _hypervisor=(
+    'native:native'
+    )
+    _hypervisor_arg=(
+    'memory:size of memory'
+    'ncpu:size of cpu'
+    )
+    _network=(
+    'nat:a mode that uses the MacOS X vmnet.framework to route container'
+    'hostnet:a mode that helps if you are using a VPN that restricts connectivity'
+    )
+
+    args)
+      case $words[1] in
+        diagnose)
+          _arguments \
+            (-n --no)"[Always answer 'No' to interactive questions.]" \
+            (-u --upload)"[Upload a report to bugsnag.]"
+            ;;
+
+        doctor)
+            ;;
+
+        get)
+          _arguments \
+            "1: :{_describe 'set command' key_cmd}" \
+            ;;
+
+        list)
+            ;;
+
+        reset)
+            ;;
+
+        restart)
+            ;;
+
+        set)
+          _arguments \
+            "1: :{_describe 'set command' key_cmd}" \
+            '*:: :->args'
+
+          case $state in
+            args)
+              case $words[1] in
+                daemon)
+                  _files
+                  ;;
+                filesystem)
+                  _arguments \
+                    "1: :{_describe 'hypervisor' filesystem}" \
+                  ;;
+                hostname)
+                  _files
+                  ;;
+                hypervisor)
+                  _arguments \
+                    "1: :{_describe 'hypervisor' hypervisor}" \
+                    "*:: :{_describe 'settings' hypervisor_arg}"
+                  ;;
+                native/port-forwarding)
+                  _values \
+                    'bool' \
+                    'true[Container ports will be exposed on the Mac]' \
+                    'false[Container ports will be exposed on the VM]'
+                  ;;
+                network)
+                  _arguments \
+                    "1: :{_describe 'network' network}"
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_pinata "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

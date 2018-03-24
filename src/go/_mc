@@ -1,0 +1,118 @@
+#compdef mc
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/minio/mc
+#
+# NAME:
+#   mc - Minio Client for cloud storage and filesystems.
+#
+# USAGE:
+#   mc [FLAGS] COMMAND [COMMAND FLAGS | -h] [ARGUMENTS...]
+#
+# -----------------------------------------------------------------------------
+
+function _mc() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'ls:List files and folders'
+  'mb:Make a bucket or a folder'
+  'cat:Display file and object contents'
+  'pipe:Redirect STDIN to an object or file or STDOUT'
+  'share:Generate URL for sharing'
+  'cp:Copy files and objects'
+  'mirror:Mirror buckets and folders'
+  'diff:Show differences between two folders or buckets'
+  'rm:Remove files and objects'
+  'events:Manage object notifications'
+  'watch:Watch for files and objects events'
+  'policy:Manage anonymous access to objects'
+  'session:Manage saved sessions for cp and mirror commands'
+  'config:Manage mc configuration file'
+  'update:Check for new mc update'
+  'version:Print version info'
+  {help,h}:'Shows a list of commands or help for one command'
+  )
+
+  _arguments -C \
+    {--config-folder,-C}'[Path to configuration folder. (default: "$HOME/.mc")]:directory:_directories' \
+    {--quiet,-q}'[Suppress chatty console output]' \
+    '--no-color[Disable color theme]' \
+    '--json[Enable JSON formatted output]' \
+    '--debug[Enable debug output]' \
+    '--insecure[Disable SSL certificate verification]' \
+    {--help,-h}'[show help]' \
+    {--version,-v}'[print the version]' \
+    "1: :{_describe 'mc command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        cp)
+          _files
+          ;;
+        rm)
+          _arguments -C \
+            (--recursive -r){--recursive,-r}'[Remove recursively]' \
+            '--force[Force a dangerous remove operation]' \
+            (--incomplete -I){--incomplete,-I}'[Remove incomplete uploads]' \
+            '--fake[Perform a fake remove operation]' \
+            '--stdin[Read object names from STDIN]' \
+            '--older-than[Remove objects older than N days. (default: 0)]:value' \
+            (--config-folder -C){--config-folder,-C}'[Path to configuration folder. (default: "/Users/zchee/.mc")]:value' \
+            (--quiet -q){--quiet,-q}'[Suppress chatty console output]' \
+            '--no-color[Disable color theme]' \
+            '--json[Enable JSON formatted output]' \
+            '--debug[Enable debug output]' \
+            '--insecure[Disable SSL certificate verification]'\
+            && ret=0
+          ;;
+        help)
+          _arguments "1: :{_describe 'command' commands}"
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_mc "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

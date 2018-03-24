@@ -1,0 +1,105 @@
+#compdef unused
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# honnef.co/go/tools/cmd/unused
+#
+# Usage of unused:
+#  unused [flags] # runs on package in current directory
+#  unused [flags] packages
+#  unused [flags] directory
+#  unused [flags] files... # must be a single package
+# Flags:
+#   -consts
+#      Report unused constants (default true)
+#   -debug file
+#      Write a debug graph to file. Existing files will be overwritten.
+#   -exported
+#      Treat arguments as a program and report unused exported identifiers
+#   -f format
+#      Output format (valid choices are 'text' and 'json') (default "text")
+#   -fields
+#      Report unused fields (default true)
+#   -funcs
+#      Report unused functions and methods (default true)
+#   -go version
+#      Target Go version in the format '1.x' (default 1.10)
+#   -ignore string
+#      Space separated list of checks to ignore, in the following format: 'import/path/file.go:Check1,Check2,...' Both the import path and file name sections support globbing, e.g. 'os/exec/*_test.go'
+#   -min_confidence float
+#      Deprecated; use -ignore instead
+#   -reflect
+#      Consider identifiers as used when it's likely they'll be accessed via reflection (default true)
+#   -show-ignored
+#      Don't filter ignored problems
+#   -tags build tags
+#      List of build tags
+#   -tests
+#      Include tests (default true)
+#   -types
+#      Report unused types (default true)
+#   -vars
+#      Report unused variables (default true)
+#   -version
+#      Print version and exit
+#
+# -----------------------------------------------------------------------------
+
+function _unused() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-consts[Report unused constants (default true)]' \
+    '-debug[Write a debug graph to file. Existing files will be overwritten.]:file:_files' \
+    '-exported[Treat arguments as a program and report unused exported identifiers]' \
+    '-fields[Report unused fields (default true)]' \
+    '-funcs[Report unused functions and methods (default true)]' \
+    '-go[Target Go version in the format '1.x' (default 1.9)]:version' \
+    '-ignore[Space separated list of checks to ignore]' \
+    '-min_confidence[Deprecated; use -ignore instead]:min_confidence' \
+    "-reflect[Consider identifiers as used when it's likely they'll be accessed via reflection (default true)]" \
+    '-tags[List of build tags]:build tags' \
+    '-tests[Include tests (default true)]' \
+    '-types[Report unused types (default true)]' \
+    '-vars[Report unused variables (default true)]' \
+    '*:: :->args' \
+    && ret=0
+
+  return ret
+}
+
+_unused "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

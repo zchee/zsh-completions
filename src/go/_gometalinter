@@ -1,0 +1,74 @@
+#compdef gometalinter
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/alecthomas/gometalinter
+#
+# -----------------------------------------------------------------------------
+
+local arguments
+arguments=(
+    '--help[Show context-sensitive help]'
+    '--help-man[Show context-sensitive help with man page syntax]'
+    '--fast[Only run fast linters]'
+    {-i,--install}'[Attempt to install all known linters]'
+    {-u,--update}'[Pass -u to go tool when installing]'
+    {-f,--force}'[Pass -f to go tool when installing]'
+    {-d,--debug}'[Display messages for failed linters, etc]'
+    {-j,--concurrency}'[Number of concurrent linters to run \(default: 16\)]'
+    {-e,--exclude}'[Exclude messages matching these regular expressions]'
+    {-I,--include}'[Include messages matching these regular expressions]'
+    {-s,--skip}'[Skip directories with this name when expandin]'
+    '--vendor[Enable vendoring support \(skips vendor directories and sets GO15VENDOREXPERIMENT=1\)]'
+    '--cyclo-over[Report functions with cyclomatic complexity over \(default: 10\)]'
+    '--line-length[Report lines longer than N using lll \(default: 80\)]'
+    '--min-confidence[Minimum confidence interval to pass to golint \(default: 80\)]'
+    '--min-occurrences[Minimum occurrences to pass to goconst \(default: 3\)]'
+    '--dupl-threshold[Minimum token sequence as a clone for dupl \(default: 50\)]'
+    '--sort[Sort output by any of none, path, line, colum]:(none path line column severity message linter)'
+    {-t,--tests}'[Include test files for linters that support this option]'
+    '--deadline[Cancel linters if they have not completed within this duration]'
+    '--errors[Only show errors]'
+    '--json[Generate structured JSON rather than standard line-based output]'
+    {-D,--disable}'[List of linters to disable \(default: testify,test,gofmt,goimports,lll\)]'
+    {-E,--enable}'[Enable previously disabled linters]:linter:(gosimple errcheck varcheck ineffassign lll unconvert goconst deadcode gocyclo dupl interfacer staticcheck golint gotype goimports structcheck aligncheck)'
+    '--linter[Specify a linter]'
+    '--message-overrides[Override message from linter]'
+    '--severity[Map of linter severities]'
+    '--disable-all[Disable all linters]'
+    '*:filename:_files'
+)
+_arguments -s $arguments
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:et

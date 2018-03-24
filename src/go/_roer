@@ -1,0 +1,179 @@
+#compdef roer
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/spinnaker/roer/cmd/roer
+#
+# $ roer --help
+# NAME:
+#    roer - Spinnaker CLI
+#
+# USAGE:
+#    roer [global options] command [command options] [arguments...]
+#
+# VERSION:
+#    dev
+#
+# COMMANDS:
+#      pipeline           pipeline tasks
+#      app                application tasks
+#      pipeline-template  pipeline template tasks
+#      help, h            Shows a list of commands or help for one command
+#
+# GLOBAL OPTIONS:
+#    --verbose, -v                   show debug messages
+#    --certPath value, -c value      HTTPS x509 cert path
+#    --keyPath value, -k value       HTTPS x509 key path
+#    --apiSession value, --as value  your active api session
+#    --version                       print the version
+# -----------------------------------------------------------------------------
+# $ roer pipeline --help
+# NAME:
+#    roer pipeline - pipeline tasks
+#
+# USAGE:
+#    roer pipeline command [arguments...]
+#
+# COMMANDS:
+#      save      save a pipeline configuration
+#      savejson  save a json pipeline configuration
+#      list      list all the pipelines in an application
+#      get       get the config for an individual pipeline
+#      delete    delete a pipeline
+# -----------------------------------------------------------------------------
+# $ roer app --help
+# NAME:
+#    roer app - application tasks
+#
+# USAGE:
+#    roer app command [arguments...]
+#
+# COMMANDS:
+#      create  create or update an application
+#      get     get info about an application
+#      list    list applications
+# -----------------------------------------------------------------------------
+# $ roer pipeline-template --help
+# NAME:
+#    roer pipeline-template - pipeline template tasks
+#
+# USAGE:
+#    roer pipeline-template command [arguments...]
+#
+# COMMANDS:
+#      publish  publish a pipeline template, will create or update a template
+#      plan     validate a pipeline template and or plan a configuration
+#      convert  converts an existing, non-templated pipeline config into a scaffolded template
+#      delete   deletes a pipeline template
+# -----------------------------------------------------------------------------
+# $ roer help --help
+# NAME:
+#     - Shows a list of commands or help for one command
+#
+# USAGE:
+#     [command]
+#
+# -----------------------------------------------------------------------------
+
+function _roer() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'pipeline:pipeline tasks'
+  'app:application tasks'
+  'pipeline-template:pipeline template tasks'
+  {help,h}:'Shows a list of commands or help for one command'
+  )
+
+  _arguments -C \
+    {--verbose,-v}'[show debug messages]' \
+    {--certPath,-c}'[HTTPS x509 cert path]:value' \
+    {--keyPath,-k}'[HTTPS x509 key path]:value' \
+    {--apiSession,--as}'[your active api session]:value' \
+    '--version[print the version]' \
+    "1: :{_describe 'roer command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        pipeline)
+          local -a pipeline_commands
+          pipeline_commands=(
+          'save:save a pipeline configuration'
+          'savejson:save a json pipeline configuration'
+          'list:list all the pipelines in an application'
+          'get:get the config for an individual pipeline'
+          'delete:delete a pipeline'
+          )
+          _arguments \
+            "1: :{_describe 'pipeline subcommand' pipeline_commands}" \
+            '*:file:_files'
+          ;;
+        app)
+          local -a app_commands
+          app_commands=(
+          'create:create or update an application'
+          'get:get info about an application'
+          'list:list applications'
+          )
+          _arguments \
+            "1: :{_describe 'app subcommand' app_commands}" \
+            '*:file:_files'
+          ;;
+        pipeline)
+          local -a pipeline_template_commands
+          pipeline_template_commands=(
+          'publish:publish a pipeline template, will create or update a template'
+          'plan:validate a pipeline template and or plan a configuration'
+          'convert:converts an existing, non-templated pipeline config into a scaffolded template'
+          'delete:deletes a pipeline template'
+          )
+          _arguments \
+            "1: :{_describe 'pipeline-template subcommand' pipeline_template_commands}" \
+            '*:file:_files'
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_roer "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

@@ -1,0 +1,132 @@
+#compdef pprof
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/google/pprof
+#
+# -----------------------------------------------------------------------------
+
+_pprof() {
+    local output_formats options options_groups source_options misc
+
+    output_formats=(
+    '-callgrind:Outputs a graph in callgrind format'
+    '-disasm:Output assembly listings annotated with samples'
+    '-dot:Outputs a graph in DOT format'
+    '-eog:Visualize graph through eog'
+    '-evince:Visualize graph through evince'
+    '-gif:Outputs a graph image in GIF format'
+    '-gv:Visualize graph through gv'
+    '-kcachegrind:Visualize report in KCachegrind'
+    '-list:Output annotated source for functions matching regexp'
+    '-pdf:Outputs a graph in PDF format'
+    '-peek:Output callers/callees of functions matching regexp'
+    '-png:Outputs a graph image in PNG format'
+    '-proto:Outputs the profile in compressed protobuf formap'
+    '-ps:Outputs a graph in PS format'
+    '-raw:Outputs a text representation of the raw profill'
+    '-svg:Outputs a graph in SVG format'
+    '-tags:Outputs all tags in the profill'
+    '-text:Outputs top entries in text form'
+    '-top:Outputs top entries in text form'
+    '-topproto:Outputs top entries in compressed protobuf format'
+    '-traces:Outputs all profile samples in text form'
+    '-tree:Outputs a text rendering of call graph'
+    '-web:Visualize graph through web browser'
+    '-weblist:Display annotated source in a web browser'
+    )
+
+    options=(
+    '-call_tree:Create a context-sensitive call tree'
+    '-compact_labels:Show minimal headers'
+    '-divide_by:Ratio to divide all samples before visualization'
+    '-drop_negative:Ignore negative differences'
+    '-edgefraction:Hide edges below <f>*total'
+    '-focus:Restricts to samples going through a node matching regexp'
+    '-hide:Skips nodes matching regexp'
+    '-ignore:Skips paths going through any nodes matching regexp'
+    '-mean:Average sample value over first value (count)'
+    '-nodecount:Max number of nodes to show'
+    '-nodefraction:Hide nodes below <f>*total'
+    '-output:Output filename for file-based outputs'
+    '-positive_percentages:Ignore negative samples when computing percentages'
+    '-prune_from:Drops any functions below the matched frame'
+    '-relative_percentages:Show percentages relative to focused subgraph'
+    '-sample_index:Sample value to report (0-based index or name)'
+    '-show:Only show nodes matching regexp'
+    '-source_path:Search path for source files'
+    '-tagfocus:Restrict to samples with tags in range or matched by regexp'
+    '-tagignore:Discard samples with tags in range or matched by regexp'
+    '-trim:Honor nodefraction/edgefraction/nodecount defaults'
+    '-unit:Measurement units to display'
+    )
+
+    options_groups=(
+    '-cum:Sort entries based on cumulative weight'
+    '-flat:Sort entries based on own weight'
+    '-addresses:Aggregate at the function level'
+    '-addressnoinlines:at the function level, including functions addresses in the output'
+    '-files:Aggregate at the file level'
+    '-functionnameonly:at the function level'
+    '-functions:Aggregate at the function level'
+    '-lines:Aggregate at the source code line level'
+    '-noinlines:Aggregate at the function level'
+    )
+
+    source_options=(
+    '-seconds:Duration for time-based profile collection'
+    '-timeout:Timeout in seconds for profile collection'
+    '-buildid:Override build id for main binary'
+    '-base:Source of profile to use as baseline'
+    '-symbolize=:Controls source of symbol information]:(none local fastlocal remote force)'
+    )
+
+    misc=(
+    '-tools:Search path for object tools'
+    )
+
+    _arguments -s \
+        '1:target binary:_files' \
+        '*:profile data:_files'
+
+    _describe -t output_formats "Output formats" output_formats
+    _describe -t options "Options" options 
+    _describe -t options_groups "Options groups" options_groups
+    _describe -t source_options "Source options" source_options
+    _describe -t misc "Misc options" misc
+}
+
+_pprof
+
+# vim:filetype=zsh:softtabstop=4:shiftwidth=4:tabstop=4

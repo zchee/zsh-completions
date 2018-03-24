@@ -1,0 +1,116 @@
+#compdef poule
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/icecrime/poule
+#
+# NAME:
+#    poule - Mass interact with GitHub issues & pull requests
+#
+# USAGE:
+#    poule [global options] command [command options] [arguments...]
+#   
+# VERSION:
+#    0.4.0
+#   
+# COMMANDS:
+#      batch     Run groups of commands described in files
+#      serve     Operate as a daemon listening on GitHub webhooks
+#      validate  Validate a Poule repository configuration file
+#      help, h   Shows a list of commands or help for one command
+#
+#    Operations:
+#      ci-label-clean     Clean CI failure labels
+#      dco-check          Check DCO on pull requests
+#      label              Apply label(s) to items which title or body matches a pattern
+#      poule-updater      Update the poule configuration for the specified repository
+#      prune              Prune outdated issues
+#      random-assign      Assign items to a random username from the `users` list.
+#      rebuild            Rebuild configurations of a given state
+#      version-label      Apply version labels to issues
+#      version-milestone  Attach merged pull requests to the upcoming version's milestone
+#
+# GLOBAL OPTIONS:
+#    --debug, -D         enable debug logging
+#    --dry-run           simulate operations
+#    --repository value  GitHub repository
+#    --token value       GitHub API token [$POULE_GITHUB_TOKEN]
+#    --token-file value  GitHub API token file [$POULE_GITHUB_TOKEN_FILE]
+#    --help, -h          show help
+#    --version, -v       print the version
+#
+# -----------------------------------------------------------------------------
+
+function _poule() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+
+  commands=(
+  'batch:Run groups of commands described in files'
+  'serve:Operate as a daemon listening on GitHub webhooks'
+  {help,h}:'Shows a list of commands or help for one command'
+  )
+
+  _arguments -C \
+    {--debug,-D}'[enable debug logging]' \
+    '--dry-run[simulate operations]' \
+    '--repository[GitHub repository]' \
+    '--token[GitHub API token \[$POULE_GITHUB_TOKEN\]]' \
+    '--token-file[GitHub API token file \[$POULE_GITHUB_TOKEN_FILE\]]' \
+    {--help,-h}'[show help]' \
+    {--version,-v}'[print the version]' \
+    "1: :{_describe 'poule command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        serve)
+          _arguments \
+            {--config,-c}'[Poule configuration]:poule config file (default\: "poule.yaml")' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_poule "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

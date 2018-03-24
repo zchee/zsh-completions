@@ -1,0 +1,160 @@
+#compdef kati
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/google/kati
+#
+# Usage of kati:
+#   -alsologtostderr
+#         log to standard error as well as files
+#   -c    Syntax check only.
+#   -detect_android_echo
+#         detect echo as ninja description.
+#   -eager_cmd_eval
+#         Eval commands first.
+#   -f string
+#         Use it as a makefile
+#   -gen_regen_rule
+#         Generate regenerate build.ninja rule.
+#   -goma
+#         ensure goma start
+#   -goma_dir string
+#         If specified, use goma to build C/C++ files.
+#   -ignore_optional_include string
+#         If specified, skip reading -include directives start with the specified path.
+#   -j int
+#         Allow N jobs at once. (default 1)
+#   -kati_cpuprofile file
+#         write cpu profile to file
+#   -kati_eval_stats
+#         Show eval statistics
+#   -kati_heapprofile file
+#         write heap profile to file
+#   -kati_memstats string
+#         Show memstats with given templates
+#   -kati_periodic_stats
+#         Show a bunch of periodic statistics
+#   -kati_stats
+#         Show a bunch of statistics
+#   -kati_trace_event file
+#         write trace event to file
+#   -load string
+#
+#   -load_json string
+#
+#   -log_backtrace_at value
+#         when logging hits line file:N, emit a stack trace
+#   -log_dir string
+#         If non-empty, write log files in this directory
+#   -logtostderr
+#         log to standard error instead of files
+#   -m2n
+#         m2n mode
+#   -n    Only print the commands that would be executed
+#   -ninja
+#         Generate build.ninja.
+#   -ninja_suffix string
+#         suffix for ninja files.
+#   -query string
+#         Show the target info
+#   -save string
+#
+#   -save_json string
+#
+#   -shell_date string
+#         specify $(shell date) time as 2006-01-02T15:04:05Z07:00
+#   -stderrthreshold value
+#         logs at or above this threshold go to stderr
+#   -use_cache
+#         Use cache.
+#   -use_find_emulator
+#         use find emulator
+#   -use_shell_builtins
+#         Use shell builtins (default true)
+#   -v value
+#         log level for V logs
+#   -vmodule value
+#         comma-separated list of pattern=N settings for file-filtered logging
+#
+# -----------------------------------------------------------------------------
+
+function _kati() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-alsologtostderr[log to standard error as well as files]' \
+    '-c[Syntax check only]' \
+    '-detect_android_echo[detect echo as ninja description]' \
+    '-eager_cmd_eval[Eval commands first]' \
+    '-f[Use it as a makefile]' \
+    '-gen_regen_rule[Generate regenerate build.ninja rule]' \
+    '-goma[ensure goma start]' \
+    '-goma_dir[If specified, use goma to build C/C++ files]' \
+    '-ignore_optional_include[If specified, skip reading -include directives start with the specified path]' \
+    '-j[Allow N jobs at once. (default 1)]' \
+    '-kati_cpuprofile[write cpu profile to file]' \
+    '-kati_eval_stats[Show eval statistics]' \
+    '-kati_heapprofile file[write heap profile to file]' \
+    '-kati_memstats string[Show memstats with given templates]' \
+    '-kati_periodic_stats[Show a bunch of periodic statistics]' \
+    '-kati_stats[Show a bunch of statistics]' \
+    '-kati_trace_event[write trace event to file]' \
+    '-load' \
+    '-load_json' \
+    '-log_backtrace_at[when logging hits line file:N, emit a stack trace]' \
+    '-log_dir[If non-empty, write log files in this directory]' \
+    '-logtostderr[log to standard error instead of files]' \
+    '-m2n[m2n mode]' \
+    '-n[Only print the commands that would be executed]' \
+    '-ninja[Generate build.ninja.]' \
+    '-ninja_suffix[suffix for ninja files]' \
+    '-query[Show the target info]' \
+    '-save' \
+    '-save_json' \
+    '-shell_date[specify $(shell date) time as 2006-01-02T15:04:05Z07:00]' \
+    '-stderrthreshold[logs at or above this threshold go to stderr]' \
+    '-use_cache[Use cache]' \
+    '-use_find_emulator[use find emulator]' \
+    '-use_shell_builtins[Use shell builtins (default true)]' \
+    '-v value[log level for V logs]' \
+    '-vmodule[comma-separated list of pattern=N settings for file-filtered logging]' \
+    && ret=0
+
+  return ret
+}
+
+_kati "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

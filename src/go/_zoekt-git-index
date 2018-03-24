@@ -1,0 +1,88 @@
+#compdef zoekt-git-index
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/google/zoekt/cmd/zoekt-git-index
+#
+# Usage of zoekt-git-index:
+#   -allow_missing_branches
+#      allow missing branches.
+#   -branches string
+#      git branches to index. (default "HEAD")
+#   -file_limit int
+#      maximum file size (default 131072)
+#   -incremental
+#      only index changed repositories (default true)
+#   -index string
+#      index directory for *.zoekt files. (default "/Users/zchee/.zoekt")
+#   -parallelism int
+#      maximum number of parallel indexing processes. (default 4)
+#   -prefix string
+#      prefix for branch names (default "refs/heads/")
+#   -repo_cache string
+#      directory holding bare git repos, named by URL. this is used to find repositories for submodules. It also affects name if the indexed repository is under this directory.
+#   -require_ctags
+#      If set, ctags calls must succeed.
+#   -shard_limit int
+#      maximum corpus size for a shard (default 104857600)
+#   -submodules
+#      if set to false, do not recurse into submodules (default true)
+#
+# -----------------------------------------------------------------------------
+
+function _zoekt-git-index() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-allow_missing_branches[allow missing branches.]' \
+    '-branches[git branches to index. (default "HEAD")]:branch' \
+    '-file_limit[maximum file size (default 131072)]:filesize limit' \
+    '-incremental[only index changed repositories (default true)]' \
+    '-index[index directory for *.zoekt files. (default "/Users/zchee/.zoekt")]:index directory:_files' \
+    '-parallelism[maximum number of parallel indexing processes. (default 4)]:number of parallel' \
+    '-prefix[prefix for branch names (default "refs/heads/")]:prefix' \
+    '-repo_cache[directory holding bare git repos, named by URL]:repo' \
+    '-require_ctags[If set, ctags calls must succeed.]' \
+    '-shard_limit[maximum corpus size for a shard (default 104857600)]:shared limit' \
+    '-submodules[if set to false, do not recurse into submodules (default true)]' \
+    '*::path:_files' \
+    && ret=0
+
+  return ret
+}
+
+_zoekt-git-index "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

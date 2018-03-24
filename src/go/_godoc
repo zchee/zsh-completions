@@ -1,0 +1,139 @@
+#compdef godoc
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# golang.org/x/tools/cmd/godoc
+#
+# usage: godoc package [name ...]
+#         godoc -http=:6060
+#   -analysis string
+#         comma-separated list of analyses to perform (supported: type, pointer). See http://golang.org/lib/godoc/analysis/help.html
+#   -ex
+#         show examples in command line mode
+#   -goroot string
+#         Go root directory (default "/usr/local/go")
+#   -html
+#         print HTML in command-line mode
+#   -http string
+#         HTTP service address (e.g., ':6060')
+#   -httptest.serve string
+#         if non-empty, httptest.NewServer serves on this address and blocks
+#   -index
+#         enable search index
+#   -index_files string
+#         glob pattern specifying index files; if not empty, the index is read from these files in sorted order
+#   -index_interval duration
+#         interval of indexing; 0 for default (5m), negative to only index once at startup
+#   -index_throttle float
+#         index throttle value; 0.0 = no time allocated, 1.0 = full throttle (default 0.75)
+#   -links
+#         link identifiers to their declarations (default true)
+#   -maxresults int
+#         maximum number of full text search results shown (default 10000)
+#   -notes string
+#         regular expression matching note markers to show (default "BUG")
+#   -play
+#         enable playground in web interface
+#   -q    arguments are considered search queries
+#   -server string
+#         webserver address for command line searches
+#   -src
+#         print (exported) source in command-line mode
+#   -tabwidth int
+#         tab width (default 4)
+#   -templates string
+#         load templates/JS/CSS from disk in this directory
+#   -timestamps
+#         show timestamps with directory listings
+#   -url string
+#         print HTML for named URL
+#   -v    verbose mode
+#   -write_index
+#         write index to a file; the file name must be specified with -index_files
+#   -zip string
+#         zip file providing the file system to serve; disabled if empty
+#
+# -----------------------------------------------------------------------------
+
+function _godoc() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a _go_packages
+  # TODO(zchee): support 'cmd/...' prefix completion
+  _go_packages=(
+  'builtin'
+  )
+  for dir in $(go env GOROOT) $(perl -wle 'print $_ for split q{:}, exec "go env GOPATH"')
+  do
+    pkgdir="$dir/pkg"
+    if [[ -d $pkgdir ]]; then
+      _go_packages+=($(find $pkgdir -name "*.a" | perl -wlp -e "s{$pkgdir/(?:(?:obj|tool)/)?[^/]+/}{} and s{\\.a\$}{}"))
+    fi
+  done
+
+  _arguments -C -n : \
+    '-analysis[comma-separated list of analyses to perform (supported: type, pointer).]:analyses perform:(type pointer)' \
+    '-ex[show examples in command line mode]' \
+    '-goroot[Go root directory (default "/usr/local/go")]:GOROOT:_files' \
+    '-html[print HTML in command-line mode]' \
+    "-http[HTTP service address (e.g., ':6060')]:address" \
+    '-httptest.serve[if non-empty, httptest.NewServer serves on this address and blocks]:httptest.NewServer address' \
+    '-index[enable search index]' \
+    '-index_files[glob pattern specifying index files; if not empty, the index is read from these files in sorted order]:glob pattern' \
+    '-index_interval[interval of indexing; 0 for default (5m), negative to only index once at startup]:indexing interval' \
+    '-index_throttle[index throttle value; 0.0 = no time allocated, 1.0 = full throttle (default 0.75)]:throttle size' \
+    '-links[link identifiers to their declarations (default true)]' \
+    '-maxresults[maximum number of full text search results shown (default 10000)]:max size' \
+    '-notes[regular expression matching note markers to show (default "BUG")]:regexp pattern' \
+    '-play[enable playground in web interface]' \
+    '-q[arguments are considered search queries]' \
+    '-server[webserver address for command line searches]:webserver address' \
+    '-src[print (exported) source in command-line mode]' \
+    '-tabwidth[tab width (default 4)]:tab width:(1 2 4 8)' \
+    '-templates[load templates/JS/CSS from disk in this directory]:templates directory:_directories' \
+    '-timestamps[show timestamps with directory listings]' \
+    '-url[print HTML for named URL]:HTML URL name' \
+    '-v[verbose mode]' \
+    '-write_index[write index to a file; the file name must be specified with -index_files]' \
+    '-zip[zip file providing the file system to serve; disabled if empty]:zip filename:_files' \
+    '*:packages:'"($_go_packages)" \
+    && ret=0
+
+  return ret
+}
+
+_godoc "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

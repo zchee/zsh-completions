@@ -1,0 +1,90 @@
+#compdef staticcheck
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# honnef.co/go/tools/cmd/staticcheck
+#
+# Usage of staticcheck:
+#         staticcheck [flags] # runs on package in current directory
+#         staticcheck [flags] packages
+#         staticcheck [flags] directory
+#         staticcheck [flags] files... # must be a single package
+# Flags:
+#   -generated
+#         Check generated code
+#   -go version
+#         Target Go version in the format '1.x' (default 1.9)
+#   -ignore string
+#         Space separated list of checks to ignore, in the following format: 'import/path/file.go:Check1,Check2,...' Both the import path and file name sections support globbing, e.g. 'os/exec/*_test.go'
+#   -min_confidence float
+#         Deprecated; use -ignore instead
+#   -tags build tags
+#         List of build tags
+#   -tests
+#         Include tests (default true)
+#
+# -----------------------------------------------------------------------------
+
+function _staticcheck() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  __go_packages() {
+    local gopaths
+    declare -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  _alternative ':go packages:__go_packages'
+  _alternative ':directory:_path_files -W -/'
+  _alternative ':go files:_path_files -g "*.go"'
+
+  _arguments -C \
+    '-generated[Check generated code]' \
+    "-go[Target Go version in the format '1.x' (default 1.9)]:go version]" \
+    "-ignore[Space separated list of checks to ignore]:ignore pattern (example\: import/path/file.go:Check1,Check2,... | 'os/exec/*_test.go')]" \
+    '-min_confidence[Deprecated; use -ignore instead]:confidence level' \
+    '-tags[List of build tags]:tag' \
+    '-tests[Include tests (default true)]' \
+    && ret=0
+
+  return ret
+}
+
+_staticcheck "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

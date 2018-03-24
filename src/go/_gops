@@ -1,0 +1,99 @@
+#compdef gops
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+# 
+# github.com/google/gops
+#
+# gops is a tool to list and diagnose Go processes.
+#
+# Usage:
+#
+#     gops [command [pid|address:port]]
+#
+# Commands:
+#     stack        Prints the stack trace.
+#     gc           Runs the garbage collector and blocks until successful.
+#     setgc         Sets the garbage collection target percentage.
+#     memstats     Prints the allocation and garbage collection stats.
+#     version      Prints the Go version used to build the program.
+#     stats        Prints the vital runtime stats.
+#     help         Prints this help text.
+#
+# Profiling commands:
+#     trace        Runs the runtime tracer for 5 secs and launches "go tool trace".
+#     pprof-heap   Reads the heap profile and launches "go tool pprof".
+#     pprof-cpu    Reads the CPU profile and launches "go tool pprof".
+#
+#
+# All commands require the agent running on the Go process.
+# Symbol "*" indicates the process runs the agent.
+#
+# -----------------------------------------------------------------------------
+
+function _gops() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+
+  commands=(
+  'gc:Runs the garbage collector and blocks until successful'
+  'stack:Prints the stack trace'
+  'memstats:Prints the garbage collection stats'
+  'version:Prints the Go version used to build the program'
+  'vitals:Prints the runtime stats'
+  'pprof-heap:Reads the heap profile and launches "go tool pprof"'
+  'pprof-mem:Reads the CPU profile and launches "go tool pprof"'
+  'help:Prints this help text'
+  )
+
+  # TODO(zchee): display program name
+  __go_prog() {
+    : ${(A)_cache_go_prog:=${${$(gops 2>/dev/null):#[^0-9]*}%%:*}}
+    for p in $_cache_go_prog; do
+      _alternative ":prog_name:($p)"
+    done
+  }
+
+  _arguments \
+    "1: :{_describe 'gops command' commands}" \
+    '-p=[target pid]:go progrom pid:__go_prog' \
+    && ret=0
+
+  return ret
+}
+
+_gops "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

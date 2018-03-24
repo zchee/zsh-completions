@@ -1,0 +1,123 @@
+#compdef go-callvis
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/TrueFurby/go-callvis
+#
+# Usage of go-callvis:
+#   -debug
+#     	Enable verbose log.
+#   -focus string
+#     	Focus package with name or import path. (default "main")
+#   -group string
+#     	Grouping functions by [pkg, type] (separate multiple by comma).
+#   -ignore string
+#     	Ignore package paths with prefix (separate multiple by comma).
+#   -limit string
+#     	Limit package paths to prefix. (separate multiple by comma)
+#   -minlen uint
+#     	Minimum edge length (for wider output). (default 2)
+#   -nodesep float
+#     	Minimum space between two adjacent nodes in the same rank (for taller output). (default 0.35)
+#   -nostd
+#     	Omit calls to/from std packages.
+#   -tests
+#     	Include test code.
+#   -version
+#     	Show version and exit.
+#
+# -----------------------------------------------------------------------------
+
+function _go-callvis() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  __go_packages() {
+    local gopaths
+    declare -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  _arguments -C \
+    '-debug[Enable verbose log]' \
+    '-focus[Focus package with name or import path (default "main")]:Focus package name or import path' \
+    '-group[Grouping functions]:Grouping (comma separate):(pkg, type)' \
+    '-ignore[Ignore package paths with prefix]:ignore package path (comma separate):->ignore' \
+    '-limit[Limit package paths to prefix]:Limit package path (comma separate):->limit' \
+    '-minlen[Minimum edge length for wider output]:minimum edge length (default\: 2)' \
+    '-nodesep[Minimum space between two adjacent nodes in the same rank for taller output]:minimum space (default\: 0.35)' \
+    '-nostd[Omit calls to/from std packages]' \
+    '-tests[Include test code]' \
+    '-version[Show version and exit]' \
+    '1: :__go_packages' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (ignore)
+      if compset -P '*,' || compset -P ''; then
+        local gopaths
+        declare -a gopaths
+        gopaths=("${(s/:/)$(go env GOPATH)}")
+        gopaths+=("$(go env GOROOT)")
+        for p in $gopaths; do
+          _alternative ':ignore packages:_path_files -W "$p/src" -/'
+        done
+        return
+      fi
+      ;;
+    (limit)
+      if compset -P '*,' || compset -P ''; then
+        local gopaths
+        declare -a gopaths
+        gopaths=("${(s/:/)$(go env GOPATH)}")
+        gopaths+=("$(go env GOROOT)")
+        for p in $gopaths; do
+          _alternative ':limit packages:_path_files -W "$p/src" -/'
+        done
+        return
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+_go-callvis "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

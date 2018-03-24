@@ -1,0 +1,130 @@
+#compdef gocode
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/nsf/gocode
+#
+# Usage: gocode [-s] [-f=<format>] [-in=<path>] [-sock=<type>] [-addr=<addr>]
+#        <command> [<args>]
+#
+# Flags:
+#   -addr string
+#      address for tcp socket (default "127.0.0.1:37373")
+#   -debug
+#      enable server-side debug mode
+#   -f string
+#      output format (vim | emacs | nice | csv | csv-with-package | json) (default "nice")
+#   -in string
+#      use this file instead of stdin input
+#   -profile int
+#      port on which to expose profiling information for pprof; 0 to disable profiling
+#   -s run a server instead of a client
+#   -sock string
+#      socket type (unix | tcp) (default "unix")
+#
+# Commands:
+#   autocomplete [<path>] <offset>     main autocompletion command
+#   close                              close the gocode daemon
+#   status                             gocode daemon status report
+#   drop-cache                         drop gocode daemon's cache
+#   set [<name> [<value>]]             list or set config options
+# #
+# -----------------------------------------------------------------------------
+
+function _gocode() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+
+  commands=(
+  'autocomplete:main autocompletion command' # [<path>] <offset>
+  'close:close the gocode daemon'
+  'status:gocode daemon status report'
+  "drop-cache:drop gocode daemon's cache"
+  'set:list or set config options' # [<name> [<value>]]
+  )
+
+  _arguments -C \
+    '-addr[address for tcp socket]:tcp address (default "127.0.0.1\:37373"):addr' \
+    '-debug[enable server-side debug mode]' \
+    '-f[output format]:output format (default "nice"):(vim emacs nice csv csv-with-package json)' \
+    '-in[use this file instead of stdin input]:input file:_files' \
+    '-profile[port on which to expose profiling information for pprof; 0 to disable profiling]' \
+    '-s[run a server instead of a client]' \
+    '-sock[socket type]:socket type (default "unix"):(unix tcp)' \
+    "1: :{_describe 'gocode command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        set)
+          local -a set_options
+          set_options=(
+          'propose-builtins'
+          'lib-path'
+          'custom-pkg-prefix'
+          'custom-vendor-dir'
+          'autobuild'
+          'force-debug-output'
+          'package-lookup-mode'
+          'close-timeout'
+          'unimported-packages'
+          )
+
+          _arguments \
+            "1: :{_describe 'set options' set_options}" \
+            '*:: :->args' \
+            && ret=0
+
+            case $state in
+              propose-builtins)
+                _value \
+                  'true' \
+                  'false'
+              ;;
+            esac
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_gocode "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

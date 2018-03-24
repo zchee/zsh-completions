@@ -1,0 +1,564 @@
+#compdef gb
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/constabulary/gb/cmd/gb
+#
+# gb, a project based build tool for the Go programming language.
+#
+# Usage:
+#
+#         gb command [arguments]
+#
+# The commands are:
+#
+#         build       build a package
+#         doc         show documentation for a package or symbol
+#         env         print project environment variables
+#         generate    generate Go files by processing source
+#         info        info returns information about this project
+#         list        list the packages named by the importpaths
+#         test        test packages
+#
+# Use "gb help [command]" for more information about a command.
+#
+# Additional help topics:
+#
+#         plugin      plugin information
+#         project     gb project layout
+#
+# Use "gb help [topic]" for more information about that topic.
+#
+# -----------------------------------------------------------------------------
+
+function _gb() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'build:build a package'
+  'depset'
+  'doc:show documentation for a package or symbol'
+  'env:print project environment variables'
+  'generate:generate Go files by processing source'
+  'help:more information about a command'
+  'info:info returns information about this project'
+  'list:list the packages named by the importpaths'
+  'test:test packages'
+  )
+
+  # (( $+commands[gb-vendor] )) && commands+='vendor:manage your vendored dependencies'
+  # (( $+commands[gb-gae] )) && commands+='gae:tool for managing Google Appengine applications with gb.'
+  if hash gb-vendor > /dev/null 2>&1; then
+    commands+='vendor:manage your vendored dependencies'
+  fi
+
+  if hash gb-gae > /dev/null 2>&1; then
+    commands+='gae:tool for managing Google Appengine applications with gb.'
+  fi
+
+  _arguments -C \
+    "1: :{_describe 'gb command' commands}" \
+    '*:: :->args'
+
+  case $state in
+    args)
+      __build_flags_packags() {
+        _arguments \
+          '-gcflags[arguments to pass on each go tool compile invocation]: :->gcflags' \
+          '-ldflags[arguments to pass on each go tool link invocation]: :->ldflags' \
+
+        case $state in
+          gcflags)
+              _values \
+                'gcflags' \
+                '-A[for bootstrapping, allow any type]' \
+                '-B[disable bounds checking]' \
+                '-D[set relative path for local imports]' \
+                '-E[debug symbol export]' \
+                '-I[add directory to import search path]' \
+                '-K[debug missing line numbers]' \
+                '-L[use full (long) path in error messages]' \
+                '-M[debug move generation]' \
+                '-N[disable optimizations]' \
+                '-P[debug peephole optimizer]' \
+                '-R[debug register optimizer]' \
+                '-S[print assembly listing]' \
+                '-V[print compiler version]' \
+                '-W[debug parse tree after type checking]' \
+                '-asmhdr[write assembly header to file]' \
+                '-buildid[record id as the build id in the export metadata]' \
+                '-complete[compiling complete package (no C or assembly)]' \
+                '-cpuprofile[write cpu profile to file]' \
+                '-d[print debug information about items in list]' \
+                '-dynlink[support references to Go symbols defined in other shared libraries]' \
+                '-e[no limit on number of errors reported]' \
+                '-f[debug stack frames]' \
+                '-g[debug code generation]' \
+                '-h[halt on error]' \
+                '-i[debug line number stack]' \
+                '-importmap[add definition of the form source=actual to import map]' \
+                '-installsuffix[set pkg directory suffix]' \
+                '-j[debug runtime-initialized variables]' \
+                '-l[disable inlining]' \
+                '-largemodel[generate code that assumes a large memory model]' \
+                '-live[debug liveness analysis]' \
+                '-m[print optimization decisions]' \
+                '-memprofile[write memory profile to file]' \
+                '-memprofilerate[set runtime.MemProfileRate to rate]' \
+                '-msan[build code compatible with C/C++ memory sanitizer]' \
+                '-newexport[use new export format]' \
+                '-nolocalimports[reject local (relative) imports]' \
+                '-o[write output to file]' \
+                '-p[set expected package import path]' \
+                '-pack[write package file instead of object file]' \
+                '-r[debug generated wrappers]' \
+                '-race[enable race detector]' \
+                '-s[warn about composite literals that can be simplified]' \
+                '-shared[generate code that can be linked into a shared library]' \
+                '-trimpath[remove prefix from recorded source file paths]' \
+                '-u[reject unsafe code]' \
+                '-v[increase debug verbosity]' \
+                '-w[debug type checking]' \
+                '-wb[enable write barrier (default 1)]' \
+                '-x[debug lexer]' \
+                '-y[debug declarations in canned imports (with -d)]'
+              ;;
+          ldflags)
+            _values \
+                'ldflags' \
+                '-B[add an ELF NT_GNU_BUILD_ID note when using ELF]' \
+                '-C[check Go calls to C code]' \
+                '-D[set data segment address (default -1)]' \
+                '-E[set entry symbol name]' \
+                '-H[set header type]' \
+                '-I[use linker as ELF dynamic linker]' \
+                '-L[add specified directory to library path]' \
+                '-R[set address rounding quantum (default -1)]' \
+                '-T[set text segment address (default -1)]' \
+                '-V[print version and exit]' \
+                '-X[add string value definition of the form importpath.name=value]' \
+                '-a[disassemble output]' \
+                '-buildid[record id as Go toolchain build id]' \
+                '-buildmode[set build mode]' \
+                '-c[dump call graph]' \
+                '-cpuprofile[write cpu profile to file]' \
+                '-d[disable dynamic executable]' \
+                '-extar[archive program for buildmode=c-archive]' \
+                '-extld[use linker when linking in external mode]' \
+                '-extldflags[pass flags to external linker]' \
+                '-f[ignore version mismatch]' \
+                '-g[disable go package data checks]' \
+                '-h[halt on error]' \
+                '-installsuffix[set package directory suffix]' \
+                '-k[set field tracking symbol]' \
+                '-libgcc[compiler support lib for internal linking; use "none" to disable]' \
+                '-linkmode[set link mode (internal, external, auto)]' \
+                '-linkshared[link against installed Go shared libraries]' \
+                '-memprofile[write memory profile to file]' \
+                '-memprofilerate[set runtime.MemProfileRate to rate]' \
+                '-msan[enable MSan interface]' \
+                '-n[dump symbol table]' \
+                '-o[write output to file]' \
+                '-r[set the ELF dynamic linker search path to dir1:dir2:...]' \
+                '-race[enable race detector]' \
+                '-s[disable symbol table]' \
+                '-shared[generate shared object (implies -linkmode external)]' \
+                '-tmpdir[use directory for temporary files]' \
+                '-u[reject unsafe packages]' \
+                '-v[print link trace]' \
+                '-w[disable DWARF generation]'
+              ;;
+          *)
+            local gopaths
+            declare -a gopaths
+            gopaths=("${(s/:/)$(go env GOPATH)}")
+            gopaths+=("$(go env GOROOT)")
+            for p in $gopaths; do
+              _alternative ':go packages:_path_files -W "$p/src" -/'
+            done
+        esac
+      }
+
+      __build_flags_files() {
+        _arguments \
+          '-a[force rebuilding of packages that are already up-to-date]' \
+          '-n[print the commands but do not run them]' \
+          '-p[number of builds that can be run in parallel]:number' \
+          '-race[enable data race detection]' \
+          '-v[print the names of packages as they are compiled]' \
+          '-work[print temporary work directory and keep it]' \
+          '-x[print the commands]' \
+          '-asmflags[arguments for each go tool asm invocation]:flags' \
+          '-buildmode[build mode to use]:mode' \
+          '-compiler[name of compiler to use]:name' \
+          '-gccgoflags[arguments for gccgo]:args' \
+          '-gcflags[arguments to pass on each go tool compile invocation]: :->gcflags' \
+          '-installsuffix[suffix to add to package directory]:suffix' \
+          '-ldflags[arguments to pass on each go tool link invocation]: :->ldflags' \
+          '-linkshared[link against shared libraries]' \
+          '-pkgdir[install and load all packages from dir]:dir' \
+          '-tags[list of build tags to consider satisfied]:tags' \
+          '-toolexec[program to use to invoke toolchain programs]:args'
+
+        case $state in
+          gcflags)
+              _values \
+                'gcflags' \
+                '-A[for bootstrapping, allow any type]' \
+                '-B[disable bounds checking]' \
+                '-D[set relative path for local imports]' \
+                '-E[debug symbol export]' \
+                '-I[add directory to import search path]' \
+                '-K[debug missing line numbers]' \
+                '-L[use full (long) path in error messages]' \
+                '-M[debug move generation]' \
+                '-N[disable optimizations]' \
+                '-P[debug peephole optimizer]' \
+                '-R[debug register optimizer]' \
+                '-S[print assembly listing]' \
+                '-V[print compiler version]' \
+                '-W[debug parse tree after type checking]' \
+                '-asmhdr[write assembly header to file]' \
+                '-buildid[record id as the build id in the export metadata]' \
+                '-complete[compiling complete package (no C or assembly)]' \
+                '-cpuprofile[write cpu profile to file]' \
+                '-d[print debug information about items in list]' \
+                '-dynlink[support references to Go symbols defined in other shared libraries]' \
+                '-e[no limit on number of errors reported]' \
+                '-f[debug stack frames]' \
+                '-g[debug code generation]' \
+                '-h[halt on error]' \
+                '-i[debug line number stack]' \
+                '-importmap[add definition of the form source=actual to import map]' \
+                '-installsuffix[set pkg directory suffix]' \
+                '-j[debug runtime-initialized variables]' \
+                '-l[disable inlining]' \
+                '-largemodel[generate code that assumes a large memory model]' \
+                '-live[debug liveness analysis]' \
+                '-m[print optimization decisions]' \
+                '-memprofile[write memory profile to file]' \
+                '-memprofilerate[set runtime.MemProfileRate to rate]' \
+                '-msan[build code compatible with C/C++ memory sanitizer]' \
+                '-newexport[use new export format]' \
+                '-nolocalimports[reject local (relative) imports]' \
+                '-o[write output to file]' \
+                '-p[set expected package import path]' \
+                '-pack[write package file instead of object file]' \
+                '-r[debug generated wrappers]' \
+                '-race[enable race detector]' \
+                '-s[warn about composite literals that can be simplified]' \
+                '-shared[generate code that can be linked into a shared library]' \
+                '-trimpath[remove prefix from recorded source file paths]' \
+                '-u[reject unsafe code]' \
+                '-v[increase debug verbosity]' \
+                '-w[debug type checking]' \
+                '-wb[enable write barrier (default 1)]' \
+                '-x[debug lexer]' \
+                '-y[debug declarations in canned imports (with -d)]'
+              ;;
+          ldflags)
+            _values \
+                'ldflags' \
+                '-B[add an ELF NT_GNU_BUILD_ID note when using ELF]' \
+                '-C[check Go calls to C code]' \
+                '-D[set data segment address (default -1)]' \
+                '-E[set entry symbol name]' \
+                '-H[set header type]' \
+                '-I[use linker as ELF dynamic linker]' \
+                '-L[add specified directory to library path]' \
+                '-R[set address rounding quantum (default -1)]' \
+                '-T[set text segment address (default -1)]' \
+                '-V[print version and exit]' \
+                '-X[add string value definition of the form importpath.name=value]' \
+                '-a[disassemble output]' \
+                '-buildid[record id as Go toolchain build id]' \
+                '-buildmode[set build mode]' \
+                '-c[dump call graph]' \
+                '-cpuprofile[write cpu profile to file]' \
+                '-d[disable dynamic executable]' \
+                '-extar[archive program for buildmode=c-archive]' \
+                '-extld[use linker when linking in external mode]' \
+                '-extldflags[pass flags to external linker]' \
+                '-f[ignore version mismatch]' \
+                '-g[disable go package data checks]' \
+                '-h[halt on error]' \
+                '-installsuffix[set package directory suffix]' \
+                '-k[set field tracking symbol]' \
+                '-libgcc[compiler support lib for internal linking; use "none" to disable]' \
+                '-linkmode[set link mode (internal, external, auto)]' \
+                '-linkshared[link against installed Go shared libraries]' \
+                '-memprofile[write memory profile to file]' \
+                '-memprofilerate[set runtime.MemProfileRate to rate]' \
+                '-msan[enable MSan interface]' \
+                '-n[dump symbol table]' \
+                '-o[write output to file]' \
+                '-r[set the ELF dynamic linker search path to dir1:dir2:...]' \
+                '-race[enable race detector]' \
+                '-s[disable symbol table]' \
+                '-shared[generate shared object (implies -linkmode external)]' \
+                '-tmpdir[use directory for temporary files]' \
+                '-u[reject unsafe packages]' \
+                '-v[print link trace]' \
+                '-w[disable DWARF generation]'
+              ;;
+          *)
+            _alternative ':go files:_path_files -g "*.go"'
+        esac
+      }
+
+      local -a test_flags
+      test_flags=(
+      "-c[compile but don't run test]"
+      '-bench[run benchmarks matching the regular expression]:regexp'
+      '-benchmem[print memory allocation statistics for benchmarks]'
+      '-benchtime[run benchmarks for t rime]:t'
+      '-blockprofile[write a goroutine blocking profile to the specified file]:block'
+      '-blockprofilerate[control goroutine blocking profiles]:n'
+      '-count[run each test and benchmark n times]:n'
+      '-cover[enable coverage analysis]'
+      '-covermode[set the mode for coverage analysis]:mode:(set count atomic)'
+      '-coverpkg[apply coverage analysis in each test of listed packages]:list'
+      '-coverprofile[write a coverage profile to file]:cover'
+      '-cpu[specify a list of GOMAXPROCS values]:cpus'
+      '-cpuprofile[write a CPU profile to the specified file]:profile'
+      '-exec[run test binary using xprog]:xprog'
+      '-i[install dependencies of the test]'
+      '-memprofile[write a memory profile to file]:mem'
+      '-memprofilerate[enable more precise memory profiles]:n'
+      '-o[compile test binary to named file]:file:_files'
+      '-outputdir[place output files from profiling in output dir]:dir'
+      '-parallel[allow parallel execution of test functions]:n'
+      '-run[run tests and examples matching the regular expression]:regexp'
+      '-short[tell long-running tests to shorten their run time]'
+      '-timeout[timeout long running tests]:t'
+      '-trace[write an execution trace to the specified file]:trace'
+      '-v[verbose output]'
+      '*:build flags:__build_flags_packags'
+      )
+
+      _go_packages() {
+        local gopaths
+        declare -a gopaths
+        gopaths=("${(s/:/)$(go env GOPATH)}")
+        for p in $gopaths; do
+          _alternative ':go packages:_path_files -W "$p/src" -/'
+        done
+      }
+
+      _gb_vendor_packages() {
+        local gb_vendor
+        declare -a gb_vendor
+        gb_vendor=("${(s/:/)$(gb env GB_SRC_PATH | awk -F : '{print $2}')}")
+        for p in $gb_vendor; do
+          _alternative ':gb vendor packages:_path_files -W "$p" -/'
+        done
+      }
+
+      case $words[1] in
+        build)
+          _arguments \
+            '-d[enable debug output]' \
+            '-dotfile[if provided, gb will output a dot formatted file of the build steps to be performed]' \
+            '-F[do not cache packages, cached packages will still be used for incremental compilation]' \
+            '-f[ignore cached packages if present, new packages built will overwrite any cached packages]' \
+            '-P[The number of build jobs to run in parallel, including test execution]' \
+            '-q[decreases verbosity, effectively raising the output level to ERROR]' \
+            '-R[sets the base of the project root search path from the current working directory to the value supplied]' \
+            '-race[enable data race detection]' \
+            '-tags[additional build tags]:tags' \
+            '*:build flags:__build_flags_packags'
+            ;;
+
+        doc)
+          _arguments \
+            '-d[enable debug output]' \
+            '*:importpaths:_go_packages'
+            ;;
+
+        env)
+          _arguments \
+            '-d[enable debug output]' \
+            '*:gb project environment:(GB_PROJECT_DIR GB_SRC_PATH GB_PKG_DIR GB_BIN_SUFFIX GB_GOROOT)'
+            ;;
+
+        gae)
+          local -a gae_command
+          gae_command=(
+          'serve:starts a local development App Engine server'
+          'deploy:deploys your application to App Engine'
+          'build:compile packages and dependencies'
+          'test:test packages'
+          'raw:Directly call the dev_appserver.py'
+          'appcfg:Directly call the appcfg.py'
+          'gcloud:Directly call the gcloud command.'
+          )
+          _arguments \
+            '-d[enable debug output]' \
+            "1: :{_describe 'gb gae command' gae_command}"
+            ;;
+
+
+        generate)
+          _arguments \
+            '-d[enable debug output]' \
+            '-run=[specifies a regular expression to select directives]:regex' \
+            "*:args:{ _alternative ':importpaths:_go_packages' _files }"
+            ;;
+
+        info)
+          _arguments \
+            '-d[enable debug output]' \
+            '*:gb environment:(GB_PROJECT_DIR GB_SRC_PATH GB_PKG_DIR GB_BIN_SUFFIX GB_GOROOT)'
+            ;;
+
+        list)
+          _arguments \
+            '-d[enable debug output]' \
+            '-f[alternate format for the list]:format' \
+            '-json[prints output in structured JSON format]' \
+            '-s[read format template from STDIN]' \
+            '*:build flags:__build_flags_packags'
+            ;;
+
+        test)
+          _arguments \
+            '-d[enable debug output]' \
+            '-v[print output from test subprocess]' \
+            ${test_flags[@]} \
+            ;;
+
+        vendor)
+          local -a vendor_cmds
+          vendor_cmds=(
+          'delete:deletes a local dependency'
+          'fetch:fetch a remote dependency'
+          'help:more information about a command'
+          'list:lists dependencies, one per line'
+          'purge:purges all unreferenced dependencies'
+          'restore:restore dependencies from the manifest'
+          'update:update a local dependency'
+          )
+
+          _arguments \
+            '-d[enable debug output]' \
+            '-n[print command that would be executed]' \
+            "1: :{_describe 'vendor command' vendor_cmds}" \
+            '*:: :->args'
+
+          case $state in
+            args)
+              case $words[1] in
+                addr2line)
+                  _arguments \
+                    '*:files:_files'
+                  ;;
+
+                fetch)
+                  _arguments \
+                    '-all:fetch all' \
+                    '-branch[fetch from the name branch]' \
+                    '-no-recurse[do not fetch recursively]' \
+                    '-tag[fetch the specified tag]' \
+                    '-revision[fetch the specific revision from the branch (if supplied)]' \
+                    '-precaire[allow the use of insecure protocols.]' \
+                    '*:importpaths:_go_packages'
+                  ;;
+
+                update)
+                  _arguments \
+                    '-all[update all dependencies in the manifest]' \
+                    '-precaire[allow the use of insecure protocols.]' \
+                    "*:gb vendor packages:($(gb vendor list | awk '{print $1}'))"
+                  ;;
+
+                list)
+                  _arguments \
+                    '-f[controls the template used for printing each manifest entry]' \
+                    "*:gb vendor packages:($(gb vendor list | awk '{print $1}'))"
+                  ;;
+
+                delete)
+                  _arguments \
+                    '-all[remove all dependencies]' \
+                    "*:gb vendor packages:($(gb vendor list | awk '{print $1}'))"
+                  ;;
+
+                purge)
+                  _arguments \
+                    '*:importpaths:_go_packages'
+                  ;;
+
+                restore)
+                  _arguments \
+                    '-precaire[allow the use of insecure protocols.]'
+                  ;;
+
+                help)
+                  local -a help_cmd
+                  help_cmd=(
+                  'fetch:fetch a remote dependency' \
+                  'update:update a local dependency' \
+                  'list:lists dependencies, one per line' \
+                  'delete:deletes a local dependency' \
+                  'purge:purges all unreferenced dependencies' \
+                  'restore:restore dependencies from the manifest'
+                  )
+                  _arguments "1: :{_describe 'help command' help_cmd}"
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        help)
+          local -a topics
+          topics=(
+          'plugin:plugin information' \
+          'project:gb project layout'
+          )
+
+          _arguments "1: :{_describe 'command' commands -- topics}"
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_gb "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

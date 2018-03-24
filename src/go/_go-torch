@@ -1,0 +1,97 @@
+#compdef go-torch
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/uber/go-torch
+#
+# Usage:
+#   go-torch [options] [binary] <profile source>
+#
+# pprof Options:
+#   -u, --url=         Base URL of your Go program (default: http://localhost:8080)
+#       --suffix=      URL path of pprof profile (default: /debug/pprof/profile)
+#   -b, --binaryinput= File path of previously saved binary profile. (binary profile is anything accepted by https://golang.org/cmd/pprof)
+#       --binaryname=  File path of the binary that the binaryinput is for, used for pprof inputs
+#   -t, --seconds=     Number of seconds to profile for (default: 30)
+#       --pprofArgs=   Extra arguments for pprof
+#
+# Output Options:
+#   -f, --file=        Output file name (must be .svg) (default: torch.svg)
+#   -p, --print        Print the generated svg to stdout instead of writing to file
+#   -r, --raw          Print the raw call graph output to stdout instead of creating a flame graph; use with Brendan Gregg's flame graph perl script (see https://github.com/brendangregg/FlameGraph)
+#       --title=       Graph title to display in the output file (default: Flame Graph)
+#       --width=       Generated graph width (default: 1200)
+#       --hash         Colors are keyed by function name hash
+#       --colors=      set color palette. choices are: hot (default), mem, io, wakeup, chain, java, js, perl, red, green, blue, aqua, yellow, purple, orange
+#       --cp           Use consistent palette (palette.map)
+#       --reverse      Generate stack-reversed flame graph
+#       --inverted     icicle graph
+#
+# Help Options:
+#   -h, --help         Show this help message
+#
+# -----------------------------------------------------------------------------
+
+function _go-torch() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    {-u,--url}='[Base URL of your Go program]:base url (default\: http://localhost:8080)' \
+    {-s,--suffix}='[URL path of pprof profile]:url path (default\: /debug/pprof/profile)' \
+    {-b,--binaryinput}='[File path of previously saved binary profile]:input binary:_files' \
+    '--binaryname=[File path of the binary that the binaryinput is for, used for pprof inputs]:binary name:_files' \
+    {-t,--seconds}='[Number of seconds to profile for]:profile time (default\: 30)' \
+    '--pprofArgs=[Extra arguments for pprof]:pprof extra arguments' \
+    {-f,--file}='[Output file name (must be .svg)]:output filename (default\: torch.svg):_files' \
+    {-p,--print}'[Print the generated svg to stdout instead of writing to file]' \
+    {-r,--raw}"[Print the raw call graph output to stdout instead of creating a flame graph; use with Brendan Gregg's flame graph perl script]" \
+    '--title=[Graph title to display in the output file]:title (default\: Flame Graph)' \
+    '--width=[Generated graph width]:width (default\: 1200)' \
+    '--hash[Colors are keyed by function name hash]' \
+    '--colors=[set color palette]:color (default\: hot):(hot mem io wakeup chain java js perl red green blue aqua yellow purple orange)' \
+    '--cp[Use consistent palette (palette.map)]' \
+    '--reverse[Generate stack-reversed flame graph]' \
+    '--inverted[icicle graph]' \
+    {-h,--help}'[Show this help message]' \
+    "1:binary source:_files" \
+    "2:profile source:_files" \
+    && ret=0
+
+  return ret
+}
+
+_go-torch "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

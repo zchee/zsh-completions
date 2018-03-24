@@ -1,0 +1,187 @@
+#compdef gorename
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# golang.org/x/tools/cmd/gorename
+#
+# gorename: precise type-safe renaming of identifiers in Go source code.
+#
+# Usage:
+#  gorename (-from <spec> | -offset <file>:#<byte-offset>) -to <name> [-force]
+#
+# You must specify the object (named entity) to rename using the -offset
+# or -from flag.  Exactly one must be specified.
+#
+# Flags:
+#
+# -offset    specifies the filename and byte offset of an identifier to rename.
+#            This form is intended for use by text editors.
+#
+# -from      specifies the object to rename using a query notation;
+#            This form is intended for interactive use at the command line.
+#            A legal -from query has one of the following forms:
+#
+#   "encoding/json".Decoder.Decode     method of package-level named type
+#   (*"encoding/json".Decoder).Decode  ditto, alternative syntax
+#   "encoding/json".Decoder.buf        field of package-level named struct type
+#   "encoding/json".HTMLEscape         package member (const, func, var, type)
+#   "encoding/json".Decoder.Decode::x  local object x within a method
+#   "encoding/json".HTMLEscape::x      local object x within a function
+#   "encoding/json"::x                 object x anywhere within a package
+#   json.go::x                         object x within file json.go
+#
+#            Double-quotes must be escaped when writing a shell command.
+#            Quotes may be omitted for single-segment import paths
+#            such as "fmt".
+#
+#            For methods, the parens and '*' on the receiver type are both
+#            optional.
+#
+#            It is an error if one of the ::x queries matches multiple
+#            objects.
+#
+# -to        the new name.
+#
+# -force     causes the renaming to proceed even if conflicts were reported.
+#            The resulting program may be ill-formed, or experience a change
+#            in behaviour.
+#
+#            WARNING: this flag may even cause the renaming tool to crash.
+#            (In due course this bug will be fixed by moving certain
+#            analyses into the type-checker.)
+#
+# -d         display diffs instead of rewriting files
+#
+# -diffcmd
+#            diff command invoked when using -d (default "diff")
+#
+# -tags
+#            a list of build tags to consider satisfied during the build.
+#            For more information about build tags, see the description of
+#            build constraints in the documentation for the go/build package
+#
+# -v         enables verbose logging.
+#
+# -help
+#            show usage message
+#
+# gorename automatically computes the set of packages that might be
+# affected.  For a local renaming, this is just the package specified by
+# -from or -offset, but for a potentially exported name, gorename scans
+# the workspace ($GOROOT and $GOPATH).
+#
+# gorename rejects renamings of concrete methods that would change the
+# assignability relation between types and interfaces.  If the interface
+# change was intentional, initiate the renaming at the interface method.
+#
+# gorename rejects any renaming that would create a conflict at the point
+# of declaration, or a reference conflict (ambiguity or shadowing), or
+# anything else that could cause the resulting program not to compile.
+#
+#
+# Examples:
+#
+# $ gorename -offset file.go:#123 -to foo
+#
+#   Rename the object whose identifier is at byte offset 123 within file.go.
+#
+# $ gorename -from '"bytes".Buffer.Len' -to Size
+#
+#   Rename the "Len" method of the *bytes.Buffer type to "Size".
+#
+# -----------------------------------------------------------------------------
+
+typeset -A opt_args
+
+_gorename() {
+  local -a flags __go_packages
+
+  __go_packages() {
+    local gopaths
+    declare -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _path_files -W "$p/src" -/
+    done
+  }
+
+  __offset() {
+
+  }
+
+  flags=(
+  '-d:display diffs instead of rewriting files'
+  '-diffcmd:diff command invoked when using -d (default "diff")'
+  '-force:causes the renaming to proceed even if conflicts were reported'
+  '-from:specifies the object to rename using a query notation'
+  '-offset:specifies the filename and byte offset of an identifier to rename'
+  '-tags:list of build tags to consider satisfied during the build'
+  '-to:the new name'
+  '-v:enables verbose logging'
+  '-help:show usage message'
+  )
+
+  _arguments \
+    "1: :{_describe 'flag' flags}" \
+    '*:: :->args'
+
+  case $state in
+    args)
+      case $words[1] in
+        -offset) # -offset <file>:#<byte-offset>)
+          if compset -P ':#'; then
+            _alternative ':go files:_path_files -g "*.go"' && ret=0
+          else
+            _alternative ':byte-offset:' && ret=0
+          fi
+          ;;
+        -from) # -from <spec>
+          _arguments \
+            '*:packages:__go_packages'
+          ;;
+        -to) # -to <name>
+          _arguments \
+            '*:packages:__go_packages'
+          ;;
+      esac # case $words[1]
+      ;;
+  esac # case $state
+
+  return ret
+}
+
+_gorename "$*"
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:et

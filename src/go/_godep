@@ -1,0 +1,110 @@
+#compdef godep
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/tools/godep
+#
+# -----------------------------------------------------------------------------
+
+function _godep() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands _verbose_debug
+
+  commands=(
+  'save:list and copy dependencies into Godeps'
+  'go:run the go tool with saved dependencies'
+  'get:download and install packages with specified dependencies'
+  'path:print GOPATH for dependency code'
+  'restore:check out listed dependency versions in GOPATH'
+  'update:update selected packages or the go version'
+  'diff:shows the diff between current and previously saved set of dependencies'
+  'version:show version info'
+  'help:more information about a command'
+  )
+
+  _verbose_debug=(
+  '-v:verbose output is enabled'
+  '-d:debug output is enabled'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'godep command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        save)
+          _arguments \
+            '-r[import statements will be rewritten to refer directly to the copied source code]' \
+            '-t[test files (*_test.go files + testdata directories) are also saved]' \
+            ${_verbose_debug[@]} \
+            '*:file:_files' \
+            && ret=0
+          ;;
+        # TODO(zchee): Support go command completion
+        go)
+          ;;
+        get)
+          _arguments \
+            '-t[dependencies of test files are also downloaded and installed]' \
+            ${_verbose_debug[@]} \
+            && ret=0
+          ;;
+        (path|restore|diff|version)
+          _arguments \
+            ${_verbose_debug[@]} \
+            && ret=0
+          ;;
+        (update)
+          _arguments \
+            '-goversion[update the recorded go version]:go version' \
+            ${_verbose_debug[@]} \
+          ;;
+        help)
+          _arguments "1: :{_describe 'command' commands -- topics}" \
+            && ret=0
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_godep "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

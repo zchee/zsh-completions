@@ -1,0 +1,125 @@
+#compdef gas
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2017, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/GoASTScanner/gas
+#
+# GAS - Go AST Scanner
+#
+# Gas analyzes Go source code to look for common programming mistakes that
+# can lead to security problems.
+#
+# USAGE:
+#
+#  # Check a single Go file
+#  $ gas example.go
+#
+#  # Check all files under the current directory and save results in
+#  # json format.
+#  $ gas -fmt=json -out=results.json ./...
+#
+#  # Run a specific set of rules (by default all rules will be run):
+#  $ gas -include=G101,G203,G401 ./...
+#
+#  # Run all rules except the provided
+#  $ gas -exclude=G101 ./...
+#
+#
+# OPTIONS:
+#
+#   -conf string
+#      Path to optional config file
+#   -exclude string
+#      Comma separated list of rules IDs to exclude. (see rule list)
+#   -fmt string
+#      Set output format. Valid options are: json, csv, html, or text (default "text")
+#   -include string
+#      Comma separated list of rules IDs to include. (see rule list)
+#   -nosec
+#      Ignores #nosec comments when set
+#   -out string
+#      Set output file for results
+#   -quiet
+#      Only show output when errors are found
+#   -skip value
+#      File pattern to exclude from scan. Uses simple * globs and requires full or partial match (default *_test.go)
+#   -tool value
+#      GAS utilities to assist with rule development (default imports, ast, callobj, uses, types, defs, comments)
+#
+#
+# RULES:
+#
+#  G101: Look for hardcoded credentials
+#  G102: Bind to all interfaces
+#  G103: Audit the use of unsafe block
+#  G104: Audit errors not checked
+#  G105: Audit the use of big.Exp function
+#  G201: SQL query construction using format string
+#  G202: SQL query construction using string concatenation
+#  G203: Use of unescaped data in HTML templates
+#  G204: Audit use of command execution
+#  G301: Poor file permissions used when creating a directory
+#  G302: Poor file permisions used when creation file or using chmod
+#  G303: Creating tempfile using a predictable path
+#  G401: Detect the usage of DES, RC4, or MD5
+#  G402: Look for bad TLS connection settings
+#  G403: Ensure minimum RSA key length of 2048 bits
+#  G404: Insecure random number source (rand)
+#  G501: Import blacklist: crypto/md5
+#  G502: Import blacklist: crypto/des
+#  G503: Import blacklist: crypto/rc4
+#  G504: Import blacklist: net/http/cgi
+#
+# -----------------------------------------------------------------------------
+
+function _gas() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-exclude[File pattern to exclude from scan (default *_test.go)]:value' \
+    '-fmt[Set output format (default "text")]:string:(json csv text)' \
+    '-nosec[Ignores #nosec comments when set]' \
+    '-out[Set output file for results]:string' \
+    '-rule[GAS rules enabled when performing a scan]:value:(tls_ok tls_old rsa exec crypto hardcoded perms tls_good templates rand sql bind tempfile unsafe errors httpoxy)' \
+    '-tool[GAS utilities to assist with rule development (default dump)]:value:(dump)' \
+    '*:file:_path_files -g "*.go"' \
+    && ret=0
+
+  return ret
+}
+
+_gas "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

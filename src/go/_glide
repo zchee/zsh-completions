@@ -1,0 +1,214 @@
+#compdef glide
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/Masterminds/glide
+#
+# -----------------------------------------------------------------------------
+
+function _glide() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+
+  commands=(
+  'about:Learn about Glide'
+  {create,init}:'Initialize a new project, creating a glide.yaml file'
+  {cache-clear,cc}:'Clears the Glide cache'
+  {config-wizard,cw}:'Wizard that makes optional suggestions to improve config in a glide.yaml file'
+  'get:Install one or more packages into `vendor/` and add dependency to glide.yaml'
+  {help,h}:'Shows a list of commands or help for one command'
+  'import:Import files from other dependency management systems'
+  {install,i}:"Install a project's dependencies"
+  'info:Info prints information about this project'
+  'list:List prints all dependencies that the present code references'
+  'mirror:Manage mirrors'
+  'name:Print the name of this project'
+  {novendor,nv}:'List all non-vendor paths in a directory'
+  {remove,rm}:'Remove a package from the glide.yaml file, and regenerate the lock file'
+  "rebuild:Rebuild ('go build') the dependencies"
+  {update,up}:"Update a project's dependencies"
+  )
+
+  _go_packages() {
+    local -a gopath
+    gopath=("${(s/:/)$(go env GOPATH)}")
+    for p in $gopath; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  _glide_vendor_packages() {
+    local vcs_root
+    vcs_root=$(git rev-parse --show-toplevel --quiet)
+    _alternative ':glide vendor packages:_path_files -W "$vcs_root/vendor" -/'
+  }
+
+  _arguments -C \
+    {--yaml,-y}'[value  Set a YAML configuration file]:yaml file' \
+    {--quiet,-q}'[Quiet (no info or debug messages)]' \
+    '--debug[Print debug verbose informational messages]' \
+    '--home[The location of Glide files \[$GLIDE_HOME\]]' \
+    '--tmp[The temp directory to use \[$GLIDE_TMP\]]' \
+    '--no-color[Turn off colored output for log messages]' \
+    {--help,-h}'[show help]' \
+    {--version,-v}'[print the version]' \
+    "1: :{_describe 'glide command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        (create|init)
+          _arguments \
+            '--skip-import[When initializing skip importing from other package managers]' \
+            '--non-interactive[Disable interactive prompts]' \
+            && ret=0
+          ;;
+
+        (get)
+          _arguments \
+            '--test[Add test dependencies]' \
+            '--insecure[Use http:// rather than https:// to retrieve packages]' \
+            {--no-recursive,--quick}"[Disable updating dependencies' dependencies]" \
+            '--force[If there was a change in the repo or VCS switch to new one. Warning, changes will be lost]' \
+            '--all-dependencies[This will resolve all dependencies for all packages, not just those directly used]' \
+            '--resolve-current[Resolve dependencies for only the current system rather than all build modes]' \
+            {--strip-vendor,-v}'[Removes nested vendor and Godeps/_workspace directories]' \
+            '--non-interactive[Disable interactive prompts]' \
+            '--skip-test[Resolve dependencies in test files]' \
+            '*: :_go_packages' \
+            && ret=0
+          ;;
+
+        (import)
+          local -a tools
+          tools=(
+          "godep:Import Godep's Godeps.json files and display the would-be yaml file"
+          "gpm:Import GPM's Godeps and Godeps-Git files and display the would-be yaml file"
+          "gb:Import gb's manifest file and display the would-be yaml file"
+          'gom:Import Gomfile and display the would-be yaml file'
+          )
+
+          _arguments \
+            "1: :{_describe 'import from' tools}" \
+            && ret=0
+          ;;
+
+        (info)
+          # TODO(zchee): Support format completion
+          _arguments \
+            {--format,-f}'[Format of the information wanted (required)' \
+            && ret=0
+          ;;
+
+        (install|i)
+          _arguments \
+            '--force[If there was a change in the repo or VCS switch to new one. Warning: changes will be lost]' \
+            {--strip-vendor,-v}'[Removes nested vendor and Godeps/_workspace directories]' \
+            '--skip-test[Resolve dependencies in test files]' \
+            && ret=0
+          ;;
+
+        (list)
+          _arguments \
+            {--output,-o}'[Output format (default: "text")]:output format:(json json-pretty text)' \
+            && ret=0
+          ;;
+
+        (mirror)
+          local -a mirror_command
+          mirror_command=(
+          'list:List the current mirrors'
+          'set:Set a mirror. This overwrites an existing entry if one exists'
+          {remove,rm}:'Remove an mirror'
+          )
+          _arguments \
+            "1: :{_describe 'mirror command' mirror_command}" \
+            '*:: :->args' \
+            && ret=0
+
+            case $words[1] in
+              (set)
+                _arguments \
+                  '--vcs[The VCS type to use. Autodiscovery is attempted when not supplied]:vcs type:(git svn bzr hg)'
+                ;;
+              (remove|rm)
+                # TODO(zchee): parse mirrors.yaml or get url from 'list' command
+                ;;
+            esac
+          ;;
+
+        (novendor|nv)
+          _arguments \
+            {--dir,-d}'[Specify a directory to run novendor against]:dir:_path_files -/' \
+            {--no-subdir,-x}"[Specify this to prevent nv from append '/...' to all directories]" \
+            && ret=0
+          ;;
+
+        (remove|rm)
+          _arguments \
+            {--delete,-d}'[Also delete from vendor/ any packages that are no longer used]' \
+            '*: :_glide_vendor_packages' \
+            && ret=0
+          ;;
+
+        (update|up)
+          _arguments \
+            {--no-recursive,--quick}"[Disable updating dependencies' dependencies]" \
+            '--force[If there was a change in the repo or VCS switch to new one. Warning, changes will be lost]' \
+            '--all-dependencies[This will resolve all dependencies for all packages, not just those directly used]' \
+            '--resolve-current[Resolve dependencies for only the current system rather than all build modes]' \
+            {--strip-vendor,-v}'[Removes nested vendor and Godeps/_workspace directories]' \
+            '--skip-test[Resolve dependencies in test files]' \
+            '*: :_glide_vendor_packages' \
+            && ret=0
+          ;;
+
+        (about|config-wizard|cw|cache-clear|cc|name|rebuild)
+          ret=0
+          # nothing to do
+          ;:
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_glide "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

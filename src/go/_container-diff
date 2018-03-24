@@ -1,0 +1,170 @@
+#compdef container-diff
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/GoogleCloudPlatform/container-diff
+#
+# container-diff is a CLI tool for analyzing and comparing container images.
+#
+# Usage:
+#   container-diff [command]
+#
+# Available Commands:
+#   analyze     Analyzes an image: [image]
+#   diff        Compare two images: [image1] [image2]
+#   help        Help about any command
+#   version     Print the version of container-diff
+#
+# Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#   -h, --help                             help for container-diff
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "container-diff [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+
+function _container-diff() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'analyze:Analyzes an image: [image]'
+  'diff:Compare two images: [image1] [image2]'
+  'help:Help about any command'
+  'version:Print the version of container-diff'
+  )
+
+  local -a __global_help
+  __global_help=(
+  '--alsologtostderr[log to standard error as well as files]'
+  '--log_backtrace_at[when logging hits line file:N, emit a stack trace (default :0)]:traceLocation(int)'
+  '--log_dir[If non-empty, write log files in this directory]:directory'
+  '--logtostderr[log to standard error instead of files]'
+  '--stderrthreshold[logs at or above this threshold go to stderr (default 2)]:severity'
+  {-v,--v}'[log level for V logs]:log level'
+  '--vmodule[comma-separated list of pattern=N settings for file-filtered logging]:moduleSpec'
+  )
+
+  __docker_complete_images() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a images
+      images=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/(#b)([^ ]##) ##([^ ]##) ##([^ ]##)*/${match[3]}:${(r:15:: :::)match[2]} in ${match[1]}})
+      __docker_complete_repositories_with_tags && ret=0
+      _describe -t docker-images "images" images && ret=0
+      return ret
+  }
+
+  __docker_complete_repositories_with_tags() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a repos onlyrepos matched
+      declare m
+      repos=(${${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/ ##/:::}%% *})
+      repos=(${${repos%:::<none>}#<none>})
+      # Check if we have a prefix-match for the current prefix.
+      onlyrepos=(${repos%::*})
+      for m in $onlyrepos; do
+          [[ ${PREFIX##${~~m}} != ${PREFIX} ]] && {
+              # Yes, complete with tags
+              repos=(${${repos/:::/:}/:/\\:})
+              _describe -t docker-repos-with-tags "repositories with tags" repos && ret=0
+              return ret
+          }
+      done
+      # No, only complete repositories
+      onlyrepos=(${${repos%:::*}/:/\\:})
+      _describe -t docker-repos "repositories" onlyrepos -qS : && ret=0
+
+      return ret
+  }
+
+  _arguments -C \
+    {-h,--help}'[help for container-diff]' \
+    ${__global_help[@]} \
+    "1: :{_describe 'container-diff command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+
+      case $words[1] in
+        analyze)
+          _arguments \
+            {-h,--help}'[help for analyze]' \
+            {-j,--json}'[JSON Output defines if the diff should be returned in a human readable format (false) or a JSON (true).]' \
+            {-o,--order}'[Set this flag to sort any file/package results by descending size. Otherwise, they will be sorted by name.]' \
+            {-s,--save}'[Set this flag to save rather than remove the final image filesystems on exit.]' \
+            {-t,--types}'[This flag sets the list of analyzer types to use.  It expects a comma separated list of supported analyzers.]:string' \
+            "1:image:__docker_complete_images" \
+            && ret=0
+          _values \
+            'global flags' \
+            ${__global_help[@]} \
+            && ret=0
+          ;;
+
+        diff)
+          _arguments \
+            {-h,--help}'[help for analyze]' \
+            {-j,--json}'[JSON Output defines if the diff should be returned in a human readable format (false) or a JSON (true).]' \
+            {-o,--order}'[Set this flag to sort any file/package results by descending size. Otherwise, they will be sorted by name.]' \
+            {-s,--save}'[Set this flag to save rather than remove the final image filesystems on exit.]' \
+            {-t,--types}'[This flag sets the list of analyzer types to use.  It expects a comma separated list of supported analyzers.]:string' \
+            "1:image 1:__docker_complete_images" \
+            "2:image 2:__docker_complete_images" \
+            && ret=0
+          _values \
+            'global flags' \
+            ${__global_help[@]} \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_container-diff "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

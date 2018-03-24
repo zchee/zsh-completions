@@ -1,0 +1,375 @@
+#compdef cayley
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/cayleygraph/cayley
+#
+# Cayley is a graph store and graph query layer.
+#
+# Usage:
+#   cayley [command]
+#
+# Available Commands:
+#   convert     Convert quad files between supported formats.
+#   dedup       Deduplicate bnode values
+#   dump        Bulk-dump the database into a quad file.
+#   help        Help about any command
+#   http        Serve an HTTP endpoint on the given host and port.
+#   init        Create an empty database.
+#   load        Bulk-load a quad file into the database.
+#   query       Run a query in a specified database and print results.
+#   repl        Drop into a REPL of the given query language.
+#   upgrade     Upgrade Cayley database to current supported format.
+#   version     Prints the version of Cayley.
+#
+# Flags:
+#       --alsologtostderr string   log to standard error as well as files
+#       --backtrace string         when logging hits line file:N, emit a stack trace (default ":0")
+#       --batch int                size of quads batch to load at once (default 10000)
+#   -c, --config string            path to an explicit configuration file
+#       --cpuprofile string        path to output cpu profile
+#   -d, --db string                database backend to use: bolt, btree, cockroach, couch, elastic, leveldb, memstore, mongo, mysql, postgres, sql (default "memstore")
+#   -a, --dbpath string            path or address string for database
+#       --dup                      don't stop loading on duplicated on add (default true)
+#   -h, --help                     help for cayley
+#   -l, --log string               logs at or above this threshold go to stderr (default "2")
+#       --logs string              If non-empty, write log files in this directory
+#       --logtostderr string       log to standard error instead of files (default "true")
+#       --memprofile string        path to output memory profile
+#       --missing                  don't stop loading on missing key on delete
+#       --read_only                open database in read-only mode
+#   -v, --verbose string           log level for V logs
+#       --vmodule string           comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "cayley [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Convert quad files between supported formats.
+#
+# Usage:
+#   cayley convert [flags]
+#
+# Aliases:
+#   convert, conv
+#
+# Flags:
+#   -o, --dump string          quad file to dump the database to (".gz" supported, "-" for stdout)
+#       --dump_format string   quad file format to use instead of auto-detection ("gml", "graphml", "graphviz", "json", "json-stream", "jsonld", "nquads", "pquads")
+#   -h, --help                 help for convert
+#   -i, --load string          quad file to load after initialization (".gz" supported, "-" for stdin)
+#       --load_format string   quad file format to use for loading instead of auto-detection ("json", "json-stream", "jsonld", "nquads", "pquads")
+#
+# -----------------------------------------------------------------------------
+#
+# Deduplicate bnode values
+#
+# Usage:
+#   cayley dedup [flags]
+#
+# Flags:
+#   -h, --help          help for dedup
+#       --pred string   type predicate to use to find nodes (default "rdf:type")
+#       --type string   type value to use to find nodes
+#
+# -----------------------------------------------------------------------------
+#
+# Bulk-dump the database into a quad file.
+#
+# Usage:
+#   cayley dump [flags]
+#
+# Flags:
+#   -o, --dump string          quad file to dump the database to (".gz" supported, "-" for stdout)
+#       --dump_format string   quad file format to use instead of auto-detection ("gml", "graphml", "graphviz", "json", "json-stream", "jsonld", "nquads", "pquads")
+#   -h, --help                 help for dump
+#
+# -----------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+#     Simply type cayley help [path to command] for full details.
+#
+# Usage:
+#   cayley help [command] [flags]
+#
+# Flags:
+#   -h, --help   help for help
+#
+# -----------------------------------------------------------------------------
+#
+# Serve an HTTP endpoint on the given host and port.
+#
+# Usage:
+#   cayley http [flags]
+#
+# Flags:
+#       --assets string        explicit path to the HTTP assets
+#   -h, --help                 help for http
+#       --host string          host:port to listen on (default "127.0.0.1:64210")
+#       --init                 initialize the database before using it
+#   -i, --load string          quad file to load after initialization (".gz" supported, "-" for stdin)
+#       --load_format string   quad file format to use for loading instead of auto-detection ("json", "json-stream", "jsonld", "nquads", "pquads")
+#   -t, --timeout duration     elapsed time until an individual query times out (default 30s)
+#
+# -----------------------------------------------------------------------------
+#
+# Create an empty database.
+#
+# Usage:
+#   cayley init [flags]
+#
+# Flags:
+#   -h, --help   help for init
+#
+# -----------------------------------------------------------------------------
+#
+# Bulk-load a quad file into the database.
+#
+# Usage:
+#   cayley load [flags]
+#
+# Flags:
+#   -o, --dump string          quad file to dump the database to (".gz" supported, "-" for stdout)
+#       --dump_format string   quad file format to use instead of auto-detection ("gml", "graphml", "graphviz", "json", "json-stream", "jsonld", "nquads", "pquads")
+#   -h, --help                 help for load
+#       --init                 initialize the database before using it
+#   -i, --load string          quad file to load after initialization (".gz" supported, "-" for stdin)
+#       --load_format string   quad file format to use for loading instead of auto-detection ("json", "json-stream", "jsonld", "nquads", "pquads")
+#
+# -----------------------------------------------------------------------------
+#
+# Run a query in a specified database and print results.
+#
+# Usage:
+#   cayley query [flags]
+#
+# Aliases:
+#   query, qu
+#
+# Flags:
+#   -h, --help                 help for query
+#       --init                 initialize the database before using it
+#       --lang string          query language to use ("mql", "sexp", "gizmo", "graphql") (default "gizmo")
+#   -n, --limit int            limit a number of results (default 100)
+#   -i, --load string          quad file to load after initialization (".gz" supported, "-" for stdin)
+#       --load_format string   quad file format to use for loading instead of auto-detection ("json", "json-stream", "jsonld", "nquads", "pquads")
+#   -t, --timeout duration     elapsed time until an individual query times out (default 30s)
+#
+# -----------------------------------------------------------------------------
+#
+# Drop into a REPL of the given query language.
+#
+# Usage:
+#   cayley repl [flags]
+#
+# Flags:
+#   -h, --help                 help for repl
+#       --init                 initialize the database before using it
+#       --lang string          query language to use ("graphql", "mql", "sexp", "gizmo") (default "gizmo")
+#   -i, --load string          quad file to load after initialization (".gz" supported, "-" for stdin)
+#       --load_format string   quad file format to use for loading instead of auto-detection ("json", "json-stream", "jsonld", "nquads", "pquads")
+#   -t, --timeout duration     elapsed time until an individual query times out (default 30s)
+#
+# -----------------------------------------------------------------------------
+#
+# Upgrade Cayley database to current supported format.
+#
+# Usage:
+#   cayley upgrade [flags]
+#
+# Flags:
+#   -h, --help   help for upgrade
+#
+# -----------------------------------------------------------------------------
+#
+# Prints the version of Cayley.
+#
+# Usage:
+#   cayley version [flags]
+#
+# Flags:
+#   -h, --help   help for version
+#
+# -----------------------------------------------------------------------------
+
+function _cayley() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'convert:Convert quad files between supported formats.'
+  'dedup:Deduplicate bnode values'
+  'dump:Bulk-dump the database into a quad file.'
+  'help:Help about any command'
+  'http:Serve an HTTP endpoint on the given host and port.'
+  'init:Create an empty database.'
+  'load:Bulk-load a quad file into the database.'
+  'query:Run a query in a specified database and print results.'
+  'repl:Drop into a REPL of the given query language.'
+  'upgrade:Upgrade Cayley database to current supported format.'
+  'version:Prints the version of Cayley.'
+  )
+
+  local -a global_flags
+  global_flags=(
+  '--alsologtostderr[log to standard error as well as files]:string' \
+  '--backtrace[when logging hits line file:N, emit a stack trace (default ":0")]:string' \
+  '--batch[size of quads batch to load at once (default 10000)]:int' \
+  {-c,--config}'[path to an explicit configuration file]:string' \
+  '--cpuprofile[path to output cpu profile]:string' \
+  {-d,--db}'[database backend to use: bolt, btree, cockroach, couch, elastic, leveldb, memstore, mongo, mysql, postgres, sql (default "memstore")]:string' \
+  {-a,--dbpath}'[path or address string for database]:string' \
+  "--dup[don't stop loading on duplicated on add (default true)]:string" \
+  {-h,--help}'[help for cayley]' \
+  {-l,--log}'[logs at or above this threshold go to stderr (default "2")]:string' \
+  '--logs[If non-empty, write log files in this directory]:string' \
+  '--logtostderr[log to standard error instead of files (default "true")]:string' \
+  '--memprofile[path to output memory profile]:string' \
+  "--missing[don't stop loading on missing key on delete]" \
+  '--read_only[open database in read-only mode]' \
+  {-v,--verbose}'[log level for V logs]:string' \
+  '--vmodule[comma-separated list of pattern=N settings for file-filtered logging]:string' \
+  )
+
+  _arguments -C \
+    "1: :{_describe 'cayley command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        convert)
+          _arguments \
+            {-o,--dump}'[quad file to dump the database to (".gz" supported, "-" for stdout)]:string' \
+            '--dump_format[quad file format to use instead of auto-detection]:format:(gml graphml graphviz json json-stream jsonld nquads pquads)' \
+            {-h,--help}'[help for convert]' \
+            {-i,--load}'[quad file to load after initialization (".gz" supported, "-" for stdin)]:string' \
+            '--load_format[quad file format to use for loading instead of auto-detection]:format:(json json-stream jsonld nquads pquads)'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        dedup)
+          _arguments \
+            {-h,--help}'[help for dedup]' \
+            '--pred[type predicate to use to find nodes (default "rdf:type")]:string' \
+            '--type[type value to use to find nodes]:string'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        dump)
+          _arguments \
+            {-h,--help}'[help for dedup]' \
+            {-o,--dump}'[quad file to dump the database to (".gz" supported, "-" for stdout)]:string' \
+            '--dump_format[quad file format to use instead of auto-detection]:format:(gml graphml graphviz json json-stream jsonld nquads pquads)'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        (init|help|upgrade|version)
+          _arguments \
+            {-h,--help}'[help for dedup]'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        http)
+          _arguments \
+            '--assets[explicit path to the HTTP assets]:string' \
+            {-h,--help}'[help for http]' \
+            '--host[host:port to listen on (default "127.0.0.1:64210")]:string' \
+            '--init[initialize the database before using it]' \
+            {-i,--load}'[quad file to load after initialization (".gz" supported, "-" for stdin)]:string' \
+            '--load_format[quad file format to use for loading instead of auto-detection]:format:(json json-stream jsonld nquads pquads)' \
+            {-t,--timeout}'[elapsed time until an individual query times out (default 30s)]:duration'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        load)
+          _arguments \
+            {-o,--dump}'[quad file to dump the database to (".gz" supported, "-" for stdout)]:string' \
+            '--dump_format[quad file format to use instead of auto-detection]:format:(gml graphml graphviz json json-stream jsonld nquads pquads)' \
+            {-h,--help}'[help for convert]' \
+            {-i,--load}'[quad file to load after initialization (".gz" supported, "-" for stdin)]:string' \
+            '--load_format[quad file format to use for loading instead of auto-detection]:format:(json json-stream jsonld nquads pquads)'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        query)
+          _arguments \
+            {-h,--help}'[help for convert]' \
+            '--init[initialize the database before using it]' \
+            '--lang[query language to use]:language:(mql sexp gizmo graphql)' \
+            {-n,--limit}'[limit a number of results (default 100)]:int' \
+            {-i,--load}'[quad file to load after initialization (".gz" supported, "-" for stdin)]:string' \
+            '--load_format[quad file format to use for loading instead of auto-detection]:format:(json json-stream jsonld nquads pquads)' \
+            {-t,--timeout}'[elapsed time until an individual query times out (default 30s)]:duration'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+
+        repl)
+          _arguments \
+            {-h,--help}'[help for convert]' \
+            '--init[initialize the database before using it]' \
+            '--lang[query language to use]:language:(mql sexp gizmo graphql)' \
+            {-i,--load}'[quad file to load after initialization (".gz" supported, "-" for stdin)]:string' \
+            '--load_format[quad file format to use for loading instead of auto-detection]:format:(json json-stream jsonld nquads pquads)' \
+            {-t,--timeout}'[elapsed time until an individual query times out (default 30s)]:duration'
+          _values \
+            'global flags' \
+            $global_flags
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_cayley "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

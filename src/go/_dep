@@ -1,0 +1,167 @@
+#compdef dep
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2017 The Go Authors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Google Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/golang/dep
+#
+# Dep is a tool for managing dependencies for Go projects
+#
+# Usage: "dep [command]"
+#
+# Commands:
+#
+#   init     Initialize a new project with manifest and lock files
+#   status   Report the status of the project's dependencies
+#   ensure   Ensure a dependency is safely vendored in the project
+#   prune    Prune the vendor tree of unused packages
+#   version  Show the dep version information
+#
+# Examples:
+#   dep init                               set up a new project
+#   dep ensure                             install the project's dependencies
+#   dep ensure -update                     update the locked versions of all dependencies
+#   dep ensure -add github.com/pkg/errors  add a dependency to the project
+#
+# Use "dep help [command]" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+
+function _dep() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'init:Initialize a new project with manifest and lock files'
+  "status:Report the status of the project's dependencies"
+  'ensure:Ensure a dependency is safely vendored in the project'
+  'prune:Prune the vendor tree of unused packages'
+  'version:Show the dep version information'
+  )
+
+  _go_packages() {
+    local gopaths
+    declare -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  # TODO(zchee): semver spec completion
+  # __dep_spec() {
+  #   if compset -P '*@'; then
+  #     local version_spec
+  #     _version_spec=(
+  #     '@^:major version. If github.com/pkg/foo@^1.0.1, matching \>= 1.0.1, < 2.0.0'
+  #     '@~:minor version. If github.com/pkg/foo@~1.0.1, matching 1.0.x preferring latest'
+  #     )
+  #     _arguments \
+  #       '*:version spec:_version_spec' && ret=0
+  #   elif compset -P '*:'; then
+  #     local gopaths
+  #     declare -a gopaths
+  #     gopaths=("${(s/:/)$(go env GOPATH)}")
+  #     for p in $gopaths; do
+  #       _alternative ':different dependency location:_path_files -W "$p/src" -/'
+  #     done
+  #   else
+  #     _arguments \
+  #       '*:gopath packages:_go_packages -qS@' \
+  #       && ret=0
+  #   fi
+  #
+  #   return ret
+  # }
+
+  _arguments -C \
+    "1: :{_describe 'dep ubcommand' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      case $words[1] in
+        init)
+          _arguments \
+            '-gopath[search in GOPATH for dependencies]' \
+            "-no-examples[don't include example in Gopkg.toml]" \
+            '-skip-tools[skip importing configuration from other dependency managers]' \
+            '-v[enable verbose logging]' \
+            '-help[show help]' \
+            '*:root:_directories' \
+            && ret=1
+          ;;
+        status)
+          _arguments \
+            '-detailed[report more detailed status]' \
+            '-dot[output the dependency graph in GraphViz format]' \
+            '-f[output in text/template format (default: <none>)]' \
+            '-json[output in JSON format]' \
+            '-missing[only show missing dependencies]' \
+            '-modified[only show modified dependencies]' \
+            '-old[only show out-of-date dependencies]' \
+            '-unused[only show unused dependencies]' \
+            '-v[enable verbose logging]' \
+            '-help[show help]' \
+            '*: :_go_packages' \
+            && ret=1
+          ;;
+        ensure)
+          _arguments \
+            '-add[add new dependencies, or populate Gopkg.toml with constraints for existing dependencies]' \
+            '-dry-run[only report the changes that would be made]' \
+            '-examples[print detailed usage examples]' \
+            '-help[show help]' \
+            '-no-vendor[update Gopkg.lock (if needed), but do not update vendor/]' \
+            '-update[update the named dependencies (or all, if none are named) in Gopkg.lock to the latest allowed by Gopkg.toml]' \
+            '-v[enable verbose logging]' \
+            '-vendor-only[populate vendor/ from Gopkg.lock without updating it first]' \
+            '-help[show help]' \
+            '*: :_go_packages' \
+            && ret=1
+          ;;
+        (prune|version)
+          _arguments \
+            '-v[enable verbose logging]' \
+            '-help[show help]' \
+            && ret=1
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_dep "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
