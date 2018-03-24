@@ -1,0 +1,70 @@
+#compdef xcrun
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2015 Keith Smiley (http://keith.so)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the 'Software'), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# -----------------------------------------------------------------------------
+
+_sdks() {
+  local -a sdks
+  sdks=$(xcodebuild -showsdks 2>/dev/null | grep -o "\-sdk.*" | sed -E 's/.* ([a-z]+).*/\1/' | uniq)
+  echo $sdks
+}
+
+_arguments \
+  '(-f --find)'{-f,--find}'[Find and print tool path]' \
+  '(-h --help)'{-h,--help}'[Show help]' \
+  '(-k --kill-cache)'{-k,--kill-cache}'[Invalidate existing cache]' \
+  '(-l --log)'{-l,--log}'[Show commands to be executed]' \
+  '(-n --no-cache)'{-n,--no-cache}'[Do not use lookup cache]' \
+  '(-r --run)'{-r,--run}'[Execute tool (default)]' \
+  '(-v --verbose)'{-v,--verbose}'[Show verbose output]' \
+  '*: :->executables' \
+  '--sdk[Specify SDK]:SDKs:->sdks' \
+  '--show-sdk-path[Show selected SDK path]' \
+  '--show-sdk-platform-path[Show selected SDK platform path]' \
+  '--show-sdk-platform-version[Show selected SDK platform version]' \
+  '--show-sdk-version[Show selected SDK version]' \
+  '--toolchain[Specify toolchain]:Toolchains:->toolchains' \
+  '--version[Print version]'
+
+case "$state" in
+  executables)
+    executables=($(ls $(dirname $(xcrun -f swift))))
+    if [[ $executables != "" ]]; then
+      _values "Executables" $executables
+    fi
+    ;;
+  sdks)
+    if ([[ ${+installed_sdks_platforms} -eq 0 ]] || _cache_invalid SDK_PLATFORMS) && ! _retrieve_cache SDK_PLATFORMS; then
+      installed_sdks_platforms=($(_sdks))
+      _store_cache SDK_PLATFORMS installed_sdks_platforms
+    fi
+
+    if [[ $installed_sdks_platforms != "" ]]; then
+      _values "SDK to use" $installed_sdks_platforms
+    fi
+    ;;
+  toolchains)
+    toolchains=($(ls $(xcode-select -p)/Toolchains/*.xctoolchain))
+    if [[ $toolchains != "" ]]; then
+      _values "Toolchains" $toolchains
+    fi
+    ;;
+esac

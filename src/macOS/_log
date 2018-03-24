@@ -1,0 +1,634 @@
+#compdef log
+
+# -----------------------------------------------------------------------------
+# The MIT License (MIT)
+#
+# Copyright (c) 2016 Koichi Shiraishi
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# -----------------------------------------------------------------------------
+#
+# log(1)                    BSD General Commands Manual                   log(1)
+#
+# NAME
+#      log -- Access system wide log messages created by os_log, os_trace and other logging systems.
+#
+# SYNOPSIS
+#      log [command [options]]
+#
+#      log help [command]
+#
+#      log collect [--output path] [--start date/time] [--size num [k|m]] [--last num [m|h|d]]
+#
+#      log config [--reset | --status] [--mode mode(s)] [--subsystem name [--category name]] [--process pid]
+#
+#      log erase [--all] [--ttl]
+#
+#      log show [--archive archive | --file file] [--predicate filter] [--source] [--style json | syslog] [--start date/time]
+#          [--end date/time] [--info] [--debug] [--last time [m|h|d]] [--timezone local | timezone]
+#
+#      log stream [--level default | info | debug] [--parent pid | process] [--process pid | process] [--predicate filter] [--source]
+#          [--style json | syslog] [--timeout time [m|h|d]] [--type activity | log | trace]
+#
+# DESCRIPTION
+#      log is used to access system wide log messages created by os_log, os_trace and other logging systems.  The logging system stores
+#      content in /var/db/diagnostics and references content in /var/db/uuidtext.  These system directories are required for operation of
+#      the logging system.  Some commands require root privileges.
+#
+#      Available commands and their options:
+#
+#      help [command]   General help or help specific to command argument
+#
+#      collect          Collect the system logs into a .logarchive that can be viewed later with tools such as log or Console.  If an
+#                       output path is not specified, system_logs.logarchive will be created in the current directory.
+#
+#                       --output path    Save the archive to the specified path or file.  If the path is a directory, a file named sys-
+#                                        tem_logs.logarchive will be created in the specified directory.  If the path contains the exten-
+#                                        sion .logarchive, a new logarchive will be created with that name at the specified path.
+#
+#                       --start date/time
+#                                        Limits the content capture to the date and time forward to now.  The following date/time formats
+#                                        are accepted: "YYYY-MM-DD", "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM:SSZZZZZ"
+#
+#                       --last num [m|h|d]
+#                                        Limits the captured events to the period starting at the given interval ago from the current
+#                                        time. Time is assumed in seconds unless specified. Example: "--last 2m" or "--last 3h"
+#
+#                       --size num [k|m]
+#                                        The amount of data to be captured in kilobytes or megabytes.  This is an approximation, as the
+#                                        actual size may be more than requested.  Example: "--size 100k" or "--size 20m"
+#
+#      config           Configure, reset or read settings for the logging system.  config commands can act system-wide or on a subsystem.
+#                       If not specified, system-wide is assumed.  If subsystem is specified, category is optional.  Requires root
+#                       access.
+#
+#                       --reset | --status
+#                                        Option to show or reset the current settings for the system or a specific subsystem.  If reset
+#                                        or status is not specified, a change to the configuration is assumed.  For example, "log config
+#                                        --reset --subsystem com.mycompany.mysubsystem" will reset the subsystem to its default settings.
+#                                        "log config --status" will show the current system-wide logging settings.  "log config --mode
+#                                        "level: default"" will set the system log level to default.
+#
+#                       --subsystem name
+#                                        Set or get mode for a specified subsystem.
+#
+#                       --category name  Set or get mode for a specified category.  If category is supplied, subsystem is required.
+#
+#                       --process pid    Set mode for a specified pid.
+#
+#                       --mode mode(s)   Will enable given mode.  Modes include:
+#
+#                                        level: {off | default | info | debug} The level is a hierarchy, e.g. debug implies debug, info,
+#                                        and default. Off can only be used with process.
+#
+#                                        persist: {off | default | info | debug} The persist mode is a hierarchy, e.g. debug implies
+#                                        debug, info, and default.
+#
+#      erase            Delete selected log data from the system.  If no arguments are specified, the main log datastore and inflight log
+#                       data will be deleted.
+#
+#                       --all            Deletes main log datastore, and inflight log data as well as time-to-live data (TTL), and the
+#                                        fault and error content.
+#
+#                       --ttl            Deletes time-to-live log content.
+#
+#      show             Shows contents of the system log datastore, archive or a specific tracev3 file.  If a file or archive is not
+#                       specified, the system datastore will be shown.  If it is from a future system version that log cannot understand,
+#                       it exists with EX_DATAERR (65) and an error message.  The output contains only default level messages unless
+#                       --info and/or --debug are specified.
+#
+#                       --archive archive
+#                                        Display events stored in the given archive. The archive must be a valid log archive bundle with
+#                                        the suffix .logarchive.
+#
+#                       --file file      Display events stored in the given .tracev3 file. In order to be decoded, the file must be con-
+#                                        tained within a valid .logarchive bundle, or part of the system logs directory.
+#
+#                       --predicate filter
+#                                        Filters messages based on the provided predicate, based on NSPredicate.  A compound predicate or
+#                                        multiple predicates can be provided.  See section "PREDICATE-BASED FILTERING" below.
+#
+#                       --source         Include symbol names and source line numbers for messages, if available.
+#
+#                       --style json | syslog
+#                                        Output the content as a different style.
+#
+#                       --start date/time
+#                                        Shows content starting from the provided date.  The following date/time formats are accepted:
+#                                        "YYYY-MM-DD", "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM:SSZZZZZ"
+#
+#                       --end date/time  Shows content up to the provided date.  The following date/time formats are accepted: "YYYY-MM-
+#                                        DD", "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM:SSZZZZZ"
+#
+#                       --last time [m|h|d]
+#                                        Shows events that occurred within the given time relative to the end of the log archive.  Time
+#                                        may be specified as minutes, hours or days. Time is assumed in seconds unless specified.  Exam-
+#                                        ple: "--last 2m" or "--last 3h"
+#
+#                       --timezone local | timezone
+#                                        Displays content in the local timezone, or a specified timezone (see tzset(3)).  If not speci-
+#                                        fied, the output is displayed in the timezone at the time the entry was written to source ar-
+#                                        chive or file.
+#
+#                       --info           Shows info level messages in the output.
+#
+#                       --debug          Shows debug level messages in the output.
+#
+#      stream           Stream activities, log data or trace messages for the system or from a given process.  By default, the command
+#                       assumes system-wide streaming.  Specifying a process id with the --process option will narrow the results.
+#
+#                       --level default | info | debug
+#                                        Shows messages at specified level and below.  The level is a hierarchy. Specifying debug implies
+#                                        debug, info and default.
+#
+#                       --predicate filter
+#                                        Filters messages using the provided predicate based on NSPredicate.  A compound predicate or
+#                                        multiple predicates can be provided.  See section "PREDICATE-BASED FILTERING" below.
+#
+#                       --parent pid | process
+#                                        Any child process of the provided process or pid will stream messages associated with the same
+#                                        activity id.
+#
+#                       --process pid | process
+#                                        The process on which to operate.  This option can be passed more than once to operate on multi-
+#                                        ple processes.
+#
+#                       --style json | syslog
+#                                        Output the content as a different style.
+#
+#                       --source         Include symbol names and source line numbers for messages, if available.
+#
+#                       --timeout time [m|h|d]
+#                                        Timeout the stream operation after a specified time, e.g. "--timeout 5m", "--timeout 1h" If min-
+#                                        utes, hours, days not specified, seconds will be used.
+#
+#                       --type activity | log | trace
+#                                        Dictates the type of events to stream from a process.  By default all types are streamed unless
+#                                        otherwise specified.  Pass an appropriate --type for each requested type of event.
+#
+# PREDICATE-BASED FILTERING
+#      Using predicate-based filters via the --predicate option allows users to focus on messages based on the provided filter criteria.
+#      For detailed information on the use of predicate based filtering, please refer to the Predicate Programming Guide:
+#            https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Predicates/Articles/pSyntax.html
+#
+#      The filter argument defines one or more pattern clauses following NSPredicate rules.  Supported keys include:
+#
+#      eventType   Matches the type of event: logEvent, traceEvent, activityCreateEvent, or activityTransitionEvent.
+#
+#      eventMessage
+#                  Matches the pattern within the message text, or activity name of a log/trace entry.
+#
+#      messageType
+#                  Matches the type of message for logEvent and traceEvent, which includes "default", "info", "debug", etc.
+#
+#      processImagePath
+#                  Matches the pattern within the name of the process that originated the event.
+#
+#      senderImagePath
+#                  Matches the pattern within the name of the sender that originated the event.  This could be a specific library, frame-
+#                  work, kext, or any valid mach-o binary that is executed.
+#
+#      subsystem   Matches the pattern within the specified subsystem of the event.  Only works with log messages generated with
+#                  os_log(3) APIs.
+#
+#      category    Matches the pattern within the specified cateogry of the event.  Only works with log messages generated with os_log(3)
+#                  APIs.  When category is used, the subsystem filter should also be provided.
+#
+# PREDICATE-BASED FILTERING EXAMPLES
+#      Filter for specific subsystem:
+#       log show --predicate 'subsystem == "com.example.my_subsystem"'
+#
+#      Filter for specific subsystem and category:
+#       log show --predicate '(subsystem == "com.example.my_subsystem") && (category == "desired_category")'
+#
+#      Filter for specific subsystem and categories:
+#       log show --predicate '(subsystem == "com.example.my_subsystem") && (category IN { "category1", "category2" })'
+#
+#      Filter for a specific subsystem and sender(s):
+#       log show --predicate '(subsystem == "com.example.my_subsystem") && ((senderImagePath ENDSWITH "mybinary") || (senderImagePath ENDSWITH "myframework"))'
+#
+# PREDICATE-BASED FILTERING EXAMPLES WITH LOG LINE
+#      log show system_logs.logarchive --predicate 'subsystem == "com.example.subsystem" and category contains "CHECK"'
+#
+#      Timestamp                       Thread     Type        Activity     PID
+#      2016-06-13 11:46:37.248693-0700 0x7c393    Default     0x0          10371  timestamp: [com.example.subsystem.CHECKTIME] Time is 06/13/2016 11:46:37
+#
+#      log show --predicate 'processImagePath endswith "hidd" and senderImagePath contains[cd] "IOKit"' --info
+#
+#      Timestamp                       Thread     Type        Activity     PID
+#      2016-06-10 13:54:34.593220-0700 0x250      Info        0x0          113    hidd: (IOKit) [com.apple.iohid.default] Loaded 6 HID plugins
+#
+# ENVIRONMENT
+#      There are various environment variables that can be used to control logging, activity flow, and other things.
+#
+#      OS_ACTIVITY_MODE <m>         Change the mode of launched processes to:
+#                                   info          Enables info level messages.  Does not override logging Preferences that have info
+#                                                 level disabled.
+#                                   debug         Enables debug level messages which includes info level messages.  Does not override
+#                                                 logging Preferences that have info level or debug level disabled.
+#
+#      OS_ACTIVITY_STREAM <m>       Change the type of streaming enabled.
+#                                   live          Live streaming from the process using IPC.
+#
+#      OS_ACTIVITY_PROPAGATE_MODE   If set, will propagate the mode settings via activities.
+#
+# SEE ALSO
+#      os_log(3), os_trace(3)
+#
+# Darwin                           May 10, 2016                           Darwin
+#
+# -----------------------------------------------------------------------------
+#
+# usage:
+#     log <command>
+#
+# examples:
+#     log show
+#     log collect
+#     log erase --all
+#     log help stream
+#
+# commands:
+#     collect, config, erase, show, stream
+#
+# further help:
+#     log help <command>
+#
+# -----------------------------------------------------------------------------
+#
+# log: usage:
+#     log collect [<options>]
+#
+# description:
+#     Collect the system logs into a .logarchive that can be viewed with
+#     `log show` or Console.app.
+#
+# options:
+#     -l, --last <num>[m|h|d]       Collect logs starting <num>[m|h|d] ago
+#     -s, --start <time>            Collect logs starting at the given time
+#     -o, --output <path>           Output log archive to the given path
+#     -z, --size <num>[kK|mM]       Limit log collection to the given size
+#
+# notes:
+#     If an output path is not specified, system_logs.logarchive will be created
+#     in the current directory. If the output path is a directory, a file named
+#     `system_logs.logarchive` will be created in the specified directory. If the
+#     path contains the extension .logarchive, a new logarchive will be created
+#     with that name at the specified path.
+#
+# valid time formats:
+#     'Y-M-D H:m:s+zzzz', 'Y-M-D H:m:s', 'Y-M-D', '@unixtime'
+#
+# examples:
+#     log collect --output ~/mylogs.logarchive
+#     log collect --output /tmp
+#     log collect --start "2016-04-12" --output /Users/test --size 20m
+#     log collect --start "2016-04-12 06:30:00"
+#
+# -----------------------------------------------------------------------------
+#
+# log: usage:
+#     log config [ --status | --reset | --mode <modes> ]
+# 	[ --subsystem <name> [ --category <name> ] ]
+# 	[ --process { <pid> | <name> } ]
+#
+# Modes:
+# 	level: { default | info | debug }
+# 	persist: { off | default | info | debug }
+#
+# Usage:
+# 	Configure or read settings for the logging system.
+# 	config commands can act system-wide or on a subsystem.
+# 	config requires root access.
+#
+# Examples:
+# 	--mode "level:debug"
+# 	--process=999 --mode="persist:info,propagate:off"
+#
+# -----------------------------------------------------------------------------
+#
+# log: usage:
+#     log erase [-all] [--ttl]
+# Usage:
+# 	Delete selected log data from the system.
+# 	If no arguments are specified, the main log datastore
+# 	and inflight log data will be deleted.
+#
+# -----------------------------------------------------------------------------
+#
+# usage:
+#     log <command>
+#
+# examples:
+#     log show
+#     log collect
+#     log erase --all
+#     log help stream
+#
+# commands:
+#     collect, config, erase, show, stream
+#
+# further help:
+#     log help <command>
+#
+# -----------------------------------------------------------------------------
+#
+# log: usage:
+#     log show [ <archive> | <logfile> ...]
+# 	[ --predicate <predicate> ][ --source ][ --style (syslog|json) ]
+# 	[ --start "YYYY-MM-DD HH:MM:SS" ] [ --end "YYYY-MM-DD HH:MM:SS"]
+# 	[--info] [--debug]
+# 	[--last <num>[m|h|d] ]
+# 	[--timezone local|<timezone>]
+#	
+# Usage:
+# 	Shows contents of the system log datastore, archive or a specific tracev3 file.
+# 	If a file or archive is not specified, the system datastore will be shown.
+# 	The start and end date/time can be specified with or without time.
+# 	The output contains only default level messages unless --info and/or --debug are specified.
+#
+# Examples:
+#
+# log show mylogs.logarchive --info --debug
+# log show --predicate examples:
+# 	--predicate 'eventMessage contains "my message"'
+# 	--predicate 'eventType == logEvent and messageType == info'
+# 	--predicate 'processImagePath endswith "d"'
+# 	--predicate 'not processImagePath contains[c] "some spammer"'
+# 	--predicate 'processID < 100'
+# 	--predicate 'senderImagePath beginswith "my sender"'
+# 	--predicate 'eventType == logEvent and subsystem contains "com.example.my_subsystem"'
+#
+# -----------------------------------------------------------------------------
+#
+# log: usage:
+#     log stream [ --system | --process (pid|process) | --parent (pid|process) ]
+# 	[ --level default|info|debug][ --predicate <predicate> ]
+# 	[ --source ][ --style (syslog|json) ]
+# 	[ --timeout <num>[m|h|d] ][ --type activity|log|trace ]
+#	
+# Usage:
+# 	Stream stream activities, log data or trace messages from a given process
+# 	or the system. By default, the command assumes system-wide streaming.  
+# 	Specifying a process id with the --process option will narrow the results.
+#	
+# Examples:
+#
+# log stream --level=info
+# log stream --predicate examples:
+# 	--predicate 'eventMessage contains "my message"'
+# 	--predicate 'eventType == logEvent and messageType == info'
+# 	--predicate 'processImagePath endswith "d"'
+# 	--predicate 'not processImagePath contains[c] "some spammer"'
+# 	--predicate 'processID < 100'
+# 	--predicate 'senderImagePath beginswith "my sender"'
+# 	--predicate 'eventType == logEvent and subsystem contains "com.example.my_subsystem"'
+#
+# -----------------------------------------------------------------------------
+#
+# usage:
+#     log <command>
+#
+# examples:
+#     log show
+#     log collect
+#     log erase --all
+#     log help stream
+#
+# commands:
+#     collect, config, erase, show, stream
+#
+# further help:
+#     log help <command>
+#
+# -----------------------------------------------------------------------------
+
+function _log() {
+  local curcontext=$curcontext context state line ret=1
+  typeset -A opt_args
+
+  local -a commands
+
+  commands=(
+  'collect:Collect the system logs into a .logarchive that can be viewed later with tools such as log or Console'
+  'config:Configure, reset or read settings for the logging systemConfigure, reset or read settings for the logging system'
+  'erase:Delete selected log data from the system'
+  'help:General help or help specific to command argument'
+  'show:Shows contents of the system log datastore, archive or a specific tracev3 file'
+  'stream:Stream activities, log data or trace messages for the system or from a given process'
+  )
+
+  _arguments \
+    '--help[help]' \
+    '--quiet[quiet]' \
+    '--verbose[verbose]' \
+    "1: :{_describe 'log command' commands}" \
+    '*:: :->args'
+
+  case $state in
+    args)
+      case $words[1] in
+        # -----------------------------------------------------------------------------
+        # log: usage:
+        #     log collect [<options>]
+        #
+        # description:
+        #     Collect the system logs into a .logarchive that can be viewed with
+        #     `log show` or Console.app.
+        #
+        # options:
+        #     -l, --last <num>[m|h|d]       Collect logs starting <num>[m|h|d] ago
+        #     -s, --start <time>            Collect logs starting at the given time
+        #     -o, --output <path>           Output log archive to the given path
+        #     -z, --size <num>[kK|mM]       Limit log collection to the given size
+        #
+        # notes:
+        #     If an output path is not specified, system_logs.logarchive will be created
+        #     in the current directory. If the output path is a directory, a file named
+        #     `system_logs.logarchive` will be created in the specified directory. If the
+        #     path contains the extension .logarchive, a new logarchive will be created
+        #     with that name at the specified path.
+        #
+        # valid time formats:
+        #     'Y-M-D H:m:s+zzzz', 'Y-M-D H:m:s', 'Y-M-D', '@unixtime'
+        #
+        # examples:
+        #     log collect --output ~/mylogs.logarchive
+        #     log collect --output /tmp
+        #     log collect --start "2016-04-12" --output /Users/test --size 20m
+        #     log collect --start "2016-04-12 06:30:00"
+        collect)
+          _arguments \
+            (-o --output){-o,--output}'[Output log archive to the given path:output path \[dir|file\]:_files' \
+            (-s --start){-s,--start}'[Collect logs starting at the given time]:date/time YYYY-MM-DD HH\:MM\:SS\:_time' \
+            (-l --last){-l,--last}'[Collect logs starting <num>[m|h|d] ago]:<num>\[m|h|d\]' \
+            (-z --size){-z,--size}'[Limit log collection to the given size:limit size\[k|m\]' \
+            && ret=0
+          ;;
+        # -----------------------------------------------------------------------------
+        # log: usage:
+        #     log config [ --status | --reset | --mode <modes> ]
+        # 	[ --subsystem <name> [ --category <name> ] ]
+        # 	[ --process { <pid> | <name> } ]
+        #
+        # Modes:
+        # 	level: { default | info | debug }
+        # 	persist: { off | default | info | debug }
+        #
+        # Usage:
+        # 	Configure or read settings for the logging system.
+        # 	config commands can act system-wide or on a subsystem.
+        # 	config requires root access.
+        #
+        # Examples:
+        # 	--mode "level:debug"
+        # 	--process=999 --mode="persist:info,propagate:off"
+        config)
+          _arguments \
+            '--status[show the current settings for the system or a specific subsystem]' \
+            '--reset[reset the current settings for the system or a specific subsystem]' \
+            '--mode[Will enable given mode]:mode(s):->mode' \
+            '--subsystem[Set or get mode for a specified subsystem]:subsystem name:->subsystem' \
+            '--category[Set or get mode for a specified category. If category is supplied, subsystem is required]:category name:->category' \
+            '--process[Set mode for a specified pid]:process id:->pids' \
+            && ret=0
+
+            # level:The level is a hierarchy:{off | default | info | debug}
+            # persist: The persist mode is a hierarchy:{off | default | info | debug}
+          ;;
+        # -----------------------------------------------------------------------------
+        # log: usage:
+        #     log erase [-all] [--ttl]
+        # Usage:
+        # 	Delete selected log data from the system.
+        # 	If no arguments are specified, the main log datastore
+        # 	and inflight log data will be deleted.
+        erase)
+          _arguments \
+            '--all[Deletes main log datastore, and inflight log data as well as time-to-live data (TTL), and the fault and error content]' \
+            '--ttl[Deletes time-to-live log content]' \
+            && ret=0
+          ;;
+        # -----------------------------------------------------------------------------
+        # log: usage:
+        #     log show [ <archive> | <logfile> ...]
+        # 	[ --predicate <predicate> ][ --source ][ --style (syslog|json) ]
+        # 	[ --start "YYYY-MM-DD HH:MM:SS" ] [ --end "YYYY-MM-DD HH:MM:SS"]
+        # 	[--info] [--debug]
+        # 	[--last <num>[m|h|d] ]
+        # 	[--timezone local|<timezone>]
+        #	
+        # Usage:
+        # 	Shows contents of the system log datastore, archive or a specific tracev3 file.
+        # 	If a file or archive is not specified, the system datastore will be shown.
+        # 	The start and end date/time can be specified with or without time.
+        # 	The output contains only default level messages unless --info and/or --debug are specified.
+        #
+        # Examples:
+        #
+        # log show mylogs.logarchive --info --debug
+        # log show --predicate examples:
+        # 	--predicate 'eventMessage contains "my message"'
+        # 	--predicate 'eventType == logEvent and messageType == info'
+        # 	--predicate 'processImagePath endswith "d"'
+        # 	--predicate 'not processImagePath contains[c] "some spammer"'
+        # 	--predicate 'processID < 100'
+        # 	--predicate 'senderImagePath beginswith "my sender"'
+        # 	--predicate 'eventType == logEvent and subsystem contains "com.example.my_subsystem"'
+        show)
+          _arguments \
+            '--archive[Display events stored in the given archive]:archive' \
+            '--file[Display events stored in the given .tracev3 file]:contained within a valid .logarchive bundle, or part of the system logs directory:_files' \
+            '--predicate[Filters messages based on the provided predicate, based on NSPredicate]:predicate:->predicate' \
+            '--source[Include symbol names and source line numbers for messages, if available]' \
+            '--style[Output the content as a different style]:style:(syslog|json)' \
+            '--start[Shows content starting from the provided date]:YYYY-MM-DD HH:MM:SS' \
+            '--end[Shows content up to the provided date]:YYYY-MM-DD HH:MM:SS' \
+            '--last[Shows events that occurred within the given time relative to the end of the log archive]:<num>[m|h|d]' \
+            '--timezone[Displays content in the local timezone, or a specified timezone (see tzset(3))]:timezone:->timezone' \
+            '--info[Shows info level messages in the output]' \
+            '--debug[Shows debug level messages in the output]' \
+            '1:archive logfile:->args' \
+            && ret=0
+
+            # timezone: (local <timezone>)
+          ;;
+        # -----------------------------------------------------------------------------
+        # log: usage:
+        #     log stream [ --system | --process (pid|process) | --parent (pid|process) ]
+        # 	[ --level default|info|debug][ --predicate <predicate> ]
+        # 	[ --source ][ --style (syslog|json) ]
+        # 	[ --timeout <num>[m|h|d] ][ --type activity|log|trace ]
+        #	
+        # Usage:
+        # 	Stream stream activities, log data or trace messages from a given process
+        # 	or the system. By default, the command assumes system-wide streaming.  
+        # 	Specifying a process id with the --process option will narrow the results.
+        #	
+        # Examples:
+        #
+        # log stream --level=info
+        # log stream --predicate examples:
+        # 	--predicate 'eventMessage contains "my message"'
+        # 	--predicate 'eventType == logEvent and messageType == info'
+        # 	--predicate 'processImagePath endswith "d"'
+        # 	--predicate 'not processImagePath contains[c] "some spammer"'
+        # 	--predicate 'processID < 100'
+        # 	--predicate 'senderImagePath beginswith "my sender"'
+        # 	--predicate 'eventType == logEvent and subsystem contains "com.example.my_subsystem"'
+        stream)
+          _arguments \
+            '--level[Shows messages at specified level and below]:level:(default info debug)' \
+            '--predicate[Filters messages using the provided predicate based on NSPredicate]:predicate:->predicate' \
+            '--parent[Any child process of the provided process or pid will stream messages associated with the same activity id]:pid or process:->parent' \
+            '--process[The process on which to operate.  This option can be passed more than once to operate on multiple processes]:pid or process:->process' \
+            '--style[Output the content as a different style]:style:(json syslog)' \
+            '--source[Include symbol names and source line numbers for messages, if available]' \
+            '--timeout[Timeout the stream operation after a specified time]:timeout time:->timeout' \
+            '--type[Dictates the type of events to stream from a process]:type:(activity log trace)' \
+            && ret=0
+          ;;
+        # -----------------------------------------------------------------------------
+        # usage:
+        #     log <command>
+        #
+        # examples:
+        #     log show
+        #     log collect
+        #     log erase --all
+        #     log help stream
+        #
+        # commands:
+        #     collect, config, erase, show, stream
+        #
+        # further help:
+        #     log help <command>
+        help)
+          _arguments "1: :{_describe 'General help or help specific to command argument' commands}"
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_log "$@"
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:et

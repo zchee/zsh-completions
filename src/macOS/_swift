@@ -1,0 +1,75 @@
+#compdef swift
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2015 Keith Smiley (http://keith.so)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the 'Software'), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# -----------------------------------------------------------------------------
+
+_sdks() {
+  local -a sdks
+  sdks=$(xcodebuild -showsdks | grep -o "\-sdk.*" | cut -f 2 -d ' ')
+  echo $sdks
+}
+
+_arguments \
+  '*: :->files' \
+  '-assert-config[Assert configuration replacement]:Assert configuration:(Debug Release Replacement)' \
+  '-D[Build configuration option(s)]:Build configuration option(s):' \
+  '-emit-assembly[Emit assembly]' \
+  '-emit-library[Emit library]' \
+  '-emit-object[Emit object]' \
+  '-F[Add framework search path]:Framework search path:->files' \
+  '-framework[Framework to link]:Framework to link:->files' \
+  '-g[Emit debug info]' \
+  '-gline-tables-only[Debug info for backtraces]' \
+  '-gnone[Do not emit debug info]' \
+  '-help[Print help]' \
+  '-I[Add import search path]:Import search path:->files' \
+  '-j[Commands to execute in parallel]:Number of parallel commands:' \
+  '-L[Add library search path]:Library search path:->files' \
+  '-l[Library to link]:Library to link:->files' \
+  '-module-cache-path[Clang module cache path]:Clang module cache path:->files' \
+  '-module-link-name[Library to link against with module]:Library to link against with module:' \
+  '-module-name[Name of module to build]:Name of module to build:' \
+  '-nostdimport[Do not search standard library for modules]' \
+  '-O[Compile with optimizations]' \
+  '-o[Output file]:Output file:->files' \
+  '-Onone[Compile without optimizations]' \
+  '-Ounchecked[Compile with optimizations remove runtime safety checks]' \
+  '-sdk[SDK to compile with]:SDK to compile with:->sdks' \
+  '-target-cpu[Generate code for specific CPU]:CPU to generate for:' \
+  '-target[Generate code for specific target]:Target to generate for:' \
+  '-v[Run with verbose output]' \
+  '-version[Print version]' \
+  '-Xcc[Arguments for the C compiler]:C compiler arguments:' \
+  '-Xlinker[Options for the linker]:Linker options:'
+
+case "$state" in
+  files)
+    _files
+    ;;
+  sdks)
+    if ([[ ${+_installed_sdks} -eq 0 ]] || _cache_invalid SDKS) && ! _retrieve_cache SDKS; then
+      _installed_sdks=($(_sdks))
+      _store_cache SDKS _installed_sdks
+    fi
+
+    _values "SDK to compile with" $_installed_sdks
+    ;;
+esac

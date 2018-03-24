@@ -1,0 +1,141 @@
+#compdef instruments
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# NAME
+#      instruments
+#
+# USAGE
+#      instruments [-w device] [-t template] [-D document] [-l timeLimit] [-i #] [[-p pid] | [application [-e variable value] [argument ...]]]
+#
+# DESCRIPTION
+#      Runs an Instruments template from the command line.
+#
+#      Options are :
+#
+#      -v       Turn on verbose logging
+#
+#      -t template
+#               The path to the template to run. Alternatively, specify just the final path component (e.g., "Time Profiler")
+#
+#      -s [devices, templates]
+#               Show list of known devices or templates, and then exit ( default is devices and templates )
+#
+#      -D document
+#               The path to save the trace document data to (This may already exist, in which case a new Run will be added)
+#
+#      -l #     The limit of milliseconds to record until termination ( default is infinite )
+#
+#      -i #     The index of the instrument to apply the following target data to
+#
+#      -w [hardware device, or simulator name]
+#               The name or identifier of the hardware device or simulator to target. Should be specified first
+#
+#      -e variable value
+#               An environment variable setting (You may specify more than one)
+#
+#      -p pid   The ID of the process to attach to
+#
+#      application
+#               The path to the application or command to launch
+#
+#      argument
+#               Command line argument to be sent to the launched process (You may specify more than one)
+#
+# SEE ALSO
+#      Instruments.app may be used to perform trace executions in a graphical environment and may also be used to open trace documents created by instruments.
+#
+# EXAMPLES
+#      instruments -t mytemplate myapp.app
+#
+# Mac OS                         January 30, 2017                         Mac OS
+#
+# -----------------------------------------------------------------------------
+
+function _instruments() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments \
+    '-D[The path to save the trace document data to]:document' \
+    '-i[The index of the instrument to apply the following target data to]' \
+    '-l[The limit of milliseconds to record until termination]' \
+    '-p[The ID of the process to attach to]:pid' \
+    '-s[Show list of known devices or templates, and then exit]' \
+    '-t[The path to the template to run. Alternatively, specify just the final path component]: :->templates' \
+    '-v[Turn on verbose logging]' \
+    '-w[The name or identifier of the hardware device or simulator to target]:device or simulator' \
+    '1:application or command:_files' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      if (( CURRENT == 2 )); then
+        _arguments '*:command line arguments'
+        return
+      fi
+      _arguments \
+        '-e[An environment variable setting]:variable value' \
+        && ret=0
+      ;;
+    (templates)
+      # $(find $DEVELOPER_DIR -name *.tracetemplate) and $(instruments -s templates) is slow
+      if [[ -n $DEVELOPER_DIR ]]; then
+        XCODE_PATH="$DEVELOPER_DIR/Contents"
+      else
+        XCODE_PATH="$(dirname $(xcode-select -p))"
+      fi
+      local -a template_paths
+      template_paths=("$XCODE_PATH/Applications/Instruments.app/Contents/Packages/ActivityMonitor.instrdst/Contents/Templates")
+      template_paths+=("$XCODE_PATH/Applications/Instruments.app/Contents/PlugIns/XRMobileDeviceDiscoveryPlugIn.xrplugin/Contents/Resources")
+      template_paths+=("$XCODE_PATH/Applications/Instruments.app/Contents/PlugIns/XRMobileDeviceDiscoveryPlugIn.xrplugin/Contents/Resources/templates")
+      template_paths+=("$XCODE_PATH/Applications/Instruments.app/Contents/Resources/templates")
+      template_paths+=("$XCODE_PATH/Developer/Platforms/MacOSX.platform/Developer/Library/Instruments/Plug-ins/SceneKitInstrument.instrdst/Contents/Templates")
+      template_paths+=("$XCODE_PATH/Developer/Platforms/MacOSX.platform/Developer/Library/Instruments/PlugIns/CoreData")
+      template_paths+=("$XCODE_PATH/Developer/Platforms/MacOSX.platform/Developer/Library/Instruments/PlugIns/templates")
+      template_paths+=("$XCODE_PATH/Frameworks/IDEKit.framework/Versions/A/Resources")
+      template_paths+=("$XCODE_PATH/PlugIns/IDEIODebugGaugesUI.ideplugin/Contents/Resources")
+      for p in $template_paths; do
+        _alternative ":trace template:_path_files -W $p -g '*.tracetemplate(:r)'"
+      done
+      ;;
+  esac
+
+  return ret
+}
+
+_instruments "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2

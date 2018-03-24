@@ -1,0 +1,147 @@
+#compdef iprofiler
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# iprofiler(1)              BSD General Commands Manual             iprofiler(1)
+#
+# NAME
+#      iprofiler
+#
+# USAGE
+#      iprofiler [-l] [-L] [-legacy] [-T duration] [-I interval] [-window period] [-d path] [-o basename] [-activitymonitor] [-allocations] [-counters] [-leaks] [-systemtrace] [-timeprofiler] [-kernelstacks | -userandkernelstacks] [-allthreadstates] [-pmc PMC_MNEMONIC] [-a process/pid | executable [args...]]
+#
+# DESCRIPTION
+#      Measure an application's performance without launching Instruments.app and then visualize the measurements at a later time in Instruments.app.  The performance data is saved in a .dtps bundle that can be opened in Instruments.app via "Open existing file...".  iprofiler supports these instruments: Activity
+#      Monitor, Allocations, Counters, Leaks, System Trace, and Time Profiler.  Any combination of these instruments can be run simultaneously.  iprofiler supports attaching to a currently-running process, launching a process that will only run during the measurement, or profiling all currently-running processes (by
+#      not specifying process/pid or executable).
+#
+#      Options are :
+#
+#      -l       Lists all supported instruments
+#
+#      -L       Lists all supported instruments, with a description
+#
+#      -legacy  Executes the legacy Instruments command-line interface.  This is a non-lightweight command-line interface that launches Instruments.app.
+#
+#      -T duration
+#               Records for this duration of time (Defaults to 10 seconds).  Duration can be specified in seconds (e.g. 1s or 1), milliseconds (1000m or 1000ms) or microseconds (1000000u or 1000000us).
+#
+#      -I interval
+#               Measures performance once during each sampling interval.  If this is not specified, it uses Instruments.app's default sampling interval.  Interval can be specified in microseconds (e.g. 1000u or 1000us or 1000), seconds (1s) or milliseconds (1000m or 1000ms)
+#
+#      -window period
+#               Performance measurement is limited to the final period of the iprofiler run.  If this is not specified, performance is measured during the complete duration.  Window period can be specified in seconds (e.g. 1s or 1), milliseconds (1000m or 1000ms) or microseconds (1000000u or 1000000us).  This option
+#               can only be used with -timeprofiler and/or -systemtrace.
+#
+#      -d path -o basename
+#               Specifies "path/basename.dtps" as the path where the performance data is written.  If path is not specified, then it gets written to current working directory.  If basename is not specified, then the process name or process id is used as the basename.
+#
+#      -timestamp
+#               When present, this argument will append a timestamp to the end of the filename, i.e. "path/basename.<TIMESTAMP>.dtps"
+#
+#      -activitymonitor -allocations -counters -leaks -systemtrace -timeprofiler
+#               Chooses which instruments to run.  At least 1 instrument must be specified.
+#
+#      -kernelstacks | -userandkernelstacks
+#               Causes backtraces to include only kernel stacks, or both user and kernel stacks.  If neither is specified, backtraces include only user stacks.
+#
+#      -pmc PMC_MNEMONIC
+#               When using -counters, use this flag to specify the mnemonic of the event to count. Separate multiple mnemonics by a ','.
+#
+#      -allthreadstates
+#               Causes timeprofiler to sample all thread states.  If this is not specified, timeprofiler will sample only running threads.
+#
+#      -listpmcs
+#               Lists the supported PMC events for the current CPU and exits. Some events are of the form "ALIAS (EVENT)", so when specifying this event to -pmc, use either "ALIAS" or "EVENT".
+#
+#      -a process/pid
+#               Attaches to an already running process.  If you specify a pid number, it will attach to the process with that pid.  If you specify a process string, it will attach to the process whose name starts with that string.
+#
+#      executable [args...]
+#               Causes a target process to be launched for the duration of the measurement.  The executable and the arguments are listed as if they were being invoked directly from the commandline.
+#
+# SEE ALSO
+#      Instruments.app is able to open the resulting .dtps bundles that contain the performance data.  It can also be used to perform trace executions in a graphical environment.
+#
+# EXAMPLES
+#      iprofiler -timeprofiler -activitymonitor
+#
+#      iprofiler -T 8s -d /tmp -o YourApp_perf -timeprofiler -a YourApp
+#
+#      iprofiler -T 2500ms -o YourApp_perf -leaks -activitymonitor -a 823
+#
+#      iprofiler -d /tmp -timeprofiler -allocations -a YourApp.app
+#
+#      iprofiler -T 15 -I 1000ms -window 2s -o YourApp_perf -timeprofiler -systemtrace /path/to/YourApp.app arg1
+#
+# Mac OS                           June 16, 2017                          Mac OS
+# -----------------------------------------------------------------------------
+
+function _iprofiler() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-l[Lists all supported instruments]' \
+    '-L[Lists all supported instruments, with a description]' \
+    '-legacy[Executes the legacy Instruments command-line interface]' \
+    '-T[Records for this duration of time (Defaults to 10 seconds)]:duration' \
+    '-I[Measures performance once during each sampling interval]:interval' \
+    '-window[period Performance measurement is limited to the final period of the iprofiler run. This option can only be used with -timeprofiler and/or -systemtrace]:period (e.g. 1s or 1)' \
+    '-d[Specifies path as the path where the performance data is written]:path' \
+    '-o[Specifies basename.dtps as the path where the performance data is written]:basename' \
+    '-timestamp[When present, this argument will append a timestamp to the end of the filename]' \
+    '-activitymonitor[run activitymonitor instruments]' \
+    '-allocations[run allocations instruments]' \
+    '-counters[run counters instruments]' \
+    '-eventprofiler[run eventprofiler instruments]' \
+    '-leaks[run leaks instruments]' \
+    '-systemtrace[run systemtrace instruments]' \
+    '-timeprofiler[run timeprofiler instruments]' \
+    '-kernelstacks[Causes backtraces to include only kernel stacks]' \
+    '-userandkernelstacks[Causes backtraces to include both user and kernel stacks]' \
+    '-pmc[When using -counters, use this flag to specify the mnemonic of the event to count]:PMC_MNEMONIC' \
+    '-allthreadstates[Causes timeprofiler to sample all thread states]' \
+    '-listpmcs[Lists the supported PMC events for the current CPU and exits]' \
+    '-a[process/pid Attaches to an already running process]' \
+    '1:executable:_files' \
+    '*:args' \
+    && ret=0
+
+  return ret
+}
+
+_iprofiler "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2

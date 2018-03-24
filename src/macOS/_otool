@@ -1,0 +1,108 @@
+#compdef otool
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+# Usage: otool [-arch arch_type] [-fahlLDtdorSTMRIHGvVcXmqQjCP] [-mcpu=arg] [--version] <object file> ...
+#       -f print the fat headers
+#       -a print the archive header
+#       -h print the mach header
+#       -l print the load commands
+#       -L print shared libraries used
+#       -D print shared library id name
+#       -t print the text section (disassemble with -v)
+#       -p <routine name>  start dissassemble from routine name
+#       -s <segname> <sectname> print contents of section
+#       -d print the data section
+#       -o print the Objective-C segment
+#       -r print the relocation entries
+#       -S print the table of contents of a library
+#       -T print the table of contents of a dynamic shared library
+#       -M print the module table of a dynamic shared library
+#       -R print the reference table of a dynamic shared library
+#       -I print the indirect symbol table
+#       -H print the two-level hints table
+#       -G print the data in code table
+#       -v print verbosely (symbolically) when possible
+#       -V print disassembled operands symbolically
+#       -c print argument strings of a core file
+#       -X print no leading addresses or headers
+#       -m don't use archive(member) syntax
+#       -B force Thumb disassembly (ARM objects only)
+#       -q use llvm's disassembler (the default)
+#       -Q use otool(1)'s disassembler
+#       -mcpu=arg use `arg' as the cpu for disassembly
+#       -j print opcode bytes
+#       -P print the info plist section as strings
+#       -C print linker optimization hints
+#       --version print the version of otool_arguments \
+
+_otool() {
+  _arguments \
+    '-f[print the fat headers]' \
+    '-a[print the archive header]' \
+    '-h[print the mach header]' \
+    '-l[print the load commands]' \
+    '-L[print shared libraries used]' \
+    '-D[print shared library id name]' \
+    '-t[print the text section (disassemble with -v)]' \
+    '-p[<routine name>  start dissassemble from routine name]' \
+    '-s[<segname> <sectname> print contents of section]' \
+    '-d[print the data section]' \
+    '-o[print the Objective-C segment]' \
+    '-r[print the relocation entries]' \
+    '-S[print the table of contents of a library]' \
+    '-T[print the table of contents of a dynamic shared library]' \
+    '-M[print the module table of a dynamic shared library]' \
+    '-R[print the reference table of a dynamic shared library]' \
+    '-I[print the indirect symbol table]' \
+    '-H[print the two-level hints table]' \
+    '-G[print the data in code table]' \
+    '-v[print verbosely (symbolically) when possible]' \
+    '-V[print disassembled operands symbolically]' \
+    '-c[print argument strings of a core file]' \
+    '-X[print no leading addresses or headers]' \
+    "-m[don't use archive(member) syntax]" \
+    '-B[force Thumb disassembly (ARM objects only)]' \
+    "-q[use llvm's disassembler (the default)]" \
+    "-Q[use otool(1)'s disassembler]" \
+    "-mcpu=[use 'arg' as the cpu for disassembly]:arg" \
+    '-j[print opcode bytes]' \
+    '-P[print the info plist section as strings]' \
+    '-C[print linker optimization hints]' \
+    '--version[print the version of otool]' \
+    '*:object file:_object_files'
+}
+
+_otool
+# vim:ft=zsh:et:sts=2:sw=2

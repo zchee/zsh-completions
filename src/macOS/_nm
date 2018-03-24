@@ -1,0 +1,123 @@
+#compdef nm
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2016 Koichi Shiraishi
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# -----------------------------------------------------------------------------
+
+_nm() {
+  _arguments \
+    '-B[Alias for --format=bsd]' \
+    '-P[Alias for --format=posix]' \
+    '-m[Alias for --format=darwin]' \
+    '-aarch64-neon-syntax=[Choose style of NEON code to emit from AArch64 backend]: :->aarch64_neon_syntax' \
+    '-arch=[architecture(s) from a Mach-O file to dump]: :->arch' \
+    '-asan-instrument-assembly[instrument assembly with AddressSanitizer checks]' \
+    {-debug-syms,-a}'[Show all symbols, even debugger only]' \
+    {-defined-only,-U}'[Show only defined symbols]' \
+    {-dynamic,-D}'[Display the dynamic symbols instead of normal symbols]' \
+    {-extern-only,-g}'[Show only external symbols]' \
+    {-format,-f}='[Specify output format]: :->format' \
+    {-just-symbol-name,-j}"[Print just the symbol's name]" \
+    '-mark-data-regions[Mark code section jump table data regions]' \
+    '-no-llvm-bc[Disable LLVM bitcode reader]' \
+    {-no-sort,-p}'[Show symbols in order encountered]' \
+    {-numeric-sort,-n,-v}'[Sort symbols by address]' \
+    '-pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:Enable optimization remarks regex pattern' \
+    '-pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:Enable optimization analysis remarks regex pattern' \
+    '-pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:Enable missed optimization remarks regex pattern' \
+    {-print-armap,-M}'[Print the archive map]' \
+    {-print-file-name,-o,-A}'[Precede each symbol with the object file it came from]' \
+    {-print-size,-S}'[Show symbol size instead of address]' \
+    '-print-summary-global-ids[Print the global id for each value when reading the module summary]' \
+    {-radix,-t}='[Radix (o/d/x) for printing symbol Values]: :->radix' \
+    {-reverse-sort,-r}'[Sort in reverse order]' \
+    '-rng-seed=[Seed for the random number generator]:seed' \
+    '-s=[Dump only symbols from this segment and section name, Mach-O only]:string' \
+    '-size-sort[Sort symbols by size]' \
+    {-undefined-only,-u}'[Show only undefined symbols]' \
+    '-without-aliases[Exclude aliases from output]' \
+    '-x[Print symbol entry in hex, Mach-O only]' \
+    '-x86-asm-syntax=[Choose style of code to emit from X86 backend]: :->x86_asm_style' \
+    '-help[Display available options (-help-hidden for more)]' \
+    '-help-hidden[Display all available options]' \
+    '-help-list[Display list of available options (-help-list-hidden for more)]' \
+    '-help-list-hidden[Display list of all available options]' \
+    '-print-all-options[Print all option values after command line parsing]' \
+    '-print-options[Print non-default options after command line parsing]' \
+    '-version[Display the version of this program]' \
+    '*: :->files'
+
+  case "$state" in
+    aarch64_neon_syntax)
+      local -a aarch64_neon_syntax
+      aarch64_neon_syntax=(
+      'apple:Emit Apple-style NEON assembly'
+      'generic:Emit generic NEON assembly'
+      )
+      _arguments "*: :{_describe 'Choose style of NEON code to emit from AArch64 backend' aarch64_neon_syntax}"
+      ;;
+    arch)
+      local -a arch
+      arch=(
+      'arm64:ARM64 (AArch64) architecture'
+      'armv7:ARMv7 architecture'
+      'armv7s:ARMv7s architecture'
+      'i386:i386 architecture'
+      'x86_64:x86_64 architecture'
+      )
+      _arguments "*: :{_describe 'Architecture for use on universal files' arch}"
+      ;;
+    files)
+      _files
+      ;;
+    radix)
+      local -a radix
+      radix=(
+      'd:decimal'
+      'o:octal'
+      'x:hexadecimal'
+      )
+      _arguments "*: :{_describe 'Radix (o/d/x) for printing symbol Values' radix}"
+      ;;
+    format)
+      local -a format
+      format=(
+      'bsd:BSD format'
+      'darwin:Darwin -m format'
+      'posix:POSIX.2 format'
+      'sysv:System V format'
+      )
+      _arguments "*: :{_describe 'Specify output format' format}"
+      ;;
+    x86_asm_style)
+      local -a x86_asm_style
+      x86_asm_style=(
+      'att:Emit AT&T-style assembly'
+      'intel:Emit Intel-style assembly'
+      )
+      _arguments "*: :{_describe 'Choose style of code to emit from X86 backend' x86_asm_style}"
+      ;;
+  esac
+}
+
+_nm
+
+# vim:ft=zsh:sts=2:sw=2:ts=2:et

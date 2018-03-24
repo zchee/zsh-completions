@@ -1,0 +1,202 @@
+#compdef xcodebuild
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2015 Keith Smiley (http://keith.so)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the 'Software'), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# -----------------------------------------------------------------------------
+
+_archs() {
+  local -a archs
+  archs=$(xcodebuild -showBuildSettings 2>/dev/null | grep VALID_ARCHS \
+    | cut -f 2 -d '=')
+  echo $archs
+}
+
+_configurations() {
+  local -a configurations
+  configurations=$(xcodebuild -list 2>/dev/null \
+    | sed -n -e '/Build Configurations:/,/If no build/p' \
+    | sed -e '1d;$d' -e 's/^[ \t]*//')
+  echo $configurations
+}
+
+_schemes() {
+  local -a schemes
+  schemes=$(xcodebuild -list 2>/dev/null \
+    | sed -e '1,/Schemes:/d' -e 's/^[ \t]*//')
+  echo $schemes
+}
+
+_sdks() {
+  local -a sdks
+  sdks=$(xcodebuild -showsdks | grep -o "\-sdk.*" | cut -f 2 -d ' ')
+  echo $sdks
+}
+
+_targets() {
+  local -a targets
+  targets=$(xcodebuild -list 2>/dev/null \
+    | sed -n -e '/Targets:/,/Build Configurations:/p' \
+    | sed -e '1d;$d' -e 's/^[ \t]*//')
+  echo $targets
+}
+
+_actions() {
+  local -a actions
+  actions=( \
+    "analyze:Build and analyze a target or scheme" \
+    "archive:Archive a scheme" \
+    "build:Build the target:(OTHER_CFLAGS OTHER_LDFLAGS)" \
+    "clean:Remove build products and intermediate files" \
+    "install:Build and install the target" \
+    "installsrc:Copy the source of the project" \
+    "test:Test a scheme from" \
+    )
+
+  _describe "Build action" actions
+}
+
+  # -usage                              print brief usage
+  # -help                               print complete usage
+  # -verbose                            provide additional status output
+  # -license                            show the Xcode and SDK license agreements
+  # -checkFirstLaunchStatus             Check if any First Launch tasks need to be performed
+  # -project NAME                       build the project NAME
+  # -target NAME                        build the target NAME
+  # -alltargets                         build all targets
+  # -workspace NAME                     build the workspace NAME
+  # -scheme NAME                        build the scheme NAME
+  # -configuration NAME                 use the build configuration NAME for building each target
+  # -xcconfig PATH                      apply the build settings defined in the file at PATH as overrides
+  # -arch ARCH                          build each target for the architecture ARCH; this will override architectures defined in the project
+  # -sdk SDK                            use SDK as the name or path of the base SDK when building the project
+  # -toolchain NAME                     use the toolchain with identifier or name NAME
+  # -destination DESTINATIONSPECIFIER   use the destination described by DESTINATIONSPECIFIER (a comma-separated set of key=value pairs describing the destination to use)
+  # -destination-timeout TIMEOUT        wait for TIMEOUT seconds while searching for the destination device
+  # -parallelizeTargets                 build independent targets in parallel
+  # -jobs NUMBER                        specify the maximum number of concurrent build operations
+  # -dry-run                            do everything except actually running the commands
+  # -quiet                              do not print any output except for warnings and errors
+  # -hideShellScriptEnvironment         don't show shell script environment variables in build log
+  # -showsdks                           display a compact list of the installed SDKs
+  # -showBuildSettings                  display a list of build settings and values
+  # -list                               lists the targets and configurations in a project, or the schemes in a workspace
+  # -find-executable NAME               display the full path to executable NAME in the provided SDK and toolchain
+  # -find-library NAME                  display the full path to library NAME in the provided SDK and toolchain
+  # -version                            display the version of Xcode; with -sdk will display info about one or all installed SDKs
+  # -enableAddressSanitizer YES|NO      turn the address sanitizer on or off
+  # -enableThreadSanitizer YES|NO       turn the thread sanitizer on or off
+  # -resultBundlePath PATH              specifies the directory where a result bundle describing what occurred will be placed
+  # -derivedDataPath PATH               specifies the directory where build products and other derived data will go
+  # -archivePath PATH                   specifies the directory where any created archives will be placed, or the archive that should be exported
+  # -exportArchive                      specifies that an archive should be exported
+  # -exportOptionsPlist PATH            specifies a path to a plist file that configures archive exporting
+  # -enableCodeCoverage YES|NO          turn code coverage on or off when testing
+  # -exportPath PATH                    specifies the destination for the product exported from an archive
+  # -skipUnavailableActions             specifies that scheme actions that cannot be performed should be skipped instead of causing a failure
+  # -exportLocalizations                exports completed and outstanding project localizations
+  # -importLocalizations                imports localizations for a project, assuming any necessary localized resources have been created in Xcode
+  # -localizationPath                   specifies a path to XLIFF localization files
+  # -exportLanguage                     specifies multiple optional ISO 639-1 languages included in a localization export
+  # -xctestrun                          specifies a path to a test run specification
+  # -only-testing:TEST-IDENTIFIER       constrains testing by specifying tests to include, and excluding other tests
+  # -skip-testing:TEST-IDENTIFIER       constrains testing by specifying tests to exclude, but including other tests
+  # -json                               output as JSON (note: -json implies -quiet)
+_arguments \
+  '(-n -dry-run)'{-n,-dry-run}'[Print but do not execute commands]' \
+  '-alltargets[Build all targets in the specified project]' \
+  '-arch[Architecture to build]:Architecture to build:->archs' \
+  '-archivePath[Archive Path]:Archive Path:_directories' \
+  '-configuration[Build configuration to use]:Build configuration to use:->configurations' \
+  '-derivedDataPath[Overrides derived data directory]:Overrides derived data directory:_directories' \
+  '-destination-timeout[Device search timeout]:Device search timeout' \
+  '-destination[Device destination settings]:Device destination settings:' \
+  '-exportArchive[Exports an archive]' \
+  '-exportFormat[Format for archive]:Format for archive:(IPA PKG APP)' \
+  '-exportInstallerIdentity[Installer identity for archiving]:Installer identity for archiving' \
+  '-exportProvisiningProfile[Provisioning profile for archiving]:Provisioning profile for archiving' \
+  '-exportSigningIdentity[Signing identity for archiving]:Signing identity for archiving' \
+  '-exportWithOriginalSigningIdentity[Specifies signing identity for archiving]' \
+  '-list[Lists targets configurations and schemes]' \
+  '-project[xcodeproj file]:xcodeproj:->projects' \
+  '-resultBundlePath[Result bundle path]:Result bundle path:_directories' \
+  '-scheme[Scheme to build]:Scheme to build:->schemes' \
+  '-sdk[SDK to build with]:SDK to build with:->sdks' \
+  '-showBuildSettings[Print project build settings]' \
+  '-showsdks[List all SDK versions]' \
+  '-skipUnavailableActions[Skip options that would fail]' \
+  '-target[Target to build]:Target to build:->targets' \
+  '-usage[Display xcodebuild usage]' \
+  '-version[Prints Xcode version]' \
+  '-workspace[xcworkspace file]:xcworkspace:->workspaces' \
+  '-xcconfig[xcconfig file]:xcconfig:->xcconfigs' \
+  '*: :->actions'
+
+case "$state" in
+  actions)
+    _actions
+    ;;
+  archs)
+    archs=($(_archs))
+    if [[ $archs != "" ]]; then
+      _values "Architecture to build" $archs
+    fi
+    ;;
+  configurations)
+    IFS=$'\n' configurations=($(_configurations))
+    if [[ $configurations != "" ]]; then
+      _values "Build configuration to use" $configurations
+    fi
+    ;;
+  projects)
+    local -a projects
+    projects=(*.xcodeproj)
+    _multi_parts / projects
+    ;;
+  schemes)
+    IFS=$'\n' schemes=($(_schemes))
+    if [[ $schemes != "" ]]; then
+      _values "Scheme to build" $schemes
+    fi
+    ;;
+  sdks)
+    if ([[ ${+_installed_sdks} -eq 0 ]] || _cache_invalid SDKS) && ! _retrieve_cache SDKS; then
+      _installed_sdks=($(_sdks))
+      _store_cache SDKS _installed_sdks
+    fi
+
+    _values "SDK to build with" $_installed_sdks
+    ;;
+  targets)
+    IFS=$'\n' targets=($(_targets))
+    if [[ $targets != "" ]]; then
+      _values "Target to build" $targets
+    fi
+    ;;
+  workspaces)
+    local -a workspaces
+    workspaces=(*.xcworkspace)
+    _multi_parts / workspaces
+    ;;
+  xcconfigs)
+    local -a xcconfigs
+    xcconfigs=(*.xcconfig)
+    _multi_parts / xcconfigs
+    ;;
+esac

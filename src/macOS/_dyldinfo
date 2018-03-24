@@ -1,0 +1,67 @@
+#compdef dyldinfo
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# NAME
+#      dyldinfo -- Displays information used by dyld in an executable
+#
+# SYNOPSIS
+#      dyldinfo [-arch arch-name] [-dylibs] [-rebase] [-bind] [-weak_bind] [-lazy_bind] [-export] [-opcodes] [-function_starts] file(s)
+#
+# DESCRIPTION
+#      Executables built for Mac OS X 10.6 and later have a new format for the information in the __LINKEDIT segment.  The dyldinfo tool will display that information.
+
+function _dyldinfo() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-arch[arch Only display the specified architecture]:arch:(x86_64 i386)' \
+    '-dylibs[Display the table of dylibs on which this image depends]' \
+    '-rebase[Display the table of rebasing information. Rebasing is what dyld does when an image is not loaded at its preferred address. Typically, this involves updating pointers in the __DATA segment which point within the image]' \
+    '-bind[Display the table of binding information.  These are the symbolic fix ups that dyld must do when an image is loaded]' \
+    '-weak_bind[Display the table of weak binding information.  Typically, only C++ progams will have any weak binding.  These are symbols which dyld must unique accross all images]' \
+    '-lazy_bind[Display the table of lazy binding information. These are symbols which dyld delays binding until they are first used.  Lazy binding is automatically used for all function calls to functions in some external dylib]' \
+    '-export[Display the table symbols which this image exports]' \
+    '-opcodes[Display the low level opcodes used to encode all rebase and binding information]' \
+    '-function_starts[Decodes the list of function start addresses]' \
+    '*:file:_files' \
+    && ret=0
+
+  return ret
+}
+
+_dyldinfo "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
