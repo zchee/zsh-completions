@@ -4,80 +4,72 @@
 
 ### Kubernetes tools
 
-- [ ] [GoogleCloudPlatform/skaffold](https://github.com/GoogleCloudPlatform/skaffold)
-  - Easy and Repeatable Kubernetes Development
+- [ ] [GoogleCloudPlatform/skaffold: Easy and Repeatable Kubernetes Development](https://github.com/GoogleCloudPlatform/skaffold)
 
-- [x] [istio/istio/istioctl/cmd/istioctl](https://github.com/istio/istio/tree/master/istioctl/cmd/istioctl)
-  - Istio configuration command line utility.
+- [x] [istio/istio/istioctl/cmd/istioctl: Istio configuration command line utility.](https://github.com/istio/istio/tree/master/istioctl/cmd/istioctl)
 
-- [ ] [shyiko/kubesec](https://github.com/shyiko/kubesec)
-  - Secure Secret management for Kubernetes (with gpg, Google Cloud KMS and AWS KMS backends)
+- [ ] [shyiko/kubesec: Secure Secret management for Kubernetes (with gpg, Google Cloud KMS and AWS KMS backends)](https://github.com/shyiko/kubesec)
 
-- [ ] [shyiko/kubetpl](https://github.com/shyiko/kubetpl)
-  - Kubernetes templates made easy (with support for $placeholder, go-template, kind: Template, ...)
+- [ ] [shyiko/kubetpl: Kubernetes templates made easy (with support for $placeholder, go-template, kind: Template, ...)](https://github.com/shyiko/kubetpl)
 
-- [ ] [garethr/kubeval](https://github.com/garethr/kubeval)
-  - Validate your Kubernetes configuration files, supports multiple Kubernetes versions
+- [ ] [garethr/kubeval: Validate your Kubernetes configuration files, supports multiple Kubernetes versions](https://github.com/garethr/kubeval)
 
-- [ ] [jetstack/cert-manager](https://github.com/jetstack/cert-manager)
-  - Automatically provision and manage TLS certificates in Kubernetes
+- [ ] [jetstack/cert-manager: Automatically provision and manage TLS certificates in Kubernetes](https://github.com/jetstack/cert-manager)
   - [ ] [jetstack/cert-manager/cmd/acmesolver](https://github.com/jetstack/cert-manager/tree/master/cmd/acmesolver)
   - [ ] [jetstack/cert-manager/cmd/controller](https://github.com/jetstack/cert-manager/tree/master/cmd/controller)
   - [ ] [jetstack/cert-manager/cmd/ingress-shim](https://github.com/jetstack/cert-manager/tree/master/cmd/ingress-shim)
+- [ ] [jetstack/vault-helper: Vault helper script](https://github.com/jetstack/vault-helper)
+- [ ] [jetstack/kube-lego: Automatically request certificates for Kubernetes Ingress resources from Let's Encrypt](https://github.com/jetstack/kube-lego)
+- [ ] [jetstack/navigator: Managed Database-as-a-Service (DBaaS) on Kubernetes](https://github.com/jetstack/navigator)
 
-- [ ] [farmotive/kpoof](https://github.com/farmotive/kpoof)
-  - Quick k8s port-forward utility
+- [ ] [heptio/ark: Heptio Ark is a utility for managing disaster recovery, specifically for your Kubernetes cluster resources and persistent volumes. Brought to you by Heptio.](https://github.com/heptio/ark/blob/master/cmd/ark)
 
-- [ ] [farmotive/kex](https://github.com/farmotive/kex)
-  - Quick k8s pod exec utility
+- [ ] [heptio/sonobuoy: Heptio Sonobuoy is a diagnostic tool that makes it easier to understand the state of a Kubernetes cluster by running a set of Kubernetes conformance tests in an accessible and non-destructive manner. Brought to you by Heptio.](https://github.com/heptio/sonobuoy)
 
-- [ ] [farmotive/kud](https://github.com/farmotive/kud)
-  - Quick k8s pod deletion utility
+- [ ] [farmotive/kpoof: Quick k8s port-forward utility](https://github.com/farmotive/kpoof)
 
-- [ ] [kubeless/kubeless](https://github.com/kubeless/kubeless)
-  - Kubernetes Native Serverless Framework kubeless.io
+- [ ] [farmotive/kex: Quick k8s pod exec utility](https://github.com/farmotive/kex)
 
-- [ ] [heptio/ark/cmd/ark](https://github.com/heptio/ark/blob/master/cmd/ark)
-  - Heptio Ark is a utility for managing disaster recovery, specifically for your Kubernetes cluster resources and persistent volumes. Brought to you by Heptio.
+- [ ] [farmotive/kud: Quick k8s pod deletion utility](https://github.com/farmotive/kud)
 
-- [ ] [heptio/sonobuoy](https://github.com/heptio/sonobuoy)
-  - Heptio Sonobuoy is a diagnostic tool that makes it easier to understand the state of a Kubernetes cluster by running a set of Kubernetes conformance tests in an accessible and non-destructive manner. Brought to you by Heptio.
+- [ ] [kubeless/kubeless: Kubernetes Native Serverless Framework kubeless.io](https://github.com/kubeless/kubeless)
 
 #### log tailing
 
-- [ ] [wercker/stern](https://github.com/wercker/stern)
-  - ⎈ Multi pod and container log tailing for Kubernetes
-    - `stern --completion zsh` is not perfect
+- [ ] [wercker/stern: ⎈ Multi pod and container log tailing for Kubernetes](https://github.com/wercker/stern)
+  - `stern --completion zsh` is not perfect
 
-- [ ] [boz/kail](https://github.com/boz/kail)
-  - kubernetes log viewer
+- [ ] [boz/kail: kubernetes log viewer](https://github.com/boz/kail)
 
-- [ ] [johanhaleby/kubetail](https://github.com/johanhaleby/kubetail)
-  - Bash script to tail Kubernetes logs from multiple pods at the same time
+- [ ] [johanhaleby/kubetail: Bash script to tail Kubernetes logs from multiple pods at the same time](https://github.com/johanhaleby/kubetail)
 
-- [ ] [dtan4/k8stail](https://github.com/dtan4/k8stail)
-  - tail -f experience for Kubernetes Pods
+- [ ] [dtan4/k8stail: tail -f experience for Kubernetes Pods](https://github.com/dtan4/k8stail)
 
-- [ ] [atombender/ktail](https://github.com/atombender/ktail)
-  - ktail is a tool to tail Kubernetes logs.
+- [ ] [atombender/ktail: ktail is a tool to tail Kubernetes logs.](https://github.com/atombender/ktail)
 
-- [ ] [farmotive/klog](https://github.com/farmotive/klog)
-  - sagacious k8s logs
-
-- [ ] [google/mtail](https://github.com/google/mtail)
-  - extract whitebox monitoring data from application logs for collection in a timeseries database
+- [ ] [farmotive/klog: sagacious k8s logs](https://github.com/farmotive/klog)
 
 ### Container
 
-- [ ] [genuinetools/reg](https://github.com/genuinetools/reg)
-  - Docker registry v2 command line client.
+- [ ] [genuinetools/reg: Docker registry v2 command line client.](https://github.com/genuinetools/reg)
 
-- [ ] [containers/storage/cmd/containers-storage](https://github.com/containers/storage/tree/master/cmd/containers-storage)
-  - This is containers-storage, a command line tool for manipulating local layer/image/container stores.
+- [ ] [containers/storage: This is containers-storage, a command line tool for manipulating local layer/image/container stores.](https://github.com/containers/storage)
+  - [ ] [cmd/containers-storage](https://github.com/containers/storage/tree/master/cmd/containers-storage)
 
 ### Infra as a code
-- [hashicorp/terraform](https://github.com/hashicorp/terraform)
+
+- [ ] [hashicorp/terraform](https://github.com/hashicorp/terraform)
   - Terraform is a tool for building, changing, and combining infrastructure safely and efficiently.
+
+### Others
+
+- [ ] [labstack/tunnel](https://github.com/labstack/tunnel)
+  - Expose local servers to internet securely
+
+- [ ] [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared)
+  - Argo Tunnel client
+
+- [ ] [google/mtail: extract whitebox monitoring data from application logs for collection in a timeseries database](https://github.com/google/mtail)
 
 ### gcloud SDK CLI
 
