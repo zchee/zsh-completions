@@ -1,0 +1,320 @@
+#compdef sops
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# go.mozilla.org/sops
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    sops - sops - encrypted file editor with AWS KMS, GCP KMS and GPG support
+#
+# USAGE:
+#    sops is an editor of encrypted files that supports AWS KMS and PGP
+#
+#    To encrypt or decrypt a document with AWS KMS, specify the KMS ARN
+#    in the -k flag or in the SOPS_KMS_ARN environment variable.
+#    (you need valid credentials in ~/.aws/credentials or in your env)
+#
+#    To encrypt or decrypt a document with GCP KMS, specify the
+#    GCP KMS resource ID in the --gcp-kms flag or in the SOPS_GCP_KMS_IDS
+#    environment variable.
+#    (you need to setup google application default credentials. See
+#     https://developers.google.com/identity/protocols/application-default-credentials)
+#
+#    To encrypt or decrypt using PGP, specify the PGP fingerprint in the
+#    -p flag or in the SOPS_PGP_FP environment variable.
+#
+#    To use multiple KMS or PGP keys, separate them by commas. For example:
+#        $ sops -p "10F2...0A, 85D...B3F21" file.yaml
+#
+#    The -p, -k and --gcp-kms flags are only used to encrypt new documents. Editing
+#    or decrypting existing documents can be done with "sops file" or
+#    "sops -d file" respectively. The KMS and PGP keys listed in the encrypted
+#    documents are used then. To manage master keys in existing documents, use
+#    the "add-{kms,pgp,gcp-kms}" and "rm-{kms,pgp,gcp-kms}" flags.
+#
+#    To use a different GPG binary than the one in your PATH, set SOPS_GPG_EXEC.
+#
+#    To select a different editor than the default (vim), set EDITOR.
+#
+#    For more information, see the README at github.com/mozilla/sops
+#
+# VERSION:
+#    3.0.3
+#
+# AUTHORS:
+#    Julien Vehent <jvehent@mozilla.com>
+#    Adrian Utrilla <adrianutrilla@gmail.com>
+#
+# COMMANDS:
+#      keyservice  start a SOPS key service server
+#      groups      modify the groups on a SOPS file
+#      updatekeys  update the keys of a SOPS file using the config file
+#      help, h     Shows a list of commands or help for one command
+#
+# GLOBAL OPTIONS:
+#    --decrypt, -d                            decrypt a file and output the result to stdout
+#    --encrypt, -e                            encrypt a file and output the result to stdout
+#    --rotate, -r                             generate a new data encryption key and reencrypt all values with the new key
+#    --kms value, -k value                    comma separated list of KMS ARNs [$SOPS_KMS_ARN]
+#    --gcp-kms value                          comma separated list of GCP KMS resource IDs [$SOPS_GCP_KMS_IDS]
+#    --pgp value, -p value                    comma separated list of PGP fingerprints [$SOPS_PGP_FP]
+#    --in-place, -i                           write output back to the same file instead of stdout
+#    --extract value                          extract a specific key or branch from the input document. Decrypt mode only. Example: --extract '["somekey"][0]'
+#    --input-type value                       currently json, yaml and binary are supported. If not set, sops will use the file's extension to determine the type
+#    --output-type value                      currently json, yaml and binary are supported. If not set, sops will use the input file's extension to determine the output format
+#    --show-master-keys, -s                   display master encryption keys in the file during editing
+#    --add-gcp-kms value                      add the provided comma-separated list of GCP KMS key resource IDs to the list of master keys on the given file
+#    --rm-gcp-kms value                       remove the provided comma-separated list of GCP KMS key resource IDs from the list of master keys on the given file
+#    --add-kms value                          add the provided comma-separated list of KMS ARNs to the list of master keys on the given file
+#    --rm-kms value                           remove the provided comma-separated list of KMS ARNs from the list of master keys on the given file
+#    --add-pgp value                          add the provided comma-separated list of PGP fingerprints to the list of master keys on the given file
+#    --rm-pgp value                           remove the provided comma-separated list of PGP fingerprints from the list of master keys on the given file
+#    --ignore-mac                             ignore Message Authentication Code during decryption
+#    --unencrypted-suffix value               override the unencrypted key suffix.
+#    --encrypted-suffix value                 override the encrypted key suffix. When empty, all keys will be encrypted, unless otherwise marked with unencrypted-suffix.
+#    --config value                           path to sops' config file. If set, sops will not search for the config file recursively.
+#    --encryption-context value               comma separated list of KMS encryption context key:value pairs
+#    --set value                              set a specific key or branch in the input JSON or YAML document. value must be a json encoded string. (edit mode only). eg. --set '["somekey"][0] {"somevalue":true}'
+#    --shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)
+#    --verbose                                Enable verbose logging output
+#    --enable-local-keyservice                use local key service
+#    --keyservice value                       Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000
+#    --help, -h                               show help
+#    --version, -v                            print the version
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    sops keyservice - start a SOPS key service server
+#
+# USAGE:
+#    sops keyservice [command options] [arguments...]
+#
+# OPTIONS:
+#    --network value, --net value   network to listen on, e.g. 'tcp' or 'unix' (default: "tcp")
+#    --address value, --addr value  address to listen on, e.g. '127.0.0.1:5000' or '/tmp/sops.sock' (default: "127.0.0.1:5000")
+#    --prompt                       Prompt user to confirm every incoming request
+#    --verbose                      Enable verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    sops groups - modify the groups on a SOPS file
+#
+# USAGE:
+#    sops groups command [command options] [arguments...]
+#
+# COMMANDS:
+#      add     add a new group to a SOPS file
+#      delete  delete a key group from a SOPS file
+#
+# OPTIONS:
+#    --help, -h  show help
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    sops groups add - add a new group to a SOPS file
+#
+# USAGE:
+#    sops groups add [command options] [arguments...]
+#
+# OPTIONS:
+#    --file value, -f value                   the file to add the group to
+#    --pgp value                              the PGP fingerprints the new group should contain. Can be specified more than once
+#    --kms value                              the KMS ARNs the new group should contain. Can be specified more than once
+#    --gcp-kms value                          the GCP KMS Resource ID the new group should contain. Can be specified more than once
+#    --in-place, -i                           write output back to the same file instead of stdout
+#    --shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)
+#    --encryption-context value               comma separated list of KMS encryption context key:value pairs
+#    --enable-local-keyservice                use local key service
+#    --keyservice value                       Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000
+#
+# -----------------------------------------------------------------------------
+
+# NAME:
+#    sops groups delete - delete a key group from a SOPS file
+#
+# USAGE:
+#    sops groups delete [command options] [index]
+#
+# OPTIONS:
+#    --file value, -f value                   the file to add the group to
+#    --in-place, -i                           write output back to the same file instead of stdout
+#    --shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)
+#    --enable-local-keyservice                use local key service
+#    --keyservice value                       Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000
+#   
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    sops updatekeys - update the keys of a SOPS file using the config file
+#
+# USAGE:
+#    sops updatekeys [command options] file
+#
+# OPTIONS:
+#    --yes, -y                  pre-approve all changes and run non-interactively
+#    --enable-local-keyservice  use local key service
+#    --keyservice value         Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#     - Shows a list of commands or help for one command
+#
+# USAGE:
+#     [command]
+#
+# -----------------------------------------------------------------------------
+
+function _sops() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'keyservice:start a SOPS key service server'
+  'groups:modify the groups on a SOPS file'
+  'updatekeys:update the keys of a SOPS file using the config file'
+  {help,h}:'Shows a list of commands or help for one command'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+  {--decrypt,-d}'[decrypt a file and output the result to stdout]' \
+  {--encrypt,-e}'[encrypt a file and output the result to stdout]' \
+  {--rotate,-r}'[generate a new data encryption key and reencrypt all values with the new key]' \
+  {--kms,-k}'[comma separated list of KMS ARNs \[$SOPS_KMS_ARN\]]' \
+  '--gcp-kms[comma separated list of GCP KMS resource IDs \[$SOPS_GCP_KMS_IDS\]]' \
+  {--pgp,-p}'[comma separated list of PGP fingerprints \[$SOPS_PGP_FP\]]' \
+  {--in-place,-i}'[write output back to the same file instead of stdout]' \
+  '--extract[extract a specific key or branch from the input document. Decrypt mode only.]' \
+  "--input-type[currently json, yaml and binary are supported. If not set, sops will use the file's extension to determine the type]" \
+  "--output-type[currently json, yaml and binary are supported. If not set, sops will use the input file's extension to determine the output format]" \
+  {--show-master-keys,-s}'[display master encryption keys in the file during editing]' \
+  '--add-gcp-kms[add the provided comma-separated list of GCP KMS key resource IDs to the list of master keys on the given file]' \
+  '--rm-gcp-kms[remove the provided comma-separated list of GCP KMS key resource IDs from the list of master keys on the given file]' \
+  '--add-kms[add the provided comma-separated list of KMS ARNs to the list of master keys on the given file]' \
+  '--rm-kms[remove the provided comma-separated list of KMS ARNs from the list of master keys on the given file]' \
+  '--add-pgp[add the provided comma-separated list of PGP fingerprints to the list of master keys on the given file]' \
+  '--rm-pgp[remove the provided comma-separated list of PGP fingerprints from the list of master keys on the given file]' \
+  '--ignore-mac[ignore Message Authentication Code during decryption]' \
+  '--unencrypted-suffix[override the unencrypted key suffix.]' \
+  '--encrypted-suffix[override the encrypted key suffix. When empty, all keys will be encrypted, unless otherwise marked with unencrypted-suffix.]' \
+  '--config[path to sops config file. If set, sops will not search for the config file recursively.]' \
+  '--encryption-context[comma separated list of KMS encryption context key:value pairs]' \
+  '--set[set a specific key or branch in the input JSON or YAML document. value must be a json encoded string.]' \
+  '--shamir-secret-sharing-threshold[the number of master keys required to retrieve the data key with shamir (default: 0)]' \
+  '--verbose[Enable verbose logging output]' \
+  '--enable-local-keyservice[use local key service]' \
+  '--keyservice[Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000]' \
+  {--help,-h}'[show help]' \
+  {--version,-v}'[print the version]' \
+  )
+
+  _arguments -C \
+    "1: :{_describe 'sops command' commands}" \
+    "${_global_flags[@]}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    keyservice)
+      _arguments \
+        {--network,--net}"[network to listen on, e.g. 'tcp' or 'unix' (default: \"tcp\")]" \
+        {--address,--addr}"[address to listen on, e.g. '127.0.0.1:5000' or '/tmp/sops.sock' (default: \"127.0.0.1:5000\")]" \
+        '--prompt[Prompt user to confirm every incoming request]' \
+        '--verbose[Enable verbose logging output]' \
+        "${_global_flags[@]}"
+      ;;
+
+    groups)
+      local -a groups_commands
+      groups_commands=(
+      'add:add a new group to a SOPS files'
+      'delete:delete a key group from a SOPS file'
+      )
+
+      _arguments \
+        "1: :{_describe 'groups command' groups_commands}" \
+        "${_global_flags[@]}" \
+        '*:: :->args' \
+
+      case $words[1] in
+        add)
+          _arguments \
+            {--file,-f}'[the file to add the group to]' \
+            '--pgp[the PGP fingerprints the new group should contain. Can be specified more than once]' \
+            '--kms[the KMS ARNs the new group should contain. Can be specified more than once]' \
+            '--gcp-kms[the GCP KMS Resource ID the new group should contain. Can be specified more than once]' \
+            {--in-place,-i}'[write output back to the same file instead of stdout]' \
+            '--shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)]' \
+            '--encryption-context[comma separated list of KMS encryption context key:value pairs]' \
+            '--enable-local-keyservice[use local key service]' \
+            '--keyservice[Specify the key services to use in addition to the local one. Syntax: protocol://address. Example: tcp://myserver.com:5000]' \
+          ;;
+        delete)
+          _arguments \
+            {--file,-f}'[the file to add the group to]' \
+            {--in-place,-i}'[write output back to the same file instead of stdout]' \
+            '--shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)]' \
+            '--enable-local-keyservice[use local key service]' \
+            '--keyservice[Specify the key services to use in addition to the local one. Syntax: protocol://address. Example: tcp://myserver.com:5000]' \
+          ;;
+      esac
+      ;;
+
+    updatekeys)
+      _arguments \
+        {--yes,-y}'[pre-approve all changes and run non-interactively]' \
+        '--enable-local-keyservice[use local key service]' \
+        '--keyservice[Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000]' \
+        "${_global_flags[@]}" \
+        '*:files:_files'
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' commands}"
+      ;;
+  esac
+
+  return ret
+}
+
+_sops "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
