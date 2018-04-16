@@ -2,6 +2,23 @@
 
 ## TODO
 
+### Commands
+
+- [ ] [uber/prototool](https://github.com/uber/prototool)
+  - Your Swiss Army Knife for Protocol Buffers
+
+- [ ] [jessfraz/dockfmt](https://github.com/jessfraz/dockfmt)
+  - Dockerfile format and parser. Like \`gofmt\` but for Dockerfiles.
+
+- [ ] [labstack/tunnel](https://github.com/labstack/tunnel)
+  - Expose local servers to internet securely
+
+- [ ] [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared)
+  - Argo Tunnel client
+
+- [ ] [google/mtail](https://github.com/google/mtail)
+  - extract whitebox monitoring data from application logs for collection in a timeseries database
+
 ### Kubernetes tools
 
 - [ ] [GoogleCloudPlatform/skaffold: Easy and Repeatable Kubernetes Development](https://github.com/GoogleCloudPlatform/skaffold)
@@ -60,27 +77,3 @@
 
 - [ ] [hashicorp/terraform](https://github.com/hashicorp/terraform)
   - Terraform is a tool for building, changing, and combining infrastructure safely and efficiently.
-
-### Others
-
-- [ ] [labstack/tunnel](https://github.com/labstack/tunnel)
-  - Expose local servers to internet securely
-
-- [ ] [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared)
-  - Argo Tunnel client
-
-- [ ] [google/mtail: extract whitebox monitoring data from application logs for collection in a timeseries database](https://github.com/google/mtail)
-
-### gcloud SDK CLI
-
-- [ ] bq
-- [ ] cbt
-- [ ] container-builder-local
-- [ ] datalab
-- [ ] dev_appserver.py
-- [ ] docker-credential-gcloud
-- [ ] docker-credential-gcr
-- [ ] endpointscfg.py
-- [ ] gcloud
-- [ ] git-credential-gcloud.sh
-- [ ] gsutil
