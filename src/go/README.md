@@ -7,6 +7,9 @@
 - [ ] [uber/prototool](https://github.com/uber/prototool)
   - Your Swiss Army Knife for Protocol Buffers
 
+- [ ] [mikefarah/yq](https://github.com/mikefarah/yq)
+  - yq is a portable command-line YAML processor
+
 - [ ] [jessfraz/dockfmt](https://github.com/jessfraz/dockfmt)
   - Dockerfile format and parser. Like \`gofmt\` but for Dockerfiles.
 
