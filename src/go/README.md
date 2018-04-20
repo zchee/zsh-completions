@@ -10,6 +10,9 @@
 - [ ] [mikefarah/yq](https://github.com/mikefarah/yq)
   - yq is a portable command-line YAML processor
 
+- [ ] [google/go-containerregistry](https://github.com/google/go-containerregistry)
+  - [ ] [google/go-containerregistry/cmd/d8s](https://github.com/google/go-containerregistry/tree/master/cmd/d8s)
+
 - [ ] [jessfraz/dockfmt](https://github.com/jessfraz/dockfmt)
   - Dockerfile format and parser. Like \`gofmt\` but for Dockerfiles.
 
