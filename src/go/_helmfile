@@ -1,0 +1,198 @@
+#compdef helmfile
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/roboll/helmfile
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile - 
+#
+# USAGE:
+#    helmfile [global options] command [command options] [arguments...]
+#   
+# COMMANDS:
+#      repos   sync repositories from state file (helm repo add && helm repo update)
+#      charts  sync charts from state file (helm upgrade --install)
+#      diff    diff charts from state file against env (helm diff)
+#      sync    sync all resources from state file (repos, charts and local chart deps)
+#      delete  delete charts from state file (helm delete)
+#
+# GLOBAL OPTIONS:
+#    --file FILE, -f FILE         load config from FILE (default: "helmfile.yaml")
+#    --quiet, -q                  silence output
+#    --kube-context value         Set kubectl context. Uses current context by default
+#    --namespace value, -n value  Set namespace. Uses the namespace set in the context by default
+#    --selector value, -l value   Only run using the releases that match labels. Labels can take the form of foo=bar or foo!=bar.
+#                                 A release must match all labels in a group in order to be used. Multiple groups can be specified at once.
+#                                 --selector tier=frontend,tier!=proxy --selector tier=backend. Will match all frontend, non-proxy releases AND all backend releases.
+#                                 The name of a release can be used as a label. --selector name=myrelease
+#    --help, -h                   show help
+#    --version, -v                print the version
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile repos - sync repositories from state file (helm repo add && helm repo update)
+#
+# USAGE:
+#    helmfile repos [command options] [arguments...]
+#
+# OPTIONS:
+#    --args value  pass args to helm exec
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile charts - sync charts from state file (helm upgrade --install)
+#
+# USAGE:
+#    helmfile charts [command options] [arguments...]
+#
+# OPTIONS:
+#    --args value         pass args to helm exec
+#    --values value       additional value files to be merged into the command
+#    --concurrency value  maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile diff - diff charts from state file against env (helm diff)
+#
+# USAGE:
+#    helmfile diff [command options] [arguments...]
+#
+# OPTIONS:
+#    --args value         pass args to helm exec
+#    --values value       additional value files to be merged into the command
+#    --sync-repos         enable a repo sync prior to diffing
+#    --concurrency value  maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile sync - sync all resources from state file (repos, charts and local chart deps)
+#
+# USAGE:
+#    helmfile sync [command options] [arguments...]
+#
+# OPTIONS:
+#    --values value       additional value files to be merged into the command
+#    --concurrency value  maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)
+#    --args value         pass args to helm exec
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile delete - delete charts from state file (helm delete)
+#
+# USAGE:
+#    helmfile delete [arguments...]
+#
+# -----------------------------------------------------------------------------
+
+function _helmfile() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'repos:sync repositories from state file (helm repo add && helm repo update)'
+  'charts:sync charts from state file (helm upgrade --install)'
+  'diff:diff charts from state file against env (helm diff)'
+  'sync:sync all resources from state file (repos, charts and local chart deps)'
+  'delete:delete charts from state file (helm delete)'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+  {--file,-f}'[load config from FILE (default\: "helmfile.yaml")]:file:_files'
+  {--quiet,-q}'[silence output]'
+  '--kube-context[Set kubectl context. Uses current context by default]:context'
+  {--namespace,-n}'[Set namespace. Uses the namespace set in the context by default]:value'
+  {--selector,-l}'[Only run using the releases that match labels]:value'
+  {--help,-h}'[show help]'
+  {--version,-v}'[print the version]'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'helmfile command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    repos)
+      _arguments \
+        '--args[pass args to helm exec]:exec args' \
+        ${_global_flags[@]}
+      ;;
+
+    charts)
+      _arguments \
+        '--args[pass args to helm exec]:exec args' \
+        '--values[additional value files to be merged into the command]:values file:_files' \
+        '--concurrency[maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)]:concurrency size' \
+        ${_global_flags[@]}
+      ;;
+
+    diff)
+      _arguments \
+        '--args[pass args to helm exec]:exec args' \
+        '--values[additional value files to be merged into the command]:values file:_files' \
+        '--sync-repos[enable a repo sync prior to diffing]' \
+        '--concurrency[maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)]:concurrency size' \
+        ${_global_flags[@]}
+      ;;
+
+    sync)
+      _arguments \
+        '--values[additional value files to be merged into the command]:values file:_files' \
+        '--concurrency[maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)]:concurrency size' \
+        '--args[pass args to helm exec]:exec args' \
+        ${_global_flags[@]}
+      ;;
+
+    delete)
+      _arguments \
+        ${_global_flags[@]}
+      ;;
+  esac
+
+  return ret
+}
+
+_helmfile "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
