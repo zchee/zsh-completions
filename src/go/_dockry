@@ -1,0 +1,303 @@
+#compdef dockry
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/shyiko/dockry
+#
+# Docker Registry client (https://github.com/shyiko/dockry).
+#
+# Usage:
+#   dockry [flags]
+#   dockry [command]
+#
+# Available Commands:
+#   completion  Command-line completion
+#   digest      Print digest(s) of one or more images
+#   help        Help about any command
+#   inspect     Display detailed information on one or more images
+#   ll          List image "<tag> <download size> <time since update>"s
+#   ls          List image tags
+#   rm          Remove one or more images
+#
+# Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#       --version       Print version information
+#
+# Use "dockry [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Command-line completion
+#
+# Usage:
+#   dockry completion [command]
+#
+# Available Commands:
+#   bash        Generate Bash completion
+#   zsh         Generate Z shell completion
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# Use "dockry completion [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Print digest(s) of one or more images
+# An alias for `inspect <image>:<tag>... <flags> --format='{{.digest}}'`
+#
+# Usage:
+#   dockry digest [image:tag...] [flags]
+#
+# Aliases:
+#   digest, d
+#
+# Examples:
+#   dockry digest --fq node:latest
+#
+# Flags:
+#       --fq                Output digest(s) fully-qualified
+#   -x, --l64               An alias for --platform=linux/amd64
+#   -p, --platform string   Filter images by platform (e.g. "current", "linux/amd64")
+#       --strict            Match --platform exactly (e.g. '-p linux/arm' matches "linux/arm,v6" and "linux/arm,v7", while '-p linux/arm --strict' only "linux/arm")
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# -----------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+# Simply type dockry help [path to command] for full details.
+#
+# Usage:
+#   dockry help [command] [flags]
+#
+# Flags:
+#   -h, --help   help for help
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# -----------------------------------------------------------------------------
+#
+# Display detailed information on one or more images
+#
+# Usage:
+#   dockry inspect [image:tag or image@digest] [flags]
+#
+# Aliases:
+#   inspect, i
+#
+# Examples:
+#   dockry inspect node:latest
+#
+# Flags:
+#       --format string     Go template to render (applied separately to each record)
+#     Additional functions:
+#       def - e.g. {{- if def .config.env VAR }} ... {{- end }} - render content between }} and {{ only if .config.env.VAR is set
+#       hsize - e.g. {{ .downloadSize | hsize }} - humanize size (e.g. 1 MB)
+#       na - e.g. {{ .downloadSize | na }} - show n/a if 0
+#       hsince - e.g. {{ .timestamp | hsince }} - humanize time (e.g. 1 month ago)
+#       platform - e.g. {{ . | platform }} - combine os/cpu-related info into a single value (e.g. linux/amd64)
+#       pad - e.g. {{ pad .tag 50 }} - append padding if necessary      flex0..flex9 - e.g. {{ .tag | flex }} - pad based on the length of the previously seen values
+#   -x, --l64               An alias for --platform=linux/amd64
+#   -p, --platform string   Filter images by platform (e.g. "current", "linux/amd64")
+#       --strict            Match --platform exactly (e.g. '-p linux/arm' matches "linux/arm,v6" and "linux/arm,v7", while '-p linux/arm --strict' only "linux/arm")
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# -----------------------------------------------------------------------------
+#
+# List image "<tag> <download size> <time since update>"s
+# An alias for `inspect $(dockry ls <image> <flags>) --format=$'{{.tag}}\{{platform .}}\t{{.downloadSize | na | hsize}}\t{{.timestamp | hsince}}'`
+#
+# Usage:
+#   dockry ll [image] [flags]
+#
+# Examples:
+#   dockry ll --fq node
+#
+# Flags:
+#       --fq                Output tag(s) fully-qualified
+#   -x, --l64               An alias for --platform=linux/amd64
+#       --limit int         Maximum number of records to show
+#   -p, --platform string   Filter images by platform (e.g. "current", "linux/amd64")
+#       --strict            Match --platform exactly (e.g. '-p linux/arm' matches "linux/arm,v6" and "linux/arm,v7", while '-p linux/arm --strict' only "linux/arm")
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# -----------------------------------------------------------------------------
+#
+# List image tags
+#
+# Usage:
+#   dockry ls [image] [flags]
+#
+# Examples:
+#   dockry ls --fq node
+#
+# Flags:
+#       --fq          Output tag(s) fully-qualified
+#       --limit int   Maximum number of records to show
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# -----------------------------------------------------------------------------
+#
+# Remove one or more images
+#
+# Usage:
+#   dockry rm [image@digest...] [flags]
+#
+# Examples:
+#   dockry rm node@sha256:5ff43da...
+#
+# Global Flags:
+#       --debug         Turn on debug output
+#   -u, --user string   Explicit username:password for authorization (by default ~/.docker/config.json is used)
+#
+# -----------------------------------------------------------------------------
+
+function _dockry() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'completion:Command-line completion'
+  {d,digest}:'Print digest(s) of one or more images'
+  'help:Help about any command'
+  {i,inspect}:'Display detailed information on one or more images'
+  'll:List image "<tag> <download size> <time since update>"s'
+  'ls:List image tags'
+  'rm:Remove one or more images'
+  )
+
+  local -a global_flags
+  global_flags=(
+  '--debug[Turn on debug output]'
+  {-u,--user}'[Explicit username:password for authorization (by default ~/.docker/config.json is used)]:string'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'dockry command' commands}" \
+    ${global_flags[@]} \
+    '--version[Print version information]' \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    completion)
+      local -a completion_cmds
+      completion_cmds=(
+      'bash:Generate Bash completion'
+      'zsh:Generate Z shell completion'
+      )
+      _arguments \
+        "1: :{_describe 'completion subcommand' completion_cmds}" \
+        ${global_flags[@]} \
+        && ret=0
+      ;;
+
+    digest)
+      _arguments \
+        '--fq[Output digest(s) fully-qualified]' \
+        {-x,--l64}'[An alias for --platform=linux/amd64]' \
+        {-p,--platform}'[Filter images by platform (e.g. "current", "linux/amd64")]' \
+        '--strict[Match --platform exactly]' \
+        ${global_flags[@]} \
+        && ret=0
+      ;;
+
+    help)
+      _arguments \
+        {-h,--help}'[help for help]' \
+        ${global_flags[@]} \
+        && ret=0
+      ;;
+
+    inspect)
+      local -a _format_args
+      _format_args=(
+      'def:render content between'
+      'hsize:humanize size'
+      'na:show n/a if 0'
+      'hsince:humanize time'
+      'platform:combine os/cpu-related info into a single value (e.g. linux/amd64)'
+      'pad:append padding if necessary'
+      'flex0..flex9:pad based on the length of the previously seen values'
+      )
+      _arguments \
+        "--format[Go template to render (applied separately to each record)]: :{_describe 'format args' _format_args}" \
+        {-x,--l64}'[An alias for --platform=linux/amd64]' \
+        {-p,--platform}'[Filter images by platform (e.g. "current", "linux/amd64")]' \
+        '--strict[Match --platform exactly]' \
+        ${global_flags[@]} \
+        && ret=0
+      ;;
+
+    (ll|ls)
+      _arguments \
+        '--fq[Output tag(s) fully-qualified]' \
+        {-x,--l64}'[An alias for --platform=linux/amd64]' \
+        '--limit[Maximum number of records to show]:limit' \
+        {-p,--platform}'[Filter images by platform (e.g. "current", "linux/amd64")]' \
+        '--strict[Match --platform exactly]' \
+        ${global_flags[@]} \
+        && ret=0
+      ;;
+
+    rm)
+      _arguments \
+        ${global_flags[@]} \
+        && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_dockry "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
