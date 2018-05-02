@@ -1,0 +1,279 @@
+#compdef skaffold
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/GoogleContainerTools/skaffold
+#
+# -----------------------------------------------------------------------------
+#
+# A tool that facilitates continuous development for Kubernetes applications.
+#
+# Usage:
+#   skaffold [command]
+#
+# Available Commands:
+#   completion  Generate shell completion scripts
+#   dev         Runs a pipeline file in development mode
+#   docker      A set of commands related to developing with docker
+#   fix         Converts old skaffold.yaml to newest schema version
+#   help        Help about any command
+#   run         Runs a pipeline file
+#   version     Print the version information
+#
+# Flags:
+#   -h, --help               help for skaffold
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# Use "skaffold [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Runs a pipeline file in development mode
+#
+# Usage:
+#   skaffold dev [flags]
+#
+# Flags:
+#       --cleanup               Delete deployments after dev mode is interrupted (default true)
+#   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+#   -h, --help                  help for dev
+#   -p, --profile stringArray   Activate profiles by name
+#       --toot                  Emit a terminal beep after the deploy is complete
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+#
+# A set of commands related to developing with docker
+#
+# Usage:
+#   skaffold docker [command]
+#
+# Available Commands:
+#   context     Outputs a minimal context tarball to stdout
+#   deps        Returns a list of dependencies for the input dockerfile
+#
+# Flags:
+#   -h, --help   help for docker
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# Use "skaffold docker [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Outputs a minimal context tarball to stdout
+#
+# Usage:
+#   skaffold docker context [flags]
+#
+# Flags:
+#   -c, --context string    Dockerfile context path (default ".")
+#   -f, --filename string   Dockerfile path (default "Dockerfile")
+#   -h, --help              help for context
+#   -o, --output string     Output filename. (default "context.tar.gz")
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+#
+# Returns a list of dependencies for the input dockerfile
+#
+# Usage:
+#   skaffold docker deps [flags]
+#
+# Flags:
+#   -c, --context string               Dockerfile context path (default ".")
+#   -f, --filename string              Dockerfile path (default "Dockerfile")
+#   -h, --help                         help for deps
+#   -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/docker#DepsOutput (default {{range .Deps}}{{.}} {{end}}
+# )
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+#
+# Converts old skaffold.yaml to newest schema version
+#
+# Usage:
+#   skaffold fix [flags]
+#
+# Flags:
+#   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
+#   -h, --help              help for fix
+#       --overwrite         Overwrite original config with fixed config
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+# Simply type skaffold help [path to command] for full details.
+#
+# Usage:
+#   skaffold help [command] [flags]
+#
+# Flags:
+#   -h, --help   help for help
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+#
+# Runs a pipeline file
+#
+# Usage:
+#   skaffold run [flags]
+#
+# Flags:
+#   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
+#   -h, --help              help for run
+#   -t, --tag string        The optional custom tag to use for images which overrides the current Tagger configuration
+#       --toot              Emit a terminal beep after the deploy is complete
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+#
+# Print the version information
+#
+# Usage:
+#   skaffold version [flags]
+#
+# Flags:
+#   -h, --help                         help for version
+#   -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version#Info (default {{.Version}}
+# )
+#
+# Global Flags:
+#   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic (default "warning")
+#
+# -----------------------------------------------------------------------------
+
+function _skaffold() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'dev:Runs a pipeline file in development mode'
+  'docker:A set of commands related to developing with docker'
+  'fix:Converts old skaffold.yaml to newest schema version'
+  'help:Help about any command'
+  'run:Runs a pipeline file'
+  'version:Print the version information'
+  )
+
+  local -a _global_flags=(
+  {-h,--help}'[help for skaffold]'
+  {-v,--verbosity}'[Log level (default "warning")]:level:(debug info warn error fatal panic)'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'skaffold command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+    case $words[1] in
+      dev)
+        _arguments \
+          '--cleanup[Delete deployments after dev mode is interrupted (default true)]' \
+          {-f,--filename}'[Filename or URL to the pipeline file (default "skaffold.yaml")]:skaffold yaml file:_files' \
+          {-p,--profile}'[Activate profiles by name]:profile name' \
+          '--toot[Emit a terminal beep after the deploy is complete]' \
+          ${_global_flags[@]}
+        ;;
+
+      docker)
+        local -a docker_cmds
+        docker_cmds=(
+        'context:Outputs a minimal context tarball to stdout'
+        'deps:Returns a list of dependencies for the input dockerfile'
+        )
+        _arguments \
+          "1: :{_describe 'docker command' docker_cmds}" \
+          '*:: :->args'
+
+          case $words[1] in
+            context)
+              _arguments \
+                {-c,--context}'[Dockerfile context path (default ".")]:Dockerfile context path:_files' \
+                {-f,--filename}'[Dockerfile path (default "Dockerfile")]:Dockerfile path:_files' \
+                {-o,--output}'[Output filename. (default "context.tar.gz")]:output filename:_files' \
+                ${_global_flags[@]}
+            ;;
+            deps)
+              _arguments \
+                {-c,--context}'[Dockerfile context path (default ".")]:Dockerfile context path:_files' \
+                {-f,--filename}'[Dockerfile path (default "Dockerfile")]:Dockerfile path:_files' \
+                {-o,--output}"[Format output with go-template. (default {{range .Deps}}{{.}} {{end}}]:flags.TemplateFlag" \
+                ${_global_flags[@]}
+            ;;
+          esac
+        ;;
+
+      fix)
+        _arguments \
+          {-f,--filename}'[Filename or URL to the pipeline file (default "skaffold.yaml")]:skaffold yaml file:_files' \
+          '--overwrite[Overwrite original config with fixed config]' \
+          ${_global_flags[@]}
+        ;;
+
+      run)
+        _arguments \
+          {-f,--filename}'[Filename or URL to the pipeline file (default "skaffold.yaml")]:skaffold yaml file:_files' \
+          '--toot[Emit a terminal beep after the deploy is complete]' \
+          {-t,--tag}'[The optional custom tag to use for images which overrides the current Tagger configuration]:tag' \
+          ${_global_flags[@]}
+        ;;
+
+      (help|version)
+        _arguments \
+          ${_global_flags[@]}
+        ;;
+    esac
+
+  return ret
+}
+
+_skaffold "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
