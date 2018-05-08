@@ -553,9 +553,19 @@ function _istioctl() {
   local -a configuration_types
   configuration_types=(
   'routerule:traffic routing.'
-  'ingressrule:routing rules applied to the ingress proxy pool.'
   'egressrule:describe the properties of a service outside Istio.'
   'destinationpolicy:client/caller-side policies that determine how to handle traffic bound to a particular destination service.'
+  'httpapispec'
+  'httpapispecbinding'
+  'quotaspec'
+  'quotaspecbinding'
+  'servicerole'
+  'servicerolebinding'
+  'virtualservice'
+  'gateway'
+  'serviceentry'
+  'destinationrule'
+  'policy'
   )
 
   local -a _global_flags
@@ -656,10 +666,14 @@ function _istioctl() {
       # Get a specific rule named productpage-default
       #   $ istioctl get routerule productpage-default
       get)
+        if (( CURRENT == 2 )); then
+          _arguments "*: :{_describe 'configuration types' configuration_types}"
+        else
+          _arguments "*:rules:($(istioctl get $words[2] | awk 'NR>1 {print $1}'))"
+        fi
+
         _arguments \
           {-o,--output}'[Output format. (default "short")]:output format:(yaml short)' \
-          "1: :{_describe 'configuration types' configuration_types}" \
-          "2:rules:" \
           ${_help_flag[@]} \
           ${_global_flags[@]}
         ;;
