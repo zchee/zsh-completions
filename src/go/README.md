@@ -25,6 +25,9 @@
 - [ ] [google/mtail](https://github.com/google/mtail)
   - extract whitebox monitoring data from application logs for collection in a timeseries database
 
+- [ ] [elliotchance/c2go](https://github.com/elliotchance/c2go)
+  - ⚖️ A tool for transpiling C to Go.
+
 ### Kubernetes tools
 
 - [ ] [GoogleCloudPlatform/skaffold: Easy and Repeatable Kubernetes Development](https://github.com/GoogleCloudPlatform/skaffold)
