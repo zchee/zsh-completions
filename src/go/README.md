@@ -30,6 +30,10 @@
 
 ### Kubernetes tools
 
+- [ ] [kubernetes-incubator/cri-tools: CLI and validation tools for Kubelet Container Runtime Interface (CRI) .](https://github.com/kubernetes-incubator/cri-tools)
+  - [ ] [kubernetes-incubator/cri-tools/cmd/crictl](https://github.com/kubernetes-incubator/cri-tools/tree/master/cmd/crictl)
+  - [ ] [kubernetes-incubator/cri-tools/cmd/critest](https://github.com/kubernetes-incubator/cri-tools/tree/master/cmd/critest)
+
 - [ ] [GoogleCloudPlatform/skaffold: Easy and Repeatable Kubernetes Development](https://github.com/GoogleCloudPlatform/skaffold)
 
 - [x] [istio/istio/istioctl/cmd/istioctl: Istio configuration command line utility.](https://github.com/istio/istio/tree/master/istioctl/cmd/istioctl)
@@ -40,13 +44,7 @@
 
 - [ ] [garethr/kubeval: Validate your Kubernetes configuration files, supports multiple Kubernetes versions](https://github.com/garethr/kubeval)
 
-- [ ] [jetstack/cert-manager: Automatically provision and manage TLS certificates in Kubernetes](https://github.com/jetstack/cert-manager)
-  - [ ] [jetstack/cert-manager/cmd/acmesolver](https://github.com/jetstack/cert-manager/tree/master/cmd/acmesolver)
-  - [ ] [jetstack/cert-manager/cmd/controller](https://github.com/jetstack/cert-manager/tree/master/cmd/controller)
-  - [ ] [jetstack/cert-manager/cmd/ingress-shim](https://github.com/jetstack/cert-manager/tree/master/cmd/ingress-shim)
 - [ ] [jetstack/vault-helper: Vault helper script](https://github.com/jetstack/vault-helper)
-- [ ] [jetstack/kube-lego: Automatically request certificates for Kubernetes Ingress resources from Let's Encrypt](https://github.com/jetstack/kube-lego)
-- [ ] [jetstack/navigator: Managed Database-as-a-Service (DBaaS) on Kubernetes](https://github.com/jetstack/navigator)
 
 - [ ] [heptio/ark: Heptio Ark is a utility for managing disaster recovery, specifically for your Kubernetes cluster resources and persistent volumes. Brought to you by Heptio.](https://github.com/heptio/ark/blob/master/cmd/ark)
 
