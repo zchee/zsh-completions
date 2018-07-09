@@ -61,6 +61,7 @@ _clang-format() {
     '-output-replacements-xml[Output replacements as XML]' \
     '-sort-includes[If set, overrides the include sorting behavior determined by the SortIncludes style flag]' \
     '-style=[Set coding style or -style=file or set specific parameters]:coding style:->style' \
+    '-verbose[If set, shows the list of processed files]' \
     ${__llvm_generic_options[@]} \
     '*:file:_files' \
     && ret=0
