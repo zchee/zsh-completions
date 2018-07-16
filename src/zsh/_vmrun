@@ -1,0 +1,388 @@
+#compdef vmrun
+# -----------------------------------------------------------------------------
+# Copyright (c) 2014 Spencer McIntyre
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the project nor the
+#     names of its contributors may be used to endorse or promote products
+#     derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL ZSH-USERS BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+# Description
+# -----------
+#
+#  Completion script for VMware's vmrun command (http://www.vmware.com/).
+#
+# -----------------------------------------------------------------------------
+# Authors
+# -------
+#
+#  * Spencer McIntyre
+#
+# -----------------------------------------------------------------------------
+# vmrun help
+#
+# vmrun version 1.15.4 build-4352717
+#
+# Usage: vmrun [AUTHENTICATION-FLAGS] COMMAND [PARAMETERS]
+#
+#
+#
+# AUTHENTICATION-FLAGS
+# --------------------
+# These must appear before the command and any command parameters.
+#
+#    -h <hostName>  (not needed for Fusion)
+#    -P <hostPort>  (not needed for Fusion)
+#    -T <hostType> (ws|fusion)
+#    -u <userName in host OS>  (not needed for Fusion)
+#    -p <password in host OS>  (not needed for Fusion)
+#    -vp <password for encrypted virtual machine>
+#    -gu <userName in guest OS>
+#    -gp <password in guest OS>
+#
+#
+#
+# POWER COMMANDS           PARAMETERS           DESCRIPTION
+# --------------           ----------           -----------
+# start                    Path to vmx file     Start a VM or Team
+#                          [gui|nogui]
+#
+# stop                     Path to vmx file     Stop a VM or Team
+#                          [hard|soft]
+#
+# reset                    Path to vmx file     Reset a VM or Team
+#                          [hard|soft]
+#
+# suspend                  Path to vmx file     Suspend a VM or Team
+#                          [hard|soft]
+#
+# pause                    Path to vmx file     Pause a VM
+#
+# unpause                  Path to vmx file     Unpause a VM
+#
+#
+#
+# SNAPSHOT COMMANDS        PARAMETERS           DESCRIPTION
+# -----------------        ----------           -----------
+# listSnapshots            Path to vmx file     List all snapshots in a VM
+#                          [showTree]
+#
+# snapshot                 Path to vmx file     Create a snapshot of a VM
+#                          Snapshot name
+#
+# deleteSnapshot           Path to vmx file     Remove a snapshot from a VM
+#                          Snapshot name
+#                          [andDeleteChildren]
+#
+# revertToSnapshot         Path to vmx file     Set VM state to a snapshot
+#                          Snapshot name
+#
+#
+#
+# GUEST OS COMMANDS        PARAMETERS           DESCRIPTION
+# -----------------        ----------           -----------
+# runProgramInGuest        Path to vmx file     Run a program in Guest OS
+#                          [-noWait]
+#                          [-activeWindow]
+#                          [-interactive]
+#                          Complete-Path-To-Program
+#                          [Program arguments]
+#
+# fileExistsInGuest        Path to vmx file     Check if a file exists in Guest OS
+#                          Path to file in guest
+#
+# directoryExistsInGuest   Path to vmx file     Check if a directory exists in Guest OS
+#                          Path to directory in guest
+#
+# setSharedFolderState     Path to vmx file     Modify a Host-Guest shared folder
+#                          Share name
+#                          Host path
+#                          writable | readonly
+#
+# addSharedFolder          Path to vmx file     Add a Host-Guest shared folder
+#                          Share name
+#                          New host path
+#
+# removeSharedFolder       Path to vmx file     Remove a Host-Guest shared folder
+#                          Share name
+#
+# enableSharedFolders      Path to vmx file     Enable shared folders in Guest
+#                          [runtime]
+#
+# disableSharedFolders     Path to vmx file     Disable shared folders in Guest
+#                          [runtime]
+#
+# listProcessesInGuest     Path to vmx file     List running processes in Guest OS
+#
+# killProcessInGuest       Path to vmx file     Kill a process in Guest OS
+#                          process id
+#
+# runScriptInGuest         Path to vmx file     Run a script in Guest OS
+#                          [-noWait]
+#                          [-activeWindow]
+#                          [-interactive]
+#                          Interpreter path
+#                          Script text
+#
+# deleteFileInGuest        Path to vmx file     Delete a file in Guest OS
+# Path in guest
+#
+# createDirectoryInGuest   Path to vmx file     Create a directory in Guest OS
+# Directory path in guest
+#
+# deleteDirectoryInGuest   Path to vmx file     Delete a directory in Guest OS
+# Directory path in guest
+#
+# CreateTempfileInGuest    Path to vmx file     Create a temporary file in Guest OS
+#
+# listDirectoryInGuest     Path to vmx file     List a directory in Guest OS
+#                          Directory path in guest
+#
+# CopyFileFromHostToGuest  Path to vmx file     Copy a file from host OS to guest OS
+# Path on host             Path in guest
+#
+#
+# CopyFileFromGuestToHost  Path to vmx file     Copy a file from guest OS to host OS
+# Path in guest            Path on host
+#
+#
+# renameFileInGuest        Path to vmx file     Rename a file in Guest OS
+#                          Original name
+#                          New name
+#
+# captureScreen            Path to vmx file     Capture the screen of the VM to a local file
+# Path on host
+#
+# writeVariable            Path to vmx file     Write a variable in the VM state
+#                          [runtimeConfig|guestEnv|guestVar]
+#                          variable name
+#                          variable value
+#
+# readVariable             Path to vmx file     Read a variable in the VM state
+#                          [runtimeConfig|guestEnv|guestVar]
+#                          variable name
+#
+# getGuestIPAddress        Path to vmx file     Gets the IP address of the guest
+#                          [-wait]
+#
+#
+#
+# GENERAL COMMANDS         PARAMETERS           DESCRIPTION
+# ----------------         ----------           -----------
+# list                                          List all running VMs
+#
+# upgradevm                Path to vmx file     Upgrade VM file format, virtual hw
+#
+# installTools             Path to vmx file     Install Tools in Guest
+#
+# checkToolsState          Path to vmx file     Check the current Tools state
+#
+# deleteVM                 Path to vmx file     Delete a VM
+#
+# clone                    Path to vmx file     Create a copy of the VM
+#                          Path to destination vmx file
+#                          full|linked
+#                          [-snapshot=Snapshot Name]
+#                          [-cloneName=Name]
+#
+# Examples:
+#
+#
+# Starting a virtual machine with Workstation on a Windows host
+#    vmrun -T ws start "c:\my VMs\myVM.vmx"
+#
+#
+# Running a program in a virtual machine with Workstation on a Windows host with Windows guest
+#    vmrun -T ws -gu guestUser -gp guestPassword runProgramInGuest "c:\my VMs\myVM.vmx" "c:\Program Files\myProgram.exe"
+#
+#
+# Creating a snapshot of a virtual machine with Workstation on a Windows host
+#    vmrun -T ws snapshot "c:\my VMs\myVM.vmx" mySnapshot
+#
+#
+# Reverting to a snapshot with Workstation on a Windows host
+#    vmrun -T ws revertToSnapshot "c:\my VMs\myVM.vmx" mySnapshot
+#
+#
+# Deleting a snapshot with Workstation on a Windows host
+#    vmrun -T ws deleteSnapshot "c:\my VMs\myVM.vmx" mySnapshot
+#
+#
+# Enabling Shared Folders with Workstation on a Windows host
+#    vmrun -T ws enableSharedFolders "c:\my VMs\myVM.vmx"
+#
+# -----------------------------------------------------------------------------
+
+_vmrun_util_get_running=("${(@f)$(vmrun list | egrep "\.vmx$")}")
+_vmrun_running_cmds=( getGuestIPAddress pause reset stop suspend upgradevm )
+
+_vmrun_util_list_running() {
+  _describe -t running_vm 'running vm' _vmrun_util_get_running || compadd "$@"
+}
+
+_vmrun_cmd_listSnapshots() {
+  local -a _suffix_options
+  _suffix_options=( showTree )
+  if (( $1 == 2 )); then
+    _vmrun_util_list_running
+  elif (( $1 == 3)); then
+    _normal
+  elif (( $1 == 4)); then
+    _describe 'option' _suffix_options || compadd "$@"
+  fi
+}
+
+_vmrun_cmd_snapshot() {
+  if (( $1 == 2 )); then
+    _vmrun_util_list_running
+  elif (( $1 == 3)); then
+    _normal
+  fi
+}
+
+_vmrun_cmd_deleteSnapshot() {
+  local -a _suffix_options
+  _suffix_options=( andDeleteChildren )
+  if (( $1 == 2 )); then
+    _vmrun_util_list_running
+  elif (( $1 == 3)); then
+    _normal
+  elif (( $1 == 4)); then
+    _describe 'option' _suffix_options || compadd "$@"
+  fi
+}
+
+_vmrun_cmd_revertToSnapshot() {
+  if (( $1 == 2 )); then
+    _vmrun_util_list_running
+  elif (( $1 == 3)); then
+    _normal
+  fi
+}
+
+_vmrun_cmd_writeVariable() {
+  local -a _env_types
+  _env_types=( runtimeConfig guestEnv guestVar )
+  if (( $1 == 2 )); then
+    _vmrun_util_list_running
+  elif (( $1 == 3)); then
+    _describe 'var type' _env_types || compadd "$@"
+  elif (( $1 == 4)); then
+    _normal
+  elif (( $1 == 5)); then
+    _normal
+  fi
+}
+
+_vmrun_cmd_readVariable() {
+  local -a _env_types
+  _env_types=( runtimeConfig guestEnv guestVar )
+  if (( $1 == 2 )); then
+    _vmrun_util_list_running
+  elif (( $1 == 3)); then
+    _describe 'var type' _env_types || compadd "$@"
+  elif (( $1 == 4)); then
+    _normal
+  fi
+}
+
+_vmrun_command() {
+  local -a _vmrun_cmds
+  # Descriptions taken from vmrun --help.
+  _vmrun_cmds=(
+    # Power Commands
+    'start:Start a VM or Team'
+    'stop:Stop a VM or Team'
+    'reset:Reset a VM or Team'
+    'suspend:Suspend a VM or Team'
+    'pause:Pause a VM'
+    'unpause:Unpause a VM'
+
+    # Snapshot Commands
+    'listSnapshots:List all snapshots in a VM'
+    'snapshot:Create a snapshot of a VM'
+    'deleteSnapshot:Remove a snapshot from a VM'
+    'revertToSnapshot:Set VM state to a snapshot'
+
+    # Guest OS Commands
+    'runProgramInGuest:Run a program in Guest OS'
+    'fileExistsInGuest:Check if a file exists in Guest OS'
+    'directoryExistsInGuest:Check if a directory exists in Guest OS'
+    'setSharedFolderState:Modify a Host-Guest shared folder'
+    'addSharedFolder:Add a Host-Guest shared folder'
+    'removeSharedFolder:Remove a Host-Guest shared folder'
+    'enableSharedFolders:Enable shared folders in Guest'
+    'disableSharedFolders:Disable shared folders in Guest'
+    'listProcessesInGuest:List running processes in Guest OS'
+    'killProcessInGuest:Kill a process in Guest OS'
+    'runScriptInGuest:Run a script in Guest OS'
+    'deleteFileInGuest:Delete a file in Guest OS'
+    'createDirectoryInGuest:Create a directory in Guest OS'
+    'deleteDirectoryInGuest:Delete a directory in Guest OS'
+    'CreateTempfileInGuest:Create a temporary file in Guest OS'
+    'listDirectoryInGuest:List a directory in Guest OS'
+    'CopyFileFromHostToGuest:Copy a file from host OS to guest OS'
+    'CopyFileFromGuestToHost:Copy a file from guest OS to host OS'
+    'renameFileInGuest:Rename a file in Guest OS'
+    'captureScreen:Capture the screen of the VM to a local file'
+    'writeVariable:Write a variable in the VM state'
+    'readVariable:Read a variable in the VM state'
+    'getGuestIPAddress:Gets the IP address of the guest'
+
+    # General Commands
+    'list:List all running VMs'
+    'upgradevm:Upgrade VM file format, virtual hw'
+    'installTools:Install Tools in Guest'
+    'checkToolsState:Check the current Tools state'
+    'register:Register a VM'
+    'unregister:Unregister a VM'
+    'listRegisteredVM:List registered VMs'
+    'deleteVM:Delete a VM'
+  )
+
+  if (( CURRENT == 1 )); then
+    _describe "options" _vmrun_cmds
+  else
+    local curcontext="$curcontext"
+    cmd="${${_vmrun_cmds[(r)$words[1]:*]%%:*}}"
+    if (( $#cmd )); then
+      if (( $+functions[_vmrun_cmd_$cmd] )); then
+        _vmrun_cmd_$cmd CURRENT
+      elif [[ -n ${(M)_vmrun_running_cmds:#${cmd}} ]] ; then
+        _vmrun_util_list_running
+      else
+        _files
+      fi
+    else
+      _message "unknown vmrun command: $words[1]"
+    fi
+  fi
+}
+
+_arguments \
+  {-h,--help}'[Show help text]' \
+  '-vp[Encrypted VM password]' \
+  '-gu[Guest username]' \
+  '-gp[Guest password]' \
+  '-T:VMWare host type:(esx fusion player server server1 vc ws)' \
+  '*::vmrun commands:_vmrun_command'
+
+# vim:ft=zsh:et:sts=2:sw=2
