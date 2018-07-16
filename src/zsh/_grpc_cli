@@ -106,36 +106,108 @@ function _grpc_cli() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
+  local -a commands
+  commands=(
+  'ls:List services'
+  'call:Call method'
+  'type:Print type'
+  'parse:Parse message'
+  'totext:Convert binary message to text'
+  'tobinary:Convert text message to binary'
+  'help:Print this message, or per-command usage'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+  '-flagfile[load flags from file]:string'
+  "-fromenv[set flags from the environment (use 'export FLAGS_flag1=value')]:string"
+  '-tryfromenv[set flags from the environment if present]:string'
+  '-undefok[comma-separated list of flag names that it is okay to specify on the command line even if the program does not define a flag with that name]:flag=value'
+  '-tab_completion_columns[Number of columns to use in output for tab completion]:int32'
+  '-tab_completion_word[If non-empty, HandleCommandLineCompletions() will hijack the process and attempt to do bash-style command line flag completion on this value.]:string'
+  '-help[show help on all flags (tip: all flags can have two dashes]:bool'
+  '-helpfull[show help on all flags -- same as -help]:bool'
+  '-helpmatch[show help on modules whose name contains the specified substr]:string'
+  '-helpon[show help on the modules named by this flag value]:string'
+  '-helppackage[show help on all modules in the main package]:bool'
+  '-helpshort[show help on only the main module for this program]:bool'
+  '-helpxml[produce an xml version of help]:bool'
+  '-version[show version and build info and exit]:bool'
+  '-access_token[The access token that will be sent to the server to authenticate RPCs.]:string'
+  '-enable_ssl[Whether to use ssl/tls.]:bool'
+  '-use_auth[Whether to create default google credentials.]:bool'
+  '-outfile[Output file]:output file:_files'
+  '-batch[Input contains multiple requests. Please do not use this to send more than a few RPCs.]:bool'
+  '-binary_input[Input in binary format]:bool'
+  '-binary_output[Output in binary format]:bool'
+  '-infile[Input file]:input:_files'
+  '-l[Use a long listing format]:bool'
+  '-metadata[Metadata to send to server, in the form of key1:val1:key2:val2]:string'
+  '-proto_path[Path to look for the proto file.]:proto file:_files'
+  '-protofiles[Name of the proto file.]:proto name'
+  '-remotedb[Use server types to parse and format messages]:bool'
+  )
+
   _arguments -C \
-    '-flagfile[load flags from file]:string' \
-    "-fromenv[set flags from the environment (use 'export FLAGS_flag1=value')]:string" \
-    '-tryfromenv[set flags from the environment if present]:string' \
-    '-undefok[comma-separated list of flag names that it is okay to specify on the command line even if the program does not define a flag with that name]:flag=value' \
-    '-tab_completion_columns[Number of columns to use in output for tab completion]:int32' \
-    '-tab_completion_word[If non-empty, HandleCommandLineCompletions() will hijack the process and attempt to do bash-style command line flag completion on this value.]:string' \
-    '-help[show help on all flags (tip: all flags can have two dashes]:bool' \
-    '-helpfull[show help on all flags -- same as -help]:bool' \
-    '-helpmatch[show help on modules whose name contains the specified substr]:string' \
-    '-helpon[show help on the modules named by this flag value]:string' \
-    '-helppackage[show help on all modules in the main package]:bool' \
-    '-helpshort[show help on only the main module for this program]:bool' \
-    '-helpxml[produce an xml version of help]:bool' \
-    '-version[show version and build info and exit]:bool' \
-    '-access_token[The access token that will be sent to the server to authenticate RPCs.]:string' \
-    '-enable_ssl[Whether to use ssl/tls.]:bool' \
-    '-use_auth[Whether to create default google credentials.]:bool' \
-    '-outfile[Output file]:output file:_files' \
-    '-batch[Input contains multiple requests. Please do not use this to send more than a few RPCs.]:bool' \
-    '-binary_input[Input in binary format]:bool' \
-    '-binary_output[Output in binary format]:bool' \
-    '-infile[Input file]:input:_files' \
-    '-l[Use a long listing format]:bool' \
-    '-metadata[Metadata to send to server, in the form of key1:val1:key2:val2]:string' \
-    '-proto_path[Path to look for the proto file.]:proto file:_files' \
-    '-protofiles[Name of the proto file.]:proto name' \
-    '-remotedb[Use server types to parse and format messages]:bool' \
+    "1: :{_describe '$BIN command' commands}" \
+    ${_global_flags[@]} \
     '*:: :->args' \
     && ret=0
+
+  case $words[1] in
+    ls)
+      _arguments \
+        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
+        '--disable-format[Do not run formatting.]' \
+        '--disable-lint[Do not run linting.]' \
+        ${_global_flags[@]} \
+        '*:proto file|dir:_files'
+      ;;
+
+    call)
+      _arguments \
+        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
+        ${_global_flags[@]} \
+        '1:proto file|dir:_files' \
+        '2:messagePath:_files' \
+        '3:data'
+      ;;
+
+    type)
+      _arguments \
+        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
+        ${_global_flags[@]} \
+        '1:proto file|dir:_files' \
+        '2:messagePath:_files'
+      ;;
+
+    parse)
+      _arguments \
+        {-d,--diff}'[Write a diff instead of writing the formatted file to stdout.]' \
+        {-l,--lint}'[Write a lint error saying that the file is not formatted instead of writing the formatted file to stdout.]' \
+        {-w,--overwrite}'[Overwrite the existing file instead of writing the formatted file to stdout.]' \
+        ${_global_flags[@]} \
+        '*:proto file|dir:_files'
+      ;;
+
+    totext)
+      _arguments \
+        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
+        ${_global_flags[@]} \
+        '1:proto file|dir:_files' \
+        '2:fieldPath:_files'
+      ;;
+
+    tobinary)
+      _arguments \
+        ${_global_flags[@]} \
+        '*:proto file|dir:_files'
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' commands -- topics}"
+      ;;
+  esac
 
   return ret
 }
