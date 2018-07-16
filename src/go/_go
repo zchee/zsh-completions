@@ -2582,13 +2582,13 @@ _go() {
   'help:get more information about a command'
   )
 
-  case "$service" in
-    vgo)
-      commands[8]='get:download and install versioned modules and dependencies'
-      commands+="vendor:vendor dependencies of current module"
-      commands+='verify:verify downloaded modules against expected hashes'
-      ;;
-  esac
+  # case "$service" in
+  #   vgo)
+  #     commands[8]='get:download and install versioned modules and dependencies'
+  #     commands+="vendor:vendor dependencies of current module"
+  #     commands+='verify:verify downloaded modules against expected hashes'
+  #     ;;
+  # esac
 
   _go_files() {
     _files -g "*.go(-.)"
@@ -2780,6 +2780,26 @@ _go() {
     esac
   }
 
+  __maintenance_flags() {
+    _arguments \
+      '-init[initializes and writes a new go.mod to the current directory]' \
+      "-module[changes (or, with -init, sets) the module's path]" \
+      '-require[add a requirement on the given module path and version.]:path@version:__go_packages' \
+      '-droprequire[drop a requirement on the given module path and version.]:path:__go_packages' \
+      '-exclude[add an exclusion for the given module path and version.]:path@version:__go_packages' \
+      '-dropexclude[drop an exclusion for the given module path and version.]:path@version:__go_packages' \
+      '-replace[add a replacement of the given module path and version pair.]:old@v=new@w:__go_packages' \
+      '-dropreplace[drop a replacement of the given module path and version pair.]:old@v:__go_packages' \
+      '-fmt[reformats the go.mod file without making other changes.]' \
+      '-graph[prints the module requirement graph (with replacements applied) in text form.]' \
+      '-json[prints the go.mod file in JSON format with Go types.]' \
+      '-packages[prints a list of packages in the module.]' \
+      '-fix[updates go.mod to use canonical version identifiers and to be semantically consistent.]' \
+      '-sync[synchronizes go.mod with the source code in the module.]' \
+      "-vendor[resets the module's vendor directory to include all packages needed to build and test all the module's packages.]" \
+      '-verify[checks that the dependencies of the current module, which are stored in a local downloaded source cache, have not been modified since being downloaded.]'
+  }
+
   __test_build_flags=(
   '-args[Pass the remainder of the command line to the test binary]'
   '-c[Compile the test binary to pkg.test but do not run it]'
@@ -2923,9 +2943,9 @@ _go() {
               get_flags+='-u[get to download the latest version of dependencies as well]'
                 ;;
           esac
-          _arguments ${get_flags[@]}
-          # _describe 'build flags' __build_flags
-          _values 'build flags' __build_flags
+          _arguments \
+            ${get_flags[@]} \
+            "::build flags:__build_flags"
           ;;
 
         install)
@@ -2946,11 +2966,8 @@ _go() {
 
         mod)
           _arguments \
-            '-e[changes the handling of erroneous packages]' \
-            '-f[specifies an alternate format for the list]:format' \
-            '-json[causes package data to be printed in JSON format]' \
-            "*:go file:{ _alternative ': :__go_packages' _files }"
-            _alternative ':build flags:__build_flags'
+            '-v[enables additional output about operations performed.]' \
+            "::maintenance flags:__maintenance_flags"
           ;;
 
         run)
