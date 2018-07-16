@@ -1,0 +1,215 @@
+#compdef fortio
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# istio.io/fortio
+#
+# Φορτίο 0.6.9 usage:
+# 	fortio command [flags] target
+# where command is one of: load (load testing), server (starts grpc ping and
+# http echo/ui/redirect servers), grpcping (grpc client), report (report only UI
+# server), redirect (redirect only server), or curl (single URL debug).
+# where target is a url (http load tests) or host:port (grpc health test)
+# and flags are:
+#   -H value
+#     	Additional Header(s)
+#   -a	Automatically save JSON result with filename based on labels & timestamp
+#   -allow-initial-errors
+#     	Allow and don't abort on initial warmup errors
+#   -base-url string
+#     	base URL used as prefix for data/index.tsv generation. (when empty, the url from the first request is used)
+#   -c int
+#     	Number of connections/goroutine/threads (default 4)
+#   -compression
+#     	Enable http compression
+#   -curl
+#     	Just fetch the content once
+#   -data-dir string
+#     	Directory where JSON results are stored/read (default ".")
+#   -echo-debug-path string
+#     	http echo server URI for debug, empty turns off that part (more secure) (default "/debug")
+#   -gomaxprocs int
+#     	Setting for runtime.GOMAXPROCS, <1 doesn't change the default
+#   -grpc
+#     	Use GRPC (health check) for load testing
+#   -grpc-port string
+#     	grpc server port. Can be in the form of host:port, ip:port or port. (default "8079")
+#   -halfclose
+#     	When not keepalive, whether to half close the connection (only for fast http)
+#   -health
+#     	client mode: use health instead of ping
+#   -healthservice string
+#     	which service string to pass to health check
+#   -http-port string
+#     	http echo server port. Can be in the form of host:port, ip:port or port. (default "8080")
+#   -http1.0
+#     	Use http1.0 (instead of http 1.1)
+#   -httpbufferkb int
+#     	Size of the buffer (max data size) for the optimized http client in kbytes (default 128)
+#   -httpccch
+#     	Check for Connection: Close Header
+#   -httpreqtimeout duration
+#     	Http request timeout value (default 15s)
+#   -json string
+#     	Json output to provided file or '-' for stdout (empty = no json output, unless -a is used)
+#   -keepalive
+#     	Keep connection alive (only for fast http 1.1) (default true)
+#   -labels string
+#     	Additional config data/labels to add to the resulting JSON, defaults to target URL and hostname
+#   -logcaller
+#     	Logs filename and line number of callers to log (default true)
+#   -loglevel value
+#     	loglevel, one of [Debug Verbose Info Warning Error Critical Fatal] (default Info)
+#   -logprefix string
+#     	Prefix to log lines before logged messages (default "> ")
+#   -n int
+#     	Run for exactly this number of calls instead of duration. Default (0) is to use duration (-t). Default is 1 when used as grpc ping count.
+#   -p string
+#     	List of pXX to calculate (default "50,75,90,99,99.9")
+#   -payload string
+#     	Payload string to send along
+#   -profile string
+#     	write .cpu and .mem profiles to file
+#   -qps float
+#     	Queries Per Seconds or 0 for no wait/max qps (default 8)
+#   -quiet
+#     	Quiet mode: sets the loglevel to Error and reduces the output.
+#   -r float
+#     	Resolution of the histogram lowest buckets in seconds (default 0.001)
+#   -redirect-port int
+#     	Redirect all incoming traffic to https URL (need ingress to work properly). -1 means off. (default 8081)
+#   -static-dir string
+#     	Absolute path to the dir containing the static files dir
+#   -stdclient
+#     	Use the slower net/http standard client (works for TLS)
+#   -sync string
+#     	index.tsv or s3/gcs bucket xml URL to fetch at startup for server modes.
+#   -t duration
+#     	How long to run the test or 0 to run until ^C (default 5s)
+#   -ui-path string
+#     	http server URI for UI, empty turns off that part (more secure) (default "/fortio/")
+#
+# -----------------------------------------------------------------------------
+
+function _fortio() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'load:load testing'
+  'server:starts grpc ping and'
+  'http:echo/ui/redirect servers'
+  'grpcping:grpc client'
+  'report:report only UI server'
+  'redirect:redirect only server'
+  'curl:single URL debug'
+  )
+
+  _arguments -C \
+    '-H[Additional Header(s)]:headers' \
+    '-a[Automatically save JSON result with filename based on labels & timestamp]' \
+    "-allow-initial-errors[Allow and don't abort on initial warmup errors]" \
+    '-base-url[base URL used as prefix for data/index.tsv generation. (when empty, the url from the first request is used)]:string' \
+    '-c[Number of connections/goroutine/threads (default 4)]:int' \
+    '-compression[Enable http compression]' \
+    '-curl[Just fetch the content once]' \
+    '-data-dir[Directory where JSON results are stored/read (default ".")]:string' \
+    '-echo-debug-path[http echo server URI for debug, empty turns off that part (more secure) (default "/debug")]:string' \
+    "-gomaxprocs[Setting for runtime.GOMAXPROCS, <1 doesn't change the default]:int" \
+    '-grpc[Use GRPC (health check) for load testing]' \
+    '-grpc-port[grpc server port. Can be in the form of host:port, ip:port or port. (default "8079")]:string' \
+    '-halfclose[When not keepalive, whether to half close the connection (only for fast http)]' \
+    '-health[client mode: use health instead of ping]' \
+    '-healthservice[which service string to pass to health check]:string' \
+    '-http-port[http echo server port. Can be in the form of host:port, ip:port or port. (default "8080")]:string' \
+    '-http1.0[Use http1.0 (instead of http 1.1)]' \
+    '-httpbufferkb[Size of the buffer (max data size) for the optimized http client in kbytes (default 128)]:int' \
+    '-httpccch[Check for Connection: Close Header]' \
+    '-httpreqtimeout[Http request timeout value (default 15s)]:duration' \
+    '-json[Json output to provided file or '-' for stdout (empty = no json output, unless -a is used)]:string' \
+    '-keepalive[Keep connection alive (only for fast http 1.1) (default true)]' \
+    '-labels[Additional config data/labels to add to the resulting JSON, defaults to target URL and hostname]:string' \
+    '-logcaller[Logs filename and line number of callers to log (default true)]' \
+    '-loglevel[loglevel (default Info)]:level:(Debug Verbose Info Warning Error Critical Fatal)' \
+    '-logprefix[Prefix to log lines before logged messages (default "> ")]:string' \
+    '-n[Run for exactly this number of calls instead of duration. Default (0) is to use duration (-t). Default is 1 when used as grpc ping count.]:int' \
+    '-p[List of pXX to calculate (default "50,75,90,99,99.9")]:string' \
+    '-payload[Payload string to send along]:string' \
+    '-profile[write .cpu and .mem profiles to file]:string' \
+    '-qps[Queries Per Seconds or 0 for no wait/max qps (default 8)]:float' \
+    '-quiet[Quiet mode: sets the loglevel to Error and reduces the output.]' \
+    '-r[Resolution of the histogram lowest buckets in seconds (default 0.001)]:float' \
+    '-redirect-port[Redirect all incoming traffic to https URL (need ingress to work properly). -1 means off. (default 8081)]:int' \
+    '-static-dir[Absolute path to the dir containing the static files dir]:string' \
+    '-stdclient[Use the slower net/http standard client (works for TLS)]' \
+    '-sync[index.tsv or s3/gcs bucket xml URL to fetch at startup for server modes.]:string' \
+    '-t[How long to run the test or 0 to run until ^C (default 5s)]:duration' \
+    '-ui-path[http server URI for UI, empty turns off that part (more secure) (default "/fortio/")]:string' \
+    "1: :{_describe 'fortio command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    (args)
+      # if (( CURRENT == 2 )); then
+      # # where target is a url (http load tests) or host:port (grpc health test)
+      #   _arguments '*:after the (( CURRENT == 2 )) comment:'
+      #   return
+      # fi
+      # _arguments '*:before the (( CURRENT == 2 )) comment:_files'
+      # ;;
+
+      case $words[1] in
+        subcommand1)
+          _arguments \
+            '-foo[subcommand2 -foo argument comment]'
+            '*:file:_files'
+          ;;
+        subcommand2)
+          _arguments \
+            '-bar[subcommand2 -bar argument comment]' \
+            '-baz[subcommand2 -baz argument comment]'
+            '*:devices:_devices'
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_fortio "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
