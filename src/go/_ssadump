@@ -1,0 +1,110 @@
+#compdef ssadump
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# golang.org/x/tools/cmd/ssadump
+#
+# -----------------------------------------------------------------------------
+#
+# Usage of ssadump:
+#   -build value
+#     	Options controlling the SSA builder.
+#     	The value is a sequence of zero or more of these letters:
+#     	C	perform sanity [C]hecking of the SSA form.
+#     	D	include [D]ebug info for every function.
+#     	P	print [P]ackage inventory.
+#     	F	print [F]unction SSA code.
+#     	S	log [S]ource locations as SSA builder progresses.
+#     	L	build distinct packages seria[L]ly instead of in parallel.
+#     	N	build [N]aive SSA form: don't replace local loads/stores with registers.
+#     	I	build bare [I]nit functions: no init guards or calls to dependent inits.
+#    	
+#   -cpuprofile string
+#     	write cpu profile to file
+#   -interp string
+#     	Options controlling the SSA test interpreter.
+#     	The value is a sequence of zero or more more of these letters:
+#     	R	disable [R]ecover() from panic; show interpreter crash instead.
+#     	T	[T]race execution of the program.  Best for single-threaded programs!
+#    	
+#   -run
+#     	Invokes the SSA interpreter on the program.
+#   -tags build tags
+#     	a list of build tags to consider satisfied during the build. For more information about build tags, see the description of build constraints in the documentation for the go/build package
+#   -test
+#     	Loads test code (*_test.go) for imported packages.
+#
+# -----------------------------------------------------------------------------
+
+function _ssadump() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _go_files() {
+    _files -g "*.go(-.)"
+  }
+
+  local -a _build_options
+  _build_options=(
+  'C:perform sanity [C]hecking of the SSA form.'
+  'D:include [D]ebug info for every function.'
+  'P:print [P]ackage inventory.'
+  'F:print [F]unction SSA code.'
+  'S:log [S]ource locations as SSA builder progresses.'
+  'L:build distinct packages seria[L]ly instead of in parallel.'
+  "N:build [N]aive SSA form: don't replace local loads/stores with registers."
+  'I:build bare [I]nit functions: no init guards or calls to dependent inits.'
+  )
+  local -a _interp_options
+  _interp_options=(
+  'R:disable [R]ecover() from panic; show interpreter crash instead.'
+  'T:[T]race execution of the program.  Best for single-threaded programs!'
+  )
+
+  _arguments -s -C \
+    "-build=[Options controlling the SSA builder.]: :{_describe 'options' _build_options}" \
+    '-cpuprofile=[write cpu profile to file]:_files' \
+    "-interp=[Options controlling the SSA test interpreter.]: :{_describe 'options' _interp_options}" \
+    '-run[Invokes the SSA interpreter on the program.]' \
+    '-tags[a list of build tags to consider satisfied during the build.]:build tag' \
+    '-test[Loads test code (*_test.go) for imported packages.]' \
+    '*::files:_go_files' \
+    && ret=0
+
+  return ret
+}
+
+_ssadump "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
