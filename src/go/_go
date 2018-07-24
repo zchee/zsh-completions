@@ -2582,13 +2582,13 @@ _go() {
   'help:get more information about a command'
   )
 
-  # case "$service" in
-  #   vgo)
-  #     commands[8]='get:download and install versioned modules and dependencies'
-  #     commands+="vendor:vendor dependencies of current module"
-  #     commands+='verify:verify downloaded modules against expected hashes'
-  #     ;;
-  # esac
+  case "$service" in
+    vgo)
+      commands[8]='get:download and install versioned modules and dependencies'
+      commands+="vendor:vendor dependencies of current module"
+      commands+='verify:verify downloaded modules against expected hashes'
+      ;;
+  esac
 
   _go_files() {
     _files -g "*.go(-.)"
