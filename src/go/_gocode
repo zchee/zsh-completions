@@ -35,31 +35,34 @@
 #
 # github.com/nsf/gocode
 #
+# -----------------------------------------------------------------------------
+#
 # Usage: gocode [-s] [-f=<format>] [-in=<path>] [-sock=<type>] [-addr=<addr>]
 #        <command> [<args>]
 #
 # Flags:
 #   -addr string
-#      address for tcp socket (default "127.0.0.1:37373")
+#     	address for tcp socket (default "127.0.0.1:37373")
 #   -debug
-#      enable server-side debug mode
+#     	enable server-side debug mode
 #   -f string
-#      output format (vim | emacs | nice | csv | csv-with-package | json) (default "nice")
+#     	output format (vim | emacs | nice | csv | csv-with-package | json) (default "nice")
 #   -in string
-#      use this file instead of stdin input
+#     	use this file instead of stdin input
 #   -profile int
-#      port on which to expose profiling information for pprof; 0 to disable profiling
-#   -s run a server instead of a client
+#     	port on which to expose profiling information for pprof; 0 to disable profiling
+#   -s	run a server instead of a client
 #   -sock string
-#      socket type (unix | tcp) (default "unix")
+#     	socket type (unix | tcp) (default "unix")
 #
 # Commands:
 #   autocomplete [<path>] <offset>     main autocompletion command
 #   close                              close the gocode daemon
-#   status                             gocode daemon status report
 #   drop-cache                         drop gocode daemon's cache
+#   options                            list config options (extended)
 #   set [<name> [<value>]]             list or set config options
-# #
+#   status                             gocode daemon status report
+#
 # -----------------------------------------------------------------------------
 
 function _gocode() {
@@ -67,13 +70,13 @@ function _gocode() {
   declare -A opt_args
 
   local -a commands
-
   commands=(
-  'autocomplete:main autocompletion command' # [<path>] <offset>
+  'autocomplete:main autocompletion command'  #  [<path>] <offset>
   'close:close the gocode daemon'
-  'status:gocode daemon status report'
   "drop-cache:drop gocode daemon's cache"
-  'set:list or set config options' # [<name> [<value>]]
+  'options:list config options (extended)'
+  'set:list or set config options'  # [<name> [<value>]]
+  'status:gocode daemon status report'
   )
 
   _arguments -C \
@@ -88,37 +91,75 @@ function _gocode() {
     '*:: :->args' \
     && ret=0
 
-  case $state in
-    (args)
-      case $words[1] in
-        set)
-          local -a set_options
-          set_options=(
-          'propose-builtins'
-          'lib-path'
-          'custom-pkg-prefix'
-          'custom-vendor-dir'
-          'autobuild'
-          'force-debug-output'
-          'package-lookup-mode'
-          'close-timeout'
-          'unimported-packages'
-          )
+  case $words[1] in
+    set)
+      local -a set_options
+      set_options=(
+      'propose-builtins:If set to true, gocode will add built-in types, functions and constants to autocompletion proposals.'
+      'lib-path:Allows you to add search paths for packages.'
+      'custom-pkg-prefix:set custom pkg prefix'
+      'custom-vendor-dir:set custom vendor dir'
+      'autobuild:try to automatically build out-of-date packages when their source files are modified, in order to obtain the freshest autocomplete results for them.'
+      'force-debug-output:forcefully redirect the logging into that file. Also forces enabling of the debug mode on the server side.'
+      'package-lookup-mode:package lookup rules.'
+      'close-timeout:gocode terminate duration.'
+      'unimported-packages:try to import certain known packages automatically for identifiers which cannot be resolved otherwise.'
+      'partials:not filter autocompletion results based on entered prefix before the cursor.'
+      'ignore-case:perform case-insensitive matching when doing prefix-based filtering.'
+      "class-filtering:performs class-based filtering if partial input matches corresponding class keyword: const, var, type, func, package."
+      )
 
-          _arguments \
-            "1: :{_describe 'set options' set_options}" \
-            '*:: :->args' \
-            && ret=0
+      _arguments \
+        "1: :{_describe 'set options' set_options}" \
+        '*:: :->args' \
+        && ret=0
 
-            case $state in
-              propose-builtins)
-                _value \
-                  'true' \
-                  'false'
+      case $state in
+        (args)
+            case $words[1] in
+              (propose-builtins|autobuild|unimported-packages|partials|ignore-case|class-filtering)
+                local -a boolean_option
+                boolean_option=(
+                'true:enable feature'
+                'false:disable features'
+                )
+                _arguments \
+                  "*: :{_describe 'boolean' boolean_option}"
+              ;;
+
+              lib-path)
+                _arguments \
+                  '*::library paths:_files'
+              ;;
+
+              custom-pkg-prefix)
+                _arguments \
+                  '*::custom pkg prefix'
+              ;;
+
+              custom-vendor-dir)
+                _arguments \
+                  '*::custom vendor dir:_files'
+              ;;
+
+              package-lookup-mode)
+                local -a lookup_mode
+                lookup_mode=(
+                'go:standard Go package lookup rules.'
+                'gb:gb-specific lookup rules.'
+                'bazel:bazel specific lookup rules.'
+                )
+                _arguments \
+                  "*: :{_describe 'package lookup mode' lookup_mode}"
+              ;;
+
+              close-timeout)
+                _arguments \
+                  '*::timeout seconds' \
               ;;
             esac
           ;;
-      esac
+        esac
       ;;
   esac
 
