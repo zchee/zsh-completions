@@ -1,0 +1,327 @@
+#compdef reg
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/genuinetools/reg
+#
+# -----------------------------------------------------------------------------
+#
+# reg -  Docker registry v2 client.
+#
+# Usage: reg <command>
+#
+# Flags:
+#
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#
+# Commands:
+#
+#   digest    Get the digest for a repository.
+#   layer     Download a layer for a repository.
+#   ls        List all repositories.
+#   manifest  Get the json manifest for a repository.
+#   rm        Delete a specific reference of a repository.
+#   server    Run a static UI server for a registry.
+#   tags      Get the tags for a repository.
+#   vulns     Get a vulnerability report for a repository from a CoreOS Clair server.
+#   version   Show the version information.
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg digest [OPTIONS] NAME[:TAG]
+#
+# Get the digest for a repository.
+#
+# Flags:
+#
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg layer [OPTIONS] NAME[:TAG|@DIGEST]
+#
+# Download a layer for a repository.
+#
+# Flags:
+#
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -o, --output         output file, defaults to stdout (default: <none>)
+#   -p, --password       password for the registry (default: <none>)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   -d                   enable debug logging (default: false)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg ls [OPTIONS] REGISTRY_DOMAIN
+#
+# List all repositories.
+#
+# Flags:
+#
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg manifest [OPTIONS] NAME[:TAG|@DIGEST]
+#
+# Get the json manifest for a repository.
+#
+# Flags:
+#
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   --v1                 force the version of the manifest retrieved to v1 (default: false)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg rm [OPTIONS] NAME[:TAG|@DIGEST]
+#
+# Delete a specific reference of a repository.
+#
+# Flags:
+#
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg server [OPTIONS]
+#
+# Run a static UI server for a registry.
+#
+# Flags:
+#
+#   --port               port for server to run on (default: 8080)
+#   -r, --registry       URL to the private registry (ex. r.j3ss.co) (default: <none>)
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -p, --password       password for the registry (default: <none>)
+#   --interval           interval to generate new index.html's at (default: 1h0m0s)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   --key                path to ssl key (default: <none>)
+#   --once               generate the templates once and then exit (default: false)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#   --asset-path         Path to assets and templates (default: <none>)
+#   --clair              url to clair instance (default: <none>)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   --listen-address     address to listen on (default: <none>)
+#   -u, --username       username for the registry (default: <none>)
+#   --cert               path to ssl cert (default: <none>)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg tags [OPTIONS] NAME[:TAG|@DIGEST]
+#
+# Get the tags for a repository.
+#
+# Flags:
+#
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg vulns [OPTIONS] NAME[:TAG|@DIGEST]
+#
+# Get a vulnerability report for a repository from a CoreOS Clair server.
+#
+# Flags:
+#
+#   --timeout             timeout for HTTP requests (default: 1m0s)
+#   -u, --username        username for the registry (default: <none>)
+#   --fixable-threshhold  number of fixable issues permitted (default: 0)
+#   -k, --insecure        do not verify tls certificates (default: false)
+#   --skip-ping           skip pinging the registry while establishing connection (default: false)
+#   -p, --password        password for the registry (default: <none>)
+#   --clair               url to clair instance (default: <none>)
+#   -d                    enable debug logging (default: false)
+#   -f, --force-non-ssl   force allow use of non-ssl (default: false)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reg version 
+#
+# Show the version information.
+#
+# Flags:
+#
+#   -k, --insecure       do not verify tls certificates (default: false)
+#   -p, --password       password for the registry (default: <none>)
+#   --skip-ping          skip pinging the registry while establishing connection (default: false)
+#   --timeout            timeout for HTTP requests (default: 1m0s)
+#   -u, --username       username for the registry (default: <none>)
+#   -d                   enable debug logging (default: false)
+#   -f, --force-non-ssl  force allow use of non-ssl (default: false)
+#
+# -----------------------------------------------------------------------------
+
+function _reg() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'digest:Get the digest for a repository.'
+  'layer:Download a layer for a repository.'
+  'ls:List all repositories.'
+  'manifest:Get the json manifest for a repository.'
+  'rm:Delete a specific reference of a repository.'
+  'server:Run a static UI server for a registry.'
+  'tags:Get the tags for a repository.'
+  'vulns:Get a vulnerability report for a repository from a CoreOS Clair server.'
+  'version:Show the version information.'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+  {-k,--insecure}'[do not verify tls certificates]'
+  {-p,--password}'[password for the registry]:password'
+  '--skip-ping[skip pinging the registry while establishing connection]'
+  '--timeout[timeout for HTTP requests (default: 1m0s)]:timeout'
+  {-u,--username}'[username for the registry]:username'
+  '-d[enable debug logging]'
+  {-f,--force-non-ssl}'[force allow use of non-ssl]'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'reg command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    digest)
+      _arguments \
+        ${_global_flags[@]} \
+        "*:NAME[\:TAG]"
+      ;;
+
+    layer)
+      _arguments \
+        ${_global_flags[@]} \
+        "*:NAME[\:TAG|@DIGEST]"
+      ;;
+
+    ls)
+      _arguments \
+        ${_global_flags[@]} \
+        "*:REGISTRY_DOMAIN"
+      ;;
+
+    manifest)
+      _arguments \
+        ${_global_flags[@]} \
+        "*:NAME[\:TAG|@DIGEST]"
+      ;;
+
+    rm)
+      _arguments \
+        ${_global_flags[@]} \
+        "*:NAME[\:TAG|@DIGEST]"
+      ;;
+
+    server)
+      _arguments \
+        '--port[port for server to run on (default: 8080)]:port' \
+        {-r,--registry}'[URL to the private registry (ex. r.j3ss.co)]:private registry URL' \
+        "--interval[interval to generate new index.html's at (default: 1h0m0s)]:interval" \
+        '--key[path to ssl key]:ssl key:_files' \
+        '--once[generate the templates once and then exit]' \
+        '--asset-path[Path to assets and templates]:asset path:_files' \
+        '--clair[url to clair instance]:clair instance url' \
+        '--listen-address[address to listen on]:address' \
+        '--cert[path to ssl cert]:ssl cert path:_files' \
+        ${_global_flags[@]}
+      ;;
+
+    tags)
+      _arguments \
+        ${_global_flags[@]} \
+        "*:NAME[\:TAG|@DIGEST]"
+      ;;
+
+    vulns)
+      _arguments \
+        '--fixable-threshhold[number of fixable issues permitted]:fixable threshhold' \
+        ${_global_flags[@]} \
+        "*:NAME[\:TAG|@DIGEST]"
+      ;;
+
+    version)
+      _arguments \
+        ${_global_flags[@]}
+      ;;
+  esac
+
+  return ret
+}
+
+_reg "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
