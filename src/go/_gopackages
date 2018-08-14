@@ -46,16 +46,16 @@
 # or other underlying build system.
 #
 # Flags:
-#   -cgo
-#     	process cgo files (default true)
 #   -cpuprofile string
 #     	write CPU profile to this file
 #   -deps
 #     	show dependencies too
+#   -json
+#     	print package in JSON form
 #   -memprofile string
 #     	write memory profile to this file
 #   -mode string
-#     	mode (one of metadata, typecheck, wholeprogram) (default "metadata")
+#     	mode (one of files, imports, types, syntax, allsyntax) (default "imports")
 #   -private
 #     	show non-exported declarations too
 #   -test
@@ -84,11 +84,11 @@ function _gopackages() {
   }
 
   _arguments -C \
-    '-cgo[process cgo files (default true)]' \
     '-cpuprofile=[write CPU profile to this file]:output file:_files' \
     '-deps[show dependencies too]' \
+    '-json[print package in JSON form]' \
     '-memprofile=[write memory profile to this file]:output file:_files' \
-    '-mode=[mode (default "metadata")]:mode:(metadata typecheck wholeprogram)' \
+    '-mode=[mode (default "metadata")]:mode:(files imports types syntax allsyntax)' \
     '-private[show non-exported declarations too]' \
     '-test[include any tests implied by the patterns]' \
     '-trace=[write trace log to this file]:output file:_files' \
