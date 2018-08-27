@@ -64,6 +64,8 @@
 
 - [ ] [kubeless/kubeless: Kubernetes Native Serverless Framework kubeless.io](https://github.com/kubeless/kubeless)
 
+- [ ] [cppforlife/knctl: Knative CLI](https://github.com/cppforlife/knctl)
+
 #### log tailing
 
 - [ ] [wercker/stern: ⎈ Multi pod and container log tailing for Kubernetes](https://github.com/wercker/stern)
