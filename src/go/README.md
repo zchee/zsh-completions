@@ -31,6 +31,9 @@
 - [ ] [projectriff/riff](https://github.com/projectriff/riff)
   - riff is for functions. FaaS for Kubernetes builds on top of the Knative project’s build, serving and eventing features.
 
+- [ ] [benhoyt/goawk](https://github.com/benhoyt/goawk)
+  - GoAWK: an AWK interpreter written in Go
+
 ### Kubernetes tools
 
 - [ ] [kubernetes-incubator/cri-tools: CLI and validation tools for Kubelet Container Runtime Interface (CRI) .](https://github.com/kubernetes-incubator/cri-tools)
