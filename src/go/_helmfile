@@ -45,22 +45,27 @@
 #   
 # COMMANDS:
 #      repos   sync repositories from state file (helm repo add && helm repo update)
-#      charts  sync charts from state file (helm upgrade --install)
-#      diff    diff charts from state file against env (helm diff)
-#      sync    sync all resources from state file (repos, charts and local chart deps)
-#      delete  delete charts from state file (helm delete)
+#      charts  sync releases from state file (helm upgrade --install)
+#      diff    diff releases from state file against env (helm diff)
+#      lint    lint charts from state file (helm lint)
+#      sync    sync all resources from state file (repos, releases and chart deps)
+#      status  retrieve status of releases in state file
+#      delete  delete releases from state file (helm delete)
+#      test    test releases from state file (helm test)
 #
 # GLOBAL OPTIONS:
-#    --file FILE, -f FILE         load config from FILE (default: "helmfile.yaml")
-#    --quiet, -q                  silence output
-#    --kube-context value         Set kubectl context. Uses current context by default
-#    --namespace value, -n value  Set namespace. Uses the namespace set in the context by default
-#    --selector value, -l value   Only run using the releases that match labels. Labels can take the form of foo=bar or foo!=bar.
-#                                 A release must match all labels in a group in order to be used. Multiple groups can be specified at once.
-#                                 --selector tier=frontend,tier!=proxy --selector tier=backend. Will match all frontend, non-proxy releases AND all backend releases.
-#                                 The name of a release can be used as a label. --selector name=myrelease
-#    --help, -h                   show help
-#    --version, -v                print the version
+#    --helm-binary value, -b value           path to helm binary
+#    --file helmfile.yaml, -f helmfile.yaml  load config from file or directory. defaults to helmfile.yaml or `helmfile.d`(means `helmfile.d/*.yaml`) in this preference
+#    --quiet, -q                             Silence output. Equivalent to log-level warn
+#    --kube-context value                    Set kubectl context. Uses current context by default
+#    --log-level value                       Set log level, default info
+#    --namespace value, -n value             Set namespace. Uses the namespace set in the context by default
+#    --selector value, -l value              Only run using the releases that match labels. Labels can take the form of foo=bar or foo!=bar.
+#                                            A release must match all labels in a group in order to be used. Multiple groups can be specified at once.
+#                                            --selector tier=frontend,tier!=proxy --selector tier=backend. Will match all frontend, non-proxy releases AND all backend releases.
+#                                            The name of a release can be used as a label. --selector name=myrelease
+#    --help, -h                              show help
+#    --version, -v                           print the version
 #
 # -----------------------------------------------------------------------------
 #
@@ -98,6 +103,20 @@
 #    --args value         pass args to helm exec
 #    --values value       additional value files to be merged into the command
 #    --sync-repos         enable a repo sync prior to diffing
+#    --detailed-exitcode  return a non-zero exit code when there are changes
+#    --concurrency value  maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile lint - lint charts from state file (helm lint)
+#
+# USAGE:
+#    helmfile lint [command options] [arguments...]
+#
+# OPTIONS:
+#    --args value         pass args to helm exec
+#    --values value       additional value files to be merged into the command
 #    --concurrency value  maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)
 #
 # -----------------------------------------------------------------------------
@@ -116,10 +135,39 @@
 # -----------------------------------------------------------------------------
 #
 # NAME:
-#    helmfile delete - delete charts from state file (helm delete)
+#    helmfile status - retrieve status of releases in state file
 #
 # USAGE:
-#    helmfile delete [arguments...]
+#    helmfile status [command options] [arguments...]
+#
+# OPTIONS:
+#    --concurrency value  maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)
+#    --args value         pass args to helm exec
+#   
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile delete - delete releases from state file (helm delete)
+#
+# USAGE:
+#    helmfile delete [command options] [arguments...]
+#
+# OPTIONS:
+#    --args value  pass args to helm exec
+#    --purge       purge releases i.e. free release names and histories
+#   
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    helmfile test - test releases from state file (helm test)
+#
+# USAGE:
+#    helmfile test [command options] [arguments...]
+#
+# OPTIONS:
+#    --cleanup        delete test pods upon completion
+#    --args value     pass additional args to helm exec
+#    --timeout value  maximum time for tests to run before being considered failed (default: 300)
 #
 # -----------------------------------------------------------------------------
 
@@ -130,10 +178,13 @@ function _helmfile() {
   local -a commands
   commands=(
   'repos:sync repositories from state file (helm repo add && helm repo update)'
-  'charts:sync charts from state file (helm upgrade --install)'
-  'diff:diff charts from state file against env (helm diff)'
-  'sync:sync all resources from state file (repos, charts and local chart deps)'
-  'delete:delete charts from state file (helm delete)'
+  'charts:sync releases from state file (helm upgrade --install)'
+  'diff:diff releases from state file against env (helm diff)'
+  'lint:lint charts from state file (helm lint)'
+  'sync:sync all resources from state file (repos, releases and chart deps)'
+  'status:retrieve status of releases in state file'
+  'delete:delete releases from state file (helm delete)'
+  'test:test releases from state file (helm test)'
   )
 
   local -a _global_flags
@@ -172,6 +223,15 @@ function _helmfile() {
         '--args[pass args to helm exec]:exec args' \
         '--values[additional value files to be merged into the command]:values file:_files' \
         '--sync-repos[enable a repo sync prior to diffing]' \
+        '--detailed-exitcode[return a non-zero exit code when there are changes]' \
+        '--concurrency[maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)]:concurrency size' \
+        ${_global_flags[@]}
+      ;;
+
+    lint)
+      _arguments \
+        '--args[pass args to helm exec]:exec args' \
+        '--values[additional value files to be merged into the command]:values file:_files' \
         '--concurrency[maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)]:concurrency size' \
         ${_global_flags[@]}
       ;;
@@ -184,8 +244,25 @@ function _helmfile() {
         ${_global_flags[@]}
       ;;
 
+    status)
+      _arguments \
+        '--concurrency[maximum number of concurrent helm processes to run, 0 is unlimited (default: 0)]:concurrency size' \
+        '--args[pass args to helm exec]:exec args' \
+        ${_global_flags[@]}
+      ;;
+
     delete)
       _arguments \
+        '--args[pass args to helm exec]:exec args' \
+        '--purge[purge releases i.e. free release names and histories]' \
+        ${_global_flags[@]}
+      ;;
+
+    test)
+      _arguments \
+        '--cleanup[delete test pods upon completion]' \
+        '--args[pass args to helm exec]:exec args' \
+        '--timeout[maximum time for tests to run before being considered failed (default: 300)]:timeout' \
         ${_global_flags[@]}
       ;;
   esac
