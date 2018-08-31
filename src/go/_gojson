@@ -1,0 +1,80 @@
+#compdef gojson
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/ChimeraCoder/gojson
+#
+# -----------------------------------------------------------------------------
+#
+# Usage of gojson:
+#   -fmt string
+#     	the format of the input data (json or yaml, defaults to json) (default "json")
+#   -forcefloats
+#     	[experimental] force float64 type for integral values
+#   -input string
+#     	the name of the input file containing JSON (if input not provided via STDIN)
+#   -name string
+#     	the name of the struct (default "Foo")
+#   -o string
+#     	the name of the file to write the output to (outputs to STDOUT by default)
+#   -pkg string
+#     	the name of the package for the generated code (default "main")
+#   -subStruct
+#     	create types for sub-structs (default is false)
+#   -tags string
+#     	comma seperated list of the tags to put on the struct, default is the same as fmt (default "fmt")
+#
+# -----------------------------------------------------------------------------
+
+function _gojson() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-fmt[the format of the input data]:format:(json yaml)' \
+    '-forcefloats[force float64 type for integral values \[experimental\]]' \
+    '-input[the name of the input file containing JSON (if input not provided via STDIN)]:input:_files' \
+    '-name[the name of the struct]:struct name' \
+    '-o[the name of the file to write the output to (default to STDOUT)]:output:_files' \
+    '-pkg[the name of the package for the generated code]:package name' \
+    '-subStruct[create types for sub-structs]' \
+    '-tags[comma seperated list of the tags to put on the struct]:tags' \
+    && ret=0
+
+  return ret
+}
+
+_gojson "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
