@@ -34,6 +34,9 @@
 - [ ] [benhoyt/goawk](https://github.com/benhoyt/goawk)
   - GoAWK: an AWK interpreter written in Go
 
+- [ ] [sourcegraph/src-cli](https://github.com/sourcegraph/src-cli)
+  - Sourcegraph CLI
+
 ### Kubernetes tools
 
 - [ ] [kubernetes-incubator/cri-tools: CLI and validation tools for Kubelet Container Runtime Interface (CRI) .](https://github.com/kubernetes-incubator/cri-tools)
