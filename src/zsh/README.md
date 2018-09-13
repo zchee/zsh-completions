@@ -37,8 +37,8 @@
 
 ### Commands
 
-- [ ] [hadolint/hadolint](https://github.com/hadolint/hadolint)
-  - Dockerfile linter, validate inline bash, written in Haskell
+- [ ] [nowsecure/fsmon: monitor filesystem on iOS / OS X / Android / FirefoxOS / Linux](https://github.com/nowsecure/fsmon)
+- [ ] [hadolint/hadolint: Dockerfile linter, validate inline bash, written in Haskell](https://github.com/hadolint/hadolint)
 
 ### gcloud SDK CLI
 
