@@ -74,3 +74,70 @@ fork, fix or wrote myself.
 | wasm-dump | [github.com/go-interpreter/wagon/cmd/wasm-dump: wasm-dump inspects a WASM module file.](https://github.com/go-interpreter/wagon/tree/master/cmd/wasm-dump) |
 | wasm-run | [github.com/go-interpreter/wagon/cmd/wasm-dump: wasm-dump inspects a WASM module file.](https://github.com/go-interpreter/wagon/tree/master/cmd/wasm-dump) |
 | zoekt-git-index | [github.com/google/zoekt: Fast trigram based code search](https://github.com/google/zoekt/tree/master/cmd/zoekt-git-index) |
+
+## [src/macOS](src/macOS)
+
+| command | description |
+|---------|-------------|
+| class-dump | |
+| diskutil | |
+| dyldinfo | |
+| genstrings | |
+| hdiutil | |
+| instruments | |
+| iprofiler | |
+| log | |
+| nm | |
+| otool | |
+| strings | |
+| swift | |
+| swift-demangle | |
+| xcode-select | |
+| xcodebuild | |
+| xcrun | |
+
+## [src/zsh](src/zsh)
+
+| command | description |
+|---------|-------------|
+| anka |  |
+| aria2c |  |
+| chromedriver |  |
+| circleci |  |
+| clang-format | A tool to format C/C++/Java/JavaScript/Objective-C/Protobuf code |
+| cloud_sql_proxy |  |
+| cmake | Support -D completion (WIP) |
+| conda |  |
+| configure |  |
+| container-builder-local |  |
+| curl |  |
+| darwin-debug |  |
+| flake8 |  |
+| flatc | flatc, which flatbuffers schema compiler |
+| grpc_cli |  |
+| httrack |  |
+| jupyter | Project Jupyter |
+| llvm-config | LLVM llvm-config |
+| llvm-dsymutil | manipulate archived DWARF debug symbol files |
+| llvm-dwarfdump | llvm dwarf dumper |
+| llvm-objdump | llvm object file dumper |
+| man | man page |
+| md2gslides |  |
+| mypy | Optional static typing for Python 2 and 3 (PEP484) |
+| ninja | Ninja is a small build system with a focus on speed |
+| nosetests | nose is nicer testing for python |
+| nvim | Vim-fork focused on extensibility and agility |
+| pip |  |
+| prlctl | Parallels Desktop command-line utility is used to perform administration tasks on virtual machines |
+| prlsrvctl	Parallels Desktop command-line utility is used to perform management tasks |
+| protoc |  |
+| rc | rtags client |
+| rdm | rtags daemon |
+| shellcheck |  |
+| swig | Simplified wrapper and interface generator |
+| travis |  |
+| vint | Fast and highly extensible Vim script language lint implemented by Python |
+| vmrun |  |
+| vmware-vdiskmanager |  |
+| vmware-vmx |  |
+| yasm | Yasm assembler |
