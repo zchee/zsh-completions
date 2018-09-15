@@ -2799,7 +2799,7 @@ _go() {
       '-replace[add a replacement of the given module path and version pair.]:old@v=new@w:__go_packages' \
       '-dropreplace[drop a replacement of the given module path and version pair.]:old@v:__go_packages' \
       '-fmt[reformats the go.mod file without making other changes.]' \
-      '-graph[prints the module requirement graph (with replacements applied) in text form.]' \
+      '-graph[prints the module requirement graph \(with replacements applied\) in text form.]' \
       '-json[prints the go.mod file in JSON format with Go types.]' \
       '-packages[prints a list of packages in the module.]' \
       '-fix[updates go.mod to use canonical version identifiers and to be semantically consistent.]' \
@@ -2822,15 +2822,15 @@ _go() {
   __test_binary_flags=(
   "-bench[Run (sub)benchmarks matching a regular expression]:regexp of Benchmark functions:(.)"
   '-benchmem[Print memory allocation statistics for benchmarks]'
-  '-count[Run each test and benchmark n times (default: 1)]:count'
+  '-count[Run each test and benchmark n times \(default: 1\)]:count'
   '-cover[Enable coverage analysis]'
-  '-covermode[Set the mode for coverage analysis for the packages being tested (default: set)]:(set count atomic)'
+  '-covermode[Set the mode for coverage analysis for the packages being tested \(default: set\)]:(set count atomic)'
   '-coverpkg[Apply coverage analysis in each test to the given list of packages]: :__go_packages'
   '-cpu[Specify a list of GOMAXPROCS values for which the tests or benchmarks should be executed]:(1 2 4)'
   '-parallel=[Allow parallel execution of test functions that call t.Parallel]:number of parallel'
   '-run[Run only those tests and examples matching the regular expression]:regexp of Tests or Examples'
   '-short[Tell long-running tests to shorten their run time]'
-  '-timeout[If a test runs longer than arg time, panic (default: 10m)]:timeout (default: 10m)'
+  '-timeout[If a test runs longer than arg time, panic \(default: 10m\)]:timeout'
   '-v[output log all tests as they are run and print all text from Log and Logf]'
   )
 
@@ -2865,7 +2865,7 @@ _go() {
 
         clean)
           _arguments \
-            '-cache[clean to remove the entire go build cache, in addition to cleaning specified packages (if any)]' \
+            '-cache[clean to remove the entire go build cache, in addition to cleaning specified packages if any]' \
             '-testcache[clean to expire all test results in the go build cache]' \
             '-i[remove corresponding installed archive or binary]' \
             '-r[apply clean recursively on all dependencies]' \
@@ -3260,15 +3260,15 @@ _go() {
                     $output_format \
                     $output_granularity
 
-                  _describe -t output_file_parameter "Output file parameters (for file-based output formats):" output_file_parameter
-                  # _describe -t output_granularity "Output granularity (only set one):" output_granularity
+                  _describe -t output_file_parameter "Output file parameters \(for file-based output formats\):" output_file_parameter
+                  _describe -t output_granularity "Output granularity \(only set one\):" output_granularity
                   _describe -t comparison "Comparison options:" comparison
                   _describe -t sorting "Output options:" sorting
                   _describe -t dynamic_profile "Dynamic profile options:" dynamic_profile
                   _describe -t profile_trimming "Profile trimming options:" profile_trimming
-                  _describe -t sample_index "Sample value selection option (by index):" sample_index
-                  _describe -t sample_heap "Sample value selection option (for heap profiles):" sample_heap
-                  _describe -t sample_contention "Sample value selection option (for contention profiles):" sample_contention
+                  _describe -t sample_index "Sample value selection option by index:" sample_index
+                  _describe -t sample_heap "Sample value selection option for heap profiles:" sample_heap
+                  _describe -t sample_contention "Sample value selection option for contention profiles:" sample_contention
                   _describe -t filtering "Filtering options:" filtering
                   _describe -t miscellaneous "miscellaneous:" miscellaneous
                   ;;
