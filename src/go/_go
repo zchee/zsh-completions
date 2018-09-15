@@ -178,7 +178,7 @@
 #
 # ------------------------------------------------------------------------------
 #
-# usage: go clean [-i] [-r] [-n] [-x] [-cache] [-testcache] [build flags] [packages]
+# usage: go clean [clean flags] [build flags] [packages]
 #
 # Clean removes object files from package source directories.
 # The go command builds most objects in a temporary directory,
@@ -220,6 +220,10 @@
 #
 # The -testcache flag causes clean to expire all test results in the
 # go build cache.
+#
+# The -modcache flag causes clean to remove the entire module
+# download cache, including unpacked source code of versioned
+# dependencies.
 #
 # For more about build flags, see 'go help build'.
 #
@@ -2865,11 +2869,15 @@ _go() {
 
         clean)
           _arguments \
-            '-cache[clean to remove the entire go build cache, in addition to cleaning specified packages if any]' \
-            '-testcache[clean to expire all test results in the go build cache]' \
-            '-i[remove corresponding installed archive or binary]' \
-            '-r[apply clean recursively on all dependencies]' \
+            "-i[clean to remove the corresponding installed archive or binary what 'go install' would create.]" \
+            '-n[print the remove commands it would execute, but not run them.]' \
+            '-r[clean to be applied recursively to all the dependencies of the packages named by the import paths.]' \
+            '-x[clean to print remove commands as it executes them.]' \
+            '-cache[clean to remove the entire go build cache.]' \
+            '-testcache[clean to expire all test results in the go build cache.]' \
+            '-modcache[clean to remove the entire module download cache, including unpacked source code of versioned dependencies.]' \
             '*:go packages:__go_packages'
+
           _alternative ':build flags:__build_flags'
           ;;
 
