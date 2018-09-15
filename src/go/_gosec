@@ -1,4 +1,4 @@
-#compdef gas
+#compdef gosec
 
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
@@ -33,77 +33,94 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# github.com/GoASTScanner/gas
+# github.com/securego/gosec/cmd/gosec
 #
-# GAS - Go AST Scanner
+# -----------------------------------------------------------------------------
 #
-# Gas analyzes Go source code to look for common programming mistakes that
+# gosec - Golang security checker
+#
+# gosec analyzes Go source code to look for common programming mistakes that
 # can lead to security problems.
+#
+# VERSION: 
+# GIT TAG: 
+# BUILD DATE: 
 #
 # USAGE:
 #
-#  # Check a single Go file
-#  $ gas example.go
+# 	# Check a single package
+# 	$ gosec $GOPATH/src/github.com/example/project
 #
-#  # Check all files under the current directory and save results in
-#  # json format.
-#  $ gas -fmt=json -out=results.json ./...
+# 	# Check all packages under the current directory and save results in
+# 	# json format.
+# 	$ gosec -fmt=json -out=results.json ./...
 #
-#  # Run a specific set of rules (by default all rules will be run):
-#  $ gas -include=G101,G203,G401 ./...
+# 	# Run a specific set of rules (by default all rules will be run):
+# 	$ gosec -include=G101,G203,G401  ./...
 #
-#  # Run all rules except the provided
-#  $ gas -exclude=G101 ./...
+# 	# Run all rules except the provided
+# 	$ gosec -exclude=G101 $GOPATH/src/github.com/example/project/...
 #
 #
 # OPTIONS:
 #
 #   -conf string
-#      Path to optional config file
+#     	Path to optional config file
 #   -exclude string
-#      Comma separated list of rules IDs to exclude. (see rule list)
+#     	Comma separated list of rules IDs to exclude. (see rule list)
 #   -fmt string
-#      Set output format. Valid options are: json, csv, html, or text (default "text")
+#     	Set output format. Valid options are: json, yaml, csv, junit-xml, html, or text (default "text")
 #   -include string
-#      Comma separated list of rules IDs to include. (see rule list)
+#     	Comma separated list of rules IDs to include. (see rule list)
+#   -log string
+#     	Log messages to file rather than stderr
 #   -nosec
-#      Ignores #nosec comments when set
+#     	Ignores #nosec comments when set
 #   -out string
-#      Set output file for results
+#     	Set output file for results
 #   -quiet
-#      Only show output when errors are found
-#   -skip value
-#      File pattern to exclude from scan. Uses simple * globs and requires full or partial match (default *_test.go)
-#   -tool value
-#      GAS utilities to assist with rule development (default imports, ast, callobj, uses, types, defs, comments)
+#     	Only show output when errors are found
+#   -severity string
+#     	Fail the scanning for issues with the given or higher severity. Valid options are: low, medium, high (default "low")
+#   -sort
+#     	Sort issues by severity (default true)
+#   -tags string
+#     	Comma separated list of build tags
+#   -vendor
+#     	Scan the vendor folder
 #
 #
 # RULES:
 #
-#  G101: Look for hardcoded credentials
-#  G102: Bind to all interfaces
-#  G103: Audit the use of unsafe block
-#  G104: Audit errors not checked
-#  G105: Audit the use of big.Exp function
-#  G201: SQL query construction using format string
-#  G202: SQL query construction using string concatenation
-#  G203: Use of unescaped data in HTML templates
-#  G204: Audit use of command execution
-#  G301: Poor file permissions used when creating a directory
-#  G302: Poor file permisions used when creation file or using chmod
-#  G303: Creating tempfile using a predictable path
-#  G401: Detect the usage of DES, RC4, or MD5
-#  G402: Look for bad TLS connection settings
-#  G403: Ensure minimum RSA key length of 2048 bits
-#  G404: Insecure random number source (rand)
-#  G501: Import blacklist: crypto/md5
-#  G502: Import blacklist: crypto/des
-#  G503: Import blacklist: crypto/rc4
-#  G504: Import blacklist: net/http/cgi
+# 	G101: Look for hardcoded credentials
+# 	G102: Bind to all interfaces
+# 	G103: Audit the use of unsafe block
+# 	G104: Audit errors not checked
+# 	G105: Audit the use of big.Exp function
+# 	G106: Audit the use of ssh.InsecureIgnoreHostKey function
+# 	G107: Url provided to HTTP request as taint input
+# 	G201: SQL query construction using format string
+# 	G202: SQL query construction using string concatenation
+# 	G203: Use of unescaped data in HTML templates
+# 	G204: Audit use of command execution
+# 	G301: Poor file permissions used when creating a directory
+# 	G302: Poor file permisions used when creation file or using chmod
+# 	G303: Creating tempfile using a predictable path
+# 	G304: File path provided as taint input
+# 	G305: File path traversal when extracting zip archive
+# 	G401: Detect the usage of DES, RC4, MD5 or SHA1
+# 	G402: Look for bad TLS connection settings
+# 	G403: Ensure minimum RSA key length of 2048 bits
+# 	G404: Insecure random number source (rand)
+# 	G501: Import blacklist: crypto/md5
+# 	G502: Import blacklist: crypto/des
+# 	G503: Import blacklist: crypto/rc4
+# 	G504: Import blacklist: net/http/cgi
+# 	G505: Import blacklist: crypto/sha1
 #
 # -----------------------------------------------------------------------------
 
-function _gas() {
+function _gosec() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
@@ -120,6 +137,6 @@ function _gas() {
   return ret
 }
 
-_gas "$*"
+_gosec "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
