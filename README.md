@@ -86,6 +86,7 @@ fork, fix or wrote myself.
 | dyldinfo | |
 | genstrings | |
 | hdiutil | |
+| iCoreMgr | |
 | instruments | |
 | iprofiler | |
 | log | |

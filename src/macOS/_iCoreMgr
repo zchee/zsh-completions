@@ -1,0 +1,218 @@
+#compdef iCoreMgr
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# /Applications/Trend Micro Security.app (MainUI.app)
+#
+# usage: iCoreMgr  -p plist_file
+#                  -s {start | stop} {av | wp | icore}
+#                  -s {enable | disable} {wtp | cat | sau | rts | cache | lsfc | whitelist}
+#                  -s {do | cancel} {mau | ms | sau | ss}
+#                  -s get {versions | taskstatus tid | ms-status | mau-status | sau-status | ss-status}
+#                  -s get cache-options
+#                  -s set debug-level level
+#                  -s clear cache
+#                  -i {cmd | error | plugin | event} {id | name}]
+#                  -n [event1 event2 ...]
+#
+# Send command to icore:
+#     -s
+#        {start | stop} av:            start/stop anti-virus
+#        {start | stop} wp:            start/stop web-protection
+#        {start | stop} icore:         start/stop iCoreService
+#        {enable | disable} wtp:       enable/disable wtp
+#        {enable | disable} cat:       enable/disable category
+#        {enable | disable} sau:       enable/disable scheduled update
+#        {enable | disable} rts:       enable/disable real-time scan
+#        {enable | disable} cache:     enable/disable scan cache
+#        {enable | disable} lsfc:      enable/disable last scaned file cache
+#        {enable | disable} whitelist: enable/disable scan white list
+#        {do | cancel} mau:            do/cancel manual update
+#        {do | cancel} ms:             do/cancel manual scan
+#        {do | cancel} sau:            do/cancel scheduled update
+#        {do | cancel} ss:             do/cancel scheduled scan
+#        get versions:                 get all component's versions
+#        get taskstatus tid:           get task status according to tid
+#        get ms-status [num]:          get manual scan status, num specify the times getting status will be called, 0 or not specified denotes no limit
+#        get mau-status [num]:         get manual update status, num specify the times getting status will be called, 0 or not specified denotes no limit
+#        get sau-status [num]:         get scheduled update status, num specify the times getting status will be called, 0 or not specified denotes no limit
+#        get ss-status [num]:          get scheduled scan status, num specify the times getting status will be called, 0 or not specified denotes no limit
+#        get cache-options:            get cache options
+#        set debug-level level:        set debug level to level
+#        clear cache:                  clear all av caches
+#
+# Send command defined in plist:
+#     -p file                          send cmd defined in plist file
+#
+# Start to receive notification:
+#     -n event1 event2 ...
+#                                      start to receive notifications.
+#                                      if there is no event specified, then regester all the events
+#                                      else regeister the specified event list. The event can be event number or enum name
+#                                      e.g. "iCoreMgr -n iCORE_CMD_NOTIFY_NOTIFY_WTP_BLOCK iCORE_CMD_NOTIFY_EVENT_LOG_SAFE"
+#
+# Get info from id or name
+#     -i
+#        cmd {id | name}:              get command info from id or command name
+#        error {id | name}:            get error info from id or error name
+#        plugin {id | name}:           get plugin info from id or plugin name
+#        event {id | name}:            get event info from id or event name
+#
+# -----------------------------------------------------------------------------
+
+function _iCoreMgr() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-p[Send command definded in plist]:plist file:_files' \
+    '-s[Send command to icore]:: :->send' \
+    '-i[Get info from id or name]:: :->info' \
+    '-n[Start to receive notification]:: :->notification' \
+    && ret=0
+
+  case $state in
+    send)
+      local -a send_cmds
+      send_cmds=(
+      'start:start service:: :->start_stop'
+      'stop:stop service:: :->start_stop'
+      'enable:enable service:: :->start_stop'
+      'disable:disable service:: :->start_stop'
+      'do:do service:: :->start_stop'
+      'cancel:cancel service:: :->start_stop'
+      'get:get icore information:: :->get'
+      'set:set icore information:: :->set'
+      'clear:clear all av caches:: :->clear'
+      )
+      _describe -t send_cmds 'send subcommand' send_cmds
+
+      case $state in
+        start_stop)
+          local -a start_stop_arg
+          start_stop_arg=(
+          'av:anti-virus'
+          'wp:web-protection'
+          'icore:iCoreService'
+          )
+          _arguments \
+            "*: :{_describe 'service' start_stop_arg}"
+          ;;
+        enable_disable)
+          local -a enable_disable_arg
+          enable_disable_arg=(
+          'wtp:wtp'
+          'cat:category'
+          'sau:scheduled update'
+          'rts:real-time scan'
+          'cache:scan cache'
+          'lsfc:last scaned file cache'
+          'whitelist:scan white list'
+          )
+          _arguments \
+            "*: :{_describe 'service' enable_disable_arg}"
+          ;;
+        do_cancel)
+          local -a do_cancel_arg
+          do_cancel_arg=(
+          'mau:manual update'
+          'ms:manual scan'
+          'sau:scheduled update'
+          'ss:scheduled scan'
+          )
+          _arguments \
+            "*: :{_describe 'service' do_cancel_arg}"
+          ;;
+        get)
+          local -a get_arg
+          get_arg=(
+          "versions:get all component's versions"
+          'taskstatus:get task status according to tid:tid'
+          'ms-status:get manual scan status, num specify the times getting status will be called, 0 or not specified denotes no limit:[num]'
+          'mau-status:get manual update status, num specify the times getting status will be called, 0 or not specified denotes no limit:[num]'
+          'sau-status:get scheduled update status, num specify the times getting status will be called, 0 or not specified denotes no limit:[num]'
+          'ss-status:get scheduled scan status, num specify the times getting status will be called, 0 or not specified denotes no limit:[num]'
+          'cache-options:get cache options'
+          )
+          _arguments \
+            "*: :{_describe 'service' get_arg}"
+          ;;
+        set)
+          local -a set_arg
+          set_arg=(
+          'debug-level:set debug level to level:level'
+          )
+          _arguments \
+            "*: :{_describe 'service' set_arg}"
+          ;;
+        clear)
+          local -a clear_arg
+          clear_arg=(
+          'cache:clear all av caches'
+          )
+          _arguments \
+            "*: :{_describe 'service' clear_arg}"
+          ;;
+      esac
+      ;;
+
+    info)
+      local -a info_cmds
+      info_cmds=(
+      'cmd:get command info from id or command name:id or name:{id | name}'
+      'error:get error info from id or error name:id or name:{id | name}'
+      'plugin:get plugin info from id or plugin name:id or name:{id | name}'
+      'event:get event info from id or event name:id or name:{id | name}'
+      )
+      _arguments \
+        "1: :{_describe 'info subcommand' info_cmds}"
+      ;;
+
+    notification)
+      local -a notification_args
+      notification_args=(
+      'iCORE_CMD_NOTIFY_NOTIFY_WTP_BLOCK'
+      'iCORE_CMD_NOTIFY_EVENT_LOG_SAFE'
+      )
+      _arguments \
+        "*: :{_describe 'notification events' notification_args}"
+      ;;
+  esac
+
+  return ret
+}
+
+_iCoreMgr "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
