@@ -33,6 +33,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
+# instruments(1)            BSD General Commands Manual           instruments(1)
+#
 # NAME
 #      instruments
 #
@@ -57,8 +59,6 @@
 #
 #      -l #     The limit of milliseconds to record until termination ( default is infinite )
 #
-#      -i #     The index of the instrument to apply the following target data to
-#
 #      -w [hardware device, or simulator name]
 #               The name or identifier of the hardware device or simulator to target. Should be specified first
 #
@@ -66,6 +66,9 @@
 #               An environment variable setting (You may specify more than one)
 #
 #      -p pid   The ID of the process to attach to
+#
+#      -P package
+#               Path to packages to load. If there's a need to load multiple debug packages a pass this option multiple times. If templates from this package are used, packages need to specified before -t option.
 #
 #      application
 #               The path to the application or command to launch
@@ -79,7 +82,7 @@
 # EXAMPLES
 #      instruments -t mytemplate myapp.app
 #
-# Mac OS                         January 30, 2017                         Mac OS
+# Mac OS                        September 16, 2018                        Mac OS
 #
 # -----------------------------------------------------------------------------
 
@@ -88,20 +91,21 @@ function _instruments() {
   declare -A opt_args
 
   _arguments \
-    '-D[The path to save the trace document data to]:document' \
-    '-i[The index of the instrument to apply the following target data to]' \
-    '-l[The limit of milliseconds to record until termination]' \
-    '-p[The ID of the process to attach to]:pid' \
-    '-s[Show list of known devices or templates, and then exit]' \
-    '-t[The path to the template to run. Alternatively, specify just the final path component]: :->templates' \
     '-v[Turn on verbose logging]' \
+    '-t[The path to the template to run. Alternatively, specify just the final path component]: :->templates' \
+    '-s[Show list of known devices or templates, and then exit]' \
+    '-D[The path to save the trace document data to]:document' \
+    '-l[The limit of milliseconds to record until termination]' \
+    '-i[The index of the instrument to apply the following target data to]' \
     '-w[The name or identifier of the hardware device or simulator to target]:device or simulator' \
+    '-p[The ID of the process to attach to]:pid' \
+    '-P[Path to packages to load.]:package' \
     '1:application or command:_files' \
     '*:: :->args' \
     && ret=0
 
   case $state in
-    (args)
+    args)
       if (( CURRENT == 2 )); then
         _arguments '*:command line arguments'
         return
@@ -110,7 +114,7 @@ function _instruments() {
         '-e[An environment variable setting]:variable value' \
         && ret=0
       ;;
-    (templates)
+    templates)
       # $(find $DEVELOPER_DIR -name *.tracetemplate) and $(instruments -s templates) is slow
       if [[ -n $DEVELOPER_DIR ]]; then
         XCODE_PATH="$DEVELOPER_DIR/Contents"
@@ -136,6 +140,6 @@ function _instruments() {
   return ret
 }
 
-_instruments "$@"
+_instruments "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
