@@ -53,7 +53,7 @@ _clang-format() {
     '-assume-filename=[assumes arg filename to look for a style config file when reading from stdin]:filename:_files' \
     '-cursor=[The position of the cursor when invoking clang-format from an editor integration]:cursor position <uint>' \
     '-dump-config[Dump configuration options to stdout and exit. Can be used with -style option]' \
-    '-fallback-style=[The name of the predefined style used as a fallback in case clang-format is invoked with -style=file]:fallback style:->style' \
+    '-fallback-style=[The name of the predefined style used as a fallback in case clang-format is invoked with -style=file]:fallback style:->fallbackstyle' \
     '-i[Inplace edit <file>s, if specified]' \
     '-length=[Format a range of this length (in bytes). Multiple ranges can be formatted by specifying several -offset and -length pairs]:byte length <uint>' \
     "-lines=[format a range of lines (both 1-based). Multiple ranges can be formatted by specifying several -lines arguments]: :->lines" \
@@ -66,19 +66,37 @@ _clang-format() {
     '*:file:_files' \
     && ret=0
 
+
+  local -a __builtin_styles
+  __builtin_styles=(
+  'LLVM:LLVM coding standards'
+  'Google:Google’s C++ style guide'
+  'Chromium:Chromium’s style guide'
+  'Mozilla:Mozilla’s style guide'
+  'WebKit:WebKit’s style guide'
+  )
+
   case $state in
     (style)
       local -a __based_on_style
-      __based_on_style=(
-      'LLVM:LLVM coding standards'
-      'Google:Google’s C++ style guide'
-      'Chromium:Chromium’s style guide'
-      'Mozilla:Mozilla’s style guide'
-      'WebKit:WebKit’s style guide'
+      __based_on_style=($__builtin_styles)
+      __based_on_style+=(
+      'file:local .clang-format style'
       )
 
       # TODO(zchee): support -style="{BasedOnStyle: llvm, IndentWidth: 8}"
       _describe -t based_on_style "BasedOnStyle" __based_on_style
+      ;;
+
+    (fallbackstyle)
+      local -a __based_on_style_fallback
+      __based_on_style_fallback=($__builtin_styles)
+      __based_on_style_fallback+=(
+      'none:skip formatting'
+      )
+
+      # TODO(zchee): support -style="{BasedOnStyle: llvm, IndentWidth: 8}"
+      _describe -t based_on_style "BasedOnStyleFallback" __based_on_style_fallback
       ;;
 
     (lines)
