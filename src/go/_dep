@@ -188,6 +188,32 @@
 #   -v  enable verbose logging (default: false)
 #
 # -----------------------------------------------------------------------------
+#
+# flag provided but not defined: -v
+# Usage: dep check [-q] [-skip-lock] [-skip-vendor]
+#
+# Check determines if your project is in a good state. If problems are found, it
+# prints a description of each issue, then exits 1. Passing -q suppresses output.
+#
+# Flags control which specific checks will be run. By default, dep check verifies
+# that Gopkg.lock is in sync with Gopkg.toml and the imports in your project's .go
+# files, and that the vendor directory is in sync with Gopkg.lock. These checks
+# can be disabled with -skip-lock and -skip-vendor, respectively.
+#
+# (See https://golang.github.io/dep/docs/ensure-mechanics.html#staying-in-sync for
+# more information on what it means to be "in sync.")
+#
+# If your workflow necessitates that you modify the contents of vendor, you can
+# force check to ignore hash mismatches on a per-project basis by naming
+# project roots in Gopkg.toml's "noverify" list.
+#
+# Flags:
+#
+#   -q            Suppress non-error output (default: false)
+#   -skip-lock    Skip checking that imports and Gopkg.toml are in sync with Gopkg.lock (default: false)
+#   -skip-vendor  Skip checking that vendor is in sync with Gopkg.lock (default: false)
+#
+# -----------------------------------------------------------------------------
 
 function _dep() {
   local context curcontext=$curcontext state line ret=1
@@ -200,6 +226,7 @@ function _dep() {
   'ensure:Ensure a dependency is safely vendored in the project'
   'prune:Prune the vendor tree of unused packages'
   'version:Show the dep version information'
+  'check:Check if imports, Gopkg.toml, and Gopkg.lock are in sync'
   )
 
   _go_packages() {
@@ -242,54 +269,62 @@ function _dep() {
     '*:: :->args' \
     && ret=0
 
-  case $state in
-    (args)
-      case $words[1] in
-        init)
-          _arguments \
-            '-gopath[search in GOPATH for dependencies]' \
-            "-no-examples[don't include example in Gopkg.toml]" \
-            '-skip-tools[skip importing configuration from other dependency managers]' \
-            '-v[enable verbose logging]' \
-            '-help[show help]' \
-            '*:root:_directories' \
-            && ret=1
-          ;;
+  case $words[1] in
+    init)
+      _arguments \
+        '-gopath[search in GOPATH for dependencies]' \
+        "-no-examples[don't include example in Gopkg.toml]" \
+        '-skip-tools[skip importing configuration from other dependency managers]' \
+        '-v[enable verbose logging]' \
+        '-help[show help]' \
+        '*:root:_directories' \
+        && ret=1
+      ;;
 
-        status)
-          _arguments \
-            '-dot[output the dependency graph in GraphViz format (default: false)]' \
-            '-examples[print detailed usage examples (default: false)]' \
-            '-f[output in text/template format (default: <none>)]' \
-            '-json[output in JSON format (default: false)]' \
-            '-missing[only show missing dependencies (default: false)]' \
-            '-old[only show out-of-date dependencies (default: false)]' \
-            '-v[enable verbose logging (default: false)]' \
-            '-help[show help]' \
-            '*: :_go_packages' \
-            && ret=1
-          ;;
+    status)
+      _arguments \
+        '-detail[include more detail in the chosen format]' \
+        '-dot[output the dependency graph in GraphViz format]' \
+        '-examples[print detailed usage examples]' \
+        '-f[output in text/template format]:template format' \
+        '-json[output in JSON format]' \
+        '-lock[output in the lock file format \(assumes -detail\)]' \
+        '-missing[NOT IMPLEMENTED: only show missing dependencies]' \
+        '-old[only show out-of-date dependencies]' \
+        '-out[path to a file to which to write the output. Blank value will be ignored]:output file:_files' \
+        '-v[enable verbose logging]' \
+        '-help[show help]' \
+        '*: :_go_packages' \
+        && ret=1
+      ;;
 
-        ensure)
-          _arguments \
-            '-add[add new dependencies, or populate Gopkg.toml with constraints for existing dependencies (default: false)]' \
-            '-dry-run[only report the changes that would be made (default: false)]' \
-            '-examples[print detailed usage examples (default: false)]' \
-            '-no-vendor[update Gopkg.lock (if needed), but do not update vendor/ (default: false)]' \
-            '-update[update the named dependencies (or all, if none are named) in Gopkg.lock to the latest allowed by Gopkg.toml (default: false)]' \
-            '-v[enable verbose logging (default: false)]' \
-            '-vendor-only[populate vendor/ from Gopkg.lock without updating it first (default: false)]' \
-            '-help[show help]' \
-            && ret=1
-          ;;
+    ensure)
+      _arguments \
+        '-add[add new dependencies, or populate Gopkg.toml with constraints for existing dependencies]' \
+        '-dry-run[only report the changes that would be made]' \
+        '-examples[print detailed usage examples]' \
+        '-no-vendor[update Gopkg.lock \(if needed\), but do not update vendor/]' \
+        '-update[update the named dependencies \(or all, if none are named\) in Gopkg.lock to the latest allowed by Gopkg.toml]' \
+        '-v[enable verbose logging]' \
+        '-vendor-only[populate vendor/ from Gopkg.lock without updating it first]' \
+        '-help[show help]' \
+        && ret=1
+      ;;
 
-        (prune|version)
-          _arguments \
-            '-v[enable verbose logging]' \
-            '-help[show help]' \
-            && ret=1
-          ;;
-      esac
+    (prune|version)
+      _arguments \
+        '-v[enable verbose logging]' \
+        '-help[show help]' \
+        && ret=1
+      ;;
+
+    check)
+      _arguments \
+        '-q[Suppress non-error output]' \
+        '-skip-lock[Skip checking that imports and Gopkg.toml are in sync with Gopkg.lock]' \
+        '-skip-vendor[Skip checking that vendor is in sync with Gopkg.lock]' \
+        '-help[show help]' \
+        && ret=1
       ;;
   esac
 
