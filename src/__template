@@ -53,17 +53,28 @@ function _$BIN() {
     '*:: :->args' \
     && ret=0
 
-  case $words[1] in
-    subcommand1)
-      _arguments \
-        '-foo[subcommand2 -foo argument comment]'
-        '*:file:_files'
+  case $state in
+    args)
+      if (( CURRENT == 2 )); then
+        _arguments '*:after the (( CURRENT == 2 )) comment:'
+        return
+      fi
+      _arguments '*:before the (( CURRENT == 2 )) comment:_files'
       ;;
-    subcommand2)
-      _arguments \
-        '-bar[subcommand2 -bar argument comment]' \
-        '-baz[subcommand2 -baz argument comment]'
-        '*:devices:_devices'
+
+      case $words[1] in
+        subcommand1)
+          _arguments \
+            '-foo[subcommand2 -foo argument comment]'
+            '*:file:_files'
+          ;;
+        subcommand2)
+          _arguments \
+            '-bar[subcommand2 -bar argument comment]' \
+            '-baz[subcommand2 -baz argument comment]'
+            '*:devices:_devices'
+          ;;
+      esac
       ;;
   esac
 
