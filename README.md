@@ -57,6 +57,7 @@ fork, fix or wrote myself.
 | kubeval | [github.com/garethr/kubeval: Validate your Kubernetes configuration files, supports multiple Kubernetes versions](https://github.com/garethr/kubeval) |
 | kustomize | [kubernetes-sigs/kustomize: Customization of kubernetes YAML configurations](https://github.com/kubernetes-sigs/kustomize) |
 | mc | [github.com/minio/mc: Minio Client is a replacement for ls, cp, mkdir, diff and rsync commands for filesystems and object storage.](https://github.com/minio/mc) |
+| megacheck | [honnef.co/go/tools/cmd/megacheck: megacheck runs staticcheck, gosimple and unused at once.](https://github.com/dominikh/go-tools/tree/master/cmd/megacheck) |
 | minikube | [k8s.io/minikube: Run Kubernetes locally](https://github.com/kubernetes/minikube) |
 | pinata |  |
 | poule | [github.com/icecrime/poule: A framework for GitHub automation](https://github.com/icecrime/poule) |
