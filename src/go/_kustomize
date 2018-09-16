@@ -1,0 +1,512 @@
+#compdef kustomize
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# sigs.k8s.io/kustomize
+#
+# -----------------------------------------------------------------------------
+#
+# kustomize manages declarative configuration of Kubernetes.
+#
+# See https://sigs.k8s.io/kustomize
+#
+# Usage:
+#   kustomize [command]
+#
+# Available Commands:
+#   build       Print current configuration per contents of kustomization.yaml
+#   edit        Edits a kustomization file
+#   help        Help about any command
+#   version     Prints the kustomize version
+#
+# Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#   -h, --help                             help for kustomize
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# -----------------------------------------------------------------------------
+#
+# Print current configuration per contents of kustomization.yaml
+#
+# Usage:
+#   kustomize build [path] [flags]
+#
+# Examples:
+#
+# Use the file somedir/kustomization.yaml to generate a set of api resources:
+#     build somedir
+#
+# Use a url pointing to a remote directory/kustomization.yaml to generate a set of api resources:
+#     build url
+# The url should follow hashicorp/go-getter URL format described in
+# https://github.com/hashicorp/go-getter#url-format
+#
+# url examples:
+#   sigs.k8s.io/kustomize//examples/multibases?ref=v1.0.6
+#   github.com/Liujingfang1/mysql
+#   github.com/Liujingfang1/kustomize//examples/helloWorld?ref=repoUrl2
+#
+#
+# Flags:
+#   -h, --help            help for build
+#   -o, --output string   If specified, write the build output to this path.
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "kustomize [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Edits a kustomization file
+#
+# Usage:
+#   kustomize edit [command]
+#
+# Examples:
+#
+# 	# Adds a configmap to the kustomization file
+# 	kustomize edit add configmap NAME --from-literal=k=v
+#
+# 	# Sets the nameprefix field
+# 	kustomize edit set nameprefix <prefix-value>
+#
+#
+# Available Commands:
+#   add         Adds configmap/resource/patch/base to the kustomization file.
+#   set         Sets the value of different fields in kustomization file.
+#
+# Flags:
+#   -h, --help   help for edit
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "kustomize edit [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Adds configmap/resource/patch/base to the kustomization file.
+#
+# Usage:
+#   kustomize edit add [command]
+#
+# Examples:
+#
+# 	# Adds a configmap to the kustomization file
+# 	kustomize edit add configmap NAME --from-literal=k=v
+#
+# 	# Adds a resource to the kustomization
+# 	kustomize edit add resource <filepath>
+#
+# 	# Adds a patch to the kustomization
+# 	kustomize edit add patch <filepath>
+#
+# 	# Adds one or more base directories to the kustomization
+# 	kustomize edit add base <filepath>
+# 	kustomize edit add base <filepath1>,<filepath2>,<filepath3>
+#
+# 	# Adds one or more commonLabels to the kustomization
+# 	kustomize edit add label {labelKey1:labelValue1},{labelKey2:labelValue2}
+#
+# 	# Adds one or more commonAnnotations to the kustomization
+# 	kustomize edit add annotation {annotationKey1:annotationValue1},{annotationKey2:annotationValue2}
+#
+#
+# Available Commands:
+#   annotation  Adds one or more commonAnnotations to kustomization.yaml
+#   base        Adds one or more bases to the kustomization.yaml in current directory
+#   configmap   Adds a configmap to the kustomization file.
+#   label       Adds one or more commonLabels to kustomization.yaml
+#   patch       Add the name of a file containing a patch to the kustomization file.
+#   resource    Add the name of a file containing a resource to the kustomization file.
+#
+# Flags:
+#   -h, --help   help for add
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "kustomize edit add [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Sets the value of different fields in kustomization file.
+#
+# Usage:
+#   kustomize edit set [command]
+#
+# Examples:
+#
+# 	# Sets the nameprefix field
+# 	kustomize edit set nameprefix <prefix-value>
+#
+#
+# Available Commands:
+#   imagetag    Sets images and their new tags or digests in the kustomization file
+#   nameprefix  Sets the value of the namePrefix field in the kustomization file.
+#   namespace   Sets the value of the namespace field in the kustomization file
+#
+# Flags:
+#   -h, --help   help for set
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "kustomize edit set [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+# Simply type kustomize help [path to command] for full details.
+#
+# Usage:
+#   kustomize help [command] [flags]
+#
+# Flags:
+#   -h, --help   help for help
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# -----------------------------------------------------------------------------
+#
+# Prints the kustomize version
+#
+# Usage:
+#   kustomize version [flags]
+#
+# Examples:
+# kustomize version
+#
+# Flags:
+#   -h, --help   help for version
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#       --test.bench regexp                run only benchmarks matching regexp
+#       --test.benchmem                    print memory allocations for benchmarks
+#       --test.benchtime d                 run each benchmark for duration d (default 1s)
+#       --test.blockprofile file           write a goroutine blocking profile to file
+#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+#       --test.count n                     run tests and benchmarks n times (default 1)
+#       --test.coverprofile file           write a coverage profile to file
+#       --test.cpu list                    comma-separated list of cpu counts to run each test with
+#       --test.cpuprofile file             write a cpu profile to file
+#       --test.failfast                    do not start new tests after the first test failure
+#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
+#       --test.memprofile file             write an allocation profile to file
+#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
+#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
+#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+#       --test.outputdir dir               write profiles to dir
+#       --test.parallel n                  run at most n tests in parallel (default 12)
+#       --test.run regexp                  run only tests and examples matching regexp
+#       --test.short                       run smaller test suite to save time
+#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
+#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
+#       --test.trace file                  write an execution trace to file
+#       --test.v                           verbose: print additional output
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# -----------------------------------------------------------------------------
+
+function _kustomize() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'build:Print current configuration per contents of kustomization.yaml'
+  'edit:Edits a kustomization file'
+  'help:Help about any command'
+  'version:Prints the kustomize version'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+  '--alsologtostderr[log to standard error as well as files]'
+  '--log_backtrace_at[when logging hits line file:N, emit a stack trace \(default :0\)]:traceLocation'
+  '--log_dir[If non-empty, write log files in this directory]:dir:_directories'
+  '--logtostderr[log to standard error instead of files]'
+  '--stderrthreshold[logs at or above this threshold go to stderr \(default 2\)]:severity]'
+  {-v,--v}'[log level for V logs]:Level'\
+  '--vmodule[comma-separated list of pattern=N settings for file-filtered logging]:moduleSpec'
+  {-h,--help}'[help for build]'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'kustomize command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    build)
+      _arguments \
+        {-o,--output}'[If specified, write the build output to this path.]:output path:_files' \
+        ${_global_flags[@]} \
+        '*:path:_files'
+      ;;
+
+    edit)
+      local -a edit_cmds
+      edit_cmds=(
+      'add:Adds configmap/resource/patch/base to the kustomization file.'
+      'set:Sets the value of different fields in kustomization file.'
+      )
+
+      _arguments \
+        "1: :{_describe 'kustomize edit command' edit_cmds}" \
+        '*:: :->args' \
+        ${_global_flags[@]}
+
+      case $words[1] in
+        add)
+          local -a edit_add_cmds
+          edit_add_cmds=(
+          'annotation:Adds one or more commonAnnotations to kustomization.yaml'
+          'base:Adds one or more bases to the kustomization.yaml in current directory'
+          'configmap:Adds a configmap to the kustomization file.'
+          'label:Adds one or more commonLabels to kustomization.yaml'
+          'patch:Add the name of a file containing a patch to the kustomization file.'
+          'resource:Add the name of a file containing a resource to the kustomization file.'
+          )
+
+          _arguments \
+            "1: :{_describe 'kustomize edit add commands' edit_add_cmds}" \
+            '*:: :->args' \
+            ${_global_flags[@]}
+          ;;
+
+        set)
+          local -a edit_set_cmds
+          edit_set_cmds=(
+          'imagetag :Sets images and their new tags or digests in the kustomization file'
+          'nameprefix:Sets the value of the namePrefix field in the kustomization file.'
+          'namespace:Sets the value of the namespace field in the kustomization file'
+          )
+
+          _arguments \
+            "1: :{_describe 'kustomize edit set commands' edit_set_cmds}" \
+            '*:: :->args' \
+            ${_global_flags[@]}
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_kustomize "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

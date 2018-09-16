@@ -55,6 +55,7 @@ fork, fix or wrote myself.
 | json2struct | [github.com/yudppp/json2struct: Translate to Golang struct from json](https://github.com/yudppp/json2struct) |
 | kati | [github.com/google/kati: An experimental GNU make clone](https://github.com/google/kati) |
 | kubeval | [github.com/garethr/kubeval: Validate your Kubernetes configuration files, supports multiple Kubernetes versions](https://github.com/garethr/kubeval) |
+| kustomize | [kubernetes-sigs/kustomize: Customization of kubernetes YAML configurations](https://github.com/kubernetes-sigs/kustomize) |
 | mc | [github.com/minio/mc: Minio Client is a replacement for ls, cp, mkdir, diff and rsync commands for filesystems and object storage.](https://github.com/minio/mc) |
 | minikube | [k8s.io/minikube: Run Kubernetes locally](https://github.com/kubernetes/minikube) |
 | pinata |  |
