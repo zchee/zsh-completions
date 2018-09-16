@@ -107,6 +107,7 @@ fork, fix or wrote myself.
 | chromedriver |  |
 | circleci |  |
 | clang-format | A tool to format C/C++/Java/JavaScript/Objective-C/Protobuf code |
+| clangd | [Clangd is an implementation of the Language Server Protocol leveraging Clang.](https://clang.llvm.org/extra/clangd.html) |
 | cloud_sql_proxy |  |
 | cmake | Support -D completion (WIP) |
 | conda |  |

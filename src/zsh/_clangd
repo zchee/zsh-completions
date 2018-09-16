@@ -1,0 +1,228 @@
+#compdef clangd
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# clang.lvm.org/extra/clangd.html
+#
+# clangd version 8.0.0 (https://git.llvm.org/git/clang.git 982848fd659a9bd36757b2536e97cfdd7ac03a69)
+#                      (https://git.llvm.org/git/llvm.git  ba4c8a15c7a880ee5697af9e858d2212f814dd2a)
+#
+# -----------------------------------------------------------------------------
+#
+# OVERVIEW: clangd is a language server that provides IDE-like features to editors. 
+#
+# It should be used via an editor plugin rather than invoked directly.For more information, see:
+# 	https://clang.llvm.org/extra/clangd.html
+# 	https://microsoft.github.io/language-server-protocol/
+# USAGE: clangd [options]
+#
+# OPTIONS:
+#
+# General options:
+#
+#   -as-secure-log-file-name                 - As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
+#   -asm-macro-max-nesting-depth=<uint>      - The maximum nesting depth allowed for assembly macros.
+#   -compile-commands-dir=<string>           - Specify a path to look for compile_commands.json. If path is invalid, clangd will look in the current directory and parent paths of each source file.
+#   -compile_args_from                       - The source of compile commands
+#     =lsp                                   -   All compile commands come from LSP and 'compile_commands.json' files are ignored
+#     =filesystem                            -   All compile commands come from the 'compile_commands.json' files
+#   -completion-style                        - Granularity of code completion suggestions
+#     =detailed                              -   One completion item for each semantically distinct completion, with full type information.
+#     =bundled                               -   Similar completion items (e.g. function overloads) are combined. Type information shown where possible.
+#   -debug                                   - Enable debug output
+#   -debug-buffer-size=<uint>                - Buffer the last N characters of debug output until program termination. [default 0 -- immediate print-out]
+#   -debug-only=<debug string>               - Enable a specific type of debug output (comma separated list of types)
+#   -debug-origin                            - Show origins of completion items
+#   -disable-symbolication                   - Disable symbolizing crash backtraces.
+#   -header-insertion-decorators             - Prepend a circular dot or space before the completion label, depending on whether an include line will be inserted or not.
+#   -include-ineligible-results              - Include ineligible completion results (e.g. private members)
+#   -index                                   - Enable index-based features such as global code completion and searching for symbols. Clang uses an index built from symbols in opened files
+#   -info-output-file=<filename>             - File to append -stats and -timer output to
+#   -input-mirror-file=<string>              - Mirror all LSP input to the specified file. Useful for debugging.
+#   -input-style                             - Input JSON stream encoding
+#     =standard                              -   usual LSP protocol
+#     =delimited                             -   messages delimited by --- lines, with # comment support
+#   -j=<uint>                                - Number of async workers used by clangd
+#   -limit-results=<int>                     - Limit the number of results returned by clangd. 0 means no limit.
+#   -lit-test                                - Abbreviation for -input-style=delimited -pretty -run-synchronously. Intended to simplify lit tests.
+#   -log                                     - Verbosity of log messages written to stderr
+#     =error                                 -   Error messages only
+#     =info                                  -   High level execution tracing
+#     =verbose                               -   Low level details
+#   -non-global-value-max-name-size=<uint>   - Maximum size for the name of non-global values.
+#   -opt-bisect-limit=<int>                  - Maximum optimization to perform
+#   -pass-remarks=<pattern>                  - Enable optimization remarks from passes whose name match the given regular expression
+#   -pass-remarks-analysis=<pattern>         - Enable optimization analysis remarks from passes whose name match the given regular expression
+#   -pass-remarks-missed=<pattern>           - Enable missed optimization remarks from passes whose name match the given regular expression
+#   -pch-storage                             - Storing PCHs in memory increases memory usages, but may improve performance
+#     =disk                                  -   store PCHs on disk
+#     =memory                                -   store PCHs in memory
+#   -pretty                                  - Pretty-print JSON output
+#   -resource-dir=<string>                   - Directory for system clang headers
+#   -rng-seed=<seed>                         - Seed for the random number generator
+#   -run-synchronously                       - Parse on main thread. If set, -j is ignored
+#   -static-func-full-module-prefix          - Use full module build paths in the profile counter names for static functions.
+#   -static-func-strip-dirname-prefix=<uint> - Strip specified level of directory name from source path in the profile counter name for static functions.
+#   -stats                                   - Enable statistics output from program (available with Asserts)
+#   -stats-json                              - Display statistics as json data
+#   -track-memory                            - Enable -time-passes memory tracking (this may be slow)
+#   -use-dbg-addr                            - Use llvm.dbg.addr for all local variables
+#   -use-dex-index                           - Use experimental Dex static index.
+#   -view-background                         - Execute graph viewer in the background. Creates tmp file litter.
+#   -yaml-symbol-file=<string>               - YAML-format global symbol file to build the static index. Clangd will use the static index for global code completion.
+#                                              WARNING: This option is experimental only, and will be removed eventually. Don't rely on it.
+#
+# Generic Options:
+#
+#   -help                                    - Display available options (-help-hidden for more)
+#   -help-hidden                             - Display all available options
+#   -help-list                               - Display list of available options (-help-list-hidden for more)
+#   -help-list-hidden                        - Display list of all available options
+#   -print-all-options                       - Print all option values after command line parsing
+#   -print-options                           - Print non-default options after command line parsing
+#   -version                                 - Display the version of this program
+#
+# -----------------------------------------------------------------------------
+
+function _clangd() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-as-secure-log-file-name=[As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)]:log file name:_files' \
+    '-asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:depth' \
+    '-compile-commands-dir=[Specify a path to look for compile_commands.json. If path is invalid, clangd will look in the current directory and parent paths of each source file.]:directory:_directories' \
+    '-compile_args_from=[The source of compile commands]:completion style:->compile_args_from' \
+    '-completion-style=[Granularity of code completion suggestions]:completion style:->completion-style' \
+    '-debug[Enable debug output]' \
+    '-debug-buffer-size=[Buffer the last N characters of debug output until program termination.]:buffer size' \
+    '-debug-only=[Enable a specific type of debug output (comma separated list of types)]:debug string' \
+    '-debug-origin[Show origins of completion items]' \
+    '-disable-symbolication[Disable symbolizing crash backtraces.]' \
+    '-header-insertion-decorators[Prepend a circular dot or space before the completion label, depending on wether an include line will be inserted or not.]' \
+    '-include-ineligible-results[Include ineligible completion results (e.g. private members)]' \
+    '-index[Enable index-based features such as global code completion and searching for symbols.Clang uses an index built from symbols in opened files]' \
+    '-info-output-file=[File to append -stats and -timer output to]:filename:_files' \
+    '-input-mirror-file=[Mirror all LSP input to the specified file. Useful for debugging.]:mirror file:_files' \
+    '-input-style=[Input JSON stream encoding]:input style:->input-style' \
+    '-j=[Number of async workers used by clangd]:job' \
+    '-limit-results=[Limit the number of results returned by clangd. 0 means no limit.]:results limit' \
+    '-lit-test[Abbreviation for -input-style=delimited -pretty -run-synchronously. Intended to simplify lit tests.]' \
+    '-log=[Verbosity of log messages written to stderr]:log level:->log-level' \
+    '-non-global-value-max-name-size=[Maximum size for the name of non-global values.]:max name size' \
+    '-opt-bisect-limit=[Maximum optimization to perform]:bisect limit' \
+    '-pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:remarks regexp pattern' \
+    '-pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:analysis remarks regexp pattern' \
+    '-pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:missed optimization remarks  regexp pattern' \
+    '-pch-storage=[Storing PCHs in memory increases memory usages, but may improve performance]:pch storage type:->pch-storage' \
+    '-pretty[Pretty-print JSON output]' \
+    '-resource-dir=[Directory for system clang headers]:system clang headers directory:_directories' \
+    '-rng-seed=[Seed for the random number generator]:seed' \
+    '-run-synchronously[Parse on main thread. If set, -j is ignored]' \
+    '-static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
+    '-static-func-strip-dirname-prefix=[Strip specified level of directory name from source path in the profile counter name for static functions.]:strip specified level' \
+    '-stats[Enable statistics output from program (available with Asserts)]' \
+    '-stats-json[Display statistics as json data]' \
+    '-track-memory[Enable -time-passes memory tracking (this may be slow)]' \
+    '-use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
+    '-use-dex-index[Use experimental Dex static index.]' \
+    '-view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
+    '-yaml-symbol-file=[YAML-format global symbol file to build the static index. Clangd will use the static index for global code completion.]:symbol file:_files' \
+    '-help[Display available options]' \
+    '-help-hidden[Display available options included hidden flags]' \
+    '-help-list[Display list of available options]' \
+    '-help-list-hidden[Display list of available options included hidden flags]' \
+    '-version[Display the version of this program]' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    compile_args_from)
+      local -a completion_style_args
+      completion_style_args=(
+      "lsp:All compile commands come from LSP and 'compile_commands.json' files are ignored"
+      "filesystem:All compile commands come from the 'compile_commands.json' files"
+      )
+      _arguments \
+        "*: :{_describe 'completion style' completion_style_args}"
+      ;;
+
+    completion-style)
+      local -a completion_style_args
+      completion_style_args=(
+      'detailed:One completion item for each semantically distinct completion, with full type information.'
+      'bundled:Similar completion items (e.g. function overloads) are combined. Type information shown where possible.'
+      )
+      _arguments \
+        "*: :{_describe 'completion style' completion_style_args}"
+      ;;
+
+    input-style)
+      local -a input_style_args
+      input_style_args=(
+      'standard:usual LSP protocol'
+      'delimited:messages delimited by --- lines, with # comment support'
+      )
+      _arguments \
+        "*: :{_describe 'input style' input_style_args}"
+      ;;
+
+    log-level)
+      local -a log_level_args
+      log_level_args=(
+      'error:Error messages only'
+      'info:High level execution tracing'
+      'verbose:Low level details'
+      )
+      _arguments \
+        "*: :{_describe 'log level' log_level_args}"
+      ;;
+
+    pch-storage)
+      local -a pch_storage_args
+      pch_storage_args=(
+      'disk:store PCHs on disk'
+      'memory:store PCHs in memory'
+      )
+      _arguments \
+        "*: :{_describe 'pch storage type' pch_storage_args}"
+      ;;
+  esac
+
+  return ret
+}
+
+_clangd "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
