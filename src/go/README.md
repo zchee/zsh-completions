@@ -37,6 +37,9 @@
 - [ ] [sourcegraph/src-cli](https://github.com/sourcegraph/src-cli)
   - Sourcegraph CLI
 
+- [ ] [golang.org/x/debug/cmd/viewcore](https://github.com/golang/debug/tree/master/cmd/viewcore)
+  - The viewcore tool is a command-line tool for exploring the state of a Go process that has dumped core.
+
 ### Kubernetes tools
 
 - [ ] [kubernetes-incubator/cri-tools: CLI and validation tools for Kubelet Container Runtime Interface (CRI) .](https://github.com/kubernetes-incubator/cri-tools)
