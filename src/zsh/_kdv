@@ -1,0 +1,44 @@
+#compdef kdv
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2017, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# All rights reserved.
+# -----------------------------------------------------------------------------
+#
+# kdv - KDebug Unleashed for OS X/iOS zsh completion script
+#   http://newosxbook.com/tools/kdv.html
+#
+# version: 0.2
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: ./kdv [_pid_|all]
+# Where: _pid_      : optional PID to trace (all threads will be traced). Set to 0 for kernel_task :-)
+#        all        : Trace ALL pids (TONS of output!)
+#
+# This is J's kdebugview version 0.2. Based on Apple's system_cmd's fs_usage(1), sc_usage(1), and trace(1).
+# Get the latest version (+ source) at http://NewOSXBook.com/tools/kdv.html
+# Comments/Feature Requests always welcome at http://NewOSXBook.com/forum/#
+#
+# -----------------------------------------------------------------------------
+
+function _kdv() {
+  local curcontext=$curcontext context state line ret=1
+  typeset -A opt_args
+
+  local -a commands
+  commands=(
+  'all:Trace ALL pids (TONS of output!)'
+  )
+
+  _describe -t commands 'command' commands
+  _message 'optional PID to trace (all threads will be traced). Set to 0 for kernel_task :-)'
+
+  _arguments -C \
+    "*: :{_alternative 'processes:: _pids' 'jobs:: _jobs -t'}" \
+    && ret=0
+
+  return ret
+}
+
+_kdv "$@"
