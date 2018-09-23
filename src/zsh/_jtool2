@@ -65,6 +65,7 @@ function _jtool2() {
     '-o[find address corresponding to offset _offset_]:offset (0x...)' \
     '-d[dump \(smart dump, will disassemble text and dump data by autodetecting\)]' \
     '--analyze[analyze file and create a companion file]' \
+    '--pages[show pages]' \
     '-bind[print addresses dyld will set based on symbolic lookups]' \
     '-lazy_bind[print addresses dyld will lazily set on first use]' \
     '-opcodes[print opcodes used to generate the rebase and binding information]' \
