@@ -1,0 +1,220 @@
+#compdef jtool
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2017, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# All rights reserved.
+# -----------------------------------------------------------------------------
+#
+# jtool - Taking the O out of otool(1)
+#   http://newosxbook.com/tools/jtool.html
+#
+# version: v(almost 1.0) (Moscow) compiled on Jan 8 2017 20:33:01
+#
+# -----------------------------------------------------------------------------
+#
+# This is jtool v(almost 1.0) (Moscow) - with partial ARMv7k disassembly and SLC symbol resolution, compiled on Jan  8 2017 20:33:01
+#
+# Usage: jtool [options] _filename_
+#
+# OTool Compatible Options:
+#    -arch ..            	For fat (universal) binaries: i386,x86_64[h], arm[v[67]]
+#    -h                  	print header (ELF or Mach-O)
+#    -f                  	print fat header
+#    -l                  	List sections/commands in binary
+#    -L                  	List shared libraries used (like LDD)
+#    -v[v]               	Verbose output. -vv is even more verbose. -vvv might be more than you can handle :-)
+#
+# New Options:
+#    --pages             	Show file page map (similar to pagestuff(1))
+#    -a _offset_         	Find virtual address corresponding to file offset _offset
+#    -e[xtract] _name_   	Extract section/segment _name_ in binary, or file _name_ from shared cache
+#    -e[xtract] arch     	Extract selected architecture from FAT file. Specify arch with -arch .. or ARCH=
+#    -e[xtract] signature	Extract code signature from binary
+#    -F [_string_]       	find all occurrences of _string_ in binary
+#       -Fs _string_     	also show search results (experimental)
+#    -S                  	List Symbols (like NM)
+#       -Sa _address_ _symbolname_	Add symbolname manually for address (to .jtool)
+#       -Sd _symbolname_ (not yet)	Remove symbolname for address (to .jtool)
+#    -p _addr_[,_size_]  	Peek at _size_ bytes in virtual _address_ in binary (like OD, but on memory)
+#
+# dyldinfo Compatible Options:
+#    -bind               	print addresses dyld will set based on symbolic lookups
+#    -lazy_bind          	print symbols which dyld will lazily set on first use
+#    -weak_bind          	print symbols which dyld must coalesce
+#    -export             	print addresses of all symbols this file exports
+#    -opcodes            	print opcodes used to generate the rebase and binding information
+#    -function_starts    	print table of function start addresses
+#    -data_in_code       	print any data-in-code inforamtion
+#
+# Destructive Options (will write output to /tmp):
+#    -m                  	Modify
+#      __SEGMENT[.__section],[_offset][,size]	(null)
+#    -r                  	Remove/Resize (Experimental)
+#      -rL _dylib/soname_      	Library
+#      -rC _Load_Command_#_    	Load Command
+#    -/+pie              	Toggle Position Independent Executable (ASLR)
+#    -/+lcmain           	Toggle pre-Mountain-Lion/iOS6 compatibility (LC_UNIXTHREAD/LC_MAIN)
+#    -/+enc              	Mark as decrypted/encrypted (toggles cryptid of LC_ENCRYPTION_INFO[64])
+#
+# Disassembly/Dump Options:
+#    -d[_arg_[,size]]    	disassemble/dump (experimental) -  _arg_ may specify address/section/symbol/Obj-C class. size is optional
+#      -dA [_arg_[,size]]	Disassemble as ARM code (32-bit instructions)
+#      -dT [_arg_[,size]]	Disassemble as Thumb/Thumb-2 code (16/32-bit instructions)
+#      -dD [_arg_[,size]]	Dump (even on a text segment)
+#      -do [_arg_[,size]]	Dump/Disassemble from offset, rather than address
+#      -d objc           	Dump objective-C classes in binary, if any
+#    -D : As -d, but attempts to decompile only (i.e. shows only C-level code, no disassembly	(null)
+#    -opcodes            	Also dump opcode bytes
+#    --jtooldir _path_   	path to search for companion jtool files (default: $PWD).
+# 			Use this to force create a file, if one does not exist
+#
+# Code Signing Options:
+#    --sig               	Show code signature in binary (if any)
+#    --sign [adhoc]      	self-sign with no certificate
+#    --ident _ident_     	provides identity (fake, of course)
+#    --appdir            	Set App Path (for code signing and/or verification)
+#    --ent               	Show entitlements in binary (if any)
+#
+# Advanced Options:
+#    --pcrelative        	show addresses as PC relative offset
+#    --slide  _slide_    	slide text by _slide_ bytes (may be negative)
+#    --rebase _address_  	rebase text to this address (destructive)
+#    --inplace           	Perform destructive operations in place (instead of out.bin) for the brave
+#    --version           	Show tool version and compilation date
+#
+# Output Options:
+#    --html              	Output as HTML (implies color)
+#    --curses            	Output as Color using ncurses (can also set JCOLOR=1)
+#
+# Environment variables: JDEBUG=1, NOPSUP=1 (suppress NOPs in disassembly)
+#
+# Note: Experimental features may not be available in public version of this tool
+#
+# -----------------------------------------------------------------------------
+
+function _jtool() {
+  local curcontext=$curcontext context state line ret=1
+  typeset -A opt_args
+
+  local _otool_options _new_options _dyldinfo_option _destructive _disassembly_dump _code_signing _advanced _output
+
+  _otool_options=(
+  '-arch[For fat (universal) binaries]:architectures:->arch'
+  '-h[print header (ELF or Mach-O)]'
+  '-f[print fat header]'
+  '-l[List sections or commands in binary]'
+  '-L[List shared libraries used (like LDD)]'
+  '(-vv -vvv)-v[Verbose output]'
+  '(-v  -vvv)-vv[more verbose]'
+  '(-v   -vv)-vvv[more than you can handle :-)]'
+  )
+
+  _new_options=(
+  '--pages[Show file page map (similar to pagestuff(1))]'
+  '-a[Find virtual address corresponding to file offset]:_offset_'
+  '(-e -extract)'{-e,-extract}'[Extract section/segment in binary]: :->extract'
+  '(-e -extract)'{-e,-extract}'[Extract file _name_ from shared cache]: :->extract'
+  '(-e -extract)'{-e,-extract}'[Extract selected architecture from FAT file]: :->extract'
+  '(-e -extract)'{-e,-extract}'[Extract code signature from binary]: :->extract'
+  '-F[find all occurrences of arg in binary]:_string_'
+  '-Fs[find all occurrences of arg in binary, also show search results (experimental)]:_string_'
+  '-S[List Symbols (like NM)]'
+  '-Sa[Add symbolname manually for address (to .jtool)]:_address_'
+  '-Sd[(not yet) Remove symbolname for address (to .jtool)]:_symbolname_'
+  '-p[Peek at _size_ bytes in virtual _address_ in binary (like OD, but on memory)]:_addr_ \[_size_\]'
+  )
+
+  _dyldinfo_option=(
+  '-bind[print addresses dyld will set based on symbolic lookups]'
+  '-lazy_bind[print symbols which dyld will lazily set on first use]'
+  '-weak_bind[print symbols which dyld must coalesce]'
+  '-export[print addresses of all symbols this file exports]'
+  '-opcodes[print opcodes used to generate the rebase and binding information]'
+  '-function_starts[print table of function start addresses]'
+  '-data_in_code[print any data-in-code inforamtion]'
+  )
+
+  _destructive=(
+  '-m[Modify]:__SEGMENT\[.__section\],\[_offset\]\[,size\]'
+  '-r[Remove/Resize (Experimental)]'
+  '-rL[Library]:_dylib_ or _soname_:_files'
+  '-rC[Load Command]:_Load_Command_#_'
+  # TODO(zchee): support -/+ flag prefix
+  # '-/+pie[Toggle Position Independent Executable (ASLR)]'
+  # '-/+lcmain[Toggle pre-Mountain-Lion/iOS6 compatibility (LC_UNIXTHREAD/LC_MAIN)]'
+  # '-/+enc[Mark as decrypted/encrypted (toggles cryptid of LC_ENCRYPTION_INFO[64])]'
+  )
+
+  _disassembly_dump=(
+  '-d[disassemble/dump (experimental). \[address/section/symbol/Obj-C class \[,_size_\]\]]: :->disassemble'
+  '-dA[Disassemble as ARM code (32-bit instructions)]:_addr_ \[,_size_\]'
+  '-dT[Disassemble as Thumb/Thumb-2 code (16/32-bit instructions)]:_addr_ \[,_size_\]'
+  '-dD[Dump even on a text segment]:_addr_ \[,_size_\]'
+  '-do[Dump/Disassemble from offset, rather than address]:_addr_ \[,_size_\]'
+  '-d[Dump objective-C classes in binary]:objc'
+  '-D[As -d, but attempts to decompile only (i.e. shows only C-level code, no disassembly]'
+  '-opcodes[Also dump opcode bytes]'
+  '--jtooldir[path to search for companion jtool files (default\: $PWD)]:jtool files:_files'
+  )
+
+  _code_signing=(
+  '--sig[Show code signature in binary]'
+  '--sign[self-sign with no certificate]:adhoc'
+  '--ident[provides identity (fake, of course)]:_ident_'
+  '--appdir[Set App Path for code signing and/or verification]'
+  '--ent[Show entitlements in binary]'
+  )
+
+  _advanced=(
+  '--pcrelative[show addresses as PC relative offset]'
+  '--slide[slide text by _slide_ bytes (may be negative)]:_slide_'
+  '--rebase[rebase text to this address (destructive)]:_address_'
+  '--inplace[Perform destructive operations in place (instead of out.bin) for the brave]'
+  '--version[Show tool version and compilation date]'
+  )
+
+  _output=(
+  '--html[Output as HTML (implies color)]'
+  '--curses[Output as Color using ncurses (can also set JCOLOR=1)]'
+  )
+
+  # TODO(zchee): Separate flags by jtool help output groups
+  _arguments -C \
+    $_otool_options \
+    $_new_options \
+    $_dyldinfo_option \
+    $_destructive \
+    $_disassembly_dump \
+    $_code_signing \
+    $_advanced \
+    $_output \
+    '*:filename:_files' \
+    && ret=0
+
+  case $state in
+    arch)
+      local -a arch
+      arch=(
+      'i386:i386 architecture'
+      'x86_64:x86_64 architecture'
+      'x86_64h:x86_64h architecture'
+      'arm64:ARM64 (AArch64) architecture'
+      'armv6:ARMv6 architecture'
+      'armv7:ARMv7 architecture'
+      )
+      _arguments "*: :{_describe 'Architecture for fat (universal) binaries' arch}"
+      ;;
+    extract)
+      # TODO(zchee): support section/segment/_name_/arch/signature
+      _arguments '*:section/segment/_name_/arch/signature'
+      ;;
+    disassemble)
+      # TODO(zchee): support address/section/symbol/Obj-C class
+      _arguments '*:address/section/symbol/Obj-C_class \[,_size_\]'
+      ;;
+  esac
+
+  return ret
+}
+
+_jtool "$*"
