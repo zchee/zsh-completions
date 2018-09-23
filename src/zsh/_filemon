@@ -1,0 +1,55 @@
+#compdef filemon
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2017, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# All rights reserved.
+# -----------------------------------------------------------------------------
+#
+# filemon - An FSEvents client
+#   http://newosxbook.com/tools/filemon.html
+#
+# version: compiled on Jul 21 2016
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: filemon [options]
+# Where [options] are optional, and may be any of:
+# 	-p|--proc  pid/procname:  filter only this process or PID
+# 	-f|--file  string[,string]:        filter only paths containing this string (/ will catch everything)
+# 	-e|--event event[,event]: filter only these events
+# 	-s|--stop:                auto-stop the process generating event
+# 	-l|--link:                auto-create a hard link to file (prevents deletion by program :-)
+# 	-c|--color (or set JCOLOR=1 first)
+# 	This is J's filemon, compiled on Jul 21 2016
+#
+# -----------------------------------------------------------------------------
+
+function _filemon() {
+  local curcontext=$curcontext context state line ret=1
+  typeset -A opt_args
+
+  _arguments -C \
+    '(-p --proc)'{-p,--proc}'[filter only this process or PID]:pid/procname:->proc' \
+    '(-f --file)'{-f,--file}'[filter only paths containing this string (/ will catch everything)]:string\[,string\]:_files' \
+    '(-e --event)'{-e,--event}'[filter only these events]:event\[,event\]' \
+    '(-s --stop)'{-s,--stop}'[auto-stop the process generating event]' \
+    '(-l --link)'{-l,--link}'[auto-create a hard link to file (prevents deletion by program :-)]' \
+    '(-c --color)'{-c,--color}'[Colorize output (or set JCOLOR=1 first)]' \
+    && ret=0
+
+  case $state in
+    proc)
+      local cmd
+      cmd="$(ps -axc -o command=)"
+      _wanted pname expl $ispat'process name' compadd ${(u)${(f)${cmd}}} \
+      && ret=0
+
+      _alternative 'processes:: _pids' 'jobs:: _jobs -t' \
+      && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_filemon "$*"
