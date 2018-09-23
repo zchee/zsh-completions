@@ -1,0 +1,69 @@
+#compdef procexp
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2017, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# All rights reserved.
+# -----------------------------------------------------------------------------
+#
+# procexp - Going over the top(1)
+#   http://newosxbook.com/tools/procexp.html
+#
+# version: v1-(e^2) , compiled on Dec 11 2016, 14:18:01
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: procexp [pid|all] [binary|core|fds|ports|net|tree|threads|regions|all]
+#            or
+#        procexp vmmon
+#
+# This is J's Process Explorer v1-(e^2) , compiled on Dec 11 2016, 14:18:01
+#
+# -----------------------------------------------------------------------------
+
+function _procexp() {
+  local curcontext=$curcontext context state line ret=1
+  typeset -A opt_args
+
+  _args() {
+    local -a commands
+    commands=(
+    'all'
+    'vmmon'
+    )
+    _describe -t commands 'command' commands
+    _alternative 'processes:: _pids' 'jobs:: _jobs -t'
+  }
+
+  local -a _filter_option
+  _filter_option=(
+  'core:filtered to core'
+  'fds:filtered to fds'
+  'ports:filtered to ports'
+  'net:filtered to net'
+  'tree:filtered to tree'
+  'threads:filtered to threads'
+  'regions:filtered to regions'
+  'all:show all dump'
+  )
+
+  _arguments \
+    '1:arguments:_args' \
+    '*:: :->args' \
+    && ret=1
+
+  case $state in
+    args)
+      case $words[1] in
+        *)
+          _arguments \
+            "*: :{_describe 'filter option' _filter_option}" \
+            && ret=1
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_procexp "$*"
