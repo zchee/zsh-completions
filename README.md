@@ -116,11 +116,16 @@ fork, fix or wrote myself.
 | container-builder-local |  |
 | curl |  |
 | darwin-debug |  |
+| filemon | An FSEvents client |
 | flake8 |  |
 | flatc | flatc, which flatbuffers schema compiler |
 | grpc_cli |  |
 | httrack |  |
+| joker | A quick and dirty iOS kernelcache handling utility |
+| jtool | Taking the O out of otool(1) |
+| jtool2 | The jtool2 |
 | jupyter | Project Jupyter |
+| kdv | KDebug Unleashed for OS X/iOS |
 | llvm-config | LLVM llvm-config |
 | llvm-dsymutil | manipulate archived DWARF debug symbol files |
 | llvm-dwarfdump | llvm dwarf dumper |
@@ -133,7 +138,8 @@ fork, fix or wrote myself.
 | nvim | Vim-fork focused on extensibility and agility |
 | pip |  |
 | prlctl | Parallels Desktop command-line utility is used to perform administration tasks on virtual machines |
-| prlsrvctl	Parallels Desktop command-line utility is used to perform management tasks |
+| prlsrvctl | Parallels Desktop command-line utility is used to perform management tasks |
+| procexp | Going over the top(1) |
 | protoc |  |
 | rc | rtags client |
 | rdm | rtags daemon |
