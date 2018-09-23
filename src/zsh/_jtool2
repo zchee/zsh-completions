@@ -1,0 +1,80 @@
+#compdef jtool2
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2018, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# All rights reserved.
+# -----------------------------------------------------------------------------
+#
+# jtool2
+#   http://newosxbook.com/tools/jtool2.tgz
+#
+# version: 2.0 (alpha 1, Paris) compiled on Sep 22 2018 17:55:31
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: jtool2 [options] _filename_
+#
+# OTool Compatible Options:
+#    -h         	Dump Mach-O (or DYLD Shared Cache) header
+#    -l         	List sections/commands in binary
+#    -L         	print shared libraries used
+#
+# JTool options:
+#    -S         	List Symbols (like NM)
+#    -v         	Toggle verbosity
+#
+# New Options:
+#    -q         	Quick operation - do not process any symbols in the Mach-O
+#    -F         	find all occurrences of _string_ in binary
+#    -a         	Find offset/segment corresponding to virtual address _addr_
+#    -o         	Find address corresponding to offset _offset_
+#    -d         	Dump (smart dump, will disassemble text and dump data by autodetecting)
+#
+# Newer (JTool 2) Options:
+#    --analyze  	Analyze file and create a companion file
+#
+# dyldinfo Compatible Options:
+#    -bind     	print addresses dyld will set based on symbolic lookups
+#    -lazy_bind	print addresses dyld will lazily set on first use
+#    -opcodes  	print opcodes used to generate the rebase and binding information
+#    -function_starts	print table of function start addresses
+#
+# Environment Variables:
+#    ARCH                	Select architecture slice. Set to arm64, arm64e, arm64_32, armv7, armv7k, x86_64 or (not for long) i386
+#    JDEBUG              	Enhanced debug output. May be very verbose
+#    JCOLOR              	ANSI Colors. Note you'll need 'less -R' if piping output
+#    JTOOLDIR            	path to search for companion jtool files (default: $PWD).
+# 		                    Use this to force create a file, if one does not exist
+#    NOPSUP              	Suppress NOPs in disassembly
+#
+# -----------------------------------------------------------------------------
+
+function _jtool2() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-h[dump Mach-O (or DYLD Shared Cache) header]' \
+    '-l[list sections/commands in binary]' \
+    '-L[print shared libraries used]' \
+    '-S[list Symbols (like NM)]' \
+    '-v[toggle verbosity]' \
+    '-q[quick operation - do not process any symbols in the Mach-O]' \
+    '-F[find all occurrences of _string_ in binary]:__string__' \
+    '-a[find offset/segment corresponding to virtual address _addr_]:virtual address (0x...)' \
+    '-o[find address corresponding to offset _offset_]:offset (0x...)' \
+    '-d[dump \(smart dump, will disassemble text and dump data by autodetecting\)]' \
+    '--analyze[analyze file and create a companion file]' \
+    '-bind[print addresses dyld will set based on symbolic lookups]' \
+    '-lazy_bind[print addresses dyld will lazily set on first use]' \
+    '-opcodes[print opcodes used to generate the rebase and binding information]' \
+    '-function_starts[print table of function start addresses]' \
+    '*:filename:_files' \
+    && ret=0
+
+  return ret
+}
+
+_jtool2 "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
