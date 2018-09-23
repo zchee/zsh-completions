@@ -1,0 +1,75 @@
+#compdef joker
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2017, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# All rights reserved.
+# -----------------------------------------------------------------------------
+#
+# joker - A quick and dirty iOS kernelcache handling utility
+#   http://newosxbook.com/tools/joker.html
+#
+# version: Compiled on Sep  9 2016
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: joker [-j] [-MmaSsKk] _filename_
+#  _filename_ should be a decrypted iOS kernelcache, or kernel dump. Tested on ARMv7/s 3.x-9.3, and ARM64 through 10.0.1GM
+#
+#  -m: dump Mach Traps and MIG tables (NEW)
+#  -a: dump everything
+#  -k: dump kexts
+#  -K: kextract [kext_bundle_id_or_name_shown_in_-k|all] to JOKER_DIR or /tmp
+#  -S: dump sysctls
+#  -s: dump UNIX syscalls
+#  -j: Jtool compatible output (to companion file)
+#
+# -dec: Decompress kernelcache to /tmp/kernel (complzss only at this stage)
+#
+# Kernels not included. Get your own dump or decrypted kernel from iPhoneWiki, or Apple itself (as of iOS 10b1! Thanks, guys!)
+#
+# 3.0 with MACF Policies, stub symbolication, SPLIT KEXTS, Sandbox Profiles (beta, collections only at this point) , kpp and (coming soon) IOUserClients!
+# Compiled on Sep  9 2016
+#
+# Contains code from Haruhiko Okumura (CompuServe 74050,1022) from BootX-81//bootx.tproj/sl.subproj/lzss.c
+#
+# -----------------------------------------------------------------------------
+
+function _joker() {
+  local context curcontext=$curcontext state line
+  declare -A opt_args
+  local ret=1
+
+  _arguments -S \
+    '-m[dump Mach Traps and MIG tables]' \
+    '-a[dump everything]' \
+    '-k[dump kexts]' \
+    '-K[kextract to JOKER_DIR or /tmp]:kext bundle id/kexts name:->kextract' \
+    '-S[dump sysctls]' \
+    '-s[dump UNIX syscalls]' \
+    '-j[Jtool compatible output (to companion file)]' \
+    '-dec[Decompress kernelcache to /tmp/kernel (complzss only at this stage)]' \
+    '1:Decrypted iOS kernelcache or kernel dump:_files' \
+    && ret=0
+
+  case $state in
+    kextract)
+      # TODO(zchee): support of '_name_shown_in_-k'
+      # if (( CURRENT == 1 )); then
+      #   echo $CURRENT
+      #   local _names
+      #   _names=$(joker $CURRENT -k)
+      #   _arguments '*:kext name:_names'
+      #   return
+      # fi
+      local commands
+      commands=(
+      'all:extract all'
+      )
+      _describe '' commands
+      ;;
+  esac
+
+  return ret
+}
+
+_joker "$*"
