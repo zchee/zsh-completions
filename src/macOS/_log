@@ -476,7 +476,7 @@ function _log() {
         collect)
           _arguments \
             (-o --output){-o,--output}'[Output log archive to the given path:output path \[dir|file\]:_files' \
-            (-s --start){-s,--start}'[Collect logs starting at the given time]:date/time YYYY-MM-DD HH\:MM\:SS\:_time' \
+            (-s --start){-s,--start}"[Collect logs starting at the given time]::'Y-M-D H:m:s+zzzz', 'Y-M-D H:m:s', 'Y-M-D', '@unixtime':_time" \
             (-l --last){-l,--last}'[Collect logs starting <num>[m|h|d] ago]:<num>\[m|h|d\]' \
             (-z --size){-z,--size}'[Limit log collection to the given size:limit size\[k|m\]' \
             && ret=0
@@ -526,46 +526,86 @@ function _log() {
             && ret=0
           ;;
         # -----------------------------------------------------------------------------
-        # log: usage:
-        #     log show [ <archive> | <logfile> ...]
-        # 	[ --predicate <predicate> ][ --source ][ --style (syslog|json) ]
-        # 	[ --start "YYYY-MM-DD HH:MM:SS" ] [ --end "YYYY-MM-DD HH:MM:SS"]
-        # 	[--info] [--debug]
-        # 	[--last <num>[m|h|d] ]
-        # 	[--timezone local|<timezone>]
-        #	
-        # Usage:
-        # 	Shows contents of the system log datastore, archive or a specific tracev3 file.
-        # 	If a file or archive is not specified, the system datastore will be shown.
-        # 	The start and end date/time can be specified with or without time.
-        # 	The output contains only default level messages unless --info and/or --debug are specified.
+        # usage: log show [options] <archive>
+        #    or: log show [options]
         #
-        # Examples:
+        # description:
+        #     Show the contents of the system log datastore or a log archive.
+        #     Output contains only default level messages unless --info and/or
+        #     --debug are specified.
         #
-        # log show mylogs.logarchive --info --debug
-        # log show --predicate examples:
-        # 	--predicate 'eventMessage contains "my message"'
-        # 	--predicate 'eventType == logEvent and messageType == info'
-        # 	--predicate 'processImagePath endswith "d"'
-        # 	--predicate 'not processImagePath contains[c] "some spammer"'
-        # 	--predicate 'processID < 100'
-        # 	--predicate 'senderImagePath beginswith "my sender"'
-        # 	--predicate 'eventType == logEvent and subsystem contains "com.example.my_subsystem"'
+        # options:
+        #     --[no-]backtrace              Control whether backtraces are shown
+        #     --[no-]debug                  Control whether "Debug" events are shown
+        #     --[no-]info                   Control whether "Info" events are shown
+        #     --[no-]loss                   Control whether message loss events are shown
+        #     --[no-]signpost               Control whether signposts are shown
+        #     --color <mode>                Control color output (valid: auto, always, none)
+        #     --end <date>                  Display events up to the given end date
+        #     --last <num>[m|h|d]           Display recent events up to the given limit
+        #     --predicate <predicate>       Filter events using the given predicate
+        #     --source                      Annotate output with source file and line-number
+        #     --start <date>                Display events from the given start date
+        #     --style <style>               Output format (valid: syslog, json, compact)
+        #     --timezone local | <tz>       Use the given timezone when displaying event timestamps
+        #     --mach-continuous-time        Print mach continuous time timestamps rather than walltime
+        #
+        # valid time formats:
+        #     'Y-M-D H:m:s+zzzz', 'Y-M-D H:m:s', 'Y-M-D', '@unixtime'
+        #
+        # predicate usage:
+        #     Filter predicates follow the NSPredicate format described at:
+        #     https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Predicates/AdditionalChapters/Introduction.html
+        #
+        #     For predicate field/type details, see `log help predicates`.
         show)
           _arguments \
-            '--archive[Display events stored in the given archive]:archive' \
-            '--file[Display events stored in the given .tracev3 file]:contained within a valid .logarchive bundle, or part of the system logs directory:_files' \
-            '--predicate[Filters messages based on the provided predicate, based on NSPredicate]:predicate:->predicate' \
-            '--source[Include symbol names and source line numbers for messages, if available]' \
-            '--style[Output the content as a different style]:style:(syslog|json)' \
-            '--start[Shows content starting from the provided date]:YYYY-MM-DD HH:MM:SS' \
-            '--end[Shows content up to the provided date]:YYYY-MM-DD HH:MM:SS' \
-            '--last[Shows events that occurred within the given time relative to the end of the log archive]:<num>[m|h|d]' \
-            '--timezone[Displays content in the local timezone, or a specified timezone (see tzset(3))]:timezone:->timezone' \
+            '--backtrace[Control whether backtraces are shown]' \
+            '--debug[Control whether "Debug" events are shown]' \
+            '--info[Control whether "Info" events are shown]' \
+            '--loss[Control whether message loss events are shown]' \
+            '--signpost[Control whether signposts are shown]' \
+            '--no-backtrace[Not shown the control whether backtraces]' \
+            '--no-debug[Not shown the control whether "Debug" events are shown]' \
+            '--no-info[Not shown the control whether "Info" events are shown]' \
+            '--no-loss[Not shown the control whether message loss events are shown]' \
+            '--no-signpost[Control whether signposts are shown]' \
+            '--color[Control color output]:mode:(auto always none)' \
+            "--end[Display events up to the given end date]:'Y-M-D H:m:s+zzzz', 'Y-M-D H:m:s', 'Y-M-D', '@unixtime':_time" \
+            '--last[Display recent events up to the given limit]:<num>[m|h|d]' \
+            '--predicate[Filter events using the given predicate]:predicate:->predicate' \
+            '--source[Annotate output with source file and line-number]' \
+            "--start[Display events from the given start date]:'Y-M-D H:m:s+zzzz', 'Y-M-D H:m:s', 'Y-M-D', '@unixtime':_time" \
+            '--style[Output format]style:(syslog json compact)' \
+            '--timezone[Use the given timezone when displaying event timestamps]:timezone:->timezone' \
+            '--mach-continuous-time[Print mach continuous time timestamps rather than walltime]' \
             '--info[Shows info level messages in the output]' \
             '--debug[Shows debug level messages in the output]' \
-            '1:archive logfile:->args' \
+            '*:[archive logfile]:_files' \
             && ret=0
+
+          case "$state" in
+            predicate)
+              # TODO(zchee): implements predicate list
+              printf "predicate args  not implemented."
+              ;;
+
+            timezone)
+              local -a commands
+
+              timezone_commands=(
+              'local:Collect the system logs into a .logarchive that can be viewed later with tools such as log or Console'
+              'config:Configure, reset or read settings for the logging systemConfigure, reset or read settings for the logging system'
+              'erase:Delete selected log data from the system'
+              'help:General help or help specific to command argument'
+              'show:Shows contents of the system log datastore, archive or a specific tracev3 file'
+              'stream:Stream activities, log data or trace messages for the system or from a given process'
+              )
+
+              "1: :{_describe 'log command' timezone_commands}" \
+
+              ;;
+          esac
 
             # timezone: (local <timezone>)
           ;;
