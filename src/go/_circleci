@@ -86,6 +86,65 @@
 #
 # -----------------------------------------------------------------------------
 #
+# Pack up your CircleCI configuration into a single file.
+#
+#
+# Usage:
+#   circleci config pack <path> [flags]
+#
+# Args:
+#   <path>      The path to your config (use "-" for STDIN)
+#
+#
+# Flags:
+#   -h, --help   help for pack
+#
+# Global Flags:
+#       --host string    URL to your CircleCI host (default "https://circleci.com")
+#       --token string   your token for using CircleCI (default "7eef1e5278edbf095ba225dcee6c0a01513c26c6")
+#
+# -----------------------------------------------------------------------------
+#
+# Process the config.
+#
+#
+# Usage:
+#   circleci config process <path> [flags]
+#
+# Args:
+#   <path>      The path to your config (use "-" for STDIN)
+#
+#
+# Flags:
+#   -h, --help   help for process
+#
+# Global Flags:
+#       --host string    URL to your CircleCI host (default "https://circleci.com")
+#       --token string   your token for using CircleCI (default "7eef1e5278edbf095ba225dcee6c0a01513c26c6")
+#
+# -----------------------------------------------------------------------------
+#
+# Check that the config file is well formed.
+#
+#
+# Usage:
+#   circleci config validate <path> [flags]
+# Aliases:
+#   validate, check
+#
+# Args:
+#   <path>      The path to your config (use "-" for STDIN)
+#
+#
+# Flags:
+#   -h, --help   help for validate
+#
+# Global Flags:
+#       --host string    URL to your CircleCI host (default "https://circleci.com")
+#       --token string   your token for using CircleCI (default "7eef1e5278edbf095ba225dcee6c0a01513c26c6")
+#
+# -----------------------------------------------------------------------------
+#
 # Check the status of your CircleCI CLI.
 #
 #
@@ -464,33 +523,22 @@ function _circleci() {
     config)
       local -a config_cmds
       config_cmds=(
-      'collapse:Collapse your CircleCI configuration to a single file'
-      'expand:Expand the config.'
+      'pack:Pack up your CircleCI configuration into a single file.'
+      'process:Process the config.'
       'validate:Check that the config file is well formed.'
       )
 
       _arguments \
-        "1: :{_describe 'build subcommand' build_cmds}" \
+        "1: :{_describe 'config subcommand' config_cmds}" \
         '*:: :->args' \
-        ${_global_flags[@]}
+        ${_global_flags[@]} \
+        && ret=0
 
       case $words[1] in
-        collapse)
+        pack|process|validate|check)
           _arguments \
             ${_global_flags[@]} \
-            "*:path:_files"
-          ;;
-
-        expand)
-          _arguments \
-            ${_global_flags[@]} \
-            "*:config.yml:_files"
-          ;;
-
-        validate)
-          _arguments \
-            ${_global_flags[@]} \
-            "*:config.yml:_files"
+            '*:<path> The path to your orb (use "-" for STDIN):_files' \
           ;;
       esac
       ;;
@@ -504,7 +552,8 @@ function _circleci() {
       _arguments \
         "1: :{_describe 'namespace subcommand' namespace_cmds}" \
         '*:: :->args' \
-        ${_global_flags[@]}
+        ${_global_flags[@]} \
+        && ret=0
 
       case $words[1] in
         create)
@@ -531,7 +580,8 @@ function _circleci() {
       _arguments \
         "1: :{_describe 'orb subcommand' orb_cmds}" \
         '*:: :->args' \
-        ${_global_flags[@]}
+        ${_global_flags[@]} \
+        && ret=0
 
       case $words[1] in
         create)
@@ -602,6 +652,13 @@ function _circleci() {
       esac
       ;;
 
+    query)
+      _arguments \
+        '1:<path> The path to your orb (use "-" for STDIN):_files' \
+        ${_global_flags[@]} \
+        && ret=0
+      ;;
+
     update)
       local -a update_cmds
       update_cmds=(
@@ -609,21 +666,25 @@ function _circleci() {
       'check:Check if there are any updates available'
       'install:Update the tool to the latest version'
       )
+
       _arguments \
         "1: :{_describe 'update subcommand' update_cmds}" \
-        '*:: :->args'
+        '*:: :->args' \
+        ${_global_flags[@]} \
+        && ret=0
 
       case $words[1] in
         build-agent|check|install)
           _arguments \
             ${_global_flags[@]}
-        ;;
+          ;;
       esac
       ;;
 
     (diagnostic|query|setup|version)
       _arguments \
-        ${_global_flags[@]}
+        ${_global_flags[@]} \
+        && ret=0
       ;;
   esac
 
