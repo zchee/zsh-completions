@@ -820,28 +820,79 @@
 #
 # ------------------------------------------------------------------------------
 #
-# usage: go mod [-v] [maintenance flags]
+# Go mod provides access to operations on modules.
 #
-# Mod performs module maintenance operations as specified by the
-# following flags, which may be combined.
+# Note that support for modules is built into all the go commands,
+# not just 'go mod'. For example, day-to-day adding, removing, upgrading,
+# and downgrading of dependencies should be done using 'go get'.
+# See 'go help modules' for an overview of module functionality.
 #
-# The -v flag enables additional output about operations performed.
+# Usage:
 #
-# The first group of operations provide low-level editing operations
-# for manipulating go.mod from the command line or in scripts or
-# other tools. They read only go.mod itself; they do not look up any
-# information about the modules involved.
+# 	go mod <command> [arguments]
 #
-# The -init flag initializes and writes a new go.mod to the current directory,
-# in effect creating a new module rooted at the current directory.
-# The file go.mod must not already exist.
-# If possible, mod will guess the module path from import comments
-# (see 'go help importpath') or from version control configuration.
-# To override this guess, use the -module flag.
-# (Without -init, mod applies to the current module.)
+# The commands are:
 #
-# The -module flag changes (or, with -init, sets) the module's path
-# (the go.mod file's module line).
+# 	download    download modules to local cache
+# 	edit        edit go.mod from tools or scripts
+# 	graph       print module requirement graph
+# 	init        initialize new module in current directory
+# 	tidy        add missing and remove unused modules
+# 	vendor      make vendored copy of dependencies
+# 	verify      verify dependencies have expected content
+# 	why         explain why packages or modules are needed
+#
+# Use "go help mod <command>" for more information about a command.
+#
+# ------------------------------------------------------------------------------
+#
+# usage: go mod download [-json] [modules]
+#
+# Download downloads the named modules, which can be module patterns selecting
+# dependencies of the main module or module queries of the form path@version.
+# With no arguments, download applies to all dependencies of the main module.
+#
+# The go command will automatically download modules as needed during ordinary
+# execution. The "go mod download" command is useful mainly for pre-filling
+# the local cache or to compute the answers for a Go module proxy.
+#
+# By default, download reports errors to standard error but is otherwise silent.
+# The -json flag causes download to print a sequence of JSON objects
+# to standard output, describing each downloaded module (or failure),
+# corresponding to this Go struct:
+#
+#     type Module struct {
+#         Path     string // module path
+#         Version  string // module version
+#         Error    string // error loading module
+#         Info     string // absolute path to cached .info file
+#         GoMod    string // absolute path to cached .mod file
+#         Zip      string // absolute path to cached .zip file
+#         Dir      string // absolute path to cached source root directory
+#         Sum      string // checksum for path, version (as in go.sum)
+#         GoModSum string // checksum for go.mod (as in go.sum)
+#     }
+#
+# See 'go help modules' for more about module queries.
+#
+# ------------------------------------------------------------------------------
+#
+# usage: go mod edit [editing flags] [go.mod]
+#
+# Edit provides a command-line interface for editing go.mod,
+# for use primarily by tools or scripts. It reads only go.mod;
+# it does not look up information about the modules involved.
+# By default, edit reads and writes the go.mod file of the main module,
+# but a different target file can be specified after the editing flags.
+#
+# The editing flags specify a sequence of editing operations.
+#
+# The -fmt flag reformats the go.mod file without making other changes.
+# This reformatting is also implied by any other modifications that use or
+# rewrite the go.mod file. The only time this flag is needed is if no other
+# flags are specified, as in 'go mod edit -fmt'.
+#
+# The -module flag changes the module's path (the go.mod file's module line).
 #
 # The -require=path@version and -droprequire=path flags
 # add and drop a requirement on the given module path and version.
@@ -855,28 +906,22 @@
 # add and drop an exclusion for the given module path and version.
 # Note that -exclude=path@version is a no-op if that exclusion already exists.
 #
-# The -replace=old@v=new@w and -dropreplace=old@v flags
+# The -replace=old[@v]=new[@v] and -dropreplace=old[@v] flags
 # add and drop a replacement of the given module path and version pair.
 # If the @v in old@v is omitted, the replacement applies to all versions
-# with the old module path. If the @v in new@v is omitted, the
-# new path should be a directory on the local system, not a module path.
-# Note that -replace overrides any existing replacements for old@v.
+# with the old module path. If the @v in new@v is omitted, the new path
+# should be a local module root directory, not a module path.
+# Note that -replace overrides any existing replacements for old[@v].
 #
-# These editing flags (-require, -droprequire, -exclude, -dropexclude,
-# -replace, and -dropreplace) may be repeated.
+# The -require, -droprequire, -exclude, -dropexclude, -replace,
+# and -dropreplace editing flags may be repeated, and the changes
+# are applied in the order given.
 #
-# The -fmt flag reformats the go.mod file without making other changes.
-# This reformatting is also implied by any other modifications that use or
-# rewrite the go.mod file. The only time this flag is needed is if no other
-# flags are specified, as in 'go mod -fmt'.
+# The -print flag prints the final go.mod in its text format instead of
+# writing it back to go.mod.
 #
-# The -graph flag prints the module requirement graph (with replacements applied)
-# in text form. Each line in the output has two space-separated fields: a module
-# and one of its requirements. Each module is identified as a string of the form
-# path@version, except for the main module, which has no @version suffix.
-#
-# The -json flag prints the go.mod file in JSON format corresponding to these
-# Go types:
+# The -json flag prints the final go.mod file in JSON format instead of
+# writing it back to go.mod. The JSON output corresponds to these Go types:
 #
 # 	type Module struct {
 # 		Path string
@@ -889,14 +934,14 @@
 # 		Exclude []Module
 # 		Replace []Replace
 # 	}
-#	
+#
 # 	type Require struct {
 # 		Path string
 # 		Version string
 # 		Indirect bool
 # 	}
-#	
-# 	type Replace string {
+#
+# 	type Replace struct {
 # 		Old Module
 # 		New Module
 # 	}
@@ -905,67 +950,100 @@
 # referred to indirectly. For the full set of modules available to a build,
 # use 'go list -m -json all'.
 #
-# The next group of operations provide higher-level editing and maintenance
-# of a module, beyond the go.mod file.
+# For example, a tool can obtain the go.mod as a data structure by
+# parsing the output of 'go mod edit -json' and can then make changes
+# by invoking 'go mod edit' with -require, -exclude, and so on.
 #
-# The -packages flag prints a list of packages in the module.
-# It only identifies directories containing Go source code;
-# it does not check that those directories contain code that builds.
+# ------------------------------------------------------------------------------
 #
-# The -fix flag updates go.mod to use canonical version identifiers and
-# to be semantically consistent. For example, consider this go.mod file:
+# usage: go mod graph
 #
-# 	module M
+# Graph prints the module requirement graph (with replacements applied)
+# in text form. Each line in the output has two space-separated fields: a module
+# and one of its requirements. Each module is identified as a string of the form
+# path@version, except for the main module, which has no @version suffix.
 #
-# 	require (
-# 		A v1
-# 		B v1.0.0
-# 		C v1.0.0
-# 		D v1.2.3
-# 		E dev
-# 	)
+# ------------------------------------------------------------------------------
 #
-# 	exclude D v1.2.3
+# usage: go mod init [module]
 #
-# First, -fix rewrites non-canonical version identifiers to semver form, so
-# A's v1 becomes v1.0.0 and E's dev becomes the pseudo-version for the latest
-# commit on the dev branch, perhaps v0.0.0-20180523231146-b3f5c0f6e5f1.
+# Init initializes and writes a new go.mod to the current directory,
+# in effect creating a new module rooted at the current directory.
+# The file go.mod must not already exist.
+# If possible, init will guess the module path from import comments
+# (see 'go help importpath') or from version control configuration.
+# To override this guess, supply the module path as an argument.
 #
-# Next, -fix updates requirements to respect exclusions, so the requirement
-# on the excluded D v1.2.3 is updated to use the next available version of D,
-# perhaps D v1.2.4 or D v1.3.0.
+# ------------------------------------------------------------------------------
 #
-# Finally, -fix removes redundant or misleading requirements.
-# For example, if A v1.0.0 itself requires B v1.2.0 and C v1.0.0,
-# then go.mod's requirement of B v1.0.0 is misleading (superseded
-# by B's need for v1.2.0), and its requirement of C v1.0.0 is redundant
-# (implied by B's need for the same version), so both will be removed.
+# usage: go mod tidy [-v]
 #
-# Although -fix runs the fix-up operation in isolation, the fix-up also
-# runs automatically any time a go command uses the module graph,
-# to update go.mod to reflect reality. For example, the -sync, -vendor,
-# and -verify flags all effectively imply -fix. And because the module
-# graph defines the meaning of import statements, any commands
-# that load packages—'go build', 'go test', 'go list', and so on—also
-# effectively imply 'go mod -fix'.
-#
-# The -sync flag synchronizes go.mod with the source code in the module.
+# Tidy makes sure go.mod matches the source code in the module.
 # It adds any missing modules necessary to build the current module's
 # packages and dependencies, and it removes unused modules that
-# don't provide any relevant packages.
+# don't provide any relevant packages. It also adds any missing entries
+# to go.sum and removes any unnecessary ones.
 #
-# The -vendor flag resets the module's vendor directory to include all
-# packages needed to build and test all the module's packages.
-# It does not include any test code for the vendored packages.
+# The -v flag causes tidy to print information about removed modules
+# to standard error.
 #
-# The -verify flag checks that the dependencies of the current module,
+# ------------------------------------------------------------------------------
+#
+# usage: go mod vendor [-v]
+#
+# Vendor resets the main module's vendor directory to include all packages
+# needed to build and test all the main module's packages.
+# It does not include test code for vendored packages.
+#
+# The -v flag causes vendor to print the names of vendored
+# modules and packages to standard error.
+#
+# ------------------------------------------------------------------------------
+#
+# usage: go mod verify
+#
+# Verify checks that the dependencies of the current module,
 # which are stored in a local downloaded source cache, have not been
 # modified since being downloaded. If all the modules are unmodified,
-# -verify prints "all modules verified." Otherwise it reports which
+# verify prints "all modules verified." Otherwise it reports which
 # modules have been changed and causes 'go mod' to exit with a
 # non-zero status.
 #
 # ------------------------------------------------------------------------------
+#
+# usage: go mod why [-m] [-vendor] packages...
+#
+# Why shows a shortest path in the import graph from the main module to
+# each of the listed packages. If the -m flag is given, why treats the
+# arguments as a list of modules and finds a path to any package in each
+# of the modules.
+#
+# By default, why queries the graph of packages matched by "go list all",
+# which includes tests for reachable packages. The -vendor flag causes why
+# to exclude tests of dependencies.
+#
+# The output is a sequence of stanzas, one for each package or module
+# name on the command line, separated by blank lines. Each stanza begins
+# with a comment line "# package" or "# module" giving the target
+# package or module. Subsequent lines give a path through the import
+# graph, one package per line. If the package or module is not
+# referenced from the main module, the stanza will display a single
+# parenthesized note indicating that fact.
+#
+# For example:
+#
+# 	$ go mod why golang.org/x/text/language golang.org/x/text/encoding
+# 	# golang.org/x/text/language
+# 	rsc.io/quote
+# 	rsc.io/sampler
+# 	golang.org/x/text/language
+#
+# 	# golang.org/x/text/encoding
+# 	(main module does not need package golang.org/x/text/encoding)
+# 	$
+#
+# ------------------------------------------------------------------------------
+#
 #
 # usage: go run [build flags] [-exec xprog] package [arguments...]
 #
@@ -2989,9 +3067,70 @@ _go() {
           ;;
 
         mod)
+          local -a mod_cmds
+          mod_cmds=(
+          'download:download modules to local cache'
+          'edit:edit go.mod from tools or scripts'
+          'graph:print module requirement graph'
+          'init:initialize new module in current directory'
+          'tidy:add missing and remove unused modules'
+          'vendor:make vendored copy of dependencies'
+          'verify:verify dependencies have expected content'
+          'why:explain why packages or modules are needed'
+          )
+
           _arguments \
-            '-v[enables additional output about operations performed.]' \
-            "::maintenance flags:__maintenance_flags"
+            "1: :{_describe 'mod subcommands' mod_cmds}" \
+            '*:: :->args'
+
+            case $words[1] in
+              download)
+                _arguments \
+                  '-json[download to print a sequence of JSON objects to standard output, describing each downloaded module]' \
+                  '*: :__go_packages'
+                ;;
+
+              edit)
+                _arguments \
+                  '-fmt[reformats the go.mod file without making other changes.]' \
+                  "-module[changes the module's path \(the go.mod file's module line\).]" \
+                  '-require=[add a requirement on the given module path and version.]:path@version:__go_packages' \
+                  '-droprequire=[drop a requirement on the given module path and version.]:path:__go_packages' \
+                  '-replace=[drop a replacement of the given module path and version pair.]:old\[@v\]=new\[@v\]' \
+                  '-dropreplace=[drop a replacement of the given module path and version pair.]:old\[@v\]' \
+                  '-print[prints the final go.mod in its text format instead of writing it back to go.mod.]' \
+                  '-json[prints the final go.mod file in JSON format instead of writing it back to go.mod.]' \
+                  '*::go.mod:_files'
+                ;;
+
+              graph)
+                ;;
+
+              init)
+                _arguments \
+                  '*: :__go_packages'
+                ;;
+
+              tidy)
+                _arguments \
+                  '-v[tidy to print information about removed modules to standard error.]'
+                ;;
+
+              vendor)
+                _arguments \
+                  '-v[vendor to print the names of vendored modules and packages to standard error.]'
+                ;;
+
+              verify)
+                ;;
+
+              why)
+                _arguments \
+                  '-m[why treats the arguments as a list of modules and finds a path to any package in each of the modules.]' \
+                  '-vendor[why to exclude tests of dependencies.]' \
+                  '*: :__go_packages'
+                ;;
+            esac
           ;;
 
         run)
