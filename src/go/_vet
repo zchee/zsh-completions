@@ -1,0 +1,206 @@
+#compdef vet
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# golang.org/x/tools/go/analysis/cmd/vet
+#
+# -----------------------------------------------------------------------------
+#
+# vet is a tool for static analysis of Go programs.
+#
+# vet examines Go source code and reports suspicious constructs, such as Printf
+# calls whose arguments do not align with the format string. It uses heuristics
+# that do not guarantee all reports are genuine problems, but it can find errors
+# not caught by the compilers.
+#
+# Usage: vet [-flag] [package]
+#
+# Registered analyzers:
+#
+#     asmdecl      report mismatches between assembly files and Go declarations
+#     assign       check for useless assignments
+#     atomic       check for common mistakes using the sync/atomic package
+#     bools        check for common mistakes involving boolean operators
+#     buildtag     check that +build tags are well-formed and correctly located
+#     cgocall      detect some violations of the cgo pointer passing rules
+#     composites   checked for unkeyed composite literals
+#     copylocks    check for locks erroneously passed by value
+#     findcall     find calls to a particular function
+#     httpresponse check for mistakes using HTTP responses
+#     loopclosure  check references to loop variables from within nested functions
+#     lostcancel   check cancel func returned by context.WithCancel is called
+#     nilfunc      check for useless comparisons between functions and nil
+#     nilness      check for redundant or impossible nil comparisons
+#     pkgfact      gather name/value pairs from constant declarations
+#     printf       check printf-like invocations
+#     shift        check for shifts that equal or exceed the width of the integer
+#     stdmethods   check signature of methods of well-known interfaces
+#     structtag    check that struct field tags conform to reflect.StructTag.Get
+#     tests        check for common mistaken usages of tests and examples
+#     unreachable  check for unreachable code
+#     unsafeptr    check for invalid conversions of uintptr to unsafe.Pointer
+#     unusedresult check for unused results of calls to some functions
+#
+# By default all analyzers are run.
+# To select specific analyzers, use the -NAME.enable flag for each one.
+#
+# Core flags:
+#
+#   -V	print version and exit
+#   -c int
+#     	display offending line with this many lines of context (default -1)
+#   -cpuprofile string
+#     	write CPU profile to this file
+#   -debug string
+#     	debug flags, any subset of "lpsv"
+#   -flags
+#     	print analyzer flags in JSON
+#   -json
+#     	emit JSON output
+#   -memprofile string
+#     	write memory profile to this file
+#   -trace string
+#     	write trace log to this file
+#
+# To see details and flags of a specific analyzer, run 'vet help name'.
+#
+# -----------------------------------------------------------------------------
+#
+# findcall: find calls to a particular function
+#
+# Analyzer flags:
+#
+#   -findcall.name string
+#     	name of the function to find
+#
+# The findcall analysis reports calls to functions or methods
+# of a particular name.
+#
+# -----------------------------------------------------------------------------
+#
+# lostcancel: check cancel func returned by context.WithCancel is called
+#
+# The cancelation function returned by context.WithCancel, WithTimeout,
+# and WithDeadline must be called or the new context will remain live
+# until its parent context is cancelled.
+# (The background context is never cancelled.)
+#
+# -----------------------------------------------------------------------------
+#
+# nilness: check for redundant or impossible nil comparisons
+#
+# The nilness checker inspects the control-flow graph of each function in
+# a package and reports nil pointer dereferences and degenerate nil
+# pointers. A degenerate comparison is of the form x==nil or x!=nil where x
+# is statically known to be nil or non-nil. These are often a mistake,
+# especially in control flow related to errors.
+#
+# This check reports conditions such as:
+#
+# 	if f == nil { // impossible condition (f is a function)
+# 	}
+#
+# and:
+#
+# 	p := &v
+# 	...
+# 	if p != nil { // tautological condition
+# 	}
+#
+# and:
+#
+# 	if p == nil {
+# 		print(*p) // nil dereference
+# 	}
+#
+#
+# -----------------------------------------------------------------------------
+
+function _vet() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _go_files() {
+    _files -g "*.go(-.)"
+  }
+
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+    _alternative '*:go file:_go_files'
+  }
+
+  _arguments -n -s -w -W -C -R -S \
+    '-V[print version and exit]' \
+    '-c[display offending line with this many lines of context \(default -1\)]:line context' \
+    '-cpuprofile[write CPU profile to this file]:output path:_files' \
+    '-debug[debug flags, any subset of "lpsv"]:debug flags:->debug' \
+    '-flags[print analyzer flags in JSON]' \
+    '-json[emit JSON output]' \
+    '-memprofile[write memory profile to this file]:output path:_files' \
+    '-trace[write trace log to this file]:output path:_files' \
+    \
+    '-findcall.enable[find calls to a particular function]' \
+    '-findcall.name[name of the function to find]:func name' \
+    '-lostcancel.enable[check cancel func returned by context.WithCancel is called]' \
+    '-nilness.enable[check for redundant or impossible nil comparisons]' \
+    '1:package:_go_packages' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    debug)
+      local -a _flag_debug
+      _flag_debug=(
+      'f:show \[f\]acts as they are created'
+      'p:disable \[p\]arallel execution of analyzers'
+      's:do additional \[s\]anity checks on fact types and serialization'
+      "t:show \[t\]iming info \(NB: use 'p' flag to avoid GC/scheduler noise\)"
+      'v:show \[v\]erbose logging'
+      )
+      _arguments -M '' \
+        "*: :{_describe 'debug flags' _flag_debug}"
+      ;;
+  esac
+
+  return ret
+}
+
+_vet "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
