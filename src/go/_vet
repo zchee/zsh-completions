@@ -165,23 +165,94 @@ function _vet() {
     _alternative '*:go file:_go_files'
   }
 
-  _arguments -n -s -w -W -C -R -S \
-    '-V[print version and exit]' \
-    '-c[display offending line with this many lines of context \(default -1\)]:line context' \
-    '-cpuprofile[write CPU profile to this file]:output path:_files' \
-    '-debug[debug flags, any subset of "lpsv"]:debug flags:->debug' \
-    '-flags[print analyzer flags in JSON]' \
-    '-json[emit JSON output]' \
-    '-memprofile[write memory profile to this file]:output path:_files' \
-    '-trace[write trace log to this file]:output path:_files' \
-    \
+  local -a commands
+  commands=(
+  'asmdecl:report mismatches between assembly files and Go declarations'
+  'assign:check for useless assignments'
+  'atomic:check for common mistakes using the sync/atomic package'
+  'bools:check for common mistakes involving boolean operators'
+  'buildtag:check that +build tags are well-formed and correctly located'
+  'cgocall:detect some violations of the cgo pointer passing rules'
+  'composites:checked for unkeyed composite literals'
+  'copylocks:check for locks erroneously passed by value'
+  'findcall:find calls to a particular function'
+  'httpresponse:check for mistakes using HTTP responses'
+  'loopclosure:check references to loop variables from within nested functions'
+  'lostcancel:check cancel func returned by context.WithCancel is called'
+  'nilfunc:check for useless comparisons between functions and nil'
+  'nilness:check for redundant or impossible nil comparisons'
+  'pkgfact:gather name/value pairs from constant declarations'
+  'printf:check printf-like invocations'
+  'shift:check for shifts that equal or exceed the width of the integer'
+  'stdmethods:check signature of methods of well-known interfaces'
+  'structtag:check that struct field tags conform to reflect.StructTag.Get'
+  'tests:check for common mistaken usages of tests and examples'
+  'unreachable:check for unreachable code'
+  'unsafeptr:check for invalid conversions of uintptr to unsafe.Pointer'
+  'unusedresult:check for unused results of calls to some functions'
+  )
+  local -a help_commands
+  help_commands=(
+  'help:show help for commands'
+  )
+
+  local -a global_flags
+  global_flags=(
+  '-V[print version and exit]'
+  '-c[display offending line with this many lines of context \(default -1\)]:line context'
+  '-cpuprofile[write CPU profile to this file]:output path:_files'
+  '-debug[debug flags, any subset of "lpsv"]:debug flags:(l p s v)'
+  '-flags[print analyzer flags in JSON]'
+  '-json[emit JSON output]'
+  '-memprofile[write memory profile to this file]:output path:_files' \
+  '-trace[write trace log to this file]:output path:_files' \
+  )
+
+  _global_flags() {
+    return _values 'global flags' ${global_flags[@]}
+  }
+
+  _arguments -C \
+    '-asmdecl.enable[report mismatches between assembly files and Go declarations]' \
+    '-assign.enable[check for useless assignments]' \
+    '-atomic.enable[check for common mistakes using the sync/atomic package]' \
+    '-bools.enable[check for common mistakes involving boolean operators]' \
+    '-buildtag.enable[:check that +build tags are well-formed and correctly located]' \
+    '-cgocall.enable[detect some violations of the cgo pointer passing rules]' \
+    '-composites.enable[checked for unkeyed composite literals]' \
+    '-composites.whitelist[use composite white list; for testing only]' \
+    '-copylocks.enable[check for locks erroneously passed by value]' \
     '-findcall.enable[find calls to a particular function]' \
     '-findcall.name[name of the function to find]:func name' \
+    '-httpresponse.enable[check for mistakes using HTTP responses]' \
+    '-loopclosure.enable[check references to loop variables from within nested functions]' \
     '-lostcancel.enable[check cancel func returned by context.WithCancel is called]' \
+    '-nilfunc.enable[check for useless comparisons between functions and nil]' \
     '-nilness.enable[check for redundant or impossible nil comparisons]' \
-    '1:package:_go_packages' \
+    '-pkgfact.enable[gather name/value pairs from constant declarations]' \
+    '-printf.enable[check printf-like invocations]' \
+    '-printf.funcs[comma-separated list of print function names to check]:func names' \
+    '-shift.enable[check for shifts that equal or exceed the width of the integer]' \
+    '-stdmethods.enable[check signature of methods of well-known interfaces]' \
+    '-structtag.enable[check that struct field tags conform to reflect.StructTag.Get]' \
+    '-tests.enable[check for common mistaken usages of tests and examples]' \
+    '-unreachable.enable[check for unreachable code]' \
+    '-unsafeptr.enable[check for invalid conversions of uintptr to unsafe.Pointer]' \
+    '-unusedresult.enable[check for unused results of calls to some functions]' \
+    '-unusedresult.funcs[comma-separated list of functions whose results must be used]:func names' \
+    '-unusedresult.stringmethods[comma-separated list of names of methods of type func() string whose results must be used]:type func\(\) method names' \
+    \
+    "1: :{_describe 'vet command' help_commands}" \
     '*:: :->args' \
     && ret=0
+
+  _values 'global flags' ${global_flags[@]}
+
+  case $words[1] in
+    help)
+      _arguments "1: :{_describe 'vet command' commands}"
+      ;;
+  esac
 
   case $state in
     debug)
@@ -195,6 +266,10 @@ function _vet() {
       )
       _arguments -M '' \
         "*: :{_describe 'debug flags' _flag_debug}"
+      ;;
+    *)
+      _arguments \
+        '*:package:_go_packages'
       ;;
   esac
 
