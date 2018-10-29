@@ -242,10 +242,10 @@ function _reg() {
   local -a _global_flags
   _global_flags=(
   {-k,--insecure}'[do not verify tls certificates]'
-  {-p,--password}'[password for the registry]:password'
+  {-p,--password}'=[password for the registry]:password'
   '--skip-ping[skip pinging the registry while establishing connection]'
-  '--timeout[timeout for HTTP requests (default: 1m0s)]:timeout'
-  {-u,--username}'[username for the registry]:username'
+  '--timeout=[timeout for HTTP requests (default: 1m0s)]:timeout'
+  {-u,--username}'=[username for the registry]:username'
   '-d[enable debug logging]'
   {-f,--force-non-ssl}'[force allow use of non-ssl]'
   )
