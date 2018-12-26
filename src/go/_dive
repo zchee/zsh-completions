@@ -1,0 +1,157 @@
+#compdef dive
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/wagoodman/dive
+#
+# -----------------------------------------------------------------------------
+
+function _dive() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'build:Builds and analyzes a docker image from a Dockerfile (this is a thin wrapper for the `docker build` command).'
+  'help:Help about any command'
+  'version:print the version number and exit (also --version)'
+  )
+
+  _docker_arguments() {
+      if zstyle -t ":completion:${curcontext}:" option-stacking; then
+          print -- -s
+      fi
+  }
+
+  _docker_complete_images() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a images
+      images=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/(#b)([^ ]##) ##([^ ]##) ##([^ ]##)*/${match[3]}:${(r:15:: :::)match[2]} in ${match[1]}})
+      _describe -t docker-images "images" images && ret=0
+      _docker_complete_repositories_with_tags && ret=0
+      return ret
+  }
+
+  _docker_complete_repositories() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a repos
+      repos=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}%% *}[2,-1]})
+      repos=(${repos#<none>})
+      _describe -t docker-repos "repositories" repos && ret=0
+      return ret
+  }
+
+  _docker_complete_repositories_with_tags() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a repos onlyrepos matched
+      declare m
+      repos=(${${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/ ##/:::}%% *})
+      repos=(${${repos%:::<none>}#<none>})
+      # Check if we have a prefix-match for the current prefix.
+      onlyrepos=(${repos%::*})
+      for m in $onlyrepos; do
+          [[ ${PREFIX##${~~m}} != ${PREFIX} ]] && {
+              # Yes, complete with tags
+              repos=(${${repos/:::/:}/:/\\:})
+              _describe -t docker-repos-with-tags "repositories with tags" repos && ret=0
+              return ret
+          }
+      done
+      # No, only complete repositories
+      onlyrepos=(${${repos%:::*}/:/\\:})
+      _describe -t docker-repos "repositories" onlyrepos -qS : && ret=0
+
+      return ret
+  }
+
+  _arguments -C \
+    "1: :{_describe 'dive command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    build)
+      _arguments $(_docker_arguments) \
+          "($help)*--add-host=[Add a custom host-to-IP mapping]:host\:ip mapping: " \
+          "($help)*--build-arg=[Build-time variables]:<varname>=<value>: " \
+          "($help)*--cache-from=[Images to consider as cache sources]: :__docker_complete_repositories_with_tags" \
+          "($help -c --cpu-shares)"{-c=,--cpu-shares=}"[CPU shares (relative weight)]:CPU shares:(0 10 100 200 500 800 1000)" \
+          "($help)--cgroup-parent=[Parent cgroup for the container]:cgroup: " \
+          "($help)--compress[Compress the build context using gzip]" \
+          "($help)--cpu-period=[Limit the CPU CFS (Completely Fair Scheduler) period]:CPU period: " \
+          "($help)--cpu-quota=[Limit the CPU CFS (Completely Fair Scheduler) quota]:CPU quota: " \
+          "($help)--cpu-rt-period=[Limit the CPU real-time period]:CPU real-time period in microseconds: " \
+          "($help)--cpu-rt-runtime=[Limit the CPU real-time runtime]:CPU real-time runtime in microseconds: " \
+          "($help)--cpuset-cpus=[CPUs in which to allow execution]:CPUs: " \
+          "($help)--cpuset-mems=[MEMs in which to allow execution]:MEMs: " \
+          "($help)--disable-content-trust[Skip image verification]" \
+          "($help -f --file)"{-f=,--file=}"[Name of the Dockerfile]:Dockerfile:_files" \
+          "($help)--force-rm[Always remove intermediate containers]" \
+          "($help)--isolation=[Container isolation technology]:isolation:(default hyperv process)" \
+          "($help)*--label=[Set metadata for an image]:label=value: " \
+          "($help -m --memory)"{-m=,--memory=}"[Memory limit]:Memory limit: " \
+          "($help)--memory-swap=[Total memory limit with swap]:Memory limit: " \
+          "($help)--network=[Connect a container to a network]:network mode:(bridge none container host)" \
+          "($help)--no-cache[Do not use cache when building the image]" \
+          "($help)--pull[Attempt to pull a newer version of the image]" \
+          "($help -q --quiet)"{-q,--quiet}"[Suppress verbose build output]" \
+          "($help)--rm[Remove intermediate containers after a successful build]" \
+          "($help)*--shm-size=[Size of '/dev/shm' (format is '<number><unit>')]:shm size: " \
+          "($help)--squash[Squash newly built layers into a single new layer]" \
+          "($help -t --tag)*"{-t=,--tag=}"[Repository, name and tag for the image]: :__docker_complete_repositories_with_tags" \
+          "($help)*--ulimit=[ulimit options]:ulimit: " \
+          "($help)--userns=[Container user namespace]:user namespace:(host)" \
+          "($help -):path or URL:_directories" \
+          && ret=0
+      ;;
+
+    help|version)
+      ;;
+
+    *)
+      _arguments -C \
+        "1: :_docker_complete_repositories_with_tags" \
+        && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_dive "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
