@@ -2651,27 +2651,27 @@ declare -A opt_args
 
 _go() {
   local -a commands
-
   commands=(
+  'bug:start a bug report'
   'build:compile packages and dependencies'
-  'clean:remove object files'
+  'clean:remove object files and cached files'
   'doc:show documentation for package or symbol'
   'env:print Go environment information'
-  'fix:run go tool fix on packages'
-  'fmt:run gofmt on package sources'
+  'fix:update packages to use new APIs'
+  'fmt:gofmt (reformat) package sources'
   'generate:generate Go files by processing source'
-  'get:download and install packages and dependencies'
+  'get:add dependencies to current module and install them'
   'install:compile and install packages and dependencies'
-  'list:list packages'
-  'mod:module maintenance'
+  'list:list packages or modules'
   'run:compile and run Go program'
   'test:test packages'
   'tool:run specified go tool'
   'version:print Go version'
-  'vet:run go tool vet on packages'
+  'vet:report likely mistakes in packages'
   'help:get more information about a command'
   )
 
+  # binary($service) is vgo
   case "$service" in
     vgo)
       commands[8]='get:download and install versioned modules and dependencies'
@@ -2680,11 +2680,16 @@ _go() {
       ;;
   esac
 
+  # enable go mod command ($GO111MODULE)
+  if [[ -n $GO111MODULE ]] && [[ $GO111MODULE != 'off' ]]; then
+    commands+='mod:module maintenance'
+  fi
+
   _go_files() {
     _files -g "*.go(-.)"
   }
 
-  __go_packages() {
+  _go_packages() {
     local -a gopaths
     gopaths=("${(s/:/)$(go env GOPATH)}")
     gopaths+=("$(go env GOROOT)")
@@ -2694,7 +2699,7 @@ _go() {
     _alternative '*:go file:_go_files'
   }
 
-  __build_flags() {
+  _build_flags() {
     _arguments \
       '-a[force rebuilding of packages that are already up-to-date]' \
       '-n[print the commands but do not run them]' \
@@ -2719,8 +2724,8 @@ _go() {
 
     case $state in
       asmflags)
-        local -a __asm_flags
-        __asm_flags=(
+        local -a _asm_flags
+        _asm_flags=(
         '-D[predefined symbol with optional simple value -D=identifier=value; can be set multiple times]:value'
         '-I[include directory; can be set multiple times]:value'
         '-S[print assembly and machine code]'
@@ -2733,12 +2738,12 @@ _go() {
         )
         _values \
           'asmflags' \
-          ${__asm_flags[@]}
+          ${_asm_flags[@]}
         ;;
 
       buildmode)
-        local -a __buildmode
-        __buildmode=(
+        local -a _buildmode
+        _buildmode=(
         'archive[Build the listed non-main packages into .a files]'
         'c-archive[Build the listed main package, plus all packages it imports, into a C archive file]'
         'c-shared[Build the listed main packages, plus all packages that they import, into C shared libraries]'
@@ -2750,12 +2755,12 @@ _go() {
         )
         _values \
           'buildmode' \
-          ${__buildmode[@]}
+          ${_buildmode[@]}
         ;;
 
       gcflags)
-        local -a __gcflags
-        __gcflags=(
+        local -a _gcflags
+        _gcflags=(
         '-%[debug non-static initializers]'
         '-+[compiling runtime]'
         '-B[disable bounds checking]'
@@ -2814,12 +2819,12 @@ _go() {
         )
         _values \
           'gcflags' \
-          ${__gcflags[@]}
+          ${_gcflags[@]}
         ;;
 
       ldflags)
-        local -a __ldflags
-        __ldflags=(
+        local -a _ldflags
+        _ldflags=(
         '-B[add an ELF NT_GNU_BUILD_ID note when using ELF]:note'
         '-C[check Go calls to C code]'
         '-D[set data segment address (default -1)]:address'
@@ -2865,21 +2870,21 @@ _go() {
         )
         _values \
           'ldflags' \
-          ${__ldflags[@]}
+          ${_ldflags[@]}
         ;;
     esac
   }
 
-  __maintenance_flags() {
+  _maintenance_flags() {
     _arguments \
       '-init[initializes and writes a new go.mod to the current directory]' \
       "-module[changes (or, with -init, sets) the module's path]" \
-      '-require[add a requirement on the given module path and version.]:path@version:__go_packages' \
-      '-droprequire[drop a requirement on the given module path and version.]:path:__go_packages' \
-      '-exclude[add an exclusion for the given module path and version.]:path@version:__go_packages' \
-      '-dropexclude[drop an exclusion for the given module path and version.]:path@version:__go_packages' \
-      '-replace[add a replacement of the given module path and version pair.]:old@v=new@w:__go_packages' \
-      '-dropreplace[drop a replacement of the given module path and version pair.]:old@v:__go_packages' \
+      '-require[add a requirement on the given module path and version.]:path@version:_go_packages' \
+      '-droprequire[drop a requirement on the given module path and version.]:path:_go_packages' \
+      '-exclude[add an exclusion for the given module path and version.]:path@version:_go_packages' \
+      '-dropexclude[drop an exclusion for the given module path and version.]:path@version:_go_packages' \
+      '-replace[add a replacement of the given module path and version pair.]:old@v=new@w:_go_packages' \
+      '-dropreplace[drop a replacement of the given module path and version pair.]:old@v:_go_packages' \
       '-fmt[reformats the go.mod file without making other changes.]' \
       '-graph[prints the module requirement graph \(with replacements applied\) in text form.]' \
       '-json[prints the go.mod file in JSON format with Go types.]' \
@@ -2890,7 +2895,7 @@ _go() {
       '-verify[checks that the dependencies of the current module, which are stored in a local downloaded source cache, have not been modified since being downloaded.]'
   }
 
-  __test_build_flags=(
+  _test_build_flags=(
   '-args[Pass the remainder of the command line to the test binary]'
   '-c[Compile the test binary to pkg.test but do not run it]'
   "-exec=[Run the test binary using 'xprog']:xprog"
@@ -2901,13 +2906,13 @@ _go() {
   )
 
   # TODO(zchee): Support for regexp keyword
-  __test_binary_flags=(
+  _test_binary_flags=(
   "-bench[Run (sub)benchmarks matching a regular expression]:regexp of Benchmark functions:(.)"
   '-benchmem[Print memory allocation statistics for benchmarks]'
   '-count[Run each test and benchmark n times \(default: 1\)]:count'
   '-cover[Enable coverage analysis]'
   '-covermode[Set the mode for coverage analysis for the packages being tested \(default: set\)]:(set count atomic)'
-  '-coverpkg[Apply coverage analysis in each test to the given list of packages]: :__go_packages'
+  '-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages'
   '-cpu[Specify a list of GOMAXPROCS values for which the tests or benchmarks should be executed]:(1 2 4)'
   '-parallel=[Allow parallel execution of test functions that call t.Parallel]:number of parallel'
   '-run[Run only those tests and examples matching the regular expression]:regexp of Tests or Examples'
@@ -2916,7 +2921,7 @@ _go() {
   '-v[output log all tests as they are run and print all text from Log and Logf]'
   )
 
-  __test_profile_flags=(
+  _test_profile_flags=(
   '-benchtime[Run enough iterations of each benchmark to take arg time]:bench time (specified as a time.Duration: e.g. 1h30s)'
   '-blockprofile[Write a goroutine blocking profile to the specified file]:profile file path:_files'
   '-blockprofilerate[Control the detail provided in goroutine blocking profiles by calling runtime.SetBlockProfileRate]:block profile rate'
@@ -2937,12 +2942,15 @@ _go() {
   case $state in
     args)
       case $words[1] in
+        bug)
+          ;;
+
         build)
           _arguments \
             '-o[force build to write to named output file]:file:_files' \
             '-i[installs the packages that are dependencies of the target]' \
-            "::build flags:__build_flags" \
-            '*: :__go_packages' \
+            "::build flags:_build_flags" \
+            '*: :_go_packages' \
           ;;
 
         clean)
@@ -2954,9 +2962,9 @@ _go() {
             '-cache[clean to remove the entire go build cache.]' \
             '-testcache[clean to expire all test results in the go build cache.]' \
             '-modcache[clean to remove the entire module download cache, including unpacked source code of versioned dependencies.]' \
-            '*:go packages:__go_packages'
+            '*:go packages:_go_packages'
 
-          _alternative ':build flags:__build_flags'
+          _alternative ':build flags:_build_flags'
           ;;
 
         doc)
@@ -2964,7 +2972,7 @@ _go() {
             '-c[respect case when matching symbols]' \
             '-cmd[treat a command (package main) like a regular package]' \
             '-u[show docs for unexported and exported symbols and methods]' \
-            '*: :__go_packages'
+            '*: :_go_packages'
           ;;
 
         env)
@@ -3000,14 +3008,14 @@ _go() {
 
         fix)
           _arguments \
-            '*: :__go_packages'
+            '*: :_go_packages'
           ;;
 
         fmt)
           _arguments \
             '-n[prints commands that would be executed]' \
             '-x[prints commands as they are executed]' \
-            '*: :__go_packages'
+            '*: :_go_packages'
           ;;
 
         generate)
@@ -3016,7 +3024,7 @@ _go() {
             '-x[print the commands]' \
             '-n[print the commands but do not run them]' \
             '-v[print the names of packages as they are compiled]' \
-            "*:args:{ _alternative ': :__go_packages' _files }"
+            "*:args:{ _alternative ': :_go_packages' _files }"
           ;;
 
         get)
@@ -3027,7 +3035,7 @@ _go() {
           '-fix[run the fix tool on the downloaded packages]'
           '-insecure[permit fetching/resolving custom domains]'
           '-t[also download the packages required to build tests]'
-          '*: :__go_packages'
+          '*: :_go_packages'
           )
           case "$service" in
             go)
@@ -3039,14 +3047,14 @@ _go() {
           esac
           _arguments \
             ${get_flags[@]} \
-            "::build flags:__build_flags"
+            "::build flags:_build_flags"
           ;;
 
         install)
           _arguments \
             '-i[installs the dependencies of the named packages as well]' \
-            '*: :__go_packages'
-          _alternative ':build flags:__build_flags'
+            '*: :_go_packages'
+          _alternative ':build flags:_build_flags'
           ;;
 
         list)
@@ -3062,8 +3070,8 @@ _go() {
             '-m[list to list modules instead of packages.]' \
             '-u[adds information about available upgrades.]' \
             "-versions[list to set the Module's Versions field to a list of all known versions of that module, ordered according to semantic versioning, earliest to latest.]" \
-            "*:go file:{ _alternative ': :__go_packages' _files }"
-            _alternative ':build flags:__build_flags'
+            "*:go file:{ _alternative ': :_go_packages' _files }"
+            _alternative ':build flags:_build_flags'
           ;;
 
         mod)
@@ -3077,6 +3085,7 @@ _go() {
           'vendor:make vendored copy of dependencies'
           'verify:verify dependencies have expected content'
           'why:explain why packages or modules are needed'
+          'help:more information about a command'
           )
 
           _arguments \
@@ -3087,15 +3096,15 @@ _go() {
               download)
                 _arguments \
                   '-json[download to print a sequence of JSON objects to standard output, describing each downloaded module]' \
-                  '*: :__go_packages'
+                  '*: :_go_packages'
                 ;;
 
               edit)
                 _arguments \
                   '-fmt[reformats the go.mod file without making other changes.]' \
                   "-module[changes the module's path \(the go.mod file's module line\).]" \
-                  '-require=[add a requirement on the given module path and version.]:path@version:__go_packages' \
-                  '-droprequire=[drop a requirement on the given module path and version.]:path:__go_packages' \
+                  '-require=[add a requirement on the given module path and version.]:path@version:_go_packages' \
+                  '-droprequire=[drop a requirement on the given module path and version.]:path:_go_packages' \
                   '-replace=[drop a replacement of the given module path and version pair.]:old\[@v\]=new\[@v\]' \
                   '-dropreplace=[drop a replacement of the given module path and version pair.]:old\[@v\]' \
                   '-print[prints the final go.mod in its text format instead of writing it back to go.mod.]' \
@@ -3108,7 +3117,7 @@ _go() {
 
               init)
                 _arguments \
-                  '*: :__go_packages'
+                  '*: :_go_packages'
                 ;;
 
               tidy)
@@ -3128,7 +3137,12 @@ _go() {
                 _arguments \
                   '-m[why treats the arguments as a list of modules and finds a path to any package in each of the modules.]' \
                   '-vendor[why to exclude tests of dependencies.]' \
-                  '*: :__go_packages'
+                  '*: :_go_packages'
+                ;;
+
+              help)
+                _arguments \
+                  "1: :{_describe 'mod commands' mod_cmds}"
                 ;;
             esac
           ;;
@@ -3137,16 +3151,16 @@ _go() {
           _arguments \
             '-exec[invoke the binary using xprog]:xporg' \
             '1:go run file:_go_files'
-            _alternative ':build flags:__build_flags'
+            _alternative ':build flags:_build_flags'
           ;;
 
         test)
           _arguments \
-            ${__test_build_flags[@]} \
-            ${__test_binary_flags[@]} \
-            ${__test_profile_flags[@]} \
-            '*: :__go_packages'
-          _alternative ':build flags:__build_flags'
+            ${_test_build_flags[@]} \
+            ${_test_binary_flags[@]} \
+            ${_test_profile_flags[@]} \
+            '*: :_go_packages'
+          _alternative ':build flags:_build_flags'
           ;;
 
         tool)
@@ -3196,7 +3210,7 @@ _go() {
 
                 asm)
                   _arguments \
-                    ${__asm_flags[@]}
+                    ${_asm_flags[@]}
                   ;;
 
                 buildid)
@@ -3227,7 +3241,7 @@ _go() {
 
                 compile)
                   _arguments \
-                    ${__gcflags[@]} \
+                    ${_gcflags[@]} \
                     '*:file:_path_files -g "*.go"'
                   ;;
 
@@ -3473,22 +3487,29 @@ _go() {
             'vet flags' \
             '-n[print commands that would be executed]' \
             '-x[prints commands as they are executed]' \
-            '*:build flags:__go_packages'
-          _alternative ':build flags:__build_flags'
+            '-vettool[path to vet tool binary]:binary:_files' \
+            '*:build flags:_go_packages'
+          _alternative ':build flags:_build_flags'
           ;;
 
         help)
           local -a topics
           topics=(
+          'buildmode:build modes'
           'c:calling between Go and C'
-          'buildmode:description of build modes'
-          'filetype:file types'
-          'gopath:GOPATH environment variable'
+          'cache:build and test caching'
           'environment:environment variables'
+          'filetype:file types'
+          'go.mod:the go.mod file'
+          'gopath:GOPATH environment variable'
+          'gopath-get:legacy GOPATH go get'
+          'goproxy:module proxy protocol'
           'importpath:import path syntax'
-          'packages:description of package lists'
-          'testflag:description of testing flags'
-          'testfunc:description of testing functions'
+          'modules:modules, module versions, and more'
+          'module-get:module-aware go get'
+          'packages:package lists and patterns'
+          'testflag:testing flags'
+          'testfunc:testing functions'
           )
           _arguments "1: :{_describe 'command' commands -- topics}"
           ;;
@@ -3496,7 +3517,6 @@ _go() {
       ;;
   esac
 }
-
 
 _go "$*"
 
