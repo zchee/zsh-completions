@@ -38,7 +38,7 @@
 # -----------------------------------------------------------------------------
 
 function _$BIN() {
-  local context curcontext=$curcontext state line ret=1
+  local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
   local -a commands
