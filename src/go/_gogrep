@@ -1,0 +1,106 @@
+#compdef gogrep
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/mvdan/gogrep
+#
+# -----------------------------------------------------------------------------
+#
+# usage: gogrep commands [packages]
+#
+# gogrep performs a query on the given Go packages.
+#
+#   -r      search dependencies recursively too
+#   -tests  search test files too (and direct test deps, with -r)
+#
+# A command is one of the following:
+#
+#   -x pattern    find all nodes matching a pattern
+#   -g pattern    discard nodes not matching a pattern
+#   -v pattern    discard nodes matching a pattern
+#   -a attribute  discard nodes without an attribute
+#   -s pattern    substitute with a given syntax tree
+#   -p number     navigate up a number of node parents
+#   -w            write the entire source code back
+#
+# A pattern is a piece of Go code which may include dollar expressions. It can be
+# a number of statements, a number of expressions, a declaration, or an entire
+# file.
+#
+# A dollar expression consist of '$' and a name. Dollar expressions with the same
+# name within a query always match the same node, excluding "_". Example:
+#
+#        -x '$x.$_ = $x' # assignment of self to a field in self
+#
+# If '*' is before the name, it will match any number of nodes. Example:
+#
+#        -x 'fmt.Fprintf(os.Stdout, $*_)' # all Fprintfs on stdout
+#
+# By default, the resulting nodes will be printed one per line to standard output.
+# To update the input files, use -w.
+#
+# -----------------------------------------------------------------------------
+
+function _gogrep() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  _arguments -C \
+    '-r[search dependencies recursively too]' \
+    '-tests[search test files too and direct test deps, with -r]' \
+    '-x[find all nodes matching a pattern]:pattern' \
+    '-g[discard nodes not matching a pattern]:pattern' \
+    '-v[discard nodes matching a pattern]:pattern' \
+    '-a[discard nodes without an attribute]:attribute' \
+    '-s[substitute with a given syntax tree]:pattern' \
+    '-p[navigate up a number of node parents]:number' \
+    '-w[write the entire source code back]' \
+    '*: :_go_packages' \
+    && ret=0
+
+  return ret
+}
+
+_gogrep "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
