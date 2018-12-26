@@ -145,6 +145,6 @@ function _pt() {
   return ret
 }
 
-_pt
+_pt "$*"
 
-# vim:ft=zsh:sts=2:sw=2
+# vim:ft=zsh:et:sts=2:sw=2

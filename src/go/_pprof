@@ -127,6 +127,6 @@ _pprof() {
     _describe -t misc "Misc options" misc
 }
 
-_pprof
+_pprof "$*"
 
-# vim:filetype=zsh:softtabstop=4:shiftwidth=4:tabstop=4
+# vim:ft=zsh:et:sts=2:sw=2

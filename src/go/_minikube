@@ -193,5 +193,6 @@ _minikube() {
   esac
 }
 
-_minikube
-# vim:ft=zsh:sts=2:sw=2:ts=2:et
+_minikube "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2

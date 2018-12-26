@@ -71,4 +71,4 @@ arguments=(
 )
 _arguments -s $arguments
 
-# vim:ft=zsh:sts=2:sw=2:ts=2:et
+# vim:ft=zsh:et:sts=2:sw=2
