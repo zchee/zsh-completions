@@ -193,8 +193,33 @@
 # Global Flags:
 #       --host string    URL to your CircleCI host (default "https://circleci.com")
 #       --token string   your token for using CircleCI
-#       --verbose        Enable verbose logging.
 # Use "circleci local [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Run a job in a container on the local machine
+#
+#
+# Usage:
+#   circleci local execute [flags]
+#
+# Flags:
+#       --branch string         Git branch
+#       --checkout-key string   Git Checkout key (default "~/.ssh/id_rsa")
+#   -c, --config string         config file (default ".circleci/config.yml")
+#   -e, --env -e VAR=VAL        Set environment variables, e.g. -e VAR=VAL
+#   -h, --help                  help for execute
+#       --index int             node index of parallelism
+#       --job string            job to be executed (default "build")
+#       --node-total int        total number of parallel nodes (default 1)
+#       --repo-url string       Git Url
+#       --revision string       Git Revision
+#       --skip-checkout         use local path as-is (default true)
+#   -v, --volume strings        Volume bind-mounting
+#
+# Global Flags:
+#       --host string    URL to your CircleCI host (default "https://circleci.com")
+#       --token string   your token for using CircleCI
 #
 # -----------------------------------------------------------------------------
 #
@@ -226,6 +251,7 @@
 #
 # Available Commands:
 #   create      Create an orb in the specified namespace
+#   info        Show the meta-data of an orb
 #   list        List orbs
 #   process     Validate an orb and print its form after all pre-registration processing
 #   publish     Publish an orb to the registry
@@ -251,6 +277,29 @@
 #
 # Flags:
 #   -h, --help   help for create
+#
+# Global Flags:
+#       --host string    URL to your CircleCI host (default "https://circleci.com")
+#       --token string   your token for using CircleCI
+#
+# -----------------------------------------------------------------------------
+#
+# Show the meta-data of an orb
+#
+#
+# Usage:
+#   circleci orb info <orb> [flags]
+#
+# Examples:
+#   circleci orb info circleci/python@0.1.4
+#   circleci orb info my-ns/foo-orb@dev:latest
+#
+# Args:
+#   <orb>       A fully-qualified reference to an orb. This takes the form namespace/orb@version
+#
+#
+# Flags:
+#   -h, --help   help for info
 #
 # Global Flags:
 #       --host string    URL to your CircleCI host (default "https://circleci.com")
@@ -488,9 +537,46 @@
 #
 # -----------------------------------------------------------------------------
 
+function _circleci_all_orbs() {
+  if ( (( $+__zsh_circleci_all_orbs )) && ! _cache_invalid circleci_allorbs ) \
+      || _retrieve_cache circleci_allorbs; then
+    return
+  fi
+
+  typeset -a -g __zsh_circleci_all_orbs
+  typeset -a new_circleci_all_orbs
+  new_circleci_all_orbs+=($(circleci orb list -u | sed 's| (|@|g' | cut -d')' -f1 | awk 'NF<3 {print}'))
+
+  if [[ $new_circleci_all_orbs ]]; then
+    __zsh_circleci_all_orbs=($new_circleci_all_orbs)
+    _store_cache circleci_allorbs __zsh_circleci_all_orbs
+    _message "Cached all public orbs."
+  else
+    _message "Could not update package cache."
+  fi
+}
+
+function _circleci_set_cache_policy() {
+  local cache_policy
+  zstyle -s ":completion:${curcontext}:" cache-policy cache_policy
+  if [[ -z "$cache_policy" ]]; then
+    zstyle ":completion:${curcontext}:" cache-policy _circleci_caching_policy
+  fi
+}
+
+function _circleci_caching_policy() {
+  if [[ ${1:t} == circleci_allorbs ]]; then
+    # rebuild if cache is more than two weeks old
+    local -a oldp
+    oldp=( "$1"(Nm+1) )
+    (( $#oldp ))
+  fi
+}
+
 function _circleci() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
+  _circleci_set_cache_policy
 
   local -a commands
   commands=(
@@ -508,10 +594,13 @@ function _circleci() {
 
   local -a _global_flags
   _global_flags=(
-  '--host[URL to your CircleCI host \(default "https://circleci.com"\)]:host'
-  {-h,--help}'[help for circleci]'
+  '--debug[Enable debug logging.]'  # hidden flag
   '--token[your token for using CircleCI]:token'
-  '--debug[Enable debug logging.]'
+  '--host[URL to your CircleCI host \(default "https://circleci.com"\)]:host'
+	'--endpoint[URI to your CircleCI GraphQL API endpoint]'  # hidden flag
+  '--github-api[Change the default endpoint to  GitHub API for retrieving updates]'  # hidden flag
+  '--skip-update-check[Skip the check for updates check run before every command]'  # hidden flag
+  {-h,--help}'[help for circleci]'
   )
 
   _arguments -C \
@@ -529,9 +618,9 @@ function _circleci() {
       )
 
       _arguments \
+        ${_global_flags[@]} \
         "1: :{_describe 'config subcommand' config_cmds}" \
         '*:: :->args' \
-        ${_global_flags[@]} \
         && ret=0
 
       case $words[1] in
@@ -539,6 +628,37 @@ function _circleci() {
           _arguments \
             ${_global_flags[@]} \
             '*:<path> The path to your orb (use "-" for STDIN):_files' \
+          ;;
+      esac
+      ;;
+
+    local)
+      local -a local_cmds
+      local_cmds=(
+      'execute:Run a job in a container on the local machine'
+      )
+
+      _arguments \
+        "1: :{_describe 'local subcommand' local_cmds}" \
+        '*:: :->args' \
+        ${_global_flags[@]} \
+        && ret=0
+
+      case $words[1] in
+        execute)
+          _arguments \
+            '--branch[Git branch]:branch' \
+            '--checkout-key[Git Checkout key \(default "~/.ssh/id_rsa"\)]:checkout key:_files' \
+            {-c,--config}'[config file \(default ".circleci/config.yml"\)]:config file:_files' \
+            {-e,--env}'[Set environment variables, e.g. \-e VAR=VAL]:VAR=VAL' \
+            '--index[node index of parallelism]:num index' \
+            '--job[job to be executed \(default "build"\)]:job name' \
+            '--node-total[total number of parallel nodes \(default 1\)]:parallel size' \
+            '--repo-url[Git Url]:Git URL' \
+            '--revision[Git Revision]:Git revision' \
+            '--skip-checkout[use local path as-is]' \
+            {-v,--volume}'[Volume bind-mounting]:mount volume path:_directories' \
+            ${_global_flags[@]}
           ;;
       esac
       ;;
@@ -570,6 +690,7 @@ function _circleci() {
       local -a orb_cmds
       orb_cmds=(
       'create:Create an orb in the specified namespace'
+      'info:Show the meta-data of an orb'
       'list:List orbs'
       'process:Validate an orb and print its form after all pre-registration processing'
       'publish:Publish an orb to the registry'
@@ -590,6 +711,20 @@ function _circleci() {
             "*:<namespace>/<name>"
           ;;
 
+            # "*:namespace/orb@version:($(circleci orb list -u | sed 's| (|@|g' | cut -d')' -f1 | awk 'NF<3 {print}'))"
+        info)
+          _arguments \
+            ${_global_flags[@]} \
+            "*:namespace/orb@version:->all_orbs"
+
+            case $state in
+              all_orbs)
+                _circleci_all_orbs
+                _wanted all-orbs expl 'orbs' compadd -a __zsh_circleci_all_orbs && ret=0
+                ;;
+            esac
+          ;;
+
         list)
           _arguments \
             {-u,--uncertified}'[include uncertified orbs]' \
@@ -600,7 +735,7 @@ function _circleci() {
         process)
           _arguments \
             ${_global_flags[@]} \
-            '*:<path> The path to your orb (use "-" for STDIN):_files'
+            '*:<path> The path to your orb \(use "-" for STDIN\):_files'
           ;;
 
         publish)
@@ -616,7 +751,7 @@ function _circleci() {
           case $words[1] in
             increment)
               _arguments \
-                '1:<path> The path to your orb (use "-" for STDIN):_files' \
+                '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
                 "2:<namespace/orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version]" \
                 "3:segment:(major minor patch)" \
                 ${_global_flags[@]}
@@ -624,14 +759,14 @@ function _circleci() {
 
             promote)
               _arguments \
-                '1:<path> The path to your orb (use "-" for STDIN):path:_files' \
+                '1:<path> The path to your orb \(use "-" for STDIN\):path:_files' \
                 "2:segment:segment:(major minor patch)" \
                 ${_global_flags[@]}
               ;;
 
             *)
               _arguments \
-                '1:<path> The path to your orb (use "-" for STDIN):_files' \
+                '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
                 "2:<orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version" \
                 ${_global_flags[@]}
               ;;
@@ -654,7 +789,7 @@ function _circleci() {
 
     query)
       _arguments \
-        '1:<path> The path to your orb (use "-" for STDIN):_files' \
+        '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
         ${_global_flags[@]} \
         && ret=0
       ;;
