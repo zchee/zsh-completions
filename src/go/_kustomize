@@ -46,6 +46,7 @@
 #
 # Available Commands:
 #   build       Print current configuration per contents of kustomization.yaml
+#   config      Config Kustomize transformers
 #   edit        Edits a kustomization file
 #   help        Help about any command
 #   version     Prints the kustomize version
@@ -143,6 +144,61 @@
 #       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 #
 # Use "kustomize [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Config Kustomize transformers
+#
+# Usage:
+#   kustomize config [command]
+#
+# Examples:
+#
+# 	# Save the default transformer configrations to a local directory
+# 	kustomize config save -d ~/.kustomize/config
+#
+#
+# Available Commands:
+#   save        Save default kustomize transformer configurations to a local directory
+#
+# Flags:
+#   -h, --help   help for config
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#
+# Use "kustomize config [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:
+#   kustomize config save [flags]
+#
+# Examples:
+#
+# 	# Save the default transformer configrations to a local directory
+# 	save -d ~/.kustomize/config
+#
+#
+#
+# Flags:
+#   -d, --directory string   Directory to save the default transformer configurations
+#   -h, --help               help for save
+#
+# Global Flags:
+#       --alsologtostderr                  log to standard error as well as files
+#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+#       --log_dir string                   If non-empty, write log files in this directory
+#       --logtostderr                      log to standard error instead of files
+#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+#   -v, --v Level                          log level for V logs
+#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 #
 # -----------------------------------------------------------------------------
 #
@@ -427,6 +483,7 @@ function _kustomize() {
   local -a commands
   commands=(
   'build:Print current configuration per contents of kustomization.yaml'
+  'config:Config Kustomize transformers'
   'edit:Edits a kustomization file'
   'help:Help about any command'
   'version:Prints the kustomize version'
@@ -455,6 +512,25 @@ function _kustomize() {
         {-o,--output}'[If specified, write the build output to this path.]:output path:_files' \
         ${_global_flags[@]} \
         '*:path:_files'
+      ;;
+
+    config)
+      local -a config_cmds
+      config_cmds=(
+      'save:Save default kustomize transformer configurations to a local directory'
+      )
+      _arguments \
+        "1: :{_describe 'kustomize config command' config_cmds}" \
+        '*:: :->args' \
+        ${_global_flags[@]}
+
+      case $words[1] in
+        save)
+          _arguments \
+            {-d,--directory}'[Directory to save the default transformer configurations]:directory:_directories' \
+            ${_global_flags[@]}
+          ;;
+      esac
       ;;
 
     edit)
