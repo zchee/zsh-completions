@@ -1,4 +1,4 @@
-#compdef circleci
+#compdef circleci-cli
 
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
@@ -228,7 +228,7 @@
 #
 # -----------------------------------------------------------------------------
 
-function _circleci() {
+function _circleci-cli() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
@@ -245,7 +245,7 @@ function _circleci() {
   typeset -f _global_flags
   function _global_flags() {
     _arguments \
-      {-c,--config}'[config file (default is .circleci/config.yml)]:string' \
+      {-c,--config}'[config file \(default is .circleci/config.yml\)]:string' \
       '--taskId[TaskID]:string' \
       '--verbose[emit verbose logging output]' \
       && ret=0
@@ -262,7 +262,7 @@ function _circleci() {
     build)
       _arguments \
         '--branch[Git branch]:branch name' \
-        '--checkout-key[Git Checkout key (default "~/.ssh/id_rsa")]:checkout key]:file:_files' \
+        '--checkout-key[Git Checkout key \(default "~/.ssh/id_rsa"\)]:checkout key]:file:_files' \
         {-e,--env}'[Set environment variables, e.g. -e VAR=VAL]:env key=value' \
         {-h,--help}'[help for build]' \
         '--index[node index of parallelism]' \
@@ -341,6 +341,6 @@ function _circleci() {
   return ret
 }
 
-_circleci "$*"
+_circleci-cli "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
