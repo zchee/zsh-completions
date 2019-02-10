@@ -41,35 +41,24 @@
 #   prototool [command]
 #
 # Available Commands:
-#   all                      Compile, then format and overwrite, then re-compile and generate, then lint, stopping if any step fails.
-#   binary-to-json           Convert the data from json to binary for the message path and data.
-#   clean                    Delete the cache.
-#   compile                  Compile with protoc to check for failures.
-#   descriptor-proto         Get the descriptor proto for the message path.
-#   download                 Download the protobuf artifacts to a cache.
-#   field-descriptor-proto   Get the field descriptor proto for the field path.
-#   files                    Print all files that match the input arguments.
-#   format                   Format a proto file and compile with protoc to check for failures.
-#   gen                      Generate with protoc.
-#   grpc                     Call a gRPC endpoint.
-#   help                     Help about any command
-#   init                     Generate an initial config file in the current or given directory.
-#   json-to-binary           Convert the data from json to binary for the message path and data.
-#   lint                     Lint proto files and compile with protoc to check for failures.
-#   list-all-lint-groups     List all the available lint groups.
-#   list-all-linters         List all available linters.
-#   list-lint-group          List the linters in the given lint group.
-#   list-linters             List the configurerd linters.
-#   protoc-commands          Print the commands that would be run on compile or gen.
-#   service-descriptor-proto Get the service descriptor proto for the service path.
-#   version                  Print the version.
+#   all         Compile, then format and overwrite, then re-compile and generate, then lint, stopping if any step fails.
+#   break       Top-level command for breaking change commands.
+#   cache       Interact with the cache.
+#   compile     Compile with protoc to check for failures.
+#   config      Interact with configuration files.
+#   create      Create the given Protobuf files according to a template that passes default prototool lint.
+#   files       Print all files that match the input arguments.
+#   format      Format a proto file and compile with protoc to check for failures.
+#   generate    Generate with protoc.
+#   grpc        Call a gRPC endpoint. Be sure to set the required flags address, method, and either data or stdin.
+#   help        Help about any command
+#   inspect     Top-level command for inspection commands.
+#   lint        Lint proto files and compile with protoc to check for failures.
+#   version     Print the version.
 #
 # Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#   -h, --help                  help for prototool
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
+#   -h, --help    help for prototool
 #
 # Use "prototool [command] --help" for more information about a command.
 #
@@ -78,359 +67,658 @@
 # Compile, then format and overwrite, then re-compile and generate, then lint, stopping if any step fails.
 #
 # Usage:
-#   prototool all dirOrProtoFiles... [flags]
+#   prototool all [dirOrFile] [flags]
 #
 # Flags:
-#       --dir-mode         Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#       --disable-format   Do not run formatting.
-#       --disable-lint     Do not run linting.
-#   -h, --help             help for all
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --disable-format           Do not run formatting.
+#       --disable-lint             Do not run linting.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -f, --fix                      Fix the file according to the Style Guide.
+#   -h, --help                     help for all
+#       --json                     Output as JSON.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
 #
 # -----------------------------------------------------------------------------
 #
-# Convert the data from json to binary for the message path and data.
+# Top-level command for breaking change commands.
 #
 # Usage:
-#   prototool binary-to-json dirOrProtoFiles... messagePath data [flags]
+#   prototool break [command]
+#
+# Available Commands:
+#   check       Check for breaking changes.
 #
 # Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for binary-to-json
+#   -h, --help   help for break
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# Use "prototool break [command] --help" for more information about a command.
 #
 # -----------------------------------------------------------------------------
 #
-# Delete the cache.
+# Check for breaking changes.
+#
+# This command must be run from the root of a git repository.
+#
+# The input directory must be relative.
 #
 # Usage:
-#   prototool clean [flags]
+#   prototool break check [dir] [flags]
 #
 # Flags:
-#   -h, --help   help for clean
+#       --allow-beta-deps          Allow stable packages to depend on beta packages. This is implicitly set if --include-beta is set.
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --git-branch string        The git branch to check against. The default is the default branch.
+#       --git-tag string           The git tag to check against. The default is to not use tags and use the default branch.
+#   -h, --help                     help for check
+#       --include-beta             Include beta packages in breaking change detection.
+#       --json                     Output as JSON.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Interact with the cache.
+#
+# Usage:
+#   prototool cache [command]
+#
+# Available Commands:
+#   delete      Delete all artifacts in the default cache.
+#   update      Update the cache by downloading all artifacts.
+#
+# Flags:
+#   -h, --help   help for cache
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# Use "prototool cache [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Delete all artifacts in the default cache.
+#
+# The following directory will be deleted based on environment variables:
+#
+# - If $XDG_CACHE_HOME is set, then $XDG_CACHE_HOME/prototool will be deleted.
+# - Otherwise, if on Linux, $HOME/.cache/prototool will be deleted, or on Darwin,
+#   $HOME/Library/Caches/prototool will be deleted.
+#
+#   This will not delete any custom caches created using the --cache-path flag or
+# PROTOTOOL_CACHE_PATH environment variable.
+#
+# Usage:
+#   prototool cache delete [flags]
+#
+# Flags:
+#   -h, --help   help for delete
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Update the cache by downloading all artifacts.
+#
+# This will download artifacts to a cache directory before running any commands.
+# Note that calling this command is not necessary, all artifacts are automatically
+# downloaded when required by other commands. This just provides a mechanism to
+# pre-cache artifacts during your build.
+#
+# Artifacts are downloaded to the following directories based on flags and
+# environment variables:
+#
+# - If --cache-path is set, then this directory will be used. The user is
+#   expected to manually manage this directory, and the "delete" subcommand
+#   will have no effect on it.
+# - Otherwise, if $PROTOTOOL_CACHE_PATH is set, then this directory will be used.
+#   The user is expected to manually manage this directory, and the "delete"
+#   subcommand will have no effect on it.
+# - Otherwise, if $XDG_CACHE_HOME is set, then $XDG_CACHE_HOME/prototool
+#   will be used.
+# - Otherwise, if on Linux, $HOME/.cache/prototool will be used, or on Darwin,
+#   $HOME/Library/Caches/prototool will be used.
+#
+# Usage:
+#   prototool cache update [dirOrFile] [flags]
+#
+# Flags:
+#       --cache-path string    The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string   The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                              This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                              This is an advanced feature and is not recommended to be generally used.
+#   -h, --help                 help for update
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
 #
 # -----------------------------------------------------------------------------
 #
 # Compile with protoc to check for failures.
 #
+# Stubs will not be generated. To generate stubs, use the "gen" command. Calling
+# "compile" has the effect of calling protoc with "-o /dev/null".
+#
 # Usage:
-#   prototool compile dirOrProtoFiles... [flags]
+#   prototool compile [dirOrFile] [flags]
 #
 # Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for compile
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --dry-run                  Print the protoc commands that would have been run without actually running them.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -h, --help                     help for compile
+#       --json                     Output as JSON.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
 #
 # -----------------------------------------------------------------------------
 #
-# Get the descriptor proto for the message path.
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# Interact with configuration files.
 #
 # Usage:
-#   prototool descriptor-proto dirOrProtoFiles... messagePath [flags]
+#   prototool config [command]
+#
+# Available Commands:
+#   init        Generate an initial config file in the current or given directory.
 #
 # Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for descriptor-proto
+#   -h, --help   help for config
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
 #
-# -----------------------------------------------------------------------------
-#
-# Download the protobuf artifacts to a cache.
-#
-# Usage:
-#   prototool download [flags]
-#
-# Flags:
-#   -h, --help   help for download
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Get the field descriptor proto for the field path.
-#
-# Usage:
-#   prototool field-descriptor-proto dirOrProtoFiles... fieldPath [flags]
-#
-# Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for field-descriptor-proto
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Print all files that match the input arguments.
-#
-# Usage:
-#   prototool files dirOrProtoFiles... [flags]
-#
-# Flags:
-#   -h, --help   help for files
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Format a proto file and compile with protoc to check for failures.
-#
-# Usage:
-#   prototool format dirOrProtoFiles... [flags]
-#
-# Flags:
-#   -d, --diff        Write a diff instead of writing the formatted file to stdout.
-#   -h, --help        help for format
-#   -l, --lint        Write a lint error saying that the file is not formatted instead of writing the formatted file to stdout.
-#   -w, --overwrite   Overwrite the existing file instead of writing the formatted file to stdout.
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Generate with protoc.
-#
-# Usage:
-#   prototool gen dirOrProtoFiles... [flags]
-#
-# Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for gen
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Call a gRPC endpoint.
-#
-# Usage:
-#   prototool grpc dirOrProtoFiles... serverAddress package.service/Method requestData [flags]
-#
-# Flags:
-#       --call-timeout string      The maximum time to for all calls to be completed. (default "60s")
-#       --connect-timeout string   The maximum time to wait for the connection to be established. (default "10s")
-#       --dir-mode                 Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -H, --header strings           Additional request headers in 'name:value' format.
-#   -h, --help                     help for grpc
-#       --keepalive-time string    The maximum idle time after which a keepalive probe is sent.
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Help provides help for any command in the application.
-# Simply type prototool help [path to command] for full details.
-#
-# Usage:
-#   prototool help [command] [flags]
-#
-# Flags:
-#   -h, --help   help for help
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+# Use "prototool config [command] --help" for more information about a command.
 #
 # -----------------------------------------------------------------------------
 #
 # Generate an initial config file in the current or given directory.
 #
+# All available options will be generated and commented out except for
+# "protoc.version". Pass the "--uncomment" flag to uncomment all options.
+#
 # Usage:
-#   prototool init [dirPath] [flags]
+#   prototool config init [dirPath] [flags]
 #
 # Flags:
 #   -h, --help        help for init
 #       --uncomment   Uncomment the example config settings.
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
 #
 # -----------------------------------------------------------------------------
 #
-# Convert the data from json to binary for the message path and data.
+# Create the given Protobuf files according to a template that passes default
+# prototool lint.
+#
+# Assuming the filename "example_create_file.proto", the file will look like the
+# following:
+#
+#   syntax = "proto3";
+#
+#   package SOME.PKG;
+#
+#   option go_package = "PKGpb";
+#   option java_multiple_files = true;
+#   option java_outer_classname = "ExampleCreateFileProto";
+#   option java_package = "com.SOME.PKG.pb";
+#
+# This matches what the linter expects. "SOME.PKG" will be computed as follows:
+#
+# - If "--package" is specified, "SOME.PKG" will be the value passed to
+#   "--package".
+# - Otherwise, if there is no "prototool.yaml" or "prototool.json" that would
+#   apply to the new file, use "uber.prototool.generated".
+# - Otherwise, if there is a "prototool.yaml" or "prototool.json" file, check if
+#   it has a "packages" setting under the "create" section. If it does, this
+#   package, concatenated with the relative path from the directory with the
+#  "prototool.yaml" or "prototool.json" will be used.
+# - Otherwise, if there is no "packages" directive, just use the
+#   relative path from the directory with the "prototool.yaml" or
+#   "prototool.json" file. If the file is in the same directory as the
+#   "prototool.yaml" or "prototool.json" file, use "uber.prototool.generated".
+#
+# For example, assume you have the following file at "repo/prototool.yaml":
+#
+# create:
+#   packages:
+# 	- directory: idl
+# 	  name: uber
+# 	- directory: idl/baz
+# 	  name: special
+#
+# - "prototool create repo/idl/foo/bar/bar.proto" will have the package
+#   "uber.foo.bar".
+# - "prototool create repo/idl/bar.proto" will have the package "uber".
+# - "prototool create repo/idl/baz/baz.proto" will have the package "special".
+# - "prototool create repo/idl/baz/bat/bat.proto" will have the package
+#   "special.bat".
+# - "prototool create repo/another/dir/bar.proto" will have the package
+#   "another.dir".
+# - "prototool create repo/bar.proto" will have the package
+#   "uber.prototool.generated".
+#
+# This is meant to mimic what you generally want - a base package for your idl
+# directory, followed by packages matching the directory structure.
+#
+# Note you can override the directory that the "prototool.yaml" or
+# "prototool.json" file is in as well. If we update our file at
+# "repo/prototool.yaml" to this:
+#
+# create:
+#   packages:
+# 	- directory: .
+# 	  name: foo.bar
+#
+# Then "prototool create repo/bar.proto" will have the package "foo.bar", and
+# "prototool create repo/another/dir/bar.proto" will have the package
+# "foo.bar.another.dir".
+#
+# If Vim integration is set up, files will be generated when you open a new
+# Protobuf file.
 #
 # Usage:
-#   prototool json-to-binary dirOrProtoFiles... messagePath data [flags]
+#   prototool create files... [flags]
 #
 # Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for json-to-binary
+#       --config-data string   The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                              This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                              This is an advanced feature and is not recommended to be generally used.
+#   -h, --help                 help for create
+#       --package string       The Protobuf package to use in the created file.
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Print all files that match the input arguments.
+#
+# Usage:
+#   prototool files [dirOrFile] [flags]
+#
+# Flags:
+#       --config-data string   The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                              This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                              This is an advanced feature and is not recommended to be generally used.
+#   -h, --help                 help for files
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Format a proto file and compile with protoc to check for failures.
+#
+# Usage:
+#   prototool format [dirOrFile] [flags]
+#
+# Flags:
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#   -d, --diff                     Write a diff instead of writing the formatted file to stdout.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -f, --fix                      Fix the file according to the Style Guide.
+#   -h, --help                     help for format
+#       --json                     Output as JSON.
+#   -l, --lint                     Write a lint error saying that the file is not formatted instead of writing the formatted file to stdout.
+#   -w, --overwrite                Overwrite the existing file instead of writing the formatted file to stdout.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Generate with protoc.
+#
+# Usage:
+#   prototool generate [dirOrFile] [flags]
+#
+# Flags:
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --dry-run                  Print the protoc commands that would have been run without actually running them.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -h, --help                     help for generate
+#       --json                     Output as JSON.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Call a gRPC endpoint. Be sure to set the required flags address, method, and
+# either data or stdin.
+#
+# This command compiles your proto files with "protoc", converts JSON input to
+# binary and converts the result from binary to JSON. All these steps take on the
+# order of milliseconds. For example, the overhead for a file with four
+# dependencies is about 30ms, so there is little overhead for CLI calls to gRPC.
+#
+# There is a full example for gRPC in the example directory of Prototool. Run
+# "make init example" to make sure everything is installed and generated.
+#
+# Start the example server in a separate terminal by doing "go run
+# example/cmd/excited/main.go".
+#
+# prototool grpc [dirOrFile] \
+#   --address serverAddress \
+#   --method package.service/Method \
+#   --data 'requestData'
+#
+# Either use "--data 'requestData'" as the the JSON data to input, or "--stdin"
+# which will result in the input being read from stdin as JSON.
+#
+# $ make init example # make sure everything is built just in case
+#
+# $ prototool grpc example \
+#   --address 0.0.0.0:8080 \
+#   --method foo.ExcitedService/Exclamation \
+#   --data '{"value":"hello"}'
+# {
+#   "value": "hello!"
+# }
+#
+# $ prototool grpc example \
+#   --address 0.0.0.0:8080 \
+#   --method foo.ExcitedService/ExclamationServerStream \
+#   --data '{"value":"hello"}'
+# {
+#   "value": "h"
+# }
+# {
+#   "value": "e"
+# }
+# {
+#   "value": "l"
+# }
+# {
+#   "value": "l"
+# }
+# {
+#   "value": "o"
+# }
+# {
+#   "value": "!"
+# }
+#
+# $ cat input.json
+# {"value":"hello"}
+# {"value":"salutations"}
+#
+# $ cat input.json | prototool grpc example \
+#   --address 0.0.0.0:8080 \
+#   --method foo.ExcitedService/ExclamationClientStream \
+#   --stdin
+# {
+#   "value": "hellosalutations!"
+# }
+#
+# $ cat input.json | prototool grpc example \
+#   --address 0.0.0.0:8080 \
+#   --method foo.ExcitedService/ExclamationBidiStream \
+#   --stdin
+# {
+#   "value": "hello!"
+# }
+# {
+#   "value": "salutations!"
+# }
+#
+# Usage:
+#   prototool grpc [dirOrFile] [flags]
+#
+# Flags:
+#       --address string           The GRPC endpoint to connect to. This is required.
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --call-timeout string      The maximum time to for all calls to be completed. (default "60s")
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --connect-timeout string   The maximum time to wait for the connection to be established. (default "10s")
+#       --data string              The GRPC request data in JSON format. Either this or --stdin is required.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -H, --header strings           Additional request headers in 'name:value' format.
+#   -h, --help                     help for grpc
+#       --keepalive-time string    The maximum idle time after which a keepalive probe is sent.
+#       --method string            The GRPC method to call in the form package.Service/Method. This is required.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
+#       --stdin                    Read the GRPC request data from stdin in JSON format. Either this or --data is required.
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Top-level command for inspection commands.
+#
+# Usage:
+#   prototool inspect [command]
+#
+# Available Commands:
+#   package-deps      Print the given package dependencies. Be sure to set the required flag name.
+#   package-importers Print the given package importers. Be sure to set the required flag name.
+#   packages          List all packages.
+#
+# Flags:
+#   -h, --help   help for inspect
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# Use "prototool inspect [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Print the given package dependencies. Be sure to set the required flag name.
+#
+# Usage:
+#   prototool inspect package-deps [dirOrFile] [flags]
+#
+# Flags:
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -h, --help                     help for package-deps
+#       --name string              The package name. This is required.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Print the given package importers. Be sure to set the required flag name.
+#
+# Usage:
+#   prototool inspect package-importers [dirOrFile] [flags]
+#
+# Flags:
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -h, --help                     help for package-importers
+#       --name string              The package name. This is required.
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
+#
+# -----------------------------------------------------------------------------
+#
+# List all packages.
+#
+# Usage:
+#   prototool inspect packages [dirOrFile] [flags]
+#
+# Flags:
+#       --cache-path string        The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string       The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                  This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                  This is an advanced feature and is not recommended to be generally used.
+#       --error-format string      The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -h, --help                     help for packages
+#       --protoc-bin-path string   The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string        The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string   The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                  This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                  This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
+#
+# Global Flags:
+#       --debug   Run in debug mode, which will print out debug logging.
 #
 # -----------------------------------------------------------------------------
 #
 # Lint proto files and compile with protoc to check for failures.
 #
-# Usage:
-#   prototool lint dirOrProtoFiles... [flags]
+# Lint rules can be set using the configuration file. See the configuration at
+# https://github.com/uber/prototool/blob/dev/etc/config/example/prototool.yaml for
+# all available options. There are two pre-configured groups of rules:
 #
-# Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for lint
+# google: This lint group follows the Style Guide at
+# https://developers.google.com/protocol-buffers/docs/style. This is a small group
+# of rules meant to enforce basic naming, and is widely followed.
 #
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+# uber1: This lint group follows the Style Guide at
+# https://github.com/uber/prototool/blob/master/etc/style/uber1/uber1.proto. This
+# is a very strict rule group and is meant to enforce consistent development
+# patterns.
 #
-# -----------------------------------------------------------------------------
+# Configuration of your group can be done by setting the "lint.group" option in
+# your "prototool.yaml" file:
 #
-# List all the available lint groups.
+# lint:
+#   group: google
 #
-# Usage:
-#   prototool list-all-lint-groups [flags]
+# The "uber1" lint group represents the default lint group, and will be used if no
+# lint group is configured.
 #
-# Flags:
-#   -h, --help   help for list-all-lint-groups
+# Files must be valid Protobuf that can be compiled with protoc, so prior to
+# linting, prototool lint will compile your using protoc.
+# Note, however, this is very fast - for two files, compiling and linting only
+# takes approximately
+# 3/100ths of a second:
 #
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+# $ time prototool lint etc/style/uber1
 #
-# -----------------------------------------------------------------------------
+# real	0m0.037s
+# user	0m0.026s
+# sys	0m0.017s
 #
-# List all available linters.
+# For all 694 Protobuf files currently in
+# https://github.com/googleapis/googleapis, this takes approximately 3/4ths of a
+# second:
 #
-# Usage:
-#   prototool list-all-linters [flags]
+# $ cat prototool.yaml
+# protoc:
+#   allow_unused_imports: true
+# lint:
+#   group: google
 #
-# Flags:
-#   -h, --help   help for list-all-linters
+# $ time prototool lint .
 #
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# List the linters in the given lint group.
-#
-# Usage:
-#   prototool list-lint-group group [flags]
-#
-# Flags:
-#   -h, --help   help for list-lint-group
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# List the configurerd linters.
+# real	0m0.734s
+# user	0m3.835s
+# sys	0m0.924s
 #
 # Usage:
-#   prototool list-linters [flags]
+#   prototool lint [dirOrFile] [flags]
 #
 # Flags:
-#   -h, --help   help for list-linters
+#       --cache-path string         The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.
+#       --config-data string        The configuration data to use instead of reading prototool.yaml or prototool.json files.
+#                                   This will act as if there is a configuration file with the given data in the current directory, and no other configuration files recursively.
+#                                   This is an advanced feature and is not recommended to be generally used.
+#       --diff-lint-groups string   Diff the two lint groups separated by '.', for example google,uber2.
+#       --error-format string       The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". (default "filename:line:column:message")
+#   -h, --help                      help for lint
+#       --json                      Output as JSON.
+#       --list-all-lint-groups      List all available lint groups instead of running lint.
+#       --list-all-linters          List all available linters instead of running lint.
+#       --list-lint-group string    List the linters in the given lint group instead of running lint.
+#       --list-linters              List the configured linters instead of running lint.
+#       --protoc-bin-path string    The path to the protoc binary. Setting this option will ignore the config protoc.version setting.
+#                                   This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.
+#                                   This setting can also be controlled using the $PROTOTOOL_PROTOC_BIN_PATH environment variable, however this flag takes precedence.
+#       --protoc-url string         The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.
+#       --protoc-wkt-path string    The path to the well-known types. Setting this option will ignore the config protoc.version setting.
+#                                   This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.
+#                                   This setting can also be controlled using the $PROTOTOOL_PROTOC_WKT_PATH environment variable, however this flag takes precedence.
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Print the commands that would be run on compile or gen.
-#
-# Usage:
-#   prototool protoc-commands dirOrProtoFiles... [flags]
-#
-# Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#       --gen        Print the commands that would be run on gen instead of compile.
-#   -h, --help       help for protoc-commands
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
-#
-# -----------------------------------------------------------------------------
-#
-# Get the service descriptor proto for the service path.
-#
-# Usage:
-#   prototool service-descriptor-proto dirOrProtoFiles... servicePath [flags]
-#
-# Flags:
-#       --dir-mode   Run as if the directory the file was given, but only print the errors from the file. Useful for integration with editors.
-#   -h, --help       help for service-descriptor-proto
-#
-# Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
 #
 # -----------------------------------------------------------------------------
 #
@@ -441,12 +729,10 @@
 #
 # Flags:
 #   -h, --help   help for version
+#       --json   Output as JSON.
 #
 # Global Flags:
-#       --cache-path string     The path to use for the cache, otherwise uses the default behavior.
-#       --debug                 Run in debug mode, which will print out debug logging.
-#       --print-fields string   The colon-separated fields to print out on error. (default "filename:line:column:message")
-#       --protoc-url string     The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.
+#       --debug   Run in debug mode, which will print out debug logging.
 #
 # -----------------------------------------------------------------------------
 
@@ -457,36 +743,25 @@ function _prototool() {
   local -a commands
   commands=(
   'all:Compile, then format and overwrite, then re-compile and generate, then lint, stopping if any step fails.'
-  'binary-to-json:Convert the data from json to binary for the message path and data.'
-  'clean:Delete the cache.'
+  'break:Top-level command for breaking change commands.'
+  'cache:Interact with the cache.'
   'compile:Compile with protoc to check for failures.'
-  'descriptor-proto:Get the descriptor proto for the message path.'
-  'download:Download the protobuf artifacts to a cache.'
-  'field-descriptor-proto:Get the field descriptor proto for the field path.'
+  'config:Interact with configuration files.'
+  'create:Create the given Protobuf files according to a template that passes default prototool lint.'
   'files:Print all files that match the input arguments.'
   'format:Format a proto file and compile with protoc to check for failures.'
-  'gen:Generate with protoc.'
-  'grpc:Call a gRPC endpoint.'
+  'generate:Generate with protoc.'
+  'grpc:Call a gRPC endpoint. Be sure to set the required flags address, method, and either data or stdin.'
   'help:Help about any command'
-  'init:Generate an initial config file in the current or given directory.'
-  'json-to-binary:Convert the data from json to binary for the message path and data.'
+  'inspect:Top-level command for inspection commands.'
   'lint:Lint proto files and compile with protoc to check for failures.'
-  'list-all-lint-groups:List all the available lint groups.'
-  'list-all-linters:List all available linters.'
-  'list-lint-group:List the linters in the given lint group.'
-  'list-linters:List the configurerd linters.'
-  'protoc-commands:Print the commands that would be run on compile or gen.'
-  'service-descriptor-proto:Get the service descriptor proto for the service path.'
   'version:Print the version.'
   )
 
   local -a _global_flags
   _global_flags=(
-  '--cache-path[The path to use for the cache, otherwise uses the default behavior.]:cache path:_files'
   '--debug[Run in debug mode, which will print out debug logging.]'
-  {-h,--help}'[help for prototool]'
-  '--print-fields[The colon-separated fields to print out on error. (default "filename:line:column:message")]:fields'
-  '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc_version setting.]:protoc url:_urls'
+  {-h,--help}'[show help]'
   )
 
   _arguments -C \
@@ -497,103 +772,223 @@ function _prototool() {
   case $words[1] in
     all)
       _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
         '--disable-format[Do not run formatting.]' \
         '--disable-lint[Do not run linting.]' \
+        '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+        '--fix[Fix the file according to the Style Guide.]' \
+        '--json[Output as JSON.]' \
+        '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+        '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+        '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
         ${_global_flags[@]} \
-        '*:proto file|dir:_files'
+        '*:proto files or directory:_files'
       ;;
 
-    (binary-to-json|json-to-binary)
+    break)
+      local -a break_cmd
+      break_cmd=(
+      'check:Check for breaking changes.'
+      )
       _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
-        ${_global_flags[@]} \
-        '1:proto file|dir:_files' \
-        '2:messagePath:_files' \
-        '3:data'
+        "1: :{_describe 'break command' break_cmd}" \
+        '*:: :->args'
+      case $words[1] in
+        check)
+          _arguments \
+            '--allow-beta-deps[Allow stable packages to depend on beta packages. This is implicitly set if --include-beta is set.]' \
+            '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+            '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+            '--git-branch[The git branch to check against. The default is the default branch.]:git brach' \
+            '--git-tag[The git tag to check against. The default is to not use tags and use the default branch.]:git tag' \
+            '--include-beta[Include beta packages in breaking change detection.]' \
+            '--json[Output as JSON.]' \
+            '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+            '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+            '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
+            ${_global_flags[@]} \
+            '1:check breaking changes target directory:_directories'
+          ;;
+        esac
       ;;
 
-    descriptor-proto)
+    cache)
+      local -a cache_cmd
+      cache_cmd=(
+      'delete:Delete all artifacts in the default cache.'
+      'update:Update the cache by downloading all artifacts.'
+      )
       _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
-        ${_global_flags[@]} \
-        '1:proto file|dir:_files' \
-        '2:messagePath:_files'
+        "1: :{_describe 'cache command' cache_cmd}" \
+        '*:: :->args'
+      case $words[1] in
+        delete)
+          _arguments \
+            ${_global_flags[@]}
+          ;;
+        update)
+          _arguments \
+            '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+            '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+            ${_global_flags[@]} \
+            '1:files or directory:_files'
+          ;;
+        esac
       ;;
 
-    format)
+    compile)
       _arguments \
-        {-d,--diff}'[Write a diff instead of writing the formatted file to stdout.]' \
-        {-l,--lint}'[Write a lint error saying that the file is not formatted instead of writing the formatted file to stdout.]' \
-        {-w,--overwrite}'[Overwrite the existing file instead of writing the formatted file to stdout.]' \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+        '--dry-run[Print the protoc commands that would have been run without actually running them.]' \
+        '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+        '--json[Output as JSON.]' \
+        '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+        '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+        '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
         ${_global_flags[@]} \
-        '*:proto file|dir:_files'
+        '1:proto files or directory:_files'
       ;;
 
-    field-descriptor-proto)
+    config)
+      local -a config_cmd
+      config_cmd=(
+      'init:Generate an initial config file in the current or given directory.'
+      )
       _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
+        "1: :{_describe 'cache command' cache_cmd}" \
+        '*:: :->args'
+      case $words[1] in
+        init)
+          _arguments \
+            '--uncomment[Uncomment the example config settings.]' \
+            ${_global_flags[@]} \
+            '1:directory:_directories'
+          ;;
+        esac
+      ;;
+
+    create)
+      _arguments \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]' \
+        '--package[The Protobuf package to use in the created file.]:protobuf package' \
         ${_global_flags[@]} \
-        '1:proto file|dir:_files' \
-        '2:fieldPath:_files'
+        '*:files:_files'
       ;;
 
     files)
       _arguments \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior.]:cache path:_files'
         ${_global_flags[@]} \
-        '*:proto file|dir:_files'
+        '1:proto files or directory:_files'
+      ;;
+
+    format)
+      _arguments \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+        {-d,--diff}'[Write a diff instead of writing the formatted file to stdout.'] \
+        '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+        {-f,--fix'[Fix the file according to the Style Guide.]' \
+        '--json[Output as JSON.]' \
+        {-l,--lint'[Write a lint error saying that the file is not formatted instead of writing the formatted file to stdout.]' \
+        {-w,--overwrite'[Overwrite the existing file instead of writing the formatted file to stdout.]' \
+        '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+        '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+        '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
+        ${_global_flags[@]} \
+        '1:proto files or directory:_files'
+      ;;
+
+    gererate)
+      _arguments \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+        '--dry-run[Print the protoc commands that would have been run without actually running them.]' \
+        '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+        '--json[Output as JSON.]' \
+        '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+        '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+        '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
+        ${_global_flags[@]} \
+        '1:proto files or directory:_files'
       ;;
 
     grpc)
       _arguments \
-        '--call-timeout[The maximum time to for all calls to be completed. (default "60s")]:call timeout' \
-        '--connect-timeout[The maximum time to wait for the connection to be established. (default "10s")]:connect timeout' \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
-        {-H,--header}"[Additional request headers in 'name:value' format.]:header" \
-        '--keepalive-time[The maximum idle time after which a keepalive probe is sent.]:keepalive time' \
+        '--address[The GRPC endpoint to connect to. This is required.]:address:_urls' \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+        '--call-timeout[The maximum time to for all calls to be completed. \(default "60s"\)]:call timeout' \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+        '--connect-timeout[The maximum time to wait for the connection to be established. \(default "10s"\)]:connect timout' \
+        '--data[The GRPC request data in JSON format. Either this or --stdin is required.]:data:_files' \
+        '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+        {-H,--header}"[Additional request headers in 'name:value' format.]:headers" \
+        '--keepalive-time[The maximum idle time after which a keepalive probe is sent.]' \
+        '--method[The GRPC method to call in the form package.Service/Method. This is required.]:method' \
+        '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+        '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+        '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
+        '--stdin[Read the GRPC request data from stdin in JSON format. Either this or --data is required.]' \
         ${_global_flags[@]} \
-        '*:proto file|dir:_files'
+        '1:proto files or directory:_files'
       ;;
 
-    init)
+    inspect)
+      local -a inspect_cmd
+      inspect_cmd=(
+      'package-deps:Print the given package dependencies. Be sure to set the required flag name.'
+      'package-importers:Print the given package importers. Be sure to set the required flag name.'
+      'packages:List all packages.'
+      )
       _arguments \
-        '--uncomment[Uncomment the example config settings.]' \
-        ${_global_flags[@]} \
-        '*:dir:_files'
+        "1: :{_describe 'inspect command' inspect_cmd}" \
+        '*:: :->args'
+      case $words[1] in
+        package-deps|package-importers|packages)
+          _arguments \
+            '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+            '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+            '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+            '--name[The package name. This is required.]:package name' \
+            '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+            '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+            '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
+            ${_global_flags[@]} \
+            '1:proto files or directory:_files'
+          ;;
+        esac
       ;;
 
-    list-lint-group)
+    lint)
       _arguments \
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
+        '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
+        "--diff-lint-groups[Diff the two lint groups separated by '.', for example google,uber2.]:lint groups"  # TODO(zchee): support command separated
+        '--error-format[The colon-separated fields to print out on error. Valid values are "filename:line:column:id:message". \(default "filename:line:column:message"\)]:error foramt' \
+        '--json[Output as JSON.]' \
+        '--list-all-lint-groups[List all available lint groups instead of running lint.]' \
+        '--list-all-linters[List all available linters instead of running lint.]' \
+        '--list-lint-group[List the linters in the given lint group instead of running lint.]:group' \
+        '--list-linters[List the configured linters instead of running lint.]' \
+        '--protoc-bin-path[The path to the protoc binary. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-wkt-path and must not be used with the protoc-url flag.]:proto binary:_files' \
+        '--protoc-url[The url to use to download the protoc zip file, otherwise uses GitHub Releases. Setting this option will ignore the config protoc.version setting.]:url:_urls' \
+        '--protoc-wkt-path[The path to the well-known types. Setting this option will ignore the config protoc.version setting. This flag must be used with protoc-bin-path and must not be used with the protoc-url flag.]:well-known types path:_files' \
         ${_global_flags[@]} \
-        '*:group' \
+        '1:proto files or directory:_files'
       ;;
 
-    protoc-commands)
+    version)
       _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
-        '--gen[Print the commands that would be run on gen instead of compile.]' \
-        ${_global_flags[@]} \
-        '*:dir:_files'
-      ;;
-
-    service-descriptor-proto)
-      _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
-        ${_global_flags[@]} \
-        '1:dir:_files' \
-        '2:servicePath:_files'
-      ;;
-
-    (compile|gen|lint)
-      _arguments \
-        '--dir-mode[Run as if the directory the file was given, but only print the errors from the file.]' \
-        ${_global_flags[@]} \
-        '*:proto file|dir:_files'
-      ;;
-
-    (clean|download|list-all-lint-groups|list-all-linters|list-linters|version)
-      _arguments \
+        '--json[Output as JSON.]' \
         ${_global_flags[@]}
+      ;;
+
+    help)
+      _arguments \
+        ${_global_flags[@]} \
+        "1: :{_describe 'command' commands}"
       ;;
   esac
 
