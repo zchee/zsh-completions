@@ -1,50 +1,60 @@
 #compdef jtool2
 
 # -----------------------------------------------------------------------------
-# Copyright (c) 2018, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
+# Copyright (c) 2018-2019, Jonathan Levin (@Morpheus______ / http://newosxbook.com)
 # All rights reserved.
 # -----------------------------------------------------------------------------
 #
 # jtool2
 #   http://newosxbook.com/tools/jtool2.tgz
 #
-# version: 2.0 (alpha 1, Paris) compiled on Sep 22 2018 17:55:31
+# version: 2.0 (beta 1, Cheltenham) compiled on Feb 14 2019 18:35:15
 #
 # -----------------------------------------------------------------------------
 #
-# Usage: jtool2 [options] _filename_
+# Usage: jtool [options] _filename_
 #
 # OTool Compatible Options:
 #    -h         	Dump Mach-O (or DYLD Shared Cache) header
 #    -l         	List sections/commands in binary
 #    -L         	print shared libraries used
 #
-# JTool options:
+# JTool (classic) Options:
 #    -S         	List Symbols (like NM)
-#    -v         	Toggle verbosity
-#
-# New Options:
+#    -v[v]      	Toggle verbosity (vv = very verbose)
+#    -e         	extract fat slice, Mach-O segment/section, dyld shared cache dylib or (NEW) kernelcache kext
 #    -q         	Quick operation - do not process any symbols in the Mach-O
 #    -F         	find all occurrences of _string_ in binary
 #    -a         	Find offset/segment corresponding to virtual address _addr_
 #    -o         	Find address corresponding to offset _offset_
 #    -d         	Dump (smart dump, will disassemble text and dump data by autodetecting)
 #
-# Newer (JTool 2) Options:
-#    --analyze  	Analyze file and create a companion file
+# Code Signing Options:
+#    --sig      	Show code signature in binary (if any)
+#    --ent      	Show entitlements in binary (if any)
+#
+# Joker Compatible Options (applicable on kernel caches only):
+#    -k         	List kexts
+#    -K         	Kextract™ a kernel extension by its bundle ID
+#    -dec       	Decompress a kernelcache to /tmp/kernel (no longer necessary since JTool can now operate on compressed caches)
 #
 # dyldinfo Compatible Options:
-#    -bind     	print addresses dyld will set based on symbolic lookups
-#    -lazy_bind	print addresses dyld will lazily set on first use
-#    -opcodes  	print opcodes used to generate the rebase and binding information
-#    -function_starts	print table of function start addresses
+#    --bind     		print addresses dyld will set based on symbolic lookups
+#    --lazy_bind		print addresses dyld will lazily set on first use
+#    --opcodes  		print opcodes used to generate the rebase and binding information
+#    --function_starts	print table of function start addresses
+#
+# Newer (JTool 2) Options:
+#    --analyze  	Analyze file and create a companion file
+#    --tbd      	Create a .tbd file (for *OS private frameworks only - you'll need the dyld shared cache for this)
+#    -D         	Decompile (totally experimental - would love your feedback if you're reading this)
 #
 # Environment Variables:
 #    ARCH                	Select architecture slice. Set to arm64, arm64e, arm64_32, armv7, armv7k, x86_64 or (not for long) i386
 #    JDEBUG              	Enhanced debug output. May be very verbose
 #    JCOLOR              	ANSI Colors. Note you'll need 'less -R' if piping output
 #    JTOOLDIR            	path to search for companion jtool files (default: $PWD).
-# 		                    Use this to force create a file, if one does not exist
+# 			Use this to force create a file, if one does not exist
 #    NOPSUP              	Suppress NOPs in disassembly
 #
 # -----------------------------------------------------------------------------
@@ -53,24 +63,64 @@ function _jtool2() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
+  local -a otool_compatible_options
+  otool_compatible_options=(
+  '-h:Dump Mach-O \(or DYLD Shared Cache\) header'
+  '-l:List sections/commands in binary'
+  '-L:print shared libraries used'
+  )
+
+  local -a jtool_classic_options
+  jtool_classic_options=(
+  '-S:List Symbols \(like NM\)'
+  '-v:Toggle verbosity'
+  '-vv:Toggle very verbose'
+  '-e:extract fat slice, Mach-O segment/section, dyld shared cache dylib or (NEW) kernelcache kext'
+  '-q:Quick operation - do not process any symbols in the Mach-O'
+  '-F:find all occurrences of _string_ in binary'
+  '-a:Find offset/segment corresponding to virtual address _addr_'
+  '-o:Find address corresponding to offset _offset_'
+  '-d:Dump \(smart dump, will disassemble text and dump data by autodetecting\)'
+  )
+
+  local -a code_signing_options
+  code_signing_options=(
+  '--sig:Show code signature in binary \(if any\)'
+  '--ent:Show entitlements in binary \(if any\)'
+  )
+
+  local -a joker_compatible_options
+  joker_compatible_options=(
+  '-k:List kexts'
+  '-K:Kextract™ a kernel extension by its bundle ID'
+  '-dec:Decompress a kernelcache to /tmp/kernel \(no longer necessary since JTool can now operate on compressed caches\)'
+  )
+
+  local -a dyldinfo_compatible_options
+  dyldinfo_compatible_options=(
+  '--bind:print addresses dyld will set based on symbolic lookups'
+  '--lazy_bind:print addresses dyld will lazily set on first use'
+  '--opcodes:print opcodes used to generate the rebase and binding information'
+  '--function_starts:print table of function start addresses'
+  )
+
+  local -a newer_jtool2_options
+  newer_jtool2_options=(
+  '--analyze:Analyze file and create a companion file'
+  "--tbd:Create a .tbd file \(for *OS private frameworks only - you'll need the dyld shared cache for this\)]"
+  "-D:Decompile:totally experimental - would love your feedback if you're reading this]"
+  )
+
+  _describe -t otool_compatible_options 'OTool Compatible Options' otool_compatible_options
+  _describe -t jtool_classic_options 'JTool (classic) Options' jtool_classic_options
+  _describe -t code_signing_options 'Code Signing Options' code_signing_options
+  _describe -t joker_compatible_options 'Joker Compatible Options (applicable on kernel caches only)' joker_compatible_options
+  _describe -t dyldinfo_compatible_options 'dyldinfo Compatible Options' dyldinfo_compatible_options
+  _describe -t newer_jtool2_options 'Newer (JTool 2) Options' newer_jtool2_options
+
   _arguments -C \
-    '-h[dump Mach-O (or DYLD Shared Cache) header]' \
-    '-l[list sections/commands in binary]' \
-    '-L[print shared libraries used]' \
-    '-S[list Symbols (like NM)]' \
-    '-v[toggle verbosity]' \
-    '-q[quick operation - do not process any symbols in the Mach-O]' \
-    '-F[find all occurrences of _string_ in binary]:__string__' \
-    '-a[find offset/segment corresponding to virtual address _addr_]:virtual address (0x...)' \
-    '-o[find address corresponding to offset _offset_]:offset (0x...)' \
-    '-d[dump \(smart dump, will disassemble text and dump data by autodetecting\)]' \
-    '--analyze[analyze file and create a companion file]' \
-    '--pages[show pages]' \
-    '-bind[print addresses dyld will set based on symbolic lookups]' \
-    '-lazy_bind[print addresses dyld will lazily set on first use]' \
-    '-opcodes[print opcodes used to generate the rebase and binding information]' \
-    '-function_starts[print table of function start addresses]' \
-    '*:filename:_files' \
+    '--help[Show help]' \
+    '*:_filename_:_files' \
     && ret=0
 
   return ret
