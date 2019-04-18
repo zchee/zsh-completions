@@ -1,0 +1,109 @@
+#compdef errcheck
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/kisielk/errcheck
+#
+# -----------------------------------------------------------------------------
+#
+# Usage of errcheck:
+#   -abspath
+#     	print absolute paths to files
+#   -asserts
+#     	if true, check for ignored type assertion results
+#   -blank
+#     	if true, check for errors assigned to blank identifier
+#   -exclude string
+#     	Path to a file containing a list of functions to exclude from checking
+#   -ignore value
+#     	[deprecated] comma-separated list of pairs of the form pkg:regex
+#     	            the regex is used to ignore names within pkg.
+#   -ignorepkg string
+#     	comma-separated list of package paths to ignore
+#   -ignoretests
+#     	if true, checking of _test.go files is disabled
+#   -tags value
+#     	space-separated list of build tags to include
+#   -verbose
+#     	produce more verbose logging
+#
+# -----------------------------------------------------------------------------
+
+function _errcheck() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _go_files() {
+    _alternative '*:go file:_path_files -g "*.go(-.)"'
+  }
+
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go package:_path_files -W "$p/src" -/'
+    done
+    _alternative '*: :_go_files'
+
+    local -a go_args
+    go_args=(
+    './...:glob match'
+    'main:top-level package in a stand-alone executable.'
+    'all:expands to all packages found in all the GOPATH trees.'
+    'std:all but expands to just the packages in the standard Go library.'
+    "cmd:expands to the Go repository's commands and their internal libraries."
+    )
+    _describe 'args' go_args
+  }
+
+  _arguments -C \
+    '-abspath[print absolute paths to files]' \
+    '-asserts[check for ignored type assertion results]' \
+    '-blank[check for errors assigned to blank identifier]' \
+    '-exclude[Path to a file containing a list of functions to exclude from checking]:exclude path:_files' \
+    "-ignore[Deprecated: comma-separated list of pairs of the form 'pkg:regex' the regex is used to ignore names within pkg.]:ignore regex pattern" \
+    '-ignorepkg[comma-separated list of package paths to ignore]:ignore package paths:_go_packages'\
+    '-ignoretests[checking of _test.go files is disabled]' \
+    '-tags[space-separated list of build tags to include]:go tags' \
+    '-verbose[produce more verbose logging]' \
+    '*:: :_go_packages' \
+    && ret=0
+
+  return ret
+}
+
+_errcheck "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
