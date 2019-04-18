@@ -49,7 +49,7 @@ function _$BIN() {
   )
 
   _arguments -C \
-    "1: :{_describe '$BIN command' commands}" \
+    "1: :{_describe '$BIN commands' commands}" \
     '*:: :->args' \
     && ret=0
 
@@ -60,7 +60,6 @@ function _$BIN() {
         return
       fi
       _arguments '*:before the (( CURRENT == 2 )) comment:_files'
-      ;;
 
       case $words[1] in
         subcommand1)
