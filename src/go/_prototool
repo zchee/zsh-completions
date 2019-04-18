@@ -857,7 +857,7 @@ function _prototool() {
       'init:Generate an initial config file in the current or given directory.'
       )
       _arguments \
-        "1: :{_describe 'cache command' cache_cmd}" \
+        "1: :{_describe 'config command' config_cmd}" \
         '*:: :->args'
       case $words[1] in
         init)
@@ -879,7 +879,7 @@ function _prototool() {
 
     files)
       _arguments \
-        '--cache-path[The path to use for the cache, otherwise uses the default behavior.]:cache path:_files'
+        '--cache-path[The path to use for the cache, otherwise uses the default behavior.]:cache path:_files' \
         ${_global_flags[@]} \
         '1:proto files or directory:_files'
       ;;
@@ -901,7 +901,7 @@ function _prototool() {
         '1:proto files or directory:_files'
       ;;
 
-    gererate)
+    generate)
       _arguments \
         '--cache-path[The path to use for the cache, otherwise uses the default behavior. The user is expected to clean and manage this cache path. See prototool help cache update for more details.]:cache path:_directories' \
         '--config-data[The configuration data to use instead of reading prototool.yaml or prototool.json files.]:config data:_files' \
