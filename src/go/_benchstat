@@ -35,34 +35,39 @@
 #
 # golang.org/x/perf/cmd/benchstat
 #
+# -----------------------------------------------------------------------------
+#
 # usage: benchstat [options] old.txt [new.txt] [more.txt ...]
 # options:
 #   -alpha α
-#         consider change significant if p < α (default 0.05)
+#     	consider change significant if p < α (default 0.05)
 #   -delta-test test
-#         significance test to apply to delta: utest, ttest, or none (default "utest")
+#     	significance test to apply to delta: utest, ttest, or none (default "utest")
 #   -geomean
-#         print the geometric mean of each file
+#     	print the geometric mean of each file
 #   -html
-#         print results as an HTML table
+#     	print results as an HTML table
+#   -sort order
+#     	sort by order: [-]delta, [-]name, none (default "none")
 #   -split labels
-#         split benchmarks by labels (default "pkg,goos,goarch")
+#     	split benchmarks by labels (default "pkg,goos,goarch")
 #
 # -----------------------------------------------------------------------------
 
 function _benchstat() {
-  local context curcontext=$curcontext state line ret=1
+  local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
   _arguments -C \
-    '-alpha[consider change significant if p < α (default 0.05)]:α' \
-    '-delta-test[significance test to apply to delta: utest, ttest, or none (default "utest")]:test' \
+    '-alpha[consider change significant if p < α \(default 0.05\)]:alpha' \
+    '-delta-test[significance test to apply to delta. \(default "utest"\)]:test:(utest ttest none)' \
     '-geomean[print the geometric mean of each file]' \
     '-html[print results as an HTML table]' \
-    '-split[split benchmarks by labels (default "pkg,goos,goarch")]:labels' \
-    "1:old.txt:_files" \
+    '-sort[sort by order. \(default "none"\)]:order:(delta name -delta -name none)' \
+    '-split[split benchmarks by labels \(default "pkg,goos,goarch"\)]:labels' \
+    '1:old.txt:_files' \
     '2:new.txt:_files' \
-    '*:more.txt...:_files' \
+    '*:more.txt:_files' \
     && ret=0
 
   return ret
