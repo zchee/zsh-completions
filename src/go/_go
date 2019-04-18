@@ -1918,7 +1918,7 @@
 # depends on specific versions of golang.org/x/text and gopkg.in/yaml.v2:
 #
 # 	module example.com/m
-#	
+#
 # 	require (
 # 		golang.org/x/text v0.3.0
 # 		gopkg.in/yaml.v2 v2.1.0
@@ -2092,11 +2092,11 @@
 # More generally the go command expects that packages follow the
 # "import compatibility rule", which says:
 #
-# "If an old package and a new package have the same import path, 
+# "If an old package and a new package have the same import path,
 # the new package must be backwards compatible with the old package."
 #
 # Because the go command assumes the import compatibility rule,
-# a module definition can only set the minimum required version of one 
+# a module definition can only set the minimum required version of one
 # of its dependencies: it cannot set a maximum or exclude selected versions.
 # Still, the import compatibility rule is not a guarantee: it may be that
 # v1.5.4 is buggy and not a backwards-compatible replacement for v1.5.3.
@@ -2129,7 +2129,7 @@
 #
 # As a special case, for historical reasons, module paths beginning with
 # gopkg.in/ continue to use the conventions established on that system:
-# the major version is always present, and it is preceded by a dot 
+# the major version is always present, and it is preceded by a dot
 # instead of a slash: gopkg.in/yaml.v1 and gopkg.in/yaml.v2, not
 # gopkg.in/yaml and gopkg.in/yaml/v2.
 #
@@ -2183,7 +2183,7 @@
 # Get resolves and adds dependencies to the current development module
 # and then builds and installs them.
 #
-# The first step is to resolve which dependencies to add. 
+# The first step is to resolve which dependencies to add.
 #
 # For each named package or package pattern, get must decide which version of
 # the corresponding module to use. By default, get chooses the latest tagged
@@ -2680,13 +2680,15 @@ _go() {
       ;;
   esac
 
+  local module_enabled=false
   # enable go mod command ($GO111MODULE)
   if [[ -n $GO111MODULE ]] && [[ $GO111MODULE != 'off' ]]; then
     commands+='mod:module maintenance'
+    module_enabled=true
   fi
 
   _go_files() {
-    _files -g "*.go(-.)"
+    _alternative '*:go file:_path_files -g "*.go(-.)"'
   }
 
   _go_packages() {
@@ -2696,7 +2698,7 @@ _go() {
     for p in $gopaths; do
       _alternative ':go packages:_path_files -W "$p/src" -/'
     done
-    _alternative '*:go file:_go_files'
+    _alternative '*: :_go_files'
   }
 
   _build_flags() {
@@ -3040,9 +3042,13 @@ _go() {
           case "$service" in
             go)
               get_flags+='-u[use the network to update the named packages]'
+              if [[ $module_enabled == 'true' ]]; then
+                get_flags+='-u=[The -u=patch flag (not -u patch) instructs get to update dependencies to use newer patch releases when available.]:only patch version:(patch)'
+              fi
                 ;;
             vgo)
               get_flags+='-u[get to download the latest version of dependencies as well]'
+              get_flags+='-u=[The -u=patch flag (not -u patch) instructs get to update dependencies to use newer patch releases when available.]:only patch version:(patch)'
                 ;;
           esac
           _arguments \
@@ -3201,7 +3207,7 @@ _go() {
                 api)
                   _arguments \
                     '-allow_new[allow API additions (default true)]' \
-                    '-c[optional comma-separated filename(s) to check API against]:string' \ 
+                    '-c[optional comma-separated filename(s) to check API against]:string' \
                     '-contexts[optional comma-separated list of <goos>-<goarch>[-cgo] to override default contexts]:string' \
                     '-except[optional filename of packages that are allowed to change without triggering a failure in the tool]:string' \
                     '-next[optional filename of tentative upcoming API features for the next release]:string' \
