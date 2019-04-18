@@ -365,7 +365,7 @@ function _golangci-lint() {
 
   _all_flags() {
     _arguments -C \
-      '--out-format[Format of output \(default "colored-line-number"\)]:output format:(colored-line-number line-number json tab checkstyle code-climate)' \
+      '--out-format=[Format of output \(default "colored-line-number"\)]:output format:(colored-line-number line-number json tab checkstyle code-climate)' \
       '--print-issued-lines[Print lines of code with issue \(default true\)]' \
       '--print-linter-name[Print linter name in issue line \(default true\)]' \
       '--issues-exit-code int [Exit code when issues were found \(default 1\)]:exit code]' \
