@@ -1,0 +1,136 @@
+#compdef clang-doc
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# USAGE: clang-doc [options] <source0> [... <sourceN>]
+#
+# OPTIONS:
+#
+# Color Options:
+#
+#   This option category has no options.
+#
+# General options:
+#
+#   This option category has no options.
+#
+# Generic Options:
+#
+#   -h                          - Alias for --help
+#   --help                      - Display available options (--help-hidden for more)
+#   --help-hidden               - Display all available options
+#   --help-list                 - Display list of available options (--help-list-hidden for more)
+#   --help-list-hidden          - Display list of all available options
+#   --print-all-options         - Print all option values after command line parsing
+#   --print-options             - Print non-default options after command line parsing
+#   --version                   - Display the version of this program
+#
+# clang-doc options:
+#
+#   --doxygen                   - Use only doxygen-style comments to generate docs.
+#   --extra-arg=<string>        - Additional argument to append to the compiler command line
+#   --extra-arg-before=<string> - Additional argument to prepend to the compiler command line
+#   --format=<value>            - Format for outputted docs.
+#     =yaml                     -   Documentation in YAML format.
+#     =md                       -   Documentation in MD format.
+#   --output=<string>           - Directory for outputting generated files.
+#   -p=<string>                 - Build path
+#   --public                    - Document only public declarations.
+#
+# -p <build-path> is used to read a compile command database.
+#
+# 	For example, it can be a CMake build directory in which a file named
+# 	compile_commands.json exists (use -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+# 	CMake option to get this output). When no build path is specified,
+# 	a search for compile_commands.json will be attempted through all
+# 	parent paths of the first input file . See:
+# 	http://clang.llvm.org/docs/HowToSetupToolingForLLVM.html for an
+# 	example of setting up Clang Tooling on a source tree.
+#
+# <source0> ... specify the paths of source files. These paths are
+# 	looked up in the compile command database. If the path of a file is
+# 	absolute, it needs to point into CMake's source tree. If the path is
+# 	relative, the current working directory needs to be in the CMake
+# 	source tree and the file must be in a subdirectory of the current
+# 	working directory. "./" prefixes in the relative files will be
+# 	automatically removed, but the rest of a relative path must be a
+# 	suffix of a path in the compile command database.
+#
+# -----------------------------------------------------------------------------
+
+function _clang-doc() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '--doxygen[Use only doxygen-style comments to generate docs.]' \
+    '--extra-arg=[Additional argument to append to the compiler command line]:extra-arg' \
+    '--extra-arg-before=[Additional argument to prepend to the compiler command line]:extra-arg-before' \
+    '--format=[Format for outputted docs.]:format:->format' \
+    '--output=[Directory for outputting generated files.]:output directory:_directories' \
+    '-p=[Build path]:build path:_files' \
+    '--public[Document only public declarations.]' \
+    '*:input file:_files' \
+    && ret=0
+
+  local -a llvm_generic_options
+  llvm_generic_options=(
+  [-h,-help]'[Display available options]'
+  '-help-hidden[Display all available options]'
+  '-help-list[Display list of available options]'
+  '-help-list-hidden[Display list of all available options]'
+  '-print-all-options[Print all option values after command line parsing]'
+  '-print-options[Print non-default options after command line parsing]'
+  '-version[Display the version of this program]'
+  )
+  _values 'LLVM generic options' $llvm_generic_options
+
+  case $state in
+    format)
+      local -a format_args
+      format_args=(
+      'yaml:Documentation in YAML format.'
+      'md:Documentation in MD format.'
+      )
+      _arguments \
+        "*: :{_describe 'format' format_args}"
+      ;;
+  esac
+
+  return ret
+}
+
+_clang-doc "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
