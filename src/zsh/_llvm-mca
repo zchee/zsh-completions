@@ -1,0 +1,148 @@
+#compdef llvm-mca
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# OVERVIEW: llvm machine code performance analyzer.
+#
+# USAGE: llvm-mca [options] <input file>
+#
+# OPTIONS:
+#
+# Color Options:
+#
+#   This option category has no options.
+#
+# General options:
+#
+#   This option category has no options.
+#
+# Generic Options:
+#
+#   -h                               - Alias for --help
+#   --help                           - Display available options (--help-hidden for more)
+#   --help-hidden                    - Display all available options
+#   --help-list                      - Display list of available options (--help-list-hidden for more)
+#   --help-list-hidden               - Display list of all available options
+#   --print-all-options              - Print all option values after command line parsing
+#   --print-options                  - Print non-default options after command line parsing
+#   --version                        - Display the version of this program
+#
+# Tool Options:
+#
+#   --decoder-throughput=<uint>      - Maximum throughput from the decoders (instructions per cycle)
+#   --dispatch=<uint>                - Override the processor dispatch width
+#   --instruction-tables             - Print instruction tables
+#   --iterations=<uint>              - Number of iterations to run
+#   --lqueue=<uint>                  - Size of the load queue
+#   --march=<string>                 - Target architecture. See -version for available targets
+#   --mcpu=<cpu-name>                - Target a specific cpu type (-mcpu=help for details)
+#   --micro-op-queue-size=<uint>     - Number of entries in the micro-op queue
+#   --mtriple=<string>               - Target triple. See -version for available targets
+#   --noalias                        - If set, assume that loads and stores do not alias
+#   -o=<filename>                    - Output filename
+#   --output-asm-variant=<int>       - Syntax variant to use for output printing
+#   --register-file-size=<uint>      - Maximum number of physical registers which can be used for register mappings
+#   --squeue=<uint>                  - Size of the store queue
+#
+# View Options:
+#
+#   --all-stats                      - Print all hardware statistics
+#   --all-views                      - Print all views including hardware statistics
+#   --bottleneck-analysis            - Enable bottleneck analysis (disabled by default)
+#   --dispatch-stats                 - Print dispatch statistics
+#   --instruction-info               - Print the instruction info view (enabled by default)
+#   --register-file-stats            - Print register file statistics
+#   --resource-pressure              - Print the resource pressure view (enabled by default)
+#   --retire-stats                   - Print retire control unit statistics
+#   --scheduler-stats                - Print scheduler statistics
+#   --summary-view                   - Print summary view (enabled by default)
+#   --timeline                       - Print the timeline view
+#   --timeline-max-cycles=<uint>     - Maximum number of cycles in the timeline view. Defaults to 80 cycles
+#   --timeline-max-iterations=<uint> - Maximum number of iterations to print in timeline view
+#
+# -----------------------------------------------------------------------------
+
+function _llvm-mca() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '--decoder-throughput=[Maximum throughput from the decoders \(instructions per cycle\)]:maximum throughput' \
+    '--dispatch=[Override the processor dispatch width]:num of process' \
+    '--instruction-tables[Print instruction tables]' \
+    '--iterations=[Number of iterations to run]:num of iterations' \
+    '--lqueue=[Size of the load queue]:load queue size' \
+    '--march=[Target architecture. See -version for available targets]:arch:(x86 x86-64)' \
+    '--mcpu=[Target a specific cpu type \(-mcpu=help for details\)]:target cpu type' \
+    '--micro-op-queue-size=[Number of entries in the micro-op queue]:num of queue' \
+    '--mtriple=[Target triple. See -version for available targets]:target triple' \
+    '--noalias[If set, assume that loads and stores do not alias]' \
+    '-o=[Output filename]:output:_files' \
+    '--output-asm-variant=[Syntax variant to use for output printing]' \
+    '--register-file-size=[Maximum number of physical registers which can be used for register mappings]:register-file-size' \
+    '--squeue=[Size of the store queue]:store queue size' \
+    '--all-stats[Print all hardware statistics]' \
+    '--all-views[Print all views including hardware statistics]' \
+    '--bottleneck-analysis[Enable bottleneck analysis (disabled by default)]' \
+    '--dispatch-stats[Print dispatch statistics]' \
+    '--instruction-info[Print the instruction info view (enabled by default)]' \
+    '--register-file-stats[Print register file statistics]' \
+    '--resource-pressure[Print the resource pressure view (enabled by default)]' \
+    '--retire-stats[Print retire control unit statistics]' \
+    '--scheduler-stats[Print scheduler statistics]' \
+    '--summary-view[Print summary view (enabled by default)]' \
+    '--timeline[Print the timeline view]' \
+    '--timeline-max-cycles=[Maximum number of cycles in the timeline view. Defaults to 80 cycles]:num of max timeline view' \
+    '--timeline-max-iterations=[Maximum number of iterations to print in timeline view]:num of max print in timeline view' \
+    '*:input file:_files' \
+    && ret=0
+
+  local -a llvm_generic_options
+  llvm_generic_options=(
+  [-h,-help]'[Display available options]'
+  '-help-hidden[Display all available options]'
+  '-help-list[Display list of available options]'
+  '-help-list-hidden[Display list of all available options]'
+  '-print-all-options[Print all option values after command line parsing]'
+  '-print-options[Print non-default options after command line parsing]'
+  '-version[Display the version of this program]'
+  )
+  _values 'LLVM generic options' $llvm_generic_options
+
+  return ret
+}
+
+_llvm-mca "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
