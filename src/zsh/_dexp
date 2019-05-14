@@ -1,0 +1,115 @@
+#compdef dexp
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# OVERVIEW:
+# This is an **experimental** interactive tool to process user-provided search
+# queries over given symbol collection obtained via clangd-indexer. The
+# tool can be used to evaluate search quality of existing index implementations
+# and manually construct non-trivial test cases.
+#
+# Type use "help" request to get information about the details.
+#
+# USAGE: dexp [options] --index-path Path to the index
+#
+# OPTIONS:
+#
+# Color Options:
+#
+#   --color                                 - Use colors in output (default=autodetect)
+#
+# General options:
+#
+#   --disable-symbolication                 - Disable symbolizing crash backtraces.
+#   --index-path=<string>                   - Path to the index
+#   --non-global-value-max-name-size=<uint> - Maximum size for the name of non-global values.
+#   --opt-bisect-limit=<int>                - Maximum optimization to perform
+#   --pass-remarks=<pattern>                - Enable optimization remarks from passes whose name match the given regular expression
+#   --pass-remarks-analysis=<pattern>       - Enable optimization analysis remarks from passes whose name match the given regular expression
+#   --pass-remarks-missed=<pattern>         - Enable missed optimization remarks from passes whose name match the given regular expression
+#   --remarks-yaml-string-table             -
+#   --rng-seed=<seed>                       - Seed for the random number generator
+#   --time-trace-granularity=<uint>         - Minimum time granularity (in microseconds) traced by time profiler
+#   --use-dbg-addr                          - Use llvm.dbg.addr for all local variables
+#
+# Generic Options:
+#
+#   -h                                      - Alias for --help
+#   --help                                  - Display available options (--help-hidden for more)
+#   --help-hidden                           - Display all available options
+#   --help-list                             - Display list of available options (--help-list-hidden for more)
+#   --help-list-hidden                      - Display list of all available options
+#   --print-all-options                     - Print all option values after command line parsing
+#   --print-options                         - Print non-default options after command line parsing
+#   --version                               - Display the version of this program
+#
+# -----------------------------------------------------------------------------
+
+function _dexp() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '--disable-symbolication[Disable symbolizing crash backtraces.]' \
+    '--index-path=[Path to the index]:index-path:_files' \
+    '--non-global-value-max-name-size=[Maximum size for the name of non-global values.]:num of max non-global values' \
+    '--opt-bisect-limit=[Maximum optimization to perform]:limit of opt bisect' \
+    '--pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]' \
+    '--pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:analysis remarks regexp pattern' \
+    '--pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:missed remarks regexp pattern' \
+    '--remarks-yaml-string-table[remarks-yaml-string-table]' \
+    '--rng-seed=[Seed for the random number generator]:seed' \
+    '--time-trace-granularity=[Minimum time granularity (in microseconds) traced by time profiler]:minimum time granularity' \
+    '--use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
+    '--color[Use colors in output]' \
+    && ret=0
+
+  local -a llvm_generic_options
+  llvm_generic_options=(
+  [-h,-help]'[Display available options]'
+  '-help-hidden[Display all available options]'
+  '-help-list[Display list of available options]'
+  '-help-list-hidden[Display list of all available options]'
+  '-print-all-options[Print all option values after command line parsing]'
+  '-print-options[Print non-default options after command line parsing]'
+  '-version[Display the version of this program]'
+  )
+  _values 'LLVM generic options' $llvm_generic_options
+
+  return ret
+}
+
+_dexp "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
