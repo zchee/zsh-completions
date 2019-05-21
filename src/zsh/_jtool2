@@ -45,9 +45,11 @@
 #    --function_starts	print table of function start addresses
 #
 # Newer (JTool 2) Options:
-#    --analyze  	Analyze file and create a companion file
-#    --tbd      	Create a .tbd file (for *OS private frameworks only - you'll need the dyld shared cache for this)
-#    -D         	Decompile (totally experimental - would love your feedback if you're reading this)
+#    --analyze    Analyze file and create a companion file
+#    --symbolicate        Symbolicate an .ips panic file
+#    --tbd        Create a .tbd file (for *OS private frameworks only - you'll need the dyld shared cache for this)
+#    -D           Decompile (totally experimental - would love your feedback if you're reading this)
+#    -G           Gadget search (specify gadgets as comma delimited mnemonics)#
 #
 # Environment Variables:
 #    ARCH                	Select architecture slice. Set to arm64, arm64e, arm64_32, armv7, armv7k, x86_64 or (not for long) i386
@@ -107,8 +109,10 @@ function _jtool2() {
   local -a newer_jtool2_options
   newer_jtool2_options=(
   '--analyze:Analyze file and create a companion file'
-  "--tbd:Create a .tbd file \(for *OS private frameworks only - you'll need the dyld shared cache for this\)]"
-  "-D:Decompile:totally experimental - would love your feedback if you're reading this]"
+  '--symbolicate:Symbolicate an .ips panic file'
+  "--tbd:Create a .tbd file \(for *OS private frameworks only - you'll need the dyld shared cache for this\)"
+  "-D:Decompile:totally experimental \- would love your feedback if you're reading this"
+  '-G:Gadget search \(specify gadgets as comma delimited mnemonics\)'
   )
 
   _describe -t otool_compatible_options 'OTool Compatible Options' otool_compatible_options
