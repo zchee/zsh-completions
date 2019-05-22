@@ -1,0 +1,118 @@
+#compdef kextstat
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2016, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# KEXTSTAT(8)               BSD System Manager's Manual              KEXTSTAT(8)
+#
+# NAME
+#      kextstat -- display status of loaded kernel extensions (kexts)
+#
+# SYNOPSIS
+#      kextstat [-a] [-h] [-k] [-l] [-b identifier] ...
+#
+# DESCRIPTION
+#      The kextstat utility displays the status of any kexts currently loaded in the kernel.  The following information is shown for each loaded kext:
+#
+#      Index     The load index of the kext (used to track linkage references).  Gaps in the list indicate kexts that have been unloaded.
+#
+#      Refs      The number of references to this kext by others.  If nonzero, the kext cannot be unloaded.
+#
+#      Address   The address in kernel space where the kext has been loaded.
+#
+#      Size      The number of bytes of kernel memory that the kext occupies.  If this is zero, the kext is a built-in part of the kernel that has a record as a kext for resolving dependencies
+#                among kexts.
+#
+#      Wired     The number of wired bytes of kernel memory that the kext occupies.
+#
+#      Architecture (if the -a option is used)
+#                The architecture of the kext.
+#
+#      Name      The CFBundleIdentifier of the kext.
+#
+#      (Version)
+#                The CFBundleVersion of the kext.
+#
+#      <Linked Against>
+#                The index numbers of all other kexts that this kext has a reference to.
+#
+# OPTIONS
+#      These options are available:
+#
+#      -a, -arch
+#                Print the architecture of the kext.
+#
+#      -b identifier, -bundle-id identifier
+#                Display the status of only the kext with the given bundle identifier.  This option trumps the -no-kernel option; if both are given and a kernel component is specified, its
+#                information is shown.
+#
+#      -h, -help
+#                Print a help message describing each option flag and exit with a success result, regardless of any other options on the command line.
+#
+#      -k, -no-kernel
+#                Don't show information for built-in components of the kernel.
+#
+#      -l, -list-only
+#                Print the list of loaded kexts only and omit the header (useful for running output through text-analysis tools).
+#
+#      -s, -sort
+#                Sort the list by load address.
+#
+# DIAGNOSTICS
+#      The kextstat utility exits with a status of 0 on success and with a nonzero status if an error occurs.
+#
+# SEE ALSO
+#      kextcache(8), kextd(8), kextload(8), kextunload(8), kextutil(8)
+#
+# Darwin                          March 13, 2014                          Darwin
+# -----------------------------------------------------------------------------
+
+function _kextstat() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    {-a,-arch}'[Print the architecture of the kext.]' \
+    {-b,-bundle-id}'[Display the status of only the kext with the given bundle identifier.]:identifier' \
+    {-h,-help}'[Print a help message describing each option flag and exit with a success result, regardless of any other options on the command line.]' \
+    {-k,-no-kernel}"[Don't show information for built-in components of the kernel.]" \
+    {-l,-list-only}'[Print the list of loaded kexts only and omit the header (useful for running output through text-analysis tools).]' \
+    {-s,-sort}'[Sort the list by load address.]' \
+    && ret=0
+
+  return ret
+}
+
+_kextstat "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
