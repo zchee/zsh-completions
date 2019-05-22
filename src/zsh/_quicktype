@@ -1,0 +1,341 @@
+#compdef quicktype
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/quicktype/quicktype
+#
+# -----------------------------------------------------------------------------
+#
+# Synopsis
+#
+#   $ quicktype [--lang LANG] [--out FILE] FILE|URL ...
+#
+#   LANG ...
+#   cs|go|rs|cr|c++|objc|java|ts|js|flow|swift|kotlin|elm|schema|ruby|dart|py|pike
+#
+# Description
+#
+#   Given JSON sample data, quicktype outputs code for working with that data in
+#   C#, Go, Rust, Crystal, C++, Objective-C, Java, TypeScript, JavaScript, Flow,
+#   Swift, Kotlin (beta), Elm, JSON Schema, Ruby, Dart, Python, Pike.
+#
+# Options
+#
+#  -o, --out FILE                                                                  The output file. Determines --lang and --top-level.
+#  -t, --top-level NAME                                                            The name for the top level type.
+#  -l, --lang                                                                      The target language. cs|go|rs|cr|c++|objc|java|ts|js|flow|swift|kotlin|elm|schema|ruby|dart|py|pike
+#  -s, --src-lang json|schema|graphql|postman|typescript                           The source language (default is json).
+#  --src FILE|URL|DIRECTORY                                                        The file, url, or data directory to type.
+#  --src-urls FILE                                                                 Tracery grammar describing URLs to crawl.
+#  --no-maps                                                                       Don't infer maps, always use classes.
+#  --no-enums                                                                      Don't infer enums, always use strings.
+#  --no-uuids                                                                      Don't convert UUIDs to UUID objects.
+#  --no-date-times                                                                 Don't infer dates or times.
+#  --no-integer-strings                                                            Don't convert stringified integers to integers.
+#  --no-boolean-strings                                                            Don't convert stringified booleans to booleans.
+#  --no-combine-classes                                                            Don't combine similar classes.
+#  --no-ignore-json-refs                                                           Treat $ref as a reference in JSON.
+#  --graphql-schema FILE                                                           GraphQL introspection file.
+#  --graphql-introspect URL                                                        Introspect GraphQL schema from a server.
+#  --http-method METHOD                                                            HTTP method to use for the GraphQL introspection query.
+#  --http-header HEADER                                                            HTTP header for the GraphQL introspection query.
+#  -S, --additional-schema FILE                                                    Register the $id's of additional JSON Schema files.
+#  --alphabetize-properties                                                        Alphabetize order of class properties.
+#  --all-properties-optional                                                       Make all class properties optional.
+#  --quiet                                                                         Don't show issues in the generated code.
+#  --debug OPTIONS or all                                                          Comma separated debug options: print-graph, print-reconstitution, print-gather-names, print-transformations, print-schema-resolving, print-times, provenance
+#  --telemetry enable|disable                                                      Enable anonymous telemetry to help improve quicktype
+#  -h, --help                                                                      Get some help.
+#  -v, --version                                                                   Display the version of quicktype
+#
+# Options for C#
+#
+#  --namespace NAME                                  Generated namespace
+#  --csharp-version 5|6                              C# version
+#  --density normal|dense                            Property density
+#  --array-type array|list                           Use T[] or List<T>
+#  --number-type double|decimal                      Type to use for numbers
+#  --features complete|attributes-only|just-types    Output features
+#  --[no-]check-required                             Fail if required properties are missing (off by default)
+#  --any-type object|dynamic                         Type to use for "any"
+#  --base-class EntityData|Object                    Base class
+#
+# Options for Go
+#
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --package NAME                                    Generated package name
+#
+# Options for Rust
+#
+#  --density normal|dense                            Density
+#  --visibility private|crate|public                 Field visibility
+#  --[no-]derive-debug                               Derive Debug impl (off by default)
+#
+# Options for C++
+#
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --namespace NAME                                  Name of the generated namespace(s)
+#  --code-format with-struct|with-getter-setter      Generate classes with getters/setters, instead of structs
+#  --wstring use-string|use-wstring                  Store strings using Utf-16 std::wstring, rather than Utf-8 std::string
+#  --msbuildPermissive not-permissive|use-           Moves to_json and from_json types into the nlohmann::details namespace, so that msbuild can build it with conformance mode disabled permissive
+#  --const-style west-const|east-const               Put const to the left/west (const T) or right/east (T const)
+#  --source-style single-source|multi-source         Source code generation type,  whether to generate single or multiple source files
+#  --include-location local-include|global-include   Whether json.hpp is to be located globally or locally
+#  --type-style pascal-case|underscore-case|camel-   Naming style for types
+#  case|upper-underscore-case|pascal-case-upper-acronyms|camel-case-upper-acronyms
+#  --member-style underscore-case|pascal-case|camel-case|upper-underscore-case|pascal-case-upper-acronyms|camel-case-upper-acronyms            Naming style for members
+#  --enumerator-style upper-underscore-case|underscore-case|pascal-case|camel-case|pascal-case-upper-acronyms|camel-case-upper-acronyms              Naming style for enumerators
+#  --enum-type NAME                                  Type of enum class
+#  --[no-]boost                                      Require a dependency on boost. Without boost, C++17 is required (on by default)
+#
+# Options for Objective-C
+#
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --class-prefix PREFIX                             Class prefix
+#  --features all|interface|implementation           Interface and implementation
+#  --[no-]extra-comments                             Extra comments (off by default)
+#  --[no-]functions                                  C-style functions (off by default)
+#
+# Options for Java
+#
+#  --package NAME                                    Generated package name
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --acronym-style original|pascal|camel|lowerCase   Acronym naming style
+#
+# Options for TypeScript
+#
+#  --[no-]just-types                                 Interfaces only (off by default)
+#  --[no-]nice-property-names                        Transform property names to be JavaScripty (off by default)
+#  --[no-]explicit-unions                            Explicitly name unions (off by default)
+#  --[no-]runtime-typecheck                          Verify JSON.parse results at runtime (on by default)
+#  --acronym-style original|pascal|camel|lowerCase   Acronym naming style
+#
+# Options for JavaScript
+#
+#  --[no-]runtime-typecheck                          Verify JSON.parse results at runtime (on by default)
+#  --acronym-style original|pascal|camel|lowerCase   Acronym naming style
+#
+# Options for Flow
+#
+#  --[no-]just-types                                 Interfaces only (off by default)
+#  --[no-]nice-property-names                        Transform property names to be JavaScripty (off by default)
+#  --[no-]explicit-unions                            Explicitly name unions (off by default)
+#  --[no-]runtime-typecheck                          Verify JSON.parse results at runtime (on by default)
+#  --acronym-style original|pascal|camel|lowerCase   Acronym naming style
+#
+# Options for Swift
+#
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --struct-or-class struct|class                    Structs or classes
+#  --density dense|normal                            Code density
+#  --[no-]initializers                               Generate initializers and mutators (on by default)
+#  --access-level internal|public                    Access level
+#  --[no-]url-session                                URLSession task extensions (off by default)
+#  --[no-]alamofire                                  Alamofire extensions (off by default)
+#  --[no-]support-linux                              Support Linux (off by default)
+#  --type-prefix PREFIX                              Prefix for type names
+#  --protocol none|equatable|hashable                Make types implement protocol
+#  --acronym-style original|pascal|camel|lowerCase   Acronym naming style
+#
+# Options for Kotlin (beta)
+#
+#  --framework just-types|jackson|klaxon             Serialization framework
+#  --package PACKAGE                                 Package
+#
+# Options for Elm
+#
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --module NAME                                     Generated module name
+#  --array-type array|list                           Use Array or List
+#
+# Options for Ruby
+#
+#  --[no-]just-types                                 Plain types only (off by default)
+#  --strictness strict|coercible|none                Type strictness
+#
+# Options for Dart
+#
+#  --[no-]just-types                                 Classes only (off by default)
+#
+# Options for Python
+#
+#  --python-version 2.7|3.5|3.6|3.7                  Python version
+#  --[no-]just-types                                 Classes only (off by default)
+#
+# Examples
+#
+#   Generate C# to parse a Bitcoin API
+#   $ quicktype -o LatestBlock.cs https://blockchain.info/latestblock
+#
+#   Generate Go code from a directory of samples containing:
+#   - Foo.json
+#   + Bar
+#   - bar-sample-1.json
+#   - bar-sample-2.json
+#   - Baz.url
+#   $ quicktype -l go samples
+#
+#   Generate JSON Schema, then TypeScript
+#   $ quicktype -o schema.json https://blockchain.info/latestblock
+#   $ quicktype -o bitcoin.ts --src-lang schema schema.json
+#
+#   Learn more at quicktype.io
+#
+# -----------------------------------------------------------------------------
+
+function _quicktype() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _file_and_url() {
+    _files
+    _urls
+  }
+
+  _arguments -C \
+    '--namespace[Generated namespace]:namespace' \
+    '--csharp-version=[C# version]:version:(5 6)' \
+    '--density=[Property density]:density:(normal dense)' \
+    '--array-type=[Use T\[\] or List<T>]:array type:(array list)' \
+    '--number-type=[Type to use for numbers]:number type:(double decimal)' \
+    '--features=[Output features]:features:(complete attributes-only just-types)' \
+    '--check-required=[Fail if required properties are missing \(off by default\)]' \
+    '--no-check-required[Not fail even if required properties are missing]' \
+    '--any-type=[Type to use for "any"]:any type:(object dynamic)' \
+    '--base-class=[Base class]:any type:(EntityData Object)' \
+    \
+    '--just-types[Plain types only \(off by default\)]' \
+    '--package[Generated package name]:package name' \
+    \
+    '--density[Density]:density:(normal|dense)' \
+    '--visibility=[Field visibility]:visibility:(private crate public)' \
+    '--derive-debug[Derive Debug impl \(off by default\)]' \
+    \
+    '--just-types[Plain types only(off by default\)]' \
+    '--namespace[Name of the generated namespace\(s\)]:namespace' \
+    '--code-format=[Generate classes with getters/setters instead of structs]:generate classes:(with-struct with-getter-setter)' \
+    '--wstring=[Store strings using Utf-16 std::wstring, rather than Utf-8 std::string]:strings type:(use-string use-wstring)' \
+    '--msbuildPermissive=[Moves to_json and from_json types into the nlohmann::details namespace, so that msbuild can build it with conformance mode disabled permissive]:msbuild permissive:(not-permissive use-permissive)' \
+    '--const-style=[Put const to the left/west(const T\) or right/east(T const\)]:visibility:(west-const east-const)' \
+    '--source-style=[Source code generation type, whether to generate single or multiple source files]:source style:(single-source multi-source)' \
+    '--include-location=[Whether json.hpp is to be located globally or locally]:include location:(local-include global-include)' \
+    '--type-style=[Naming style for types]:type naming style:(pascal-case underscore-case camel-case upper-underscore-case pascal-case-upper-acronyms camel-case-upper-acronyms)' \
+    '--member-style=[Naming style for members]:members naming style:(pascal-case underscore-case camel-case upper-underscore-case pascal-case-upper-acronyms camel-case-upper-acronyms)' \
+    '--enumerator-style=[Naming style for enumerators]:enumerators naming style:(upper-underscore-case underscore-case pascal-case camel-case pascal-case-upper-acronyms camel-case-upper-acronyms)' \
+    '--enum-type[Type of enum class]:enum type' \
+    '--boost[Require a dependency on boost. Without boost, C++17 is required \(on by default\)]' \
+    \
+    '--just-types[Plain types only \(off by default\)]' \
+    '--class-prefix[Class prefix]:prefix' \
+    '--features=[Interface and implementation]:features:(all interface implementation)' \
+    '--extra-comments[Extra comments \(off by default\)]' \
+    '--functions[C-style functions \(off by default\)]' \
+    \
+    '--just-types[Interfaces only \(off by default\)]' \
+    '--nice-property-names[Transform property names to be JavaScripty \(off by default\)]' \
+    '--explicit-unions[Explicitly name unions \(off by default\)]' \
+    '--runtime-typecheck[Verify JSON.parse results at runtime \(off by default\)]' \
+    '--acronym-style=[Acronym naming style]:acronym style:(original pascal camel lowerCase)' \
+    \
+    '--runtime-typecheck[Verify JSON.parse results at runtime \(off by default\)]' \
+    '--acronym-style=[Acronym naming style]:acronym style:(original pascal camel lowerCase)' \
+    \
+    '--just-types[Interfaces only \(off by default\)]' \
+    '--nice-property-names[Transform property names to be JavaScripty \(off by default\)]' \
+    '--explicit-unions[Explicitly name unions \(off by default\)]' \
+    '--runtime-typecheck[Verify JSON.parse results at runtime \(off by default\)]' \
+    '--acronym-style=[Acronym naming style]:acronym style:(original pascal camel lowerCase)' \
+    \
+    '--just-types[Plain types only \(off by default\)]' \
+    '--struct-or-class=[Structs or classes]:Structs or classes:(struct class)]' \
+    '--density=[Code density]:Structs or classes:(dense normal)' \
+    '--initializers[Generate initializers and mutators \(off by default\)]' \
+    '--access-level[Access level]:access level' \
+    '--url-session[URLSession task extensions \(off by default\)]' \
+    '--alamofire[Alamofire extensions \(off by default\)]' \
+    '--support-linux[Support Linux \(off by default\)]' \
+    '--type-prefix[Prefix for type names]:prefix' \
+    '--protocol=[types implement protocol]:(protocol:none equatable hashableMake)' \
+    '--acronym-style=[Acronym naming style]:acronym style:(original pascal camel lowerCase)' \
+    \
+    '--framework=[Serialization framework]:framework:(just-types jackson klaxon)' \
+    '--package[Package]:package' \
+    \
+    '--just-types[Plain types only \(off by default\)]' \
+    '--module[Generated module name]:module name' \
+    '--array-type=[Use Array or List]:array type:(array list)' \
+    \
+    '--just-types[Plain types only \(off by default\)]' \
+    '--strictness=[Type strictness]:strictness:(strict coercible none)' \
+    \
+    '--just-types[Plain types only \(off by default\)]' \
+    \
+    '--python-version=[Python version]:version:(2.7 3.5 3.6 3.7)' \
+    '--just-types[Classes only \(off by default\)]' \
+    \
+    {-o,--out}'[The output file.]:output filename:_files' \
+    {-t,--top-level}'[The name for the top level type.]:top level type name' \
+    {-l,--lang}'=[The target language.]:target language:(cs go rs cr c++ objc java ts js flow swift kotlin elm schema ruby dart py pike)' \
+    {-s,--src-lang}='[The source language \(default is json\).]:source language:(json schema graphql postman typescript)' \
+    '--src[The file, url, or data directory to type.]:type:_files' \
+    '--src-urls[Tracery grammar describing URLs to crawl.]:grammar url:_urls' \
+    "--no-maps[Don't infer maps, always use classes.]" \
+    "--no-enums[Don't infer enums, always use strings.]" \
+    "--no-uuids[Don't convert UUIDs to UUID objects.]" \
+    "--no-date-times[Don't infer dates or times.]" \
+    "--no-integer-strings[Don't convert stringified integers to integers.]" \
+    "--no-boolean-strings[Don't convert stringified booleans to booleans.]" \
+    "--no-combine-classes[Don't combine similar classes.]" \
+    '--no-ignore-json-refs[Treat $ref as a reference in JSON.]' \
+    '--graphql-schema[GraphQL introspection file.]:GraphQL file:_files' \
+    '--graphql-introspect[Introspect GraphQL schema from a server.]:GraphQL schema:_urls' \
+    '--http-method[HTTP method to use for the GraphQL introspection query.]:method' \
+    '--http-header[HTTP header for the GraphQL introspection query.]:header' \
+    {-S,--additional-schema}"[Register the \$id's of additional JSON Schema files.]:additional JSON Schema files:_files" \
+    '--alphabetize-properties[Alphabetize order of class properties.]' \
+    '--all-properties-optional[Make all class properties optional.]' \
+    "--quiet[Don't show issues in the generated code.]" \
+    '--debug=[Comma separated debug options]:debug option:(print-graph print-reconstitution print-gather-names print-transformations print-schema-resolving print-times provenance all)' \
+    '--telemetry=[Enable anonymous telemetry to help improve quicktype]:telemetry:(enable disable)' \
+    {-h,--help}'[Get some help.]' \
+    {-v,--version}'[Display the version of quicktype]' \
+    '*:file or url:_file_and_url' \
+    && ret=0
+
+  return ret
+}
+
+_quicktype "$*"
+
+# vim:ft=zsh:et:ts=2:sts=2:sw=2
