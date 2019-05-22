@@ -64,13 +64,13 @@ function _$BIN() {
       case $words[1] in
         subcommand1)
           _arguments \
-            '-foo[subcommand2 -foo argument comment]'
+            '-foo[subcommand2 -foo argument comment]' \
             '*:file:_files'
           ;;
         subcommand2)
           _arguments \
             '-bar[subcommand2 -bar argument comment]' \
-            '-baz[subcommand2 -baz argument comment]'
+            '-baz[subcommand2 -baz argument comment]' \
             '*:devices:_devices'
           ;;
       esac
