@@ -38,42 +38,30 @@ function _protoc() {
   declare -A opt_args
 
   _arguments \
-    {-I,--proto_path}='[Specify the directory in which to search for imports]:PATH' \
+    {-I,--proto_path}'[Specify the directory in which to search for imports]:PATH' \
     '--version[Show version info and exit]' \
     {-h,--help}'[Show this text and exit]' \
-    '--encode=[Read a text-format message of the given type from standard input and write it in binary to standard output]:MESSAGE_TYPE' \
-    '--decode=[Read a binary message of the given type from standard input and write it in text format to standard output]:MESSAGE_TYPE' \
+    '--encode[Read a text-format message of the given type from standard input and write it in binary to standard output]:MESSAGE_TYPE' \
+    '--decode[Read a binary message of the given type from standard input and write it in text format to standard output]:MESSAGE_TYPE' \
     '--decode_raw[Read an arbitrary protocol message from standard input and write the raw tag/value pairs in text format to standard output]' \
     {-o,--descriptor_set_out}='[Writes a FileDescriptorSet (a protocol buffer, defined in descriptor.proto) containing all of the input files to FILE]:FILE' \
     '--include_imports[When using --descriptor_set_out, also include all dependencies of the input files in the set, so that the set is self-contained]' \
     '--include_source_info[When using --descriptor_set_out, do not strip SourceCodeInfo from the FileDescriptorProto]' \
-    '--dependency_out=[Write a dependency output file in the format expected by make. This writes the transitive set of input file paths to FILE]:FILE' \
-    '--error_format=[Set the format in which to print errors]:FORMAT:->format' \
+    '--dependency_out[Write a dependency output file in the format expected by make. This writes the transitive set of input file paths to FILE]:FILE' \
+    '--error_format[Set the format in which to print errors]:error format:(gcc msvs)' \
     '--print_free_field_numbers[Print the free field numbers of the messages defined in the given proto files. Groups share the same field number space with the parent message]' \
-    '--plugin=[Specifies a plugin executable to use. Normally, protoc searches the PATH for plugins, but you may specify additional executables not in the path using this flag]:EXECUTABLE' \
-    '--cpp_out=[Generate C++ header and source]:OUT_DIR' \
-    '--csharp_out=[Generate C# source file]:OUT_DIR' \
-    '--java_out=[Generate Java source file]:OUT_DIR' \
+    '--plugin[Specifies a plugin executable to use. Normally, protoc searches the PATH for plugins, but you may specify additional executables not in the path using this flag]:EXECUTABLE' \
+    '--cpp_out[Generate C++ header and source]:OUT_DIR' \
+    '--csharp_out[Generate C# source file]:OUT_DIR' \
+    '--java_out[Generate Java source file]:OUT_DIR' \
     '--javanano_out=[Generate Java Nano source file]:OUT_DIR' \
-    '--js_out=[Generate JavaScript source]:OUT_DIR' \
-    '--objc_out=[Generate Objective C header and source]:OUT_DIR' \
-    '--php_out=[Generate PHP source file]:OUT_DIR' \
-    '--python_out=[Generate Python source file]:OUT_DIR' \
-    '--ruby_out=[Generate Ruby source file]:OUT_DIR' \
-    '1::proto file:_files' \
-    '*:: :->args' \
+    '--js_out[Generate JavaScript source]:OUT_DIR' \
+    '--objc_out[Generate Objective C header and source]:OUT_DIR' \
+    '--php_out[Generate PHP source file]:OUT_DIR' \
+    '--python_out[Generate Python source file]:OUT_DIR' \
+    '--ruby_out[Generate Ruby source file]:OUT_DIR' \
+    '*::proto file:_files' \
     && ret=0
-
-  case $state in
-    (format)
-      local -a formats
-      formats=(
-      'gcc:the default'
-      'msvs:Microsoft Visual Studio format'
-      )
-      _arguments "*: :{_describe 'format' formats}" \
-      ;;
-  esac
 
   return ret
 }
