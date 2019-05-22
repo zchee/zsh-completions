@@ -1,4 +1,4 @@
-#compdef -P pip[0-9.]#
+#compdef -P pip[0-9.] pip_pypy[0-9.]
 #
 # Completion script for pip (http://pypi.python.org/pypi/pip).
 #
