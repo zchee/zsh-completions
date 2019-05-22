@@ -1,0 +1,465 @@
+#compdef docker-app
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/docker/app
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker [OPTIONS] COMMAND
+#
+# docker-app is a Docker CLI plugin
+#
+# Options:
+#       --config string      Location of client config files (default "/Users/zchee/.config/docker")
+#   -c, --context string     Name of the context to use to connect to the daemon (overrides DOCKER_HOST env var and default context set with "docker context use")
+#   -D, --debug              Enable debug mode
+#   -H, --host list          Daemon socket(s) to connect to
+#   -l, --log-level string   Set the logging level ("debug"|"info"|"warn"|"error"|"fatal") (default "info")
+#       --tls                Use TLS; implied by --tlsverify
+#       --tlscacert string   Trust certs signed only by this CA (default "/Users/zchee/.config/docker/ca.pem")
+#       --tlscert string     Path to TLS certificate file (default "/Users/zchee/.config/docker/cert.pem")
+#       --tlskey string      Path to TLS key file (default "/Users/zchee/.config/docker/key.pem")
+#       --tlsverify          Use TLS and verify the remote
+#
+# Management Commands:
+#   app                        Docker Application
+#
+# Run 'docker COMMAND --help' for more information on a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app COMMAND
+#
+# A tool to build and manage Docker Applications.
+#
+# Commands:
+#   bundle      Create a CNAB invocation image and `bundle.json` for the application
+#   completion  Generates completion scripts for the specified shell (bash or zsh)
+#   init        Initialize Docker Application definition
+#   inspect     Shows metadata, parameters and a summary of the Compose file for a given application
+#   install     Install an application
+#   merge       Merge a directory format Docker Application definition into a single file
+#   pull        Pull an application package from a registry
+#   push        Push an application package to a registry
+#   render      Render the Compose file for an Application Package
+#   split       Split a single-file Docker Application definition into the directory format
+#   status      Get the installation status of an application
+#   uninstall   Uninstall an application
+#   upgrade     Upgrade an installed application
+#   validate    Checks the rendered application is syntactically correct
+#   version     Print version information
+#
+# Run 'docker app COMMAND --help' for more information on a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app bundle [APP_NAME] [--output OUTPUT_FILE]
+#
+# Create a CNAB invocation image and `bundle.json` for the application
+#
+# Examples:
+# $ docker app bundle myapp.dockerapp
+#
+# Options:
+#   -o, --output string   Output file (- for stdout) (default "bundle.json")
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app completion SHELL
+#
+# # Load the "docker app" completion code for bash into the current shell
+# . <(docker app completion bash)
+# # Set the "docker app" completion code for bash to autoload on startup in your ~/.bashrc,
+# # ~/.profile or ~/.bash_profile
+# . <(docker app completion bash)
+# # Note: bash-completion is needed.
+#
+# # Load the "docker app" completion code for zsh into the current shell
+# source <(docker app completion zsh)
+# # Set the "docker app" completion code for zsh to autoload on startup in your ~/.zshrc,
+# source <(docker app completion zsh)
+#
+# Examples:
+# $ . <(docker app completion bash)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app init APP_NAME [--compose-file COMPOSE_FILE] [--description DESCRIPTION] [--maintainer NAME:EMAIL ...] [OPTIONS]
+#
+# Start building a Docker Application package. If there is a docker-compose.yml file in the current directory it will be copied and used.
+#
+# Examples:
+# $ docker app init myapp --description "a useful description"
+#
+# Options:
+#       --compose-file string      Compose file to use as application base (optional)
+#       --description string       Human readable description of your application (optional)
+#       --maintainer stringArray   Name and email address of person responsible for the application (name:email) (optional)
+#       --single-file              Create a single-file Docker Application definition
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app inspect [APP_NAME] [OPTIONS]
+#
+# Shows metadata, parameters and a summary of the Compose file for a given application
+#
+# Examples:
+# $ docker app inspect myapp.dockerapp
+#
+# Options:
+#       --insecure-registries strings   Use HTTP instead of HTTPS when pulling from/pushing to those registries
+#       --parameters-file stringArray   Override parameters file
+#       --pull                          Pull the bundle
+#   -s, --set stringArray               Override parameter value
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app install [APP_NAME] [--name INSTALLATION_NAME] [--target-context TARGET_CONTEXT] [OPTIONS]
+#
+# Install an application.
+# By default, the application definition in the current directory will be
+# installed. The APP_NAME can also be:
+# - a path to a Docker Application definition (.dockerapp) or a CNAB bundle.json
+# - a registry Application Package reference
+#
+# Aliases:
+#   install, deploy
+#
+# Examples:
+# $ docker app install myapp.dockerapp --name myinstallation --target-context=mycontext
+# $ docker app install myrepo/myapp:mytag --name myinstallation --target-context=mycontext
+# $ docker app install bundle.json --name myinstallation --credential-set=mycredentials.yml
+#
+# Options:
+#       --credential-set stringArray    Use a YAML file containing a credential set or a credential set present in the credential store
+#       --insecure-registries strings   Use HTTP instead of HTTPS when pulling from/pushing to those registries
+#       --kubernetes-namespace string   Kubernetes namespace to install into (default "default")
+#       --name string                   Installation name (defaults to application name)
+#       --orchestrator string           Orchestrator to install on (swarm, kubernetes)
+#       --parameters-file stringArray   Override parameters file
+#       --pull                          Pull the bundle
+#   -s, --set stringArray               Override parameter value
+#       --target-context string         Context on which the application is installed (default: <current-context>)
+#       --with-registry-auth            Sends registry auth
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app merge [APP_NAME] [--output OUTPUT_FILE]
+#
+# Merge a directory format Docker Application definition into a single file
+#
+# Examples:
+# $ docker app merge myapp.dockerapp --output myapp-single.dockerapp
+#
+# Options:
+#   -o, --output string   Output file (default: in-place)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app pull NAME:TAG [OPTIONS]
+#
+# Pull an application package from a registry
+#
+# Examples:
+# $ docker app pull docker/app-example:0.1.0
+#
+# Options:
+#       --insecure-registries strings   Use HTTP instead of HTTPS when pulling from/pushing to those registries
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app push [APP_NAME] --tag TARGET_REFERENCE [OPTIONS]
+#
+# Push an application package to a registry
+#
+# Examples:
+# $ docker app push myapp --tag myrepo/myapp:mytag
+#
+# Options:
+#       --insecure-registries strings   Use HTTP instead of HTTPS when pulling from/pushing to those registries
+#       --platform strings              For multi-arch service images, only push the specified platforms
+#   -t, --tag string                    Target registry reference (default: <name>:<version> from metadata)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app render [APP_NAME] [--set KEY=VALUE ...] [--parameters-file PARAMETERS-FILE ...] [OPTIONS]
+#
+# Render the Compose file for an Application Package
+#
+# Examples:
+# $ docker app render myapp.dockerapp --set key=value
+#
+# Options:
+#       --formatter string              Configure the output format (yaml|json) (default "yaml")
+#       --insecure-registries strings   Use HTTP instead of HTTPS when pulling from/pushing to those registries
+#   -o, --output string                 Output file (default "-")
+#       --parameters-file stringArray   Override parameters file
+#       --pull                          Pull the bundle
+#   -s, --set stringArray               Override parameter value
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app split [APP_NAME] [--output OUTPUT_DIRECTORY]
+#
+# Split a single-file Docker Application definition into the directory format
+#
+# Examples:
+# $ docker app split myapp.dockerapp --output myapp-directory.dockerapp
+#
+# Options:
+#   -o, --output string   Output directory (default: in-place)
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app status INSTALLATION_NAME [--target-context TARGET_CONTEXT] [OPTIONS]
+#
+# Get the installation status of an application. If the installation is a Docker Application, the status shows the stack services.
+#
+# Examples:
+# $ docker app status myinstallation --target-context=mycontext
+#
+# Options:
+#       --credential-set stringArray   Use a YAML file containing a credential set or a credential set present in the credential store
+#       --target-context string        Context on which the application is installed (default: <current-context>)
+#       --with-registry-auth           Sends registry auth
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app uninstall INSTALLATION_NAME [--target-context TARGET_CONTEXT] [OPTIONS]
+#
+# Uninstall an application
+#
+# Examples:
+# $ docker app uninstall myinstallation --target-context=mycontext
+#
+# Options:
+#       --credential-set stringArray   Use a YAML file containing a credential set or a credential set present in the credential store
+#       --target-context string        Context on which the application is installed (default: <current-context>)
+#       --with-registry-auth           Sends registry auth
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app upgrade INSTALLATION_NAME [--target-context TARGET_CONTEXT] [OPTIONS]
+#
+# Upgrade an installed application
+#
+# Examples:
+# $ docker app upgrade myinstallation --target-context=mycontext --set key=value
+#
+# Options:
+#       --app-name string               Override the installation with another Application Package
+#       --credential-set stringArray    Use a YAML file containing a credential set or a credential set present in the credential store
+#       --insecure-registries strings   Use HTTP instead of HTTPS when pulling from/pushing to those registries
+#       --parameters-file stringArray   Override parameters file
+#       --pull                          Pull the bundle
+#   -s, --set stringArray               Override parameter value
+#       --target-context string         Context on which the application is installed (default: <current-context>)
+#       --with-registry-auth            Sends registry auth
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app validate [APP_NAME] [--set KEY=VALUE ...] [--parameters-file PARAMETERS_FILE]
+#
+# Checks the rendered application is syntactically correct
+#
+# Options:
+#       --parameters-file stringArray   Override parameters file
+#   -s, --set stringArray               Override parameter value
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:	docker app version
+#
+# Print version information
+#
+# -----------------------------------------------------------------------------
+
+function _docker-app() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'app:Docker Application'
+  )
+
+  _arguments -C \
+    '--config[Location of client config files \(default "$HOME/.config/docker"\)]:config file:_files' \
+    {-c,--context}'[Name of the context to use to connect to the daemon \(overrides $DOCKER_HOST env var and default context set with "docker context use"\)]:context' \
+    {-D,--debug}'[Enable debug mode]' \
+    {-H,--host}'[Daemon socket(s) to connect to host]' \
+    {-l,--log-level}'[Set the logging level \(default "info"\)]:log level:( debug info warn error fatal)' \
+    '--tls[Use TLS; implied by --tlsverify]' \
+    '--tlscacert[Trust certs signed only by this CA \(default "$HOME/.config/docker/ca.pem"\)]:certificate file:_files' \
+    '--tlscert[Path to TLS certificate file \(default "$HOME/.config/docker/cert.pem"\)]:TLS certificate file:_files' \
+    '--tlskey[Path to TLS key file \(default "$HOME/.config/docker/key.pem"\)]:TLS key file:_files' \
+    '--tlsverify[Use TLS and verify the remote]' \
+    "1: :{_describe 'docker-app commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    app)
+      local -a app_commands
+      app_commands=(
+      'bundle:Create a CNAB invocation image and `bundle.json` for the application'
+      'completion:Generates completion scripts for the specified shell (bash or zsh)'
+      'init:Initialize Docker Application definition'
+      'inspect:Shows metadata, parameters and a summary of the Compose file for a given application'
+      'install:Install an application'
+      'merge:Merge a directory format Docker Application definition into a single file'
+      'pull:Pull an application package from a registry'
+      'push:Push an application package to a registry'
+      'render:Render the Compose file for an Application Package'
+      'split:Split a single-file Docker Application definition into the directory format'
+      'status:Get the installation status of an application'
+      'uninstall:Uninstall an application'
+      'upgrade:Upgrade an installed application'
+      'validate:Checks the rendered application is syntactically correct'
+      'version:Print version information'
+      )
+      _arguments \
+        "1: :{_describe 'app commands' app_commands}" \
+        '*:: :->args' \
+
+        case $words[1] in
+          (bundle|merge|split)
+            _arguments \
+              {-o,--output}'[Output file \(- for stdout\) \(default "bundle.json"\)]:output file:_files' \
+              "1:APP NAME"
+            ;;
+
+          completion)
+            _values \
+              'shell' \
+              'bash' \
+              'zsh'
+            ;;
+
+          init)
+            _arguments \
+              '--compose-file[Compose file to use as application base \(optiona\)]:compose file:_files' \
+              '--description[Human readable description of your application \(optional\)]:description' \
+              '--maintainer[Name and email address of person responsible for the application \(name:email\) \(optional\)]:maintainer' \
+              '--single-file[Create a single-file Docker Application definition]' \
+              "1:APP NAME"
+            ;;
+
+          inspect)
+            _arguments \
+              '--insecure-registries[Use HTTP instead of HTTPS when pulling from/pushing to those registries]:registries' \
+              '--parameters-file[Override parameters file]:parameters file:_files' \
+              '--pull[Pull the bundle]' \
+              {-s,--set}'[Override parameter value]:parameter value' \
+              "1:APP NAME"
+            ;;
+
+          install)
+            _arguments \
+              '--credential-set[Use a YAML file containing a credential set or a credential set present in the credential store]:credential set' \
+              '--insecure-registries[Use HTTP instead of HTTPS when pulling from/pushing to those registries]:registries' \
+              '--kubernetes-namespace[Kubernetes namespace to install into \(default "default"\)]:kubernetes namespace' \
+              '--name[Installation name \(defaults to application name\)]:installation name' \
+              '--orchestrator[Which is orchestrator to install]:orchestrator:(swarm kubernetes)' \
+              '--parameters-file[Override parameters file]:parameters file:_files' \
+              '--pull[Pull the bundle]' \
+              {-s,--set}'[Override parameter value]:parameter value' \
+              '--target-context[Context on which the application is installed \(default: <current-context>\)]:context' \
+              '--with-registry-auth[Sends registry auth]' \
+              "1:APP NAME"
+            ;;
+
+          pull)
+            _arguments \
+              '--insecure-registries[Use HTTP instead of HTTPS when pulling from/pushing to those registries]:registries' \
+              "1:NAME\:TAG"
+            ;;
+
+          push)
+            _arguments \
+              '--insecure-registries[Use HTTP instead of HTTPS when pulling from/pushing to those registries]:registries' \
+              '--platform[For multi-arch service images, only push the specified platforms]:platforms' \
+              {-t,--tag}'[Target registry reference \(default: <name>:<version> from metadata\)]' \
+              "1:APP NAME"
+            ;;
+
+          render)
+            _arguments \
+              '--formatter[Configure the output format \(default "yaml"\)]:format:(yaml json)' \
+              '--insecure-registries[Use HTTP instead of HTTPS when pulling from/pushing to those registries]:registries' \
+              {-o,--output}'[Output file \(default "-"\)]:output file:_files' \
+              '--parameters-file[Override parameters file]:parameters file:_files' \
+              '--pull[Pull the bundle]' \
+              {-s,--set}'[Override parameter value]:parameter value' \
+              "1:APP NAME"
+            ;;
+
+          (status|uninstall)
+            _arguments \
+              '--credential-set[Use a YAML file containing a credential set or a credential set present in the credential store]:credential set' \
+              '--target-context[Context on which the application is installed \(default: <current-context>\)]:context' \
+              '--with-registry-auth[Sends registry auth]' \
+              "1:INSTALLATION NAME"
+            ;;
+
+          upgrade)
+            _arguments \
+              '--app-name[Override the installation with another Application Package]' \
+              '--credential-set[Use a YAML file containing a credential set or a credential set present in the credential store]:credential set' \
+              '--insecure-registries[Use HTTP instead of HTTPS when pulling from/pushing to those registries]:registries' \
+              '--parameters-file[Override parameters file]:parameters file:_files' \
+              '--pull[Pull the bundle]' \
+              {-s,--set}'[Override parameter value]:parameter value' \
+              '--target-context[Context on which the application is installed \(default: <current-context>\)]:context' \
+              '--with-registry-auth[Sends registry auth]' \
+              "1:INSTALLATION NAME"
+            ;;
+
+          validate)
+            _arguments \
+              '--parameters-file[Override parameters file]:parameters file:_files' \
+              {-s,--set}'[Override parameter value]:parameter value' \
+              "1:APP NAME"
+            ;;
+        esac
+      ;;
+  esac
+
+  return ret
+}
+
+_docker-app "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
