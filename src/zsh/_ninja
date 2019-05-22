@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Add the following to your .zshrc to tab-complete ninja targets
-#   . path/to/ninja/misc/zsh-completion
+#   fpath=(path/to/ninja/misc/zsh-completion $fpath)
 
 __get_targets() {
   dir="."
@@ -22,7 +22,12 @@ __get_targets() {
   then
     eval dir="${opt_args[-C]}"
   fi
-  targets_command="ninja -C \"${dir}\" -t targets"
+  file="build.ninja"
+  if [ -n "${opt_args[-f]}" ];
+  then
+    eval file="${opt_args[-f]}"
+  fi
+  targets_command="ninja -f \"${file}\" -C \"${dir}\" -t targets all"
   eval ${targets_command} 2>/dev/null | cut -d: -f1
 }
 
@@ -55,7 +60,6 @@ __targets() {
 _arguments \
   {-h,--help}'[Show help]' \
   '--version[Print ninja version]' \
-  '-b[specify input binary build file]:file:_files' \
   '-C+[Change to directory before doing anything else]:directories:_directories' \
   '-f+[Specify input build file (default=build.ninja)]:files:_files' \
   '-j+[Run N jobs in parallel (default=number of CPUs available)]:number of jobs' \
