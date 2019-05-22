@@ -1,0 +1,123 @@
+#compdef reflex
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/cespare/reflex
+#
+# -----------------------------------------------------------------------------
+#
+# Usage: reflex [OPTIONS] [COMMAND]
+#
+# COMMAND is any command you'd like to run. Any instance of {} will be replaced
+# with the filename of the changed file. (The symbol may be changed with the
+# --substitute flag.)
+#
+# OPTIONS are given below:
+#       --all=false: 
+#             Include normally ignored files (VCS and editor special files).
+#   -c, --config="": 
+#             A configuration file that describes how to run reflex
+#             (or '-' to read the configuration from stdin).
+#   -d, --decoration="plain": 
+#             How to decorate command output. Choices: none, plain, fancy.
+#   -g, --glob=[]: 
+#             A shell glob expression to match filenames. (May be repeated.)
+#   -G, --inverse-glob=[]: 
+#             A shell glob expression to exclude matching filenames.
+#             (May be repeated.)
+#   -R, --inverse-regex=[]: 
+#             A regular expression to exclude matching filenames.
+#             (May be repeated.)
+#       --only-dirs=false: 
+#             Only match directories (not files).
+#       --only-files=false: 
+#             Only match files (not directories).
+#   -r, --regex=[]: 
+#             A regular expression to match filenames. (May be repeated.)
+#   -e, --sequential=false: 
+#             Don't run multiple commands at the same time.
+#   -t, --shutdown-timeout=500ms: 
+#             Allow services this long to shut down.
+#   -s, --start-service=false: 
+#             Indicates that the command is a long-running process to be
+#             restarted on matching changes.
+#       --substitute="{}": 
+#             The substitution symbol that is replaced with the filename
+#             in a command.
+#   -v, --verbose=false: 
+#             Verbose mode: print out more information about what reflex is doing.
+#
+# Examples:
+#
+#     # Print each .txt file if it changes
+#     $ reflex -r '\.txt$' echo {}
+#
+#     # Run 'make' if any of the .c files in this directory change:
+#     $ reflex -g '*.c' make
+#
+#     # Build and run a server; rebuild and restart when .java files change:
+#     $ reflex -r '\.java$' -s -- sh -c 'make && java bin/Server'
+#
+# pflag: help requested
+#
+# -----------------------------------------------------------------------------
+
+function _reflex() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '--all[Include normally ignored files \(VCS and editor special files\).]' \
+    {-c,--config=}'[A configuration file that describes how to run reflex \(or '-' to read the configuration from stdin\).]:config file:_files' \
+    {-d,--decoration=}'[How to decorate command output.]:decoration:(none plain fancy)' \
+    {-g,--glob=}'[A shell glob expression to match filenames. \(May be repeated.\)]:match filename glob pattern' \
+    {-G,--inverse-glob=}'[A shell glob expression to exclude matching filenames. \(May be repeated.\)]:exclude filename glob pattern' \
+    {-R,--inverse-regex=}'[A regular expression to exclude matching filenames. \(May be repeated.\)]:exclude filename regexp pattern' \
+    '--only-dirs[Only match directories \(not files\).]' \
+    '--only-files=[Only match files (not directories).]' \
+    {-r,--regex=}'[A regular expression to match filenames. \(May be repeated.\)]:match filename regexp pattern' \
+    {-e,--sequential}"[Don't run multiple commands at the same time.]" \
+    {-t,--shutdown-timeout=}'[Allow services this long to shut down.]' \
+    {-s,--start-service}'[Indicates that the command is a long-running process to be restarted on matching changes.]' \
+    '--substitute=[The substitution symbol that is replaced with the filename in a command.]:replace filename substitution symbol' \
+    {-v,--verbose}'[Verbose mode: print out more information about what reflex is doing.]' \
+    '*:command:_command_names' \
+    && ret=0
+
+  return ret
+}
+
+_reflex "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
