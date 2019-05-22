@@ -1,0 +1,114 @@
+#compdef softwareupdate
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# usage: softwareupdate <cmd> [<args> ...]
+#
+# ** Manage Updates:
+# 	-l | --list		List all appropriate update labels (options:  --no-scan, --product-types)
+# 	-d | --download		Download Only
+# 	-e | --cancel-download		Cancel a download
+# 	-i | --install		Install
+# 		<label> ...	specific updates
+# 		-a | --all		All appropriate updates
+# 		-R | --restart		Automatically restart (or shut down) if required to complete installation.
+# 		-r | --recommended	Only recommended updates
+# 	--background		Trigger a background scan and update operation
+# 	--ignore <label> ...	Ignore specific updates
+# 	--reset-ignored		Clear all ignored updates
+#
+# ** Other Tools:
+# 	--dump-state		Log the internal state of the SU daemon to /var/log/install.log
+# 	--evaluate-products	Evaluate a list of product keys specified by the --products option 
+# 	--history		Show the install history.  By default, only displays updates installed by softwareupdate.  
+# 	--all 			Include all processes in history (including App installs) 
+#
+# ** Options:
+# 	--no-scan		Do not scan when listing or installing updates (use available updates previously scanned)
+# 	--product-types <type>		Limit a scan to a particular product type only - ignoring all others
+# 		Ex:  --product-types macOS  || --product-types macOS,Safari 
+# 	--products		A comma-separated (no spaces) list of product keys to operate on. 
+# 	--force			Force an operation to complete.  Use with --background to trigger a background scan regardless of "Automatically check" pref 
+#
+# 	--verbose		Enable verbose output
+# 	--help			Print this help
+#
+# -----------------------------------------------------------------------------
+
+function _softwareupdate() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    {-l,--list}'[List all appropriate update labels]: :->list' \
+    {-d,--download}'[Download Only]' \
+    {-e,--cancel-download}'[Cancel a download]' \
+    {-i,--install}'[Install]: :->label' \
+    '--background[Trigger a background scan and update operation]' \
+    '--ignore[Ignore specific updates]:<label>' \
+    '--reset-ignored[Clear all ignored updates]' \
+    '--dump-state[Log the internal state of the SU daemon to /var/log/install.log]' \
+    '--evaluate-products[Evaluate a list of product keys specified by the --products option]' \
+    '--history[Show the install history. By default, only displays updates installed by softwareupdate.]' \
+    '--all[Include all processes in history (including App installs)]' \
+    '--no-scan[Do not scan when listing or installing updates (\use available updates previously scanned\)]' \
+    '--product-types[mit a scan to a particular product type only - ignoring all others]:<type>:(macOS Safari)' \
+    '--products[comma-separated \(no spaces\) list of product keys to operate on.]' \
+    '--force[Force an operation to complete. Use with --background to trigger a background scan regardless of "Automatically check" pref]' \
+    '--verbose[nable verbose output]' \
+    '--help[Print this help]' \
+    && ret=0
+
+  case $state in
+    list)
+      _values \
+        'options' \
+        '-no-scan' \
+        '--product-types'
+      ;;
+    label)
+      _arguments -C \
+        {-a,--all}'[All appropriate updates]' \
+        {-R,--restart}'[Automatically restart \(or shut down\) if required to complete installation.]' \
+        {-r,--recommended}'[Only recommended updates]' \
+        '*:label:[specific updates]'
+      ;;
+  esac
+
+  return ret
+}
+
+_softwareupdate "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
