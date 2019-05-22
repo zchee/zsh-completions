@@ -1,0 +1,179 @@
+#compdef clang-include-fixer
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/foo/bar
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE: clang-include-fixer [options] <source0> [... <sourceN>]
+#
+# OPTIONS:
+#
+# Color Options:
+#
+#   This option category has no options.
+#
+# General options:
+#
+#   This option category has no options.
+#
+# Generic Options:
+#
+#   -help                      - Display available options (-help-hidden for more)
+#   -help-hidden               - Display all available options
+#   -help-list                 - Display list of available options (-help-list-hidden for more)
+#   -help-list-hidden          - Display list of all available options
+#   -print-all-options         - Print all option values after command line parsing
+#   -print-options             - Print non-default options after command line parsing
+#   -version                   - Display the version of this program
+#
+# Tool options:
+#
+#   -db=<value>                - Specify input format
+#     =fixed                   -   Hard-coded mapping
+#     =yaml                    -   Yaml database created by find-all-symbols
+#     =fuzzyYaml               -   Yaml database, with fuzzy-matched names
+#   -extra-arg=<string>        - Additional argument to append to the compiler command line
+#   -extra-arg-before=<string> - Additional argument to prepend to the compiler command line
+#   -input=<string>            - String to initialize the database
+#   -insert-header=<string>    - Insert a specific header. This should run with STDIN mode.
+#                                The result is written to stdout. It is currently used for
+#                                editor integration. Support YAML/JSON format:
+#                                  -insert-header="{
+#                                     FilePath: "/path/to/foo.cc",
+#                                     QuerySymbolInfos: [
+#                                       {RawIdentifier: foo,
+#                                        Range: {Offset: 0, Length: 3}}
+#                                     ],
+#                                     HeaderInfos: [ {Headers: "\"foo_a.h\"",
+#                                                     QualifiedName: "a::foo"} ]}"
+#   -minimize-paths            - Whether to minimize added include paths
+#   -output-headers            - Print the symbol being queried and all its relevant headers in
+#                                JSON format to stdout:
+#                                  {
+#                                    "FilePath": "/path/to/foo.cc",
+#                                    "QuerySymbolInfos": [
+#                                       {"RawIdentifier": "foo",
+#                                        "Range": {"Offset": 0, "Length": 3}}
+#                                    ],
+#                                    "HeaderInfos": [ {"Header": "\"foo_a.h\"",
+#                                                      "QualifiedName": "a::foo"} ]
+#                                  }
+#   -p=<string>                - Build path
+#   -q                         - Reduce terminal output
+#   -query-symbol=<string>     - Query a given symbol (e.g. "a::b::foo") in
+#                                database directly without parsing the file.
+#   -stdin                     - Override source file's content (in the overlaying
+#                                virtual file system) with input from <stdin> and run
+#                                the tool on the new content with the compilation
+#                                options of the source file. This mode is currently
+#                                used for editor integration.
+#   -style=<string>            - Fallback style for reformatting after inserting new
+#                                headers if there is no clang-format config file found.
+#
+# -----------------------------------------------------------------------------
+
+function _clang-include-fixer() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _llvm_generic_options() {
+    local -a llvm_generic_options
+    llvm_generic_options=(
+    '-help[Display available options \(-help-hidden for more\)]'
+    '-help-hidden[Display all available options]'
+    '-help-list[Display list of available options \(-help-list-hidden for more\)]'
+    '-help-list-hidden[Display list of all available options]'
+    '-print-all-options[Print all option values after command line parsing]'
+    '-print-options[Print non-default options after command line parsing]'
+    '-version[Display the version of this program]'
+    )
+
+    _values 'Generic options' $llvm_generic_options
+  }
+
+  _arguments -C \
+    '-db=[Specify input format]:format:->db_format' \
+    '-extra-arg=[Additional argument to append to the compiler command line]:extra args' \
+    '-extra-arg-before=[Additional argument to prepend to the compiler command line]:before extra args' \
+    '-input=[String to initialize the database]:initialize the database input' \
+    '-insert-header=[Insert a specific header. This should run with STDIN mode. It is currently used for editor integration. Support YAML/JSON format.]:yaml or json format input' \
+    '-minimize-paths[Whether to minimize added include paths]' \
+    '-output-headers[Print the symbol being queried and all its relevant headers in JSON format to stdout.]' \
+    '-p=[Build path]:build path]:_files' \
+    '-q[Reduce terminal output]' \
+    '-query-symbol=[Query a given symbol \(e.g. "a::b::foo"\) in database directly without parsing the file.]:query' \
+    "-stdin[Override source file's content \(in the overlaying virtual file system\) with input from <stdin> and run the tool on the new content with the compilation options of the source file.]" \
+    '-style=[Fallback style for reformatting after inserting new headers if there is no clang-format config file found.]:fallback style:->fallback_style' \
+    \
+    '1:source:_files' \
+    ': :->_llvm_generic_options' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+      (db_format)
+        local -a db_format_args
+        db_format_args=(
+        'fixed:Hard-coded mapping'
+        'yaml:Yaml database created by find-all-symbols'
+        'fuzzyYaml:Yaml database, with fuzzy-matched names'
+        )
+        _arguments \
+          "*: :{_describe 'db format' db_format_args}"
+        ;;
+
+      (fallback_style)
+        local -a builtin_styles
+        builtin_styles=(
+        'LLVM:LLVM coding standards'
+        'Google:Google’s C++ style guide'
+        'Chromium:Chromium’s style guide'
+        'Mozilla:Mozilla’s style guide'
+        'WebKit:WebKit’s style guide'
+        'none:skip formatting'
+        )
+        _arguments \
+          "*: :{_describe 'fallback style' builtin_styles}"
+        ;;
+  esac
+
+  return ret
+}
+
+_clang-include-fixer "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
