@@ -1,0 +1,221 @@
+#compdef bat
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/sharkdp/bat
+#
+# -----------------------------------------------------------------------------
+#
+# bat 0.10.0
+# A cat(1) clone with syntax highlighting and Git integration.
+#
+# USAGE:
+#     bat [OPTIONS] [FILE]...
+#     bat <SUBCOMMAND>
+#
+# OPTIONS:
+#     -l, --language <language>
+#             Explicitly set the language for syntax highlighting. The language can be specified as a
+#             name (like 'C++' or 'LaTeX') or possible file extension (like 'cpp', 'hpp' or 'md'). Use
+#             '--list-languages' to show all supported language names and file extensions.
+#         --list-languages
+#             Display a list of supported languages for syntax highlighting.
+#
+#     -m, --map-syntax <from:to>...
+#             Map a file extension or file name to an existing syntax. For example, to highlight
+#             *.conf files with the INI syntax, use '-m conf:ini'. To highlight files named
+#             '.myignore' with the Git Ignore syntax, use '-m .myignore:gitignore'.
+#         --theme <theme>
+#             Set the theme for syntax highlighting. Use '--list-themes' to see all available themes.
+#             To set a default theme, add the '--theme="..."' option to the configuration file or
+#             export the BAT_THEME environment variable (e.g.: export BAT_THEME="...").
+#         --list-themes
+#             Display a list of supported themes for syntax highlighting.
+#
+#         --style <style-components>
+#             Configure which elements (line numbers, file headers, grid borders, Git modifications,
+#             ..) to display in addition to the file contents. The argument is a comma-separated list
+#             of components to display (e.g. 'numbers,changes,grid') or a pre-defined style ('full').
+#             To set a default style, add the '--style=".."' option to the configuration file or
+#             export the BAT_STYLE environment variable (e.g.: export BAT_STYLE=".."). Possible
+#             values: *auto*, full, plain, changes, header, grid, numbers.
+#     -p, --plain
+#             Only show plain style, no decorations. This is an alias for '--style=plain'
+#
+#     -n, --number
+#             Only show line numbers, no other decorations. This is an alias for '--style=numbers'
+#
+#     -A, --show-all
+#             Show non-printable characters like space, tab or newline. Use '--tabs' to control the
+#             width of the tab-placeholders.
+#     -r, --line-range <N:M>...
+#             Only print the specified range of lines for each file. For example:
+#               '--line-range 30:40' prints lines 30 to 40
+#               '--line-range :40' prints lines 1 to 40
+#               '--line-range 40:' prints lines 40 to the end of the file
+#     -H, --highlight-line <N>...
+#             Highlight the N-th line with a different background color
+#
+#         --color <when>
+#             Specify when to use colored output. The automatic mode only enables colors if an
+#             interactive terminal is detected. Possible values: *auto*, never, always.
+#         --italic-text <when>
+#             Specify when to use ANSI sequences for italic text in the output. Possible values:
+#             always, *never*.
+#         --decorations <when>
+#             Specify when to use the decorations that have been specified via '--style'. The
+#             automatic mode only enables decorations if an interactive terminal is detected. Possible
+#             values: *auto*, never, always.
+#         --paging <when>
+#             Specify when to use the pager. To control which pager is used, set the PAGER or
+#             BAT_PAGER environment variables (the latter takes precedence) or use the '--pager'
+#             option. To disable the pager permanently, set BAT_PAGER to an empty string or set
+#             '--paging=never' in the configuration file. Possible values: *auto*, never, always.
+#         --pager <command>
+#             Determine which pager is used. This option will overwrite the PAGER and BAT_PAGER
+#             environment variables. The default pager is 'less'. To disable the pager completely, use
+#             the '--paging' option. Example: '--pager "less -RF"'.
+#         --wrap <mode>
+#             Specify the text-wrapping mode (*auto*, never, character).
+#
+#         --tabs <T>
+#             Set the tab width to T spaces. Use a width of 0 to pass tabs through directly
+#
+#     -u, --unbuffered
+#             This option exists for POSIX-compliance reasons ('u' is for 'unbuffered'). The output is
+#             always unbuffered - this option is simply ignored.
+#         --terminal-width <width>
+#             Explicitly set the width of the terminal instead of determining it automatically. If
+#             prefixed with '+' or '-', the value will be treated as an offset to the actual terminal
+#             width.
+#     -h, --help
+#             Print this help message.
+#
+#     -V, --version
+#             Show version information.
+#
+#
+# ARGS:
+#     <FILE>...
+#             File(s) to print / concatenate. Use a dash ('-') or no argument at all to read from
+#             standard input.
+#
+# SUBCOMMANDS:
+#     cache    Modify the syntax-definition and theme cache
+#
+# -----------------------------------------------------------------------------
+#
+# bat-cache
+# Modify the syntax-definition and theme cache
+#
+# USAGE:
+#     bat cache [OPTIONS] <--build|--clear>
+#
+# OPTIONS:
+#     -b, --build
+#             Initialize (or update) the syntax/theme cache by loading from the source
+#             directory (default: the configuration directory).
+#     -c, --clear
+#             Remove the cached syntax definitions and themes.
+#
+#         --source <dir>
+#             Use a different directory to load syntaxes and themes from.
+#
+#         --target <dir>
+#             Use a different directory to store the cached syntax and theme set.
+#
+#         --blank
+#             Create completely new syntax and theme sets (instead of appending to the
+#             default sets).
+#     -h, --help
+#             Prints help information
+#
+# -----------------------------------------------------------------------------
+
+function _bat() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'cache:Modify the syntax-definition and theme cache'
+  )
+
+  _arguments -C \
+    {-l,--language}"[Explicitly set the language for syntax highlighting.]:language:($(bat --list-languages | sed -E 's|(\()?[[:alnum:]]*(\.\|-\|_\|\++\|\#)?[[:alnum:]]*(\))?[[:space:]]+||g' | perl -pe 's/\n/ /g' | sed -E 's|,( )?| |g'))" \
+    '--list-languages[Display a list of supported languages for syntax highlighting.]' \
+    {-m,--map-syntax}'[Map a file extension or file name to an existing syntax.]:<from:to>' \
+    "--theme[Set the theme for syntax highlighting.]:theme:($(bat --list-themes | awk -F'Theme' '{print $1}'))" \
+    '--list-themes[Display a list of supported themes for syntax highlighting.]' \
+    '--style[Configure which elements to display in addition to the file contents.]:style:(auto full plain changes header grid numbers)' \
+    {-p,--plain}"[Only show plain style, no decorations. This is an alias for '--style=plain']" \
+    {-n,--number}"[Only show line numbers, no other decorations. This is an alias for '--style=numbers]" \
+    {-A,--show-all}"[Show non-printable characters like space, tab or newline. Use '--tabs' to control the width of the tab-placeholders.]" \
+    {-r,--line-range}'[Only print the specified range of lines for each file.]:specified range of lines' \
+    {-H,--highlight-line}'[Highlight the N-th line with a different background color]:number' \
+    '--color[Specify when to use colored output.]:when:(auto never always)' \
+    '--italic-text[Specify when to use ANSI sequences for italic text in the output.]:when:(always never)' \
+    "--decorations[Specify when to use the decorations that have been specified via '--style'.]:when:(auto never always)" \
+    '--paging[Specify when to use the pager.]:command' \
+    '--wrap[Specify the text-wrapping mode.]:mode:(auto never character)' \
+    '--tab[Set the tab width to T spaces. Use a width of 0 to pass tabs through directly]:tab width' \
+    {-u,--unbuffered}'[This option exists for POSIX-compliance reasons.]' \
+    '--terminal-width[Explicitly set the width of the terminal instead of determining it automatically.]:terminal width' \
+    {-h,--help}'[Print this help message.]' \
+    {-V,--version}'[Show version information.]' \
+    '*:file:_files' \
+    && ret=0
+
+  _arguments -C \
+    "1: :{_describe 'bat commands' commands}" \
+    '*:: :->args' \
+
+    case $words[1] in
+      cache)
+        _arguments \
+          {-b,--build}'[Initialize (or update) the syntax/theme cache by loading from the source directory \(default: the configuration directory\).]' \
+          {-c,--clear}'[Remove the cached syntax definitions and themes.]' \
+          '--source[Use a different directory to load syntaxes and themes from.]:dir:_directories' \
+          '--target[Use a different directory to store the cached syntax and theme set.]:dir:_directories' \
+          '--blank[Create completely new syntax and theme sets \(instead of appending to the default sets\).]' \
+          {-h,--help}'[Prints help information]'
+        ;;
+    esac
+
+  return ret
+}
+
+_bat "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
