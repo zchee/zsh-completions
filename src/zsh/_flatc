@@ -32,7 +32,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
-# USAGE: 
+# USAGE:
 #
 # flatc [OPTION]... FILE... [-- FILE...]
 #   --binary     -b Generate wire format binaries for any data definitions.
@@ -126,7 +126,7 @@ function _flatc() {
     '--schema[Serialize schemas instead of JSON (use with -b)]' \
     '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries]' \
     '--version[Print the version number of flatc and exit]' \
-    '*:schema file:_path_files -g "*.(fbs|json|proto)"' \
+    '*:schema file:_path_files -/ -g "*.(fbs|json|proto)"' \
     \
     && ret=0
 
