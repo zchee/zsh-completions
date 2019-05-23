@@ -366,6 +366,7 @@ function _shellcheck() {
     {-s,--shell=}'[Specify dialect]:shell type:(sh bash dash ksh)' \
     {-V,--version}'[Print version information]' \
     {-x,--external-sources}"[Allow 'source' outside of FILES]" \
+    '*:shell file:_files' \
     && ret=0
 
   return ret
