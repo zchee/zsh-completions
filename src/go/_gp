@@ -1,0 +1,150 @@
+#compdef gp
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/tenntenn/goplayground/cmd/gp
+#
+# -----------------------------------------------------------------------------
+#
+# gp is client of Go Playground.
+#
+# Usage:
+#
+# 	gp command [arguments]
+#
+# The commands are:
+# 	run			compiles and runs on Go Playground
+# 	format		formats Go code on Go Playground
+# 	share		generates share URL on Go Playground
+# 	download	download given hash or URL Go code
+# 	help		print this help
+#
+# Use "go help [command]" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: gp run [-json] [gofile]
+#
+# "run" compiles and runs on Go Playground.
+# If [gofile] is not specify, it compiles and runs from stdin.
+#
+# The flags are:
+# 	-json	output result of run as JSON
+#
+# -----------------------------------------------------------------------------
+#
+# usage: gp format [-json] [gofile]
+#
+# "format" formats Go code on Go Playground.
+# If [gofile] is not specify, it compiles and runs from stdin.
+#
+# The flags are:
+# 	-json	output result of run as JSON
+#
+# -----------------------------------------------------------------------------
+#
+# usage: gp share [gofile]
+#
+# "share" generates share URL on Go Playground.
+# If [gofile] is not specify, it compiles and runs from stdin.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: gp download [hash|share URL]
+#
+# "download" downloads Go code corresponds to given hash or URL.
+# If hash or share URL is not specify, it compiles and runs from stdin.
+#
+# -----------------------------------------------------------------------------
+
+function _gp() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'run:compiles and runs on Go Playground'
+  'format:formats Go code on Go Playground'
+  'share:generates share URL on Go Playground'
+  'download:download given hash or URL Go code'
+  'help:print this help'
+  )
+
+  _go_files() {
+    _alternative '*:go file:_path_files -g "*.go(-.)"'
+  }
+
+  _arguments -C \
+    "1: :{_describe 'gp commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+
+      case $words[1] in
+        run)
+          _arguments \
+            '-json[output result of run as JSON]' \
+            '*:go file:_go_files'
+          ;;
+
+        format)
+          _arguments \
+            '-json[output result of run as JSON]' \
+            '*:go file:_go_files'
+          ;;
+
+        share)
+          _arguments '*:go file:_go_files'
+          ;;
+
+        download)
+          _arguments \
+            '*:hash or share URL'
+          ;;
+
+        help)
+          _arguments "1: :{_describe 'command' commands}"
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_gp "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
