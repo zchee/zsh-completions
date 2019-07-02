@@ -1,0 +1,319 @@
+#compdef telepresence
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/telepresenceio/telepresence
+#
+# -----------------------------------------------------------------------------
+#
+# usage: telepresence [-h] [--version] [--verbose] [--logfile LOGFILE]
+#                     [--method {inject-tcp,vpn-tcp,container}]
+#                     [--new-deployment DEPLOYMENT_NAME | --swap-deployment DEPLOYMENT_NAME[:CONTAINER]
+#                     | --deployment EXISTING_DEPLOYMENT_NAME]
+#                     [--context CONTEXT] [--namespace NAMESPACE]
+#                     [--expose PORT[:REMOTE_PORT]]
+#                     [--also-proxy CLOUD_HOSTNAME] [--mount PATH_OR_BOOLEAN]
+#                     [--env-json FILENAME] [--env-file FILENAME]
+#                     [--run-shell | --run ... | --docker-run ...]
+#
+# Telepresence: local development proxied to a remote Kubernetes cluster.
+#
+# Documentation: https://telepresence.io
+# Real-time help: https://d6e.co/slack
+# Issue tracker: https://github.com/datawire/telepresence/issues
+#
+# == Examples ==
+#
+# Send a HTTP query to Kubernetes Service called 'myservice' listening on port 8080:
+#
+# $ telepresence --run curl http://myservice:8080/
+#
+# Replace an existing Deployment 'myserver' listening on port 9090 with a local process listening on port 9090:
+#
+# $ telepresence --swap-deployment myserver --expose 9090   --run python3 -m http.server 9090
+#
+# Use a different local port than the remote port:
+#
+# $ telepresence --swap-deployment myserver --expose 9090:80   --run python3 -m http.server 9090
+#
+# Run a Docker container instead of a local process:
+#
+# $ telepresence --swap-deployment myserver --expose 80   --docker-run -i -t nginx:latest
+#
+# == Detailed usage ==
+#
+# optional arguments:
+#   -h, --help            show this help message and exit
+#   --version             show program's version number and exit
+#   --verbose             Enables verbose logging for troubleshooting.
+#   --logfile LOGFILE     The path to write logs to. '-' means stdout, default
+#                         is './telepresence.log'.
+#   --method {inject-tcp,vpn-tcp,container}, -m {inject-tcp,vpn-tcp,container}
+#                         'inject-tcp': inject process-specific shared library
+#                         that proxies TCP to the remote cluster. 'vpn-tcp': all
+#                         local processes can route TCP traffic to the remote
+#                         cluster. Requires root. 'container': used with
+#                         --docker-run. Default is 'vpn-tcp', or 'container'
+#                         when --docker-run is used. For more details see
+#                         https://telepresence.io/reference/methods.html
+#   --new-deployment DEPLOYMENT_NAME, -n DEPLOYMENT_NAME
+#                         Create a new Deployment in Kubernetes where the
+#                         datawire/telepresence-k8s image will run. It will be
+#                         deleted on exit. If no deployment option is specified
+#                         this will be used by default, with a randomly
+#                         generated name.
+#   --swap-deployment DEPLOYMENT_NAME[:CONTAINER], -s DEPLOYMENT_NAME[:CONTAINER]
+#                         Swap out an existing deployment with the Telepresence
+#                         proxy, swap back on exit. If there are multiple
+#                         containers in the pod then add the optional container
+#                         name to indicate which container to use.
+#   --deployment EXISTING_DEPLOYMENT_NAME, -d EXISTING_DEPLOYMENT_NAME
+#                         The name of an existing Kubernetes Deployment where
+#                         the datawire/telepresence-k8s image is already
+#                         running.
+#   --context CONTEXT     The Kubernetes context to use. Defaults to current
+#                         kubectl context.
+#   --namespace NAMESPACE
+#                         The Kubernetes namespace to use. Defaults to kubectl's
+#                         default for the current context, which is usually
+#                         'default'.
+#   --expose PORT[:REMOTE_PORT]
+#                         Port number that will be exposed to Kubernetes in the
+#                         Deployment. Should match port exposed in the existing
+#                         Deployment if using --deployment or --swap-deployment.
+#                         By default local port and remote port are the same; if
+#                         you want to listen on port 8080 locally but be exposed
+#                         as port 80 in Kubernetes you can do '--expose
+#                         8080:80'.
+#   --also-proxy CLOUD_HOSTNAME
+#                         If you are using --method=vpn-tcp, use this to add
+#                         additional remote IPs, IP ranges, or hostnames to
+#                         proxy. Kubernetes service and pods are proxied
+#                         automatically, so you only need to list cloud
+#                         resources, e.g. the hostname of a AWS RDS. When using
+#                         --method=inject-tcp this option is unnecessary as all
+#                         outgoing communication in the run subprocess will be
+#                         proxied.
+#   --mount PATH_OR_BOOLEAN
+#                         The absolute path for the root directory where volumes
+#                         will be mounted, $TELEPRESENCE_ROOT. Use "true" to
+#                         have Telepresence pick a random mount point under /tmp
+#                         (default). Use "false" to disable filesystem mounting
+#                         entirely.
+#   --env-json FILENAME   Also emit the remote environment to a file as a JSON
+#                         blob.
+#   --env-file FILENAME   Also emit the remote environment to an env file in
+#                         Docker Compose format. See
+#                         https://docs.docker.com/compose/env-file/ for more
+#                         information on the limitations of this format.
+#   --run-shell           Run a local shell that will be proxied to/from
+#                         Kubernetes.
+#   --run ...             Run the specified command arguments, e.g. '--run
+#                         python myapp.py'.
+#   --docker-run ...      Run a Docker container, by passing the arguments to
+#                         'docker run', e.g. '--docker-run -i -t ubuntu:16.04
+#                         /bin/bash'. Requires --method container.
+#
+# -----------------------------------------------------------------------------
+
+function _telepresence() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a opts_attach_exec_run_start opts_create_run opts_create_run_update
+  integer ret=1
+
+  opts_attach_exec_run_start=(
+      "($help)--detach-keys=[Escape key sequence used to detach a container]:sequence:__docker_complete_detach_keys"
+  )
+  opts_create_run=(
+      {-a=,--attach=}"[Attach to stdin, stdout or stderr]:device:(STDIN STDOUT STDERR)"
+      "--add-host=[Add a custom host-to-IP mapping]:host\:ip mapping: "
+      "--blkio-weight-device=[Block IO (relative device weight)]:device:Block IO weight: "
+      "--cap-add=[Add Linux capabilities]:capability: "
+      "--cap-drop=[Drop Linux capabilities]:capability: "
+      "--cgroup-parent=[Parent cgroup for the container]:cgroup: "
+      "--cidfile=[Write the container ID to the file]:CID file:_files"
+      "--cpus=[Number of CPUs (default 0.000)]:cpus: "
+      "--device=[Add a host device to the container]:device:_files"
+      "--device-cgroup-rule=[Add a rule to the cgroup allowed devices list]:device:cgroup: "
+      "--device-read-bps=[Limit the read rate (bytes per second) from a device]:device:IO rate: "
+      "--device-read-iops=[Limit the read rate (IO per second) from a device]:device:IO rate: "
+      "--device-write-bps=[Limit the write rate (bytes per second) to a device]:device:IO rate: "
+      "--device-write-iops=[Limit the write rate (IO per second) to a device]:device:IO rate: "
+      "--disable-content-trust[Skip image verification]"
+      "--dns=[Custom DNS servers]:DNS server: "
+      "--dns-option=[Custom DNS options]:DNS option: "
+      "--dns-search=[Custom DNS search domains]:DNS domains: "
+      "--domainname=[Container NIS domain name]:domainname:_hosts"
+      {-e=,--env=}"[Environment variables]:environment variable: "
+      "--entrypoint=[Overwrite the default entrypoint of the image]:entry point: "
+      "--env-file=[Read environment variables from a file]:environment file:_files"
+      "--expose=[Expose a port from the container without publishing it]: "
+      "--group=[Set one or more supplementary user groups for the container]:group:_groups"
+      {-h=,--hostname=}"[Container host name]:hostname:_hosts"
+      {-i,--interactive}"[Keep stdin open even if not attached]"
+      "--init[Run an init inside the container that forwards signals and reaps processes]"
+      "--ip=[IPv4 address]:IPv4: "
+      "--ip6=[IPv6 address]:IPv6: "
+      "--ipc=[IPC namespace to use]:IPC namespace: "
+      "--isolation=[Container isolation technology]:isolation:(default hyperv process)"
+      "--link=[Add link to another container]:link:->link"
+      "--link-local-ip=[Container IPv4/IPv6 link-local addresses]:IPv4/IPv6: "
+      {-l=,--label=}"[Container metadata]:label: "
+      "--log-driver=[Default driver for container logs]:logging driver:__docker_complete_log_drivers"
+      "--log-opt=[Log driver specific options]:log driver options:__docker_complete_log_options"
+      "--mac-address=[Container MAC address]:MAC address: "
+      "--mount=[Attach a filesystem mount to the container]:mount: "
+      "--name=[Container name]:name: "
+      "--network=[Connect a container to a network]:network mode:(bridge none container host)"
+      "--network-alias=[Add network-scoped alias for the container]:alias: "
+      "--oom-kill-disable[Disable OOM Killer]"
+      "--oom-score-adj[Tune the host's OOM preferences for containers (accepts -1000 to 1000)]"
+      "--pids-limit[Tune container pids limit (set -1 for unlimited)]"
+      {-P,--publish-all}"[Publish all exposed ports]"
+      {-p=,--publish=}"[Expose a container's port to the host]:port:_ports"
+      "--pid=[PID namespace to use]:PID namespace:__docker_complete_pid"
+      "--privileged[Give extended privileges to this container]"
+      "--read-only[Mount the container's root filesystem as read only]"
+      "--security-opt=[Security options]:security option: "
+      "--shm-size=[Size of '/dev/shm' (format is '<number><unit>')]:shm size: "
+      "--stop-signal=[Signal to kill a container]:signal:_signals"
+      "--stop-timeout=[Timeout (in seconds) to stop a container]:time: "
+      "--sysctl=-[sysctl options]:sysctl: "
+      {-t,--tty}"[Allocate a pseudo-tty]"
+      {-u=,--user=}"[Username or UID]:user:_users"
+      "--ulimit=[ulimit options]:ulimit: "
+      "--userns=[Container user namespace]:user namespace:(host)"
+      "--tmpfs[mount tmpfs]"
+      "-v[Bind mount a volume]:volume: "
+      "--volume-driver=[Optional volume driver for the container]:volume driver:(local)"
+      "--volumes-from=[Mount volumes from the specified container]:volume: "
+      {-w=,--workdir=}"[Working directory inside the container]:directory:_directories"
+  )
+  opts_create_run_update=(
+      "--blkio-weight=[Block IO (relative weight), between 10 and 1000]:Block IO weight:(10 100 500 1000)"
+      {-c=,--cpu-shares=}"[CPU shares (relative weight)]:CPU shares:(0 10 100 200 500 800 1000)"
+      "--cpu-period=[Limit the CPU CFS (Completely Fair Scheduler) period]:CPU period: "
+      "--cpu-quota=[Limit the CPU CFS (Completely Fair Scheduler) quota]:CPU quota: "
+      "--cpu-rt-period=[Limit the CPU real-time period]:CPU real-time period in microseconds: "
+      "--cpu-rt-runtime=[Limit the CPU real-time runtime]:CPU real-time runtime in microseconds: "
+      "--cpuset-cpus=[CPUs in which to allow execution]:CPUs: "
+      "--cpuset-mems=[MEMs in which to allow execution]:MEMs: "
+      "--kernel-memory=[Kernel memory limit in bytes]:Memory limit: "
+      {-m=,--memory=}"[Memory limit]:Memory limit: "
+      "--memory-reservation=[Memory soft limit]:Memory limit: "
+      "--memory-swap=[Total memory limit with swap]:Memory limit: "
+      "--pids-limit[Tune container pids limit (set -1 for unlimited)]"
+      "--restart=[Restart policy]:restart policy:(no on-failure always unless-stopped)"
+  )
+
+  _arguments -C \
+    {-h,--help}'[show this help message and exit]' \
+    "--version[show program's version number and exit]" \
+    '--verbose[Enables verbose logging for troubleshooting.]' \
+    "--logfile[The path to write logs to. '-' means stdout, default is './telepresence.log'.]:log file path:_files" \
+    {--method,-m}'[inject process-specific shared library that proxies TCP to the remote cluster.]:method:->method' \
+    {--new-deployment,-n}'[Create a new Deployment in Kubernetes where the datawire/telepresence-k8s image will run.]:DEPLOYMENT_NAME' \
+    {--swap-deployment,-s}'[Swap out an existing deployment with the Telepresence proxy, swap back on exit.]:DEPLOYMENT_NAME\[:CONTAINER\]' \
+    {--deployment,-d}'[The name of an existing Kubernetes Deployment where the datawire/telepresence-k8s image is already running.]:EXISTING_DEPLOYMENT_NAME' \
+    '--context[The Kubernetes context to use. Defaults to current kubectl context.]:CONTEXT' \
+    "--namespace[The Kubernetes namespace to use. Defaults to kubectl's default for the current context, which is usually 'default'.]:NAMESPACE" \
+    '--expose[Port number that will be exposed to Kubernetes in the Deployment.]:PORT\[:REMOTE_PORT\]' \
+    '--also-proxy[If you are using --method=vpn-tcp, use this to add additional remote IPs, IP ranges, or hostnames to proxy.]:CLOUD_HOSTNAME' \
+    '--mount[The absolute path for the root directory where volumes will be mounted, $TELEPRESENCE_ROOT.]:PATH_OR_BOOLEAN' \
+    '--env-json[Also emit the remote environment to a file as a JSON blob.]:filename:_files' \
+    '--env-file[Also emit the remote environment to an env file in Docker Compose format.]:filename:_files' \
+    '--run-shell[Run a local shell that will be proxied to/from Kubernetes.]' \
+    '--run[Run the specified command arguments.]:command:_command_names -e' \
+    "--docker-run[Run a Docker container, by passing the arguments to 'docker run'.]:docker run command:->docker_run" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    method)
+      local -a method_args
+      method_args=(
+        'inject-tcp:injecting a shared library into the subprocess run by Telepresence using --run and --run-shell.'
+        'vpn-tcp: using a program called sshuttle to open a VPN-like connection to the Kubernetes cluster.'
+        'container:--docker-run is used'
+      )
+      _arguments \
+        "*: :{_describe 'method args' method_args}"
+      ;;
+
+    docker_run)
+      _arguments \
+        $opts_create_run \
+        $opts_create_run_update \
+        $opts_attach_exec_run_start \
+        {-d,--detach}"[Detached mode: leave the container running in the background]" \
+        "--health-cmd=[Command to run to check health]:command: " \
+        "--health-interval=[Time between running the check]:time: " \
+        "--health-retries=[Consecutive failures needed to report unhealthy]:retries:(1 2 3 4 5)" \
+        "--health-timeout=[Maximum time to allow one check to run]:time: " \
+        "--no-healthcheck[Disable any container-specified HEALTHCHECK]" \
+        "--rm[Remove intermediate containers when it exits]" \
+        "--runtime=[Name of the runtime to be used for that container]:runtime:__docker_complete_runtimes" \
+        "--sig-proxy[Proxy all received signals to the process (non-TTY mode only)]" \
+        "--storage-opt=[Storage driver options for the container]:storage options:->storage-opt" \
+        ": :__docker_complete_images" \
+        ":command: _command_names -e" \
+        "*::arguments: _normal" 
+      case $state in
+        (link)
+          if compset -P "*:"; then
+              _wanted alias expl "Alias" compadd -E "" && ret=0
+          else
+              __docker_complete_running_containers -qS ":" && ret=0
+          fi
+          ;;
+        (storage-opt)
+          if compset -P "*="; then
+              _message "value" && ret=0
+          else
+              opts=('size')
+              _describe -t filter-opts "storage options" opts -qS "=" && ret=0
+          fi
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_telepresence "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
