@@ -1,0 +1,334 @@
+#compdef kubetest
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# k8s.io/test-infra/kubetest
+#
+# -----------------------------------------------------------------------------
+#
+# Usage of kubetest:
+#       --acsengine-admin-password string                    Admin password
+#       --acsengine-admin-username string                    Admin username
+#       --acsengine-agentpoolcount int                       Azure Agent Pool Count
+#       --acsengine-agentvmsize string                       Azure Agent VM size
+#       --acsengine-ccm                                      Set to True if you want kubetest to build a custom cloud controller manager for aks-engine
+#       --acsengine-creds string                             Path to credential file for Azure
+#       --acsengine-dnsprefix string                         Azure K8s Master DNS Prefix
+#       --acsengine-download-url string                      Download URL for ACS engine
+#       --acsengine-hyperkube                                Set to True if you want kubetest to build a custom hyperkube for aks-engine
+#       --acsengine-location string                          Azure ACS location
+#       --acsengine-mastervmsize string                      Azure Master VM size
+#       --acsengine-md5-sum string                           Checksum for acs engine download
+#       --acsengine-networkPlugin string                     Network pluging to use with acs-engine (default "azure")
+#       --acsengine-orchestratorRelease string               Orchestrator Profile for acs-engine
+#       --acsengine-public-key string                        Path to SSH Public Key
+#       --acsengine-resource-name string                     Azure Resource Name
+#       --acsengine-resourcegroup-name string                Azure Resource Group Name
+#       --acsengine-template-url string                      Azure Template URL.
+#       --acsengine-win-binaries                             Set to True if you want kubetest to build a custom zip with windows binaries for aks-engine
+#       --acsengine-winZipBuildScript string                 Build script to create custom zip containing win binaries for acs-engine (default "https://raw.githubusercontent.com/Azure/acs-engine/master/scripts/build-windows-k8s.sh")
+#       --boskos-wait-duration duration                      Defines how long it waits until quit getting Boskos resoure, default 5 minutes (default 5m0s)
+#       --build buildStrategy[=true]                         Rebuild k8s binaries, optionally forcing (release|quick|bazel) strategy (default )
+#       --charts                                             If true, run charts tests
+#       --check-leaked-resources                             Ensure project ends with the same resources
+#       --check-version-skew                                 Verify client and server versions match (default true)
+#       --cluster string                                     Cluster name. Must be set for --deployment=gke (TODO: other deployments).
+#       --cluster-ip-range string                            Specifies CLUSTER_IP_RANGE value during --up and --test (only relevant for --deployment=bash). Auto-calculated if empty.
+#       --deployment string                                  Choices: none/bash/conformance/gke/eks/kind/kops/kubernetes-anywhere/node/local (default "bash")
+#       --down                                               If true, tear down the cluster before exiting.
+#       --dump string                                        If set, dump bring-up and cluster logs to this location on test or cluster-up failure
+#       --dump-pre-test-logs string                          If set, dump cluster logs to this location before running tests
+#       --eks-kubeconfig-path string                         (eks only) Path to the kubeconfig file to use. (default "/tmp/aws-k8s-tester/kubeconfig")
+#       --eks-kubectl-path string                            (eks only) Path to the kubectl binary to use. (default "/tmp/aws-k8s-tester/kubectl")
+#       --eks-node-instance-type string                      (eks only) Instance type to use for nodes. (default "m3.xlarge")
+#       --eks-nodes string                                   (eks only) Number of nodes in the EKS cluster. (default "1")
+#       --extract exactStrategies                            Extract k8s binaries from the specified release location
+#       --extract-source                                     Extract k8s src together with other tarballs
+#       --flush-mem-after-build                              If true, try to flush container memory after building
+#       --gcp-cloud-sdk string                               Install/upgrade google-cloud-sdk to the gs:// path if set
+#       --gcp-master-image string                            Master image type (cos|debian on GCE, n/a on GKE)
+#       --gcp-master-size string                             (--provider=gce only) Size of master to create (e.g n1-standard-1). Auto-calculated if left empty.
+#       --gcp-network string                                 Cluster network. Must be set for --deployment=gke (TODO: other deployments).
+#       --gcp-node-image string                              Node image type (cos|container_vm on GKE, cos|debian on GCE)
+#       --gcp-node-size string                               (--provider=gce only) Size of nodes to create (e.g n1-standard-1).
+#       --gcp-nodes string                                   (--provider=gce only) Number of nodes to create.
+#       --gcp-project string                                 For use with gcloud commands
+#       --gcp-project-type string                            Explicitly indicate which project type to select from boskos
+#       --gcp-region string                                  For use with gcloud commands
+#       --gcp-service-account string                         Service account to activate before using gcloud
+#       --gcp-ssh-proxy-instance-name string                 (--provider=gce|gke only) If set, will result in proxing the ssh connections via the provided instance name while running tests
+#       --gcp-zone string                                    For use with gcloud commands
+#       --ginkgo-focus string                                The ginkgo regex to focus. Currently only respected for (dind).
+#       --ginkgo-parallel ginkgoParallelValue[=true]         Run Ginkgo tests in parallel, default 25 runners. Use --ginkgo-parallel=N to specify an exact count. (default 1)
+#       --ginkgo-skip string                                 The ginkgo regex to skip. Currently only respected for (dind).
+#       --gke-additional-zones string                        (gke only) List of additional Google Compute Engine zones to use. Clusters are created symmetrically across zones by default, see --gke-shape for details.
+#       --gke-command-group string                           (gke only) Use a different gcloud track (e.g. 'alpha') for all 'gcloud container' commands. Note: This is added to --gke-create-command on create. You should only use --gke-command-group if you need to change the gcloud track for *every* gcloud container command.
+#       --gke-create-args string                             (gke only) (deprecated, use a modified --gke-create-command') Additional arguments passed directly to 'gcloud container clusters create'
+#       --gke-create-command string                          (gke only) gcloud subcommand used to create a cluster. Modify if you need to pass arbitrary arguments to create. (default "container clusters create --quiet")
+#       --gke-custom-subnet string                           (gke only) if specified, we create a custom subnet with the specified options and use it for the gke cluster. The format should be '<subnet-name> --region=<subnet-gcp-region> --range=<subnet-cidr> <any other optional params>'.
+#       --gke-environment string                             (gke only) Container API endpoint to use, one of 'test', 'staging', 'prod', or a custom https:// URL
+#       --gke-node-locations string                          (gke only) List of Google Compute Engine zones to use.
+#       --gke-shape string                                   (gke only) A JSON description of node pools to create. The node pool 'default' is required and used for initial cluster creation. All node pools are symmetric across zones, so the cluster total node count is {total nodes in --gke-shape} * {1 + (length of --gke-additional-zones)}. Example: '{"default":{"Nodes":999,"MachineType:":"n1-standard-1"},"heapster":{"Nodes":1, "MachineType":"n1-standard-8", "ExtraArgs": []}} (default "{\"default\":{\"Nodes\":3,\"MachineType\":\"n1-standard-2\"}}")
+#       --gke-single-zone-node-instance-group                (gke only) Add instance groups from a single zone to the NODE_INSTANCE_GROUP env variable. (default true)
+#       --image-family string                                Node image family from which to use the latest image, required when --gcp-node-image=CUSTOM
+#       --image-project string                               Project containing node image family, required when --gcp-node-image=CUSTOM
+#       --kind-base-image string                             (kind only) name:tag of the base image to use for building the node image for kind.
+#       --kind-binary-version string                         (kind only) This flag can be either "build" (build from source) or "stable" (download a stable binary). (default "stable")
+#       --kind-cluster-name string                           (kind only) Name of the kind cluster. (default "kind-kubetest")
+#       --kind-config-path string                            (kind only) Path to the kind configuration file.
+#       --kops string                                        (kops only) Path to the kops binary. kops will be downloaded from kops-base-url if not set.
+#       --kops-admin-access string                           (kops only) If set, restrict apiserver access to this CIDR range.
+#       --kops-args string                                   (kops only) Additional space-separated args to pass unvalidated to 'kops create cluster', e.g. '--kops-args="--dns private --node-size t2.micro"'
+#       --kops-base-url string                               (kops only) Base URL for a prebuilt version of kops
+#       --kops-cluster string                                (kops only) Deprecated. Cluster name for kops; if not set defaults to --cluster.
+#       --kops-disk-size int                                 (kops only) Disk size to use for nodes and masters (default 48)
+#       --kops-etcd-version string                           (kops only) Etcd Version
+#       --kops-image string                                  (kops only) Image (AMI) for nodes to use. (Defaults to kops default, a Debian image with a custom kubernetes kernel.)
+#       --kops-kubernetes-version string                     (kops only) If set, the version of Kubernetes to deploy (can be a URL to a GCS path where the release is stored) (Defaults to kops default, latest stable release.).
+#       --kops-master-count int                              (kops only) Number of masters to run (default 1)
+#       --kops-master-size string                            (kops only) master instance type (default "c4.large")
+#       --kops-multiple-zones                                (kops only) run tests in multiple zones
+#       --kops-network-mode string                           (kops only) Networking mode to use. kubenet (default), classic, external, kopeio-vxlan (or kopeio), weave, flannel-vxlan (or flannel), flannel-udp, calico, canal, kube-router, romana, amazon-vpc-routed-eni, cilium.
+#       --kops-nodes int                                     (kops only) Number of nodes to create. (default 2)
+#       --kops-priority-path string                          (kops only) Insert into PATH if set
+#       --kops-publish string                                (kops only) Publish kops version to the specified gs:// path on success
+#       --kops-ssh-key string                                (kops only) Path to ssh key-pair for each node (defaults '~/.ssh/kube_aws_rsa' if unset.)
+#       --kops-ssh-user string                               (kops only) Username for SSH connections to nodes. (default "zchee")
+#       --kops-state string                                  (kops only) s3:// path to kops state store. Must be set.
+#       --kops-up-timeout duration                           (kops only) Time limit between 'kops config / kops update' and a response from the Kubernetes API. (default 20m0s)
+#       --kops-version string                                (kops only) URL to a file containing a valid kops-base-url
+#       --kops-zones string                                  (kops only) zones for kops deployment, comma delimited.
+#       --kubeadm-dind-ip-mode string                        (Kubeadm-DinD only) IP Mode. Can be 'ipv4' (default), 'ipv6', or 'dual-stack'. (default "ipv4")
+#       --kubeadm-dind-k8s-tar-file string                   (Kubeadm-DinD only) Location of tar file containing Kubernetes server binaries.
+#       --kubeconfig string                                  The location of a kubeconfig file.
+#       --kubemark                                           If true, run kubemark tests.
+#       --kubemark-master-size string                        Kubemark master size (only relevant if --kubemark=true). Auto-calculated based on '--kubemark-nodes' if left empty.
+#       --kubemark-nodes string                              Number of kubemark nodes to start (only relevant if --kubemark=true). (default "5")
+#       --kubernetes-anywhere-cluster string                 (kubernetes-anywhere only) Cluster name. Must be set for kubernetes-anywhere.
+#       --kubernetes-anywhere-cni string                     (kubernetes-anywhere only) The name of the CNI plugin used for the cluster's SDN.
+#       --kubernetes-anywhere-dump-cluster-logs              (kubernetes-anywhere only) Whether to dump cluster logs. (default true)
+#       --kubernetes-anywhere-kubeadm-feature-gates string   (kubernetes-anywhere only) A set of key=value pairs that describes feature gates for kubeadm features. If specified, this flag will pass on to kubeadm.
+#       --kubernetes-anywhere-kubeadm-version string         (kubernetes-anywhere only) Version of kubeadm to use, if phase2-provider is kubeadm. May be "stable" or a gs:// link to a custom build. (default "stable")
+#       --kubernetes-anywhere-kubelet-ci-version string      (kubernetes-anywhere only) If specified, the ci version for the kubelet to use. Overrides kubernetes-anywhere-kubelet-version.
+#       --kubernetes-anywhere-kubelet-version string         (kubernetes-anywhere only) Version of Kubelet to use, if phase2-provider is kubeadm. May be "stable" or a gs:// link to a custom build. (default "stable")
+#       --kubernetes-anywhere-kubernetes-version string      (kubernetes-anywhere only) Version of Kubernetes to use (e.g. latest, stable, latest-1.6, 1.6.3, etc).
+#       --kubernetes-anywhere-num-nodes int                  (kubernetes-anywhere only) Number of nodes to be deployed in the cluster. (default 4)
+#       --kubernetes-anywhere-os-image string                (kubernetes-anywhere only) The name of the os_image to use for nodes (default "ubuntu-1604-xenial-v20171212")
+#       --kubernetes-anywhere-path string                    (kubernetes-anywhere only) Path to the kubernetes-anywhere directory. Must be set for kubernetes-anywhere.
+#       --kubernetes-anywhere-phase2-provider string         (kubernetes-anywhere only) Provider for phase2 bootstrapping. (Defaults to ignition). (default "ignition")
+#       --kubernetes-anywhere-proxy-mode string              (kubernetes-anywhere only) Chose kube-proxy mode.
+#       --kubernetes-anywhere-up-timeout duration            (kubernetes-anywhere only) Time limit between starting a cluster and making a successful call to the Kubernetes API. (default 20m0s)
+#       --kubernetes-anywhere-upgrade-method string          (kubernetes-anywhere only) Indicates whether to do the control plane upgrade with kubeadm method "init" or "upgrade" (default "upgrade")
+#       --local-up-timeout duration                          (local only) Time limit between 'local-up-cluster.sh' and a response from the Kubernetes API. (default 2m0s)
+#       --logexporter-gcs-path string                        Path to the GCS artifacts directory to dump logs from nodes. Logexporter gets enabled if this is non-empty
+#       --metadata-sources string                            Comma-separated list of files inside ./artifacts to merge into metadata.json (default "images.json")
+#       --no-allow-dup                                       if set --allow-dup will not be passed to push-build and --stage will error if the build already exists on the gcs path
+#       --node-args string                                   Args for node e2e tests.
+#       --node-test-args string                              Test args specifically for node e2e tests.
+#       --node-tests                                         If true, run node-e2e tests.
+#       --provider string                                    Kubernetes provider such as gce, gke, aws, eks, etc
+#       --publish string                                     Publish version to the specified gs:// path on success
+#       --registry string                                    Push images to the specified docker registry (e.g. gcr.io/a-test-project)
+#       --runtime-config string                              If set, API versions can be turned on or off while bringing up the API server. (default "batch/v2alpha1=true")
+#       --save string                                        Save credentials to gs:// path on --up if set (or load from there if not --up)
+#       --skew                                               If true, run tests in another version at ../kubernetes/hack/e2e.go
+#       --soak                                               If true, job runs in soak mode
+#       --soak-duration duration                             Maximum age of a soak cluster before it gets recycled (default 168h0m0s)
+#       --stage stageStrategy                                Upload binaries to gs://bucket/devel/job-suffix if set (default devel)
+#       --stage-suffix string                                Append suffix to staged version when set
+#       --test                                               Run Ginkgo tests.
+#       --test-ccm                                           Set to True if you want kubetest to run e2e tests for ccm
+#       --test-cmd string                                    command to run against the cluster instead of Ginkgo e2e tests
+#       --test-cmd-args stringArray                          args for test-cmd
+#       --test-cmd-name string                               name to log the test command as in xml results
+#       --test_args string                                   Space-separated list of arguments to pass to Ginkgo test runner.
+#       --timeout duration                                   Terminate testing after the timeout duration (s/m/h) (default 0s)
+#       --up                                                 If true, start the e2e cluster. If cluster is already up, recreate it.
+#       --upgrade_args string                                If set, run upgrade tests before other tests
+#       --verbose-commands                                   If true, print all command output. (default true)
+#
+# -----------------------------------------------------------------------------
+
+function _kubetest() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '--acsengine-admin-password=[Admin password]' \
+    '--acsengine-admin-username=[Admin username]' \
+    '--acsengine-agentpoolcount=[Azure Agent Pool Count]' \
+    '--acsengine-agentvmsize=[Azure Agent VM size]' \
+    '--acsengine-ccm[Set to True if you want kubetest to build a custom cloud controller manager for aks-engine]' \
+    '--acsengine-creds=[Path to credential file for Azure]' \
+    '--acsengine-dnsprefix=[Azure K8s Master DNS Prefix]' \
+    '--acsengine-download-url=[Download URL for ACS engine]' \
+    '--acsengine-hyperkube[Set to True if you want kubetest to build a custom hyperkube for aks-engine]' \
+    '--acsengine-location=[Azure ACS location]' \
+    '--acsengine-mastervmsize=[Azure Master VM size]' \
+    '--acsengine-md5-sum=[Checksum for acs engine download]' \
+    '--acsengine-networkPlugin=[Network pluging to use with acs-engine \(default "azure"\)]' \
+    '--acsengine-orchestratorRelease=[Orchestrator Profile for acs-engine]' \
+    '--acsengine-public-key=[Path to SSH Public Key]' \
+    '--acsengine-resource-name=[Azure Resource Name]' \
+    '--acsengine-resourcegroup-name=[Azure Resource Group Name]' \
+    '--acsengine-template-url=[Azure Template URL.]' \
+    '--acsengine-win-binaries[Set to True if you want kubetest to build a custom zip with windows binaries for aks-engine]' \
+    '--acsengine-winZipBuildScript=[Build script to create custom zip containing win binaries for acs-engine \(default "https://raw.githubusercontent.com/Azure/acs-engine/master/scripts/build-windows-k8s.sh"\)]' \
+    '--boskos-wait-duration=[Defines how long it waits until quit getting Boskos resoure, default 5 minutes \(default 5m0s\)]' \
+    '--build buildStrategy=[Rebuild k8s binaries, optionally forcing \(release|quick|bazel\) strategy]' \
+    '--charts[If true, run charts tests]' \
+    '--check-leaked-resources[Ensure project ends with the same resources]' \
+    '--check-version-skew[Verify client and server versions match \(default true\)]' \
+    '--cluster=[Cluster name. Must be set for --deployment=gke \(TODO: other deployments\).]' \
+    '--cluster-ip-range=[Specifies CLUSTER_IP_RANGE value during --up and --test \(only relevant for --deployment=bash\). Auto-calculated if empty.]' \
+    '--deployment=[Choices: none/bash/conformance/gke/eks/kind/kops/kubernetes-anywhere/node/local \(default "bash"\)]' \
+    '--down[If true, tear down the cluster before exiting.]' \
+    '--dump=[If set, dump bring-up and cluster logs to this location on test or cluster-up failure]' \
+    '--dump-pre-test-logs=[If set, dump cluster logs to this location before running tests]' \
+    '--eks-kubeconfig-path=[\(eks only\) Path to the kubeconfig file to use. \(default "/tmp/aws-k8s-tester/kubeconfig"\)]' \
+    '--eks-kubectl-path=[\(eks only\) Path to the kubectl binary to use. \(default "/tmp/aws-k8s-tester/kubectl"\)]' \
+    '--eks-node-instance-type=[\(eks only\) Instance type to use for nodes. \(default "m3.xlarge"\)]' \
+    '--eks-nodes=[\(eks only\) Number of nodes in the EKS cluster. \(default "1"\)]' \
+    '--extract=[Extract k8s binaries from the specified release location]' \
+    '--extract-source[Extract k8s src together with other tarballs]' \
+    '--flush-mem-after-build[If true, try to flush container memory after building]' \
+    '--gcp-cloud-sdk=[Install/upgrade google-cloud-sdk to the gs:// path if set]' \
+    '--gcp-master-image=[Master image type \(cos|debian on GCE, n/a on GKE\)]' \
+    '--gcp-master-size=[(--provider=gce only) Size of master to create. Auto-calculated if left empty.]' \
+    '--gcp-network=[Cluster network. Must be set for --deployment=gke \(TODO: other deployments\).]' \
+    '--gcp-node-image=[Node image type \(cos|container_vm on GKE, cos|debian on GCE\)]' \
+    '--gcp-node-size=[(--provider=gce only) Size of nodes to create.]' \
+    '--gcp-nodes=[(--provider=gce only) Number of nodes to create.]' \
+    '--gcp-project=[For use with gcloud commands]' \
+    '--gcp-project-type=[Explicitly indicate which project type to select from boskos]' \
+    '--gcp-region=[For use with gcloud commands]' \
+    '--gcp-service-account=[Service account to activate before using gcloud]' \
+    '--gcp-ssh-proxy-instance-name=[(--provider=gce|gke only) If set, will result in proxing the ssh connections via the provided instance name while running tests]' \
+    '--gcp-zone=[For use with gcloud commands]' \
+    '--ginkgo-focus=[The ginkgo regex to focus. Currently only respected for dind.]' \
+    '--ginkgo-parallel=[Run Ginkgo tests in parallel, default 25 runners. Use --ginkgo-parallel=N to specify an exact count. \(default 1\):ginkgoParallelValue]' \
+    '--ginkgo-skip=[The ginkgo regex to skip. Currently only respected for dind.]' \
+    '--gke-additional-zones=[\(gke only\) List of additional Google Compute Engine zones to use. Clusters are created symmetrically across zones by default, see --gke-shape for details.]' \
+    "--gke-command-group=[\(gke only\) Use a different gcloud track \(e.g. 'alpha'\) for all 'gcloud container' commands. Note: This is added to --gke-create-command on create. You should only use --gke-command-group if you need to change the gcloud track for *every* gcloud container command.]" \
+    "--gke-create-args=[\(gke only\) (deprecated, use a modified --gke-create-command') Additional arguments passed directly to 'gcloud container clusters create']" \
+    '--gke-create-command=[\(gke only\) gcloud subcommand used to create a cluster. Modify if you need to pass arbitrary arguments to create. (default "container clusters create --quiet")]' \
+    '--gke-custom-subnet=[\(gke only\) if specified, we create a custom subnet with the specified options and use it for the gke cluster.]' \
+    "--gke-environment=[\(gke only\) Container API endpoint to use, one of 'test', 'staging', 'prod', or a custom https:// URL]" \
+    '--gke-node-locations=[\(gke only\) List of Google Compute Engine zones to use.]' \
+    "--gke-shape=[\(gke only\) A JSON description of node pools to create. The node pool 'default' is required and used for initial cluster creation. All node pools are symmetric across zones, so the cluster total node count is \{total nodes in --gke-shape\} * {1 + (length of --gke-additional-zones)}.]" \
+    "--gke-single-zone-node-instance-group[\(gke only\) Add instance groups from a single zone to the NODE_INSTANCE_GROUP env variable. \(default true\)]" \
+    '--image-family=[Node image family from which to use the latest image, required when --gcp-node-image=CUSTOM]' \
+    '--image-project=[Project containing node image family, required when --gcp-node-image=CUSTOM]' \
+    '--kind-base-image=[\(kind only\) name:tag of the base image to use for building the node image for kind.]' \
+    '--kind-binary-version=[\(kind only\) This flag can be either "build" (build from source) or "stable" \(download a stable binary\). \(default "stable"\)]' \
+    '--kind-cluster-name=[\(kind only\) Name of the kind cluster. \(default "kind-kubetest"\)]' \
+    '--kind-config-path=[\(kind only\) Path to the kind configuration file.]' \
+    '--kops=[\(kops only\) Path to the kops binary. kops will be downloaded from kops-base-url if not set.]' \
+    '--kops-admin-access=[\(kops only\) If set, restrict apiserver access to this CIDR range.]' \
+    "--kops-args=[\(kops only\) Additional space-separated args to pass unvalidated to 'kops create cluster']" \
+    '--kops-base-url=[\(kops only\) Base URL for a prebuilt version of kops]' \
+    '--kops-cluster=[\(kops only\) Deprecated. Cluster name for kops; if not set defaults to --cluster.]' \
+    '--kops-disk-size=[\(kops only\) Disk size to use for nodes and masters \(default 48\)]' \
+    '--kops-etcd-version=[\(kops only\) Etcd Version]' \
+    '--kops-image=[\(kops only\) Image (AMI) for nodes to use. (Defaults to kops default, a Debian image with a custom kubernetes kernel.)]' \
+    '--kops-kubernetes-version=[\(kops only\) If set, the version of Kubernetes to deploy \(can be a URL to a GCS path where the release is stored\) \(Defaults to kops default, latest stable release.\).]' \
+    '--kops-master-count=[\(kops only\) Number of masters to run \(default 1\)]' \
+    '--kops-master-size=[\(kops only\) master instance type \(default "c4.large"\)]' \
+    '--kops-multiple-zones[\(kops only\) run tests in multiple zones]' \
+    '--kops-network-mode=[\(kops only\) Networking mode to use. kubenet, classic, external, kopeio-vxlan \(or kopeio\), weave, flannel-vxlan \(or flannel\), flannel-udp, calico, canal, kube-router, romana, amazon-vpc-routed-eni, cilium.]' \
+    '--kops-nodes=[\(kops only\) Number of nodes to create. \(default 2\)]' \
+    '--kops-priority-path=[\(kops only\) Insert into PATH if set]' \
+    '--kops-publish=[\(kops only\) Publish kops version to the specified gs:// path on success]' \
+    "--kops-ssh-key=[\(kops only\) Path to ssh key-pair for each node \(defaults '~/.ssh/kube_aws_rsa' if unset.\)]" \
+    '--kops-ssh-user=[\(kops only\) Username for SSH connections to nodes. \(default "zchee"\)]' \
+    '--kops-state=[\(kops only\) s3:// path to kops state store. Must be set.]' \
+    "--kops-up-timeout=[\(kops only\) Time limit between 'kops config, kops update' and a response from the Kubernetes API. \(default 20m0s\)]" \
+    '--kops-version=[\(kops only\) URL to a file containing a valid kops-base-url]' \
+    '--kops-zones=[\(kops only\) zones for kops deployment, comma delimited.]' \
+    "--kubeadm-dind-ip-mode=[\(Kubeadm-DinD only\) IP Mode. Can be 'ipv4', 'ipv6', or 'dual-stack'. (default \"ipv4\")]:dind ip mode:(ipv4 ipv6 dual-stack)" \
+    '--kubeadm-dind-k8s-tar-file=[\(Kubeadm-DinD only\) Location of tar file containing Kubernetes server binaries.]' \
+    '--kubeconfig=[The location of a kubeconfig file.]' \
+    '--kubemark[If true, run kubemark tests.]' \
+    "--kubemark-master-size=[Kubemark master size \(only relevant if --kubemark=true\). Auto-calculated based on '--kubemark-nodes' if left empty.]" \
+    '--kubemark-nodes=[Number of kubemark nodes to start \(only relevant if --kubemark=true\). \(default "5"\)]' \
+    '--kubernetes-anywhere-cluster=[\(kubernetes-anywhere only\) Cluster name. Must be set for kubernetes-anywhere.]' \
+    "--kubernetes-anywhere-cni=[\(kubernetes-anywhere only\) The name of the CNI plugin used for the cluster's SDN.]" \
+    '--kubernetes-anywhere-dump-cluster-logs[\(kubernetes-anywhere only\) Whether to dump cluster logs. \(default true\)]' \
+    '--kubernetes-anywhere-kubeadm-feature-gates=[\(kubernetes-anywhere only\) A set of key=value pairs that describes feature gates for kubeadm features. If specified, this flag will pass on to kubeadm.]' \
+    '--kubernetes-anywhere-kubeadm-version=[\(kubernetes-anywhere only\) Version of kubeadm to use, if phase2-provider is kubeadm. May be "stable" or a gs:// link to a custom build. \(default "stable"\)]' \
+    '--kubernetes-anywhere-kubelet-ci-version=[\(kubernetes-anywhere only\) If specified, the ci version for the kubelet to use. Overrides kubernetes-anywhere-kubelet-version.]' \
+    '--kubernetes-anywhere-kubelet-version=[\(kubernetes-anywhere only\) Version of Kubelet to use, if phase2-provider is kubeadm. May be "stable" or a gs:// link to a custom build. \(default "stable"\)]' \
+    '--kubernetes-anywhere-kubernetes-version=[\(kubernetes-anywhere only\) Version of Kubernetes to use \(e.g. latest, stable, latest-1.6, 1.6.3, etc\).]' \
+    '--kubernetes-anywhere-num-nodes=[\(kubernetes-anywhere only\) Number of nodes to be deployed in the cluster. \(default 4\)]' \
+    '--kubernetes-anywhere-os-image=[\(kubernetes-anywhere only\) The name of the os_image to use for nodes \(default "ubuntu-1604-xenial-v20171212"\)]' \
+    '--kubernetes-anywhere-path=[\(kubernetes-anywhere only\) Path to the kubernetes-anywhere directory. Must be set for kubernetes-anywhere.]' \
+    '--kubernetes-anywhere-phase2-provider=[\(kubernetes-anywhere only\) Provider for phase2 bootstrapping. (Defaults to ignition). \(default "ignition"\)]' \
+    '--kubernetes-anywhere-proxy-mode=[\(kubernetes-anywhere only\) Chose kube-proxy mode.]' \
+    '--kubernetes-anywhere-up-timeout=[\(kubernetes-anywhere only\) Time limit between starting a cluster and making a successful call to the Kubernetes API. \(default 20m0s\)]' \
+    '--kubernetes-anywhere-upgrade-method=[\(kubernetes-anywhere only\) Indicates whether to do the control plane upgrade with kubeadm method "init" or "upgrade" \(default "upgrade"\)]' \
+    "--local-up-timeout=[\(local only\) Time limit between 'local-up-cluster.sh' and a response from the Kubernetes API. \(default 2m0s\)]" \
+    '--logexporter-gcs-path=[Path to the GCS artifacts directory to dump logs from nodes. Logexporter gets enabled if this is non-empty]' \
+    '--metadata-sources=[Comma-separated list of files inside ./artifacts to merge into metadata.json \(default "images.json"\)]' \
+    '--no-allow-dup[if set --allow-dup will not be passed to push-build and --stage will error if the build already exists on the gcs path]' \
+    '--node-args=[Args for node e2e tests.]' \
+    '--node-test-args=[Test args specifically for node e2e tests.]' \
+    '--node-tests[If true, run node-e2e tests.]' \
+    '--provider=[Kubernetes provider]:provider:(gce gke aws eks etc)' \
+    '--publish=[Publish version to the specified gs:// path on success]' \
+    '--registry=[Push images to the specified docker registry]' \
+    '--runtime-config=[If set, API versions can be turned on or off while bringing up the API server. \(default "batch/v2alpha1=true"\)]' \
+    '--save=[Save credentials to gs:// path on --up if set \(or load from there if not --up\)]' \
+    '--skew[If true, run tests in another version at ../kubernetes/hack/e2e.go]' \
+    '--soak[If true, job runs in soak mode]' \
+    '--soak-duration([Maximum age of a soak cluster before it gets recycled \(default 168h0m0s\)]' \
+    '--stage=[Upload binaries to gs://bucket/devel/job-suffix if set \(default devel\)]' \
+    '--stage-suffix([Append suffix to staged version when set]' \
+    '--test[Run Ginkgo tests.]' \
+    '--test-ccm[Set to True if you want kubetest to run e2e tests for ccm]' \
+    '--test-cmd=[command to run against the cluster instead of Ginkgo e2e tests]' \
+    '--test-cmd-args=[args for test-cmd]' \
+    '--test-cmd-name=[name to log the test command as in xml results]' \
+    '--test_args=[Space-separated list of arguments to pass to Ginkgo test runner.]' \
+    '--timeout=[Terminate testing after the timeout duration \(s/m/h\) \(default 0s\)]' \
+    '--up[If true, start the e2e cluster. If cluster is already up, recreate it.]' \
+    '--upgrade_args=[If set, run upgrade tests before other tests]' \
+    '--verbose-commands=[If true, print all command output. \(default true\)]' \
+    && ret=0
+
+  return ret
+}
+
+_kubetest "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
