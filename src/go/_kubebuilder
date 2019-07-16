@@ -1,0 +1,321 @@
+#compdef kubebuilder
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# sigs.k8s.io/kubebuilder
+#
+# -----------------------------------------------------------------------------
+#
+# Development kit for building Kubernetes extensions and tools.
+#
+# Provides libraries and tools to create new projects, APIs and controllers.
+# Includes tools for packaging artifacts into an installer container.
+#
+# Typical project lifecycle:
+#
+# - initialize a project:
+#
+#   kubebuilder init --domain k8s.io --license apache2 --owner "The Kubernetes authors"
+#
+# - create one or more a new resource APIs and add your code to them:
+#
+#   kubebuilder create api --group <group> --version <version> --kind <Kind>
+#
+# Create resource will prompt the user for if it should scaffold the Resource and / or Controller. To only
+# scaffold a Controller for an existing Resource, select "n" for Resource. To only define
+# the schema for a Resource without writing a Controller, select "n" for Controller.
+#
+# After the scaffold is written, api will run make on the project.
+#
+# Usage:
+#   kubebuilder [flags]
+#   kubebuilder [command]
+#
+# Examples:
+#
+# 	# Initialize your project
+# 	kubebuilder init --domain example.com --license apache2 --owner "The Kubernetes authors"
+#
+# 	# Create a frigates API with Group: ship, Version: v1beta1 and Kind: Frigate
+# 	kubebuilder create api --group ship --version v1beta1 --kind Frigate
+#
+# 	# Edit the API Scheme
+# 	nano api/v1beta1/frigate_types.go
+#
+# 	# Edit the Controller
+# 	nano controllers/frigate_controller.go
+#
+# 	# Install CRDs into the Kubernetes cluster using kubectl apply
+# 	make install
+#
+# 	# Regenerate code and run against the Kubernetes cluster configured by ~/.kube/config
+# 	make run
+#
+#
+# Available Commands:
+#   create      Scaffold a Kubernetes API or webhook.
+#   help        Help about any command
+#   init        Initialize a new project
+#   version     Print the kubebuilder version
+#
+# Flags:
+#   -h, --help   help for kubebuilder
+#
+# Use "kubebuilder [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Scaffold a Kubernetes API or webhook.
+#
+# Usage:
+#   kubebuilder create [flags]
+#   kubebuilder create [command]
+#
+# Available Commands:
+#   api         Scaffold a Kubernetes API
+#   webhook     Scaffold a webhook for an API resource.
+#
+# Flags:
+#   -h, --help   help for create
+#
+# Use "kubebuilder create [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Scaffold a Kubernetes API by creating a Resource definition and / or a Controller.
+#
+# create resource will prompt the user for if it should scaffold the Resource and / or Controller.  To only
+# scaffold a Controller for an existing Resource, select "n" for Resource.  To only define
+# the schema for a Resource without writing a Controller, select "n" for Controller.
+#
+# After the scaffold is written, api will run make on the project.
+#
+# Usage:
+#   kubebuilder create api [flags]
+#
+# Examples:
+# 	# Create a frigates API with Group: ship, Version: v1beta1 and Kind: Frigate
+# 	kubebuilder create api --group ship --version v1beta1 --kind Frigate
+#	
+# 	# Edit the API Scheme
+# 	nano api/ship/v1beta1/frigate_types.go
+#
+# 	# Edit the Controller
+# 	nano controllers/frigate/frigate_controller.go
+#
+# 	# Edit the Controller Test
+# 	nano controllers/frigate/frigate_controller_test.go
+#
+# 	# Install CRDs into the Kubernetes cluster using kubectl apply
+# 	make install
+#
+# 	# Regenerate code and run against the Kubernetes cluster configured by ~/.kube/config
+# 	make run
+#
+#
+# Flags:
+#       --controller       if set, generate the controller without prompting the user (default true)
+#       --example          if true an example reconcile body should be written while scaffolding a resource. (default true)
+#       --group string     resource Group
+#   -h, --help             help for api
+#       --kind string      resource Kind
+#       --make             if true, run make after generating files (default true)
+#       --namespaced       resource is namespaced (default true)
+#       --resource         if set, generate the resource without prompting the user (default true)
+#       --version string   resource Version
+#
+# -----------------------------------------------------------------------------
+#
+# Scaffold a webhook for an API resource. You can choose to scaffold defaulting, validating and (or) conversion webhooks.
+#
+# Usage:
+#   kubebuilder create webhook [flags]
+#
+# Examples:
+# 	# Create defaulting and validating webhooks for CRD of group crew, version v1 and kind FirstMate.
+# 	kubebuilder create webhook --group crew --version v1 --kind FirstMate --defaulting --programmatic-validation
+#
+# 	# Create conversion webhook for CRD of group crew, version v1 and kind FirstMate.
+# 	kubebuilder create webhook --group crew --version v1 --kind FirstMate --conversion
+#
+#
+# Flags:
+#       --conversion                if set, scaffold the conversion webhook
+#       --defaulting                if set, scaffold the defaulting webhook
+#       --group string              resource Group
+#   -h, --help                      help for webhook
+#       --kind string               resource Kind
+#       --programmatic-validation   if set, scaffold the validating webhook
+#       --resource string           resource Resource
+#       --version string            resource Version
+#
+# -----------------------------------------------------------------------------
+#
+# Initialize a new project including vendor/ directory and Go package directories.
+#
+# Writes the following files:
+# - a boilerplate license file
+# - a PROJECT file with the domain and repo
+# - a Makefile to build the project
+# - a go.mod with project dependencies
+# - a Kustomization.yaml for customizating manifests
+# - a Patch file for customizing image for manager manifests
+# - a Patch file for enabling prometheus metrics
+# - a cmd/manager/main.go to run
+#
+# project will prompt the user to run 'dep ensure' after writing the project files.
+#
+# Usage:
+#   kubebuilder init [flags]
+#
+# Examples:
+# # Scaffold a project using the apache2 license with "The Kubernetes authors" as owners
+# kubebuilder init --domain example.org --license apache2 --owner "The Kubernetes authors"
+#
+#
+# Flags:
+#       --domain string            domain for groups (default "k8s.io")
+#       --fetch-deps               ensure dependencies are downloaded (default true)
+#   -h, --help                     help for init
+#       --license string           license to use to boilerplate.  May be one of apache2,none (default "apache2")
+#       --owner string             Owner to add to the copyright
+#       --path string              path for boilerplate
+#       --project-version string   project version (default "2")
+#       --repo string              name of the github repo.  defaults to the go package of the current working directory. (default "sigs.k8s.io/kubebuilder")
+#       --skip-go-version-check    if specified, skip checking the Go version
+#
+# -----------------------------------------------------------------------------
+
+function _kubebuilder() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+  'create:Scaffold a Kubernetes API or webhook.'
+  'help:Help about any command'
+  'init:Initialize a new project'
+  'version:Print the kubebuilder version'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'kubebuilder commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+
+    _go_packages() {
+      local -a gopaths
+      gopaths=("${(s/:/)$(go env GOPATH)}")
+      for p in $gopaths; do
+        _alternative ':repo name:_path_files -W "$p/src" -/'
+      done
+    }
+
+      case $words[1] in
+        create)
+          local -a create_commands
+          create_commands=(
+          'api:Scaffold a Kubernetes API'
+          'webhook:Scaffold a webhook for an API resource.'
+          )
+          _arguments \
+            "1: :{_describe 'kubebuilder commands' commands}" \
+            {-h,--help}'[help for create]' \
+            '*:: :->args'
+
+          case $state in
+            args)
+
+              case $words[1] in
+                api)
+                  _arguments \
+                    '--controller=[generate the controller without prompting the user \(default true\)]:boolean:(true false)' \
+                    '--example=[ian example reconcile body should be written while scaffolding a resource. \(default true\)]:boolean:(true false)' \
+                    '--group[resource Group]:group name' \
+                    {-h,--help}'[help for create]' \
+                    '--kind[resource Kind]:kind name' \
+                    '--make=[run make after generating files \(default true\)]:boolean:(true false)' \
+                    '--namespaced=[resource is namespaced \(default true\)]:boolean:(true false)' \
+                    '--resource=[generate the resource without prompting the user \(default true\)]:boolean:(true false)' \
+                    '--version[resource Version]:api version'
+                  ;;
+
+                webhook)
+                  _arguments \
+                    '--conversion[scaffold the conversion webhook]' \
+                    '--defaulting[scaffold the defaulting webhook]' \
+                    '--group[resource Group]:group name' \
+                    {-h,--help}'[help for create]' \
+                    '--kind[resource Kind]:kind name' \
+                    '--programmatic-validation[scaffold the validating webhook]' \
+                    '--resource[resource Resource]:resource name' \
+                    '--version[resource Version]:resource version'
+                  ;;
+              esac
+              ;;
+          esac
+        ;;
+
+        help)
+          _arguments "1: :{_describe 'command' commands}"
+          ;;
+
+        init)
+          _arguments \
+            '--domain[domain for groups \(default "k8s.io"\)]:domain name' \
+            '--fetch-deps=[ensure=[dependencies are downloaded \(default true\)]:boolean:(true false)' \
+            {-h,--help}'[help for create]' \
+            '--license[license to use to boilerplate.  May be one of apache2,none \(default "apache2"\)]:license type:(apache2 none)' \
+            '--owner[Owner to add to the copyright]:owner name' \
+            '--path[path for boilerplate]:boilerplate path:_files' \
+            '--project-version=[string[project version \(default "2"\)]:project version:(1 2)' \
+            '--repo[name of the github repo.  defaults to the go package of the current working directory. \(default "sigs.k8s.io/kubebuilder"\)]:repo name:_go_packages' \
+            '--skip-go-version-check [if specified, skip checking the Go version]'
+          ;;
+
+        version)
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_kubebuilder "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
