@@ -38,13 +38,21 @@
 # -----------------------------------------------------------------------------
 #
 # Usage: shellcheck [OPTIONS...] FILES...
-#   -a                --check-sourced          Include warnings from sourced files
-#   -C[WHEN]          --color[=WHEN]           Use color (auto, always, never)
-#   -e CODE1,CODE2..  --exclude=CODE1,CODE2..  Exclude types of warnings
-#   -f FORMAT         --format=FORMAT          Output format (checkstyle, gcc, json, tty)
-#   -s SHELLNAME      --shell=SHELLNAME        Specify dialect (sh, bash, dash, ksh)
-#   -V                --version                Print version information
-#   -x                --external-sources       Allow 'source' outside of FILES
+#   -a                  --check-sourced            Include warnings from sourced files
+#   -C[WHEN]            --color[=WHEN]             Use color (auto, always, never)
+#   -i CODE1,CODE2..    --include=CODE1,CODE2..    Consider only given types of warnings
+#   -e CODE1,CODE2..    --exclude=CODE1,CODE2..    Exclude types of warnings
+#   -f FORMAT           --format=FORMAT            Output format (checkstyle, diff, gcc, json, json1, quiet, tty)
+#                       --list-optional            List checks disabled by default
+#                       --norc                     Don't look for .shellcheckrc files
+#   -o check1,check2..  --enable=check1,check2..   List of optional checks to enable (or 'all')
+#   -P SOURCEPATHS      --source-path=SOURCEPATHS  Specify path when looking for sourced files ("SCRIPTDIR" for script's dir)
+#   -s SHELLNAME        --shell=SHELLNAME          Specify dialect (sh, bash, dash, ksh)
+#   -S SEVERITY         --severity=SEVERITY        Minimum severity of errors to consider (error, warning, info, style)
+#   -V                  --version                  Print version information
+#   -W NUM              --wiki-link-count=NUM      The number of wiki links to show, when applicable
+#   -x                  --external-sources         Allow 'source' outside of FILES
+#                       --help                     Show this usage summary and exit
 #
 # -----------------------------------------------------------------------------
 
@@ -147,11 +155,13 @@ function _shellcheck() {
   "SC1130:You need a space before the :."
   "SC1131:Use \`elif\` to start another branch."
   "SC1132:This \`&\` terminates the command. Escape it or add space after \`&\` to silence."
+  "SC1133:Better diagnostics when starting a line with |/||/&&."
+  "SC1135:Suggest not ending double quotes just to make $ literal."
   "SC2001:SC2001: See if you can use \${variable//search/replace} instead."
   "SC2002:Useless cat. Consider 'cmd < file | ..' or 'cmd file | ..' instead."
   "SC2003:expr is antiquated. Consider rewriting this using \$\((..)), \${} or \[\[ \]\]."
   "SC2004:\$/\${} is unnecessary on arithmetic variables."
-  "SC2005:"
+  "SC2005:Use cmd instead of echo \$(cmd)."
   "SC2006:Use \`\$\(...)\` notation instead of legacy backticked \`\` \`...\` \`\`."
   "SC2007:Use \$\((..)) instead of deprecated \$[..]"
   "SC2008:echo doesn't read from stdin, are you sure you should be piping to it?"
@@ -355,17 +365,42 @@ function _shellcheck() {
   "SC2233:Remove superfluous \`(..)\` around condition."
   "SC2234:Remove superfluous \`(..)\` around test command."
   "SC2235:Use \`{ ..; }\` instead of \`(..)\` to avoid subshell overhead."
+  "SC2236:Suggest -n/-z instead of ! -z/-n."
+  "SC2237:Suggest [ -n/-z ] instead of ! [ -z/-n ]."
+  "SC2238:Warn when redirecting to a known command name, e.g. ls > rm."
+  "SC2239:Warn if the shebang is not an absolute path, e.g. #!bin/sh."
+  "SC2240:Warn when passing additional arguments to dot (.) in sh/dash."
+  "SC2241:Exit status can only ba one integer 0-255."
+  "SC2242:Can only exit with status 0-255."
+  "SC2243:Suggest using explicit -n to check for output."
+  "SC2244:Suggest using explicit -n to check non-empty string."
+  "SC2245:Warn that Ksh ignores all but the first glob result in [."
+  "SC2246:Warn if a shebang's interpreter ends with /."
+  "SC2247:Warn about $\"(cmd)\" and $\"{var}\"."
+  "SC2248:Warn about unquoted variables without special chars (optional)."
+  "SC2249:Warn about case with missing default case (optional)."
+  "SC2250:Warn about variable references without braces (optional)."
+  "SC2251:Inform about ineffectual ! in front of commands."
+  "SC2252:Warn about [ \$a != x ] || [ \$a != y ], similar to SC2055."
   )
 
   # TODO(zchee): list rules
   _arguments -C \
     {-a,--check-sourced}'[Include warnings from sourced files]' \
     {-C,--color=}'[Use color]:WHEN:(auto always never)' \
+    {-i,--include=}"[Consider only given types of warnings]:rule code:{_describe 'rule code' rules}" \
     {-e,--exclude=}"[Exclude types of warnings]:rule code:{_describe 'rule code' rules}" \
-    {-f,--format=}'[Output format]:format:(checkstyle gcc json tty)' \
+    {-f,--format=}'[Output format]:format:(checkstyle diff gcc json json1 quiet tty)' \
+    '--list-optional[List checks disabled by default]' \
+    "--norc[Don't look for .shellcheckrc files]" \
+    {-P,--source-path=}"[Specify path when looking for sourced files]:SCRIPTDIR for script's dir:_dir_list" \
+    {-o,--enable=}'[List of optional checks to enable]:checks or all:_values -s , "optional checks" "all[enable all optional checks]" "add-default-case[Suggest adding a default case in case statements]" "avoid-nullary-conditions[Suggest explicitly using -n in \[ $var \]]" "check-unassigned-uppercase[Warn when uppercase variables are unassigned]" "quote-safe-variables[Suggest quoting variables without metacharacters]" "require-variable-braces[Suggest putting braces around all variable references]"' \
     {-s,--shell=}'[Specify dialect]:shell type:(sh bash dash ksh)' \
+    {-S,--severity=}'[Minimum severity of errors to consider]:SEVERITY:(error warning info style)' \
     {-V,--version}'[Print version information]' \
+    {-W,--wiki-link-count=}'[The number of wiki links to show, when applicable]:number:' \
     {-x,--external-sources}"[Allow 'source' outside of FILES]" \
+    '--help[Show usage summary and exit]' \
     '*:shell file:_files' \
     && ret=0
 
