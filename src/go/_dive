@@ -49,53 +49,53 @@ function _dive() {
   )
 
   _docker_arguments() {
-      if zstyle -t ":completion:${curcontext}:" option-stacking; then
-          print -- -s
-      fi
+    if zstyle -t ":completion:${curcontext}:" option-stacking; then
+        print -- -s
+    fi
   }
 
   _docker_complete_images() {
-      [[ $PREFIX = -* ]] && return 1
-      integer ret=1
-      declare -a images
-      images=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/(#b)([^ ]##) ##([^ ]##) ##([^ ]##)*/${match[3]}:${(r:15:: :::)match[2]} in ${match[1]}})
-      _describe -t docker-images "images" images && ret=0
-      _docker_complete_repositories_with_tags && ret=0
-      return ret
+    [[ $PREFIX = -* ]] && return 1
+    integer ret=1
+    declare -a images
+    images=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/(#b)([^ ]##) ##([^ ]##) ##([^ ]##)*/${match[3]}:${(r:15:: :::)match[2]} in ${match[1]}})
+    _describe -t docker-images "images" images && ret=0
+    _docker_complete_repositories_with_tags && ret=0
+    return ret
   }
 
   _docker_complete_repositories() {
-      [[ $PREFIX = -* ]] && return 1
-      integer ret=1
-      declare -a repos
-      repos=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}%% *}[2,-1]})
-      repos=(${repos#<none>})
-      _describe -t docker-repos "repositories" repos && ret=0
-      return ret
+    [[ $PREFIX = -* ]] && return 1
+    integer ret=1
+    declare -a repos
+    repos=(${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}%% *}[2,-1]})
+    repos=(${repos#<none>})
+    _describe -t docker-repos "repositories" repos && ret=0
+    return ret
   }
 
   _docker_complete_repositories_with_tags() {
-      [[ $PREFIX = -* ]] && return 1
-      integer ret=1
-      declare -a repos onlyrepos matched
-      declare m
-      repos=(${${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/ ##/:::}%% *})
-      repos=(${${repos%:::<none>}#<none>})
-      # Check if we have a prefix-match for the current prefix.
-      onlyrepos=(${repos%::*})
-      for m in $onlyrepos; do
-          [[ ${PREFIX##${~~m}} != ${PREFIX} ]] && {
-              # Yes, complete with tags
-              repos=(${${repos/:::/:}/:/\\:})
-              _describe -t docker-repos-with-tags "repositories with tags" repos && ret=0
-              return ret
-          }
-      done
-      # No, only complete repositories
-      onlyrepos=(${${repos%:::*}/:/\\:})
-      _describe -t docker-repos "repositories" onlyrepos -qS : && ret=0
+    [[ $PREFIX = -* ]] && return 1
+    integer ret=1
+    declare -a repos onlyrepos matched
+    declare m
+    repos=(${${${${(f)${:-"$(_call_program commands docker $docker_options images)"$'\n'}}[2,-1]}/ ##/:::}%% *})
+    repos=(${${repos%:::<none>}#<none>})
+    # Check if we have a prefix-match for the current prefix.
+    onlyrepos=(${repos%::*})
+    for m in $onlyrepos; do
+        [[ ${PREFIX##${~~m}} != ${PREFIX} ]] && {
+            # Yes, complete with tags
+            repos=(${${repos/:::/:}/:/\\:})
+            _describe -t docker-repos-with-tags "repositories with tags" repos && ret=0
+            return ret
+        }
+    done
+    # No, only complete repositories
+    onlyrepos=(${${repos%:::*}/:/\\:})
+    _describe -t docker-repos "repositories" onlyrepos -qS : && ret=0
 
-      return ret
+    return ret
   }
 
   _arguments -C \
