@@ -538,21 +538,56 @@
 # -----------------------------------------------------------------------------
 
 function _circleci_all_orbs() {
-  if ( (( $+__zsh_circleci_all_orbs )) && ! _cache_invalid circleci_allorbs ) \
-      || _retrieve_cache circleci_allorbs; then
+  if ( (( $+_zsh_circleci_all_orbs )) && ! _cache_invalid circleci_all_orbs ) \
+      || _retrieve_cache circleci_all_orbs; then
     return
   fi
 
-  typeset -a -g __zsh_circleci_all_orbs
+  typeset -a -g _zsh_circleci_all_orbs
   typeset -a new_circleci_all_orbs
-  new_circleci_all_orbs+=($(circleci orb list -u | sed 's| (|@|g' | cut -d')' -f1 | awk 'NF<3 {print}'))
+  new_circleci_all_orbs+=($(circleci --skip-update-check orb list -u | sed 's| (|@|g' | cut -d')' -f1 | awk 'NF<3 {print}'))
 
   if [[ $new_circleci_all_orbs ]]; then
-    __zsh_circleci_all_orbs=($new_circleci_all_orbs)
-    _store_cache circleci_allorbs __zsh_circleci_all_orbs
+    _zsh_circleci_all_orbs=($new_circleci_all_orbs)
+    _store_cache circleci_all_orbs _zsh_circleci_all_orbs
     _message "Cached all public orbs."
   else
     _message "Could not update package cache."
+  fi
+}
+
+function _circleci_all_namespaces() {
+  if ( (( $+_zsh_circleci_all_namespaces )) && ! _cache_invalid circleci_all_namespaces ) \
+      || _retrieve_cache circleci_all_namespaces; then
+    return
+  fi
+
+  typeset -a -g _zsh_circleci_all_namespaces
+  typeset -a new_circleci_all_namespaces
+  new_circleci_all_namespaces+=($(circleci --skip-update-check orb list -u | cut -d'/' -f1 | awk 'NF<3 {print}' | uniq))
+
+  if [[ $new_circleci_all_namespaces ]]; then
+    _zsh_circleci_all_namespaces=($new_circleci_all_namespaces)
+    _store_cache circleci_all_namespaces _zsh_circleci_all_namespaces
+    _message "Cached all public orb namespaces."
+  else
+    _message "Could not update package cache."
+  fi
+}
+
+function _circleci_orbs_caching_policy() {
+  if [[ ${1:t} == circleci_all_orbs ]]; then
+    local -a oldp
+    oldp=( "$1"(Nm+1) )
+    (( $#oldp ))
+  fi
+}
+
+function _circleci_namespaces_caching_policy() {
+  if [[ ${1:t} == circleci_all_namespaces ]]; then
+    local -a oldp
+    oldp=( "$1"(Nm+1) )
+    (( $#oldp ))
   fi
 }
 
@@ -560,23 +595,16 @@ function _circleci_set_cache_policy() {
   local cache_policy
   zstyle -s ":completion:${curcontext}:" cache-policy cache_policy
   if [[ -z "$cache_policy" ]]; then
-    zstyle ":completion:${curcontext}:" cache-policy _circleci_caching_policy
-  fi
-}
-
-function _circleci_caching_policy() {
-  if [[ ${1:t} == circleci_allorbs ]]; then
-    # rebuild if cache is more than two weeks old
-    local -a oldp
-    oldp=( "$1"(Nm+1) )
-    (( $#oldp ))
+    zstyle ":completion:${curcontext}:" cache-policy _circleci_orbs_caching_policy
+    zstyle ":completion:${curcontext}:" cache-policy _circleci_namespaces_caching_policy
   fi
 }
 
 function _circleci() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
-  _circleci_set_cache_policy
+  _circleci_orbs_caching_policy
+  _circleci_namespaces_caching_policy
 
   local -a commands
   commands=(
@@ -608,218 +636,218 @@ function _circleci() {
     '*:: :->args' \
     && ret=0
 
-  case $words[1] in
-    config)
-      local -a config_cmds
-      config_cmds=(
-      'pack:Pack up your CircleCI configuration into a single file.'
-      'process:Process the config.'
-      'validate:Check that the config file is well formed.'
-      )
-
-      _arguments \
-        ${_global_flags[@]} \
-        "1: :{_describe 'config subcommand' config_cmds}" \
-        '*:: :->args' \
-        && ret=0
+  case $state in
+    args)
 
       case $words[1] in
-        pack|process|validate|check)
-          _arguments \
-            ${_global_flags[@]} \
-            '*:<path> The path to your orb (use "-" for STDIN):_files' \
-          ;;
-      esac
-      ;;
-
-    local)
-      local -a local_cmds
-      local_cmds=(
-      'execute:Run a job in a container on the local machine'
-      )
-
-      _arguments \
-        "1: :{_describe 'local subcommand' local_cmds}" \
-        '*:: :->args' \
-        ${_global_flags[@]} \
-        && ret=0
-
-      case $words[1] in
-        execute)
-          _arguments \
-            '--branch[Git branch]:branch' \
-            '--checkout-key[Git Checkout key \(default "~/.ssh/id_rsa"\)]:checkout key:_files' \
-            {-c,--config}'[config file \(default ".circleci/config.yml"\)]:config file:_files' \
-            {-e,--env}'[Set environment variables, e.g. \-e VAR=VAL]:VAR=VAL' \
-            '--index[node index of parallelism]:num index' \
-            '--job[job to be executed \(default "build"\)]:job name' \
-            '--node-total[total number of parallel nodes \(default 1\)]:parallel size' \
-            '--repo-url[Git Url]:Git URL' \
-            '--revision[Git Revision]:Git revision' \
-            '--skip-checkout[use local path as-is]' \
-            {-v,--volume}'[Volume bind-mounting]:mount volume path:_directories' \
-            ${_global_flags[@]}
-          ;;
-      esac
-      ;;
-
-    namespace)
-      local -a namespace_cmds
-      namespace_cmds=(
-      'create:create an namespace'
-      )
-
-      _arguments \
-        "1: :{_describe 'namespace subcommand' namespace_cmds}" \
-        '*:: :->args' \
-        ${_global_flags[@]} \
-        && ret=0
-
-      case $words[1] in
-        create)
-          _arguments \
-            "1:name" \
-            "2:vcs" \
-            "3:org-name" \
-            ${_global_flags[@]}
-          ;;
-      esac
-      ;;
-
-    orb)
-      local -a orb_cmds
-      orb_cmds=(
-      'create:Create an orb in the specified namespace'
-      'info:Show the meta-data of an orb'
-      'list:List orbs'
-      'process:Validate an orb and print its form after all pre-registration processing'
-      'publish:Publish an orb to the registry'
-      'source:Show the source of an orb'
-      'validate:Validate an orb.yml'
-      )
-
-      _arguments \
-        "1: :{_describe 'orb subcommand' orb_cmds}" \
-        '*:: :->args' \
-        ${_global_flags[@]} \
-        && ret=0
-
-      case $words[1] in
-        create)
-          _arguments \
-            ${_global_flags[@]} \
-            "*:<namespace>/<name>"
-          ;;
-
-            # "*:namespace/orb@version:($(circleci orb list -u | sed 's| (|@|g' | cut -d')' -f1 | awk 'NF<3 {print}'))"
-        info)
-          _arguments \
-            ${_global_flags[@]} \
-            "*:namespace/orb@version:->all_orbs"
-
-            case $state in
-              all_orbs)
-                _circleci_all_orbs
-                _wanted all-orbs expl 'orbs' compadd -a __zsh_circleci_all_orbs && ret=0
-                ;;
-            esac
-          ;;
-
-        list)
-          _arguments \
-            {-u,--uncertified}'[include uncertified orbs]' \
-            ${_global_flags[@]} \
-            "*:<namespace> \(optional\)"
-          ;;
-
-        process)
-          _arguments \
-            ${_global_flags[@]} \
-            '*:<path> The path to your orb \(use "-" for STDIN\):_files'
-          ;;
-
-        publish)
-          local -a orb_publish_cmds
-          orb_publish_cmds=(
-          'increment:Increment a released version of an orb'
-          'promote:Promote a development version of an orb to a semantic release'
+        config)
+          local -a config_cmds
+          config_cmds=(
+          'pack:Pack up your CircleCI configuration into a single file.'
+          'process:Process the config.'
+          'validate:Check that the config file is well formed.'
           )
+
           _arguments \
-            ${_global_flags[@]} \
-            "1: :{_describe 'orb publish subcommand' orb_publish_cmds}"
+            "1: :{_describe 'config subcommand' config_cmds}" \
+            '*:: :->args' \
+            && ret=0
 
-          case $words[1] in
-            increment)
-              _arguments \
-                '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
-                "2:<namespace/orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version]" \
-                "3:segment:(major minor patch)" \
-                ${_global_flags[@]}
-              ;;
-
-            promote)
-              _arguments \
-                '1:<path> The path to your orb \(use "-" for STDIN\):path:_files' \
-                "2:segment:segment:(major minor patch)" \
-                ${_global_flags[@]}
-              ;;
-
-            *)
-              _arguments \
-                '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
-                "2:<orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version" \
-                ${_global_flags[@]}
+          case $state in
+            args)
+              case $words[1] in
+                pack|process|validate|check)
+                  _arguments \
+                    '*:<path> The path to your orb (use "-" for STDIN):_files'
+              esac
               ;;
           esac
           ;;
 
-        source)
+        local)
+          local -a local_cmds
+          local_cmds=(
+          'execute:Run a job in a container on the local machine'
+          )
+
           _arguments \
-            "*:<orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version:_files" \
-            ${_global_flags[@]}
+            "1: :{_describe 'local subcommand' local_cmds}" \
+            '*:: :->args' \
+            && ret=0
+
+          case $state in
+            args)
+              case $words[1] in
+                execute)
+                  _arguments \
+                    '--branch[Git branch]:branch' \
+                    '--checkout-key[Git Checkout key \(default "~/.ssh/id_rsa"\)]:checkout key:_files' \
+                    {-c,--config}'[config file \(default ".circleci/config.yml"\)]:config file:_files' \
+                    {-e,--env}'[Set environment variables, e.g. \-e VAR=VAL]:VAR=VAL' \
+                    '--index[node index of parallelism]:num index' \
+                    '--job[job to be executed \(default "build"\)]:job name' \
+                    '--node-total[total number of parallel nodes \(default 1\)]:parallel size' \
+                    '--repo-url[Git Url]:Git URL' \
+                    '--revision[Git Revision]:Git revision' \
+                    '--skip-checkout[use local path as-is]' \
+                    {-v,--volume}'[Volume bind-mounting]:mount volume path:_directories'
+              esac
+              ;;
+          esac
           ;;
 
-        validate)
+        namespace)
+          local -a namespace_cmds
+          namespace_cmds=(
+          'create:create an namespace'
+          )
+
           _arguments \
-            '1:<path> The path to your orb (use "-" for STDIN):_files' \
-            ${_global_flags[@]}
+            "1: :{_describe 'namespace subcommand' namespace_cmds}" \
+            '*:: :->args' \
+            && ret=0
+
+          case $state in
+            args)
+              case $words[1] in
+                create)
+                  _arguments \
+                    "1:name" \
+                    "2:vcs" \
+                    "3:org-name"
+              esac
+              ;;
+          esac
+          ;;
+
+        orb)
+          local -a orb_cmds
+          orb_cmds=(
+          'create:Create an orb in the specified namespace'
+          'info:Show the meta-data of an orb'
+          'list:List orbs'
+          'process:Validate an orb and print its form after all pre-registration processing'
+          'publish:Publish an orb to the registry'
+          'source:Show the source of an orb'
+          'validate:Validate an orb.yml'
+          )
+
+          _arguments \
+            "1: :{_describe 'orb subcommand' orb_cmds}" \
+            '*:: :->args' \
+            && ret=0
+
+          case $state in
+            args)
+              case $words[1] in
+                create)
+                  _arguments \
+                    "*:<namespace>/<name>"
+                  ;;
+
+                # "*:namespace/orb@version:($(circleci orb list -u | sed 's| (|@|g' | cut -d')' -f1 | awk 'NF<3 {print}'))"
+                info)
+                  _arguments \
+                    "*:namespace/orb@version:->all_orbs"
+
+                    case $state in
+                      all_orbs)
+                        _circleci_all_orbs
+                        _wanted all-orbs expl 'orbs' compadd -a _zsh_circleci_all_orbs && ret=0
+                      ;;
+                    esac
+                  ;;
+
+                list)
+                  _arguments \
+                    {-u,--uncertified}'[include uncertified orbs]' \
+                    "*:namespace:->all_namespaces"
+
+                    case $state in
+                      all_namespaces)
+                        _circleci_all_namespaces
+                        _wanted all-namespaces expl 'namespaces' compadd -a _zsh_circleci_all_namespaces && ret=0
+                        ;;
+                    esac
+                  ;;
+
+                process)
+                  _arguments \
+                    '*:<path> The path to your orb \(use "-" for STDIN\):_files'
+                  ;;
+
+                publish)
+                  local -a orb_publish_cmds
+                  orb_publish_cmds=(
+                  'increment:Increment a released version of an orb'
+                  'promote:Promote a development version of an orb to a semantic release'
+                  )
+                  _arguments \
+                    "1: :{_describe 'orb publish subcommand' orb_publish_cmds}"
+
+                  case $words[1] in
+                    increment)
+                      _arguments \
+                        '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
+                        "2:<namespace/orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version]" \
+                        "3:segment:(major minor patch)"
+                      ;;
+
+                    promote)
+                      _arguments \
+                        '1:<path> The path to your orb \(use "-" for STDIN\):path:_files' \
+                        "2:segment:segment:(major minor patch)"
+                      ;;
+
+                    *)
+                      _arguments \
+                        '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
+                        "2:<orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version"
+                      ;;
+                  esac
+                  ;;
+
+                source)
+                  _arguments \
+                    "*:<orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version:_files"
+                  ;;
+
+                validate)
+                  _arguments \
+                    '1:<path> The path to your orb (use "-" for STDIN):_files'
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        query)
+          _arguments \
+            '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
+            && ret=0
+          ;;
+
+        update)
+          local -a update_cmds
+          update_cmds=(
+          'build-agent:Update the build agent to the latest version'
+          'check:Check if there are any updates available'
+          'install:Update the tool to the latest version'
+          )
+
+          _arguments \
+            "1: :{_describe 'update subcommand' update_cmds}" \
+            '*:: :->args' \
+            && ret=0
+          ;;
+
+        (diagnostic|query|setup|version)
           ;;
       esac
       ;;
 
-    query)
-      _arguments \
-        '1:<path> The path to your orb \(use "-" for STDIN\):_files' \
-        ${_global_flags[@]} \
-        && ret=0
-      ;;
-
-    update)
-      local -a update_cmds
-      update_cmds=(
-      'build-agent:Update the build agent to the latest version'
-      'check:Check if there are any updates available'
-      'install:Update the tool to the latest version'
-      )
-
-      _arguments \
-        "1: :{_describe 'update subcommand' update_cmds}" \
-        '*:: :->args' \
-        ${_global_flags[@]} \
-        && ret=0
-
-      case $words[1] in
-        build-agent|check|install)
-          _arguments \
-            ${_global_flags[@]}
-          ;;
-      esac
-      ;;
-
-    (diagnostic|query|setup|version)
-      _arguments \
-        ${_global_flags[@]} \
-        && ret=0
+    *)
+      _values 'global flags' $_global_flags
       ;;
   esac
 
