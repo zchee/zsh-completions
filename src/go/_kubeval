@@ -33,7 +33,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# github.com/garethr/kubeval
+# github.com/instrumenta/kubeval
+#
+# -----------------------------------------------------------------------------
 #
 # Validate a Kubernetes YAML file against the relevant schema
 #
@@ -41,13 +43,18 @@
 #   kubeval <file> [file...] [flags]
 #
 # Flags:
+#   -d, --directories strings         A comma-separated list of directories to recursively search for YAML documents
+#       --exit-on-error               Immediately stop execution when the first error is encountered
 #   -f, --filename string             filename to be displayed when testing manifests read from stdin (default "stdin")
+#       --force-color                 Force colored output even if stdout is not a TTY
 #   -h, --help                        help for kubeval
+#       --ignore-missing-schemas      Skip validation for resource definitions without a schema
 #   -v, --kubernetes-version string   Version of Kubernetes to validate against (default "master")
 #       --openshift                   Use OpenShift schemas instead of upstream Kubernetes
-#       --schema-location string      Base URL used to download schemas. Can also be specified with the environment variable KUBEVAL_SCHEMA_LOCATION (default "https://raw.githubusercontent.com/garethr")
+#       --schema-location string      Base URL used to download schemas. Can also be specified with the environment variable KUBEVAL_SCHEMA_LOCATION (default "https://kubernetesjsonschema.dev")
+#       --skip-kinds strings          Comma-separated list of case-sensitive kinds to skip when validating against schemas
 #       --strict                      Disallow additional properties not in schema
-#       --version                     Display the kubeval version information and exit
+#       --version                     version for kubeval
 #
 # -----------------------------------------------------------------------------
 
@@ -56,11 +63,15 @@ function _kubeval() {
   declare -A opt_args
 
   _arguments -C \
+    {-d,--directories}'[A comma-separated list of directories to recursively search for YAML documents]:directories:_directories' \
+    '--exit-on-error[Immediately stop execution when the first error is encountered]' \
     {-f,--filename}'[filename to be displayed when testing manifests read from stdin (default "stdin")]:filename:_files' \
+    '--force-color[Force colored output even if stdout is not a TTY]' \
     {-h,--help}'[help for kubeval]' \
+    '--ignore-missing-schemas[Skip validation for resource definitions without a schema]' \
     {-v,--kubernetes-version}'[Version of Kubernetes to validate against (default "master")]:version' \
     '--openshift[Use OpenShift schemas instead of upstream Kubernetes]' \
-    '--schema-location[Base URL used to download schemas. Can also be specified with the environment variable KUBEVAL_SCHEMA_LOCATION (default "https://raw.githubusercontent.com/garethr")]' \
+    '--schema-location[Base URL used to download schemas. Can also be specified with the environment variable KUBEVAL_SCHEMA_LOCATION (default "https://kubernetesjsonschema.dev")]' \
     '--strict[Disallow additional properties not in schema]' \
     '--version[Display the kubeval version information and exit]' \
     '*:yaml files:_files' \
