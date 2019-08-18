@@ -253,7 +253,7 @@ function _kubebuilder() {
           'webhook:Scaffold a webhook for an API resource.'
           )
           _arguments \
-            "1: :{_describe 'kubebuilder commands' commands}" \
+            "1: :{_describe 'kubebuilder create commands' create_commands}" \
             {-h,--help}'[help for create]' \
             '*:: :->args'
 
