@@ -32,3 +32,5 @@ _arguments \
   '-test-remangle[Remangle the string]' \
   '-tree-only[Only show details tree]' \
   '-version[Print version]'
+
+# vim:ft=zsh:et:sts=2:sw=2

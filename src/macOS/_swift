@@ -73,3 +73,5 @@ case "$state" in
     _values "SDK to compile with" $_installed_sdks
     ;;
 esac
+
+# vim:ft=zsh:et:sts=2:sw=2

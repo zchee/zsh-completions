@@ -200,3 +200,5 @@ case "$state" in
     _multi_parts / xcconfigs
     ;;
 esac
+
+# vim:ft=zsh:et:sts=2:sw=2

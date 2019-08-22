@@ -45,3 +45,5 @@ case "$state" in
     _files
     ;;
 esac
+
+# vim:ft=zsh:et:sts=2:sw=2
