@@ -310,6 +310,10 @@ function _sops() {
     help)
       _arguments "1: :{_describe 'command' commands}"
       ;;
+
+    *)
+      _arguments "*:file:_files"
+      ;;
   esac
 
   return ret
