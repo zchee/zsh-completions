@@ -33,117 +33,113 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# clang.lvm.org/extra/clangd.html
+# clangd version 10.0.0
+#   https://github.com/llvm/llvm-project/tree/b4806822d2d52e0e7a29ba1c15a435e2e97a82e7/clang-tools-extra/clangd
 #
-# clangd version 9.0.0 (https://git.llvm.org/git/clang.git fdd6b2ea2ac03f09aaf71aa8d3301936cef0fee5) (https://git.llvm.org/git/llvm.git 2f51464f160cdb2ec0dd9263c1646b5a428664e8)
+# https://clang.llvm.org/extra/clangd.html
 #
 # -----------------------------------------------------------------------------
 #
 # OVERVIEW: clangd is a language server that provides IDE-like features to editors.
 #
 # It should be used via an editor plugin rather than invoked directly. For more information, see:
-# 	https://clang.llvm.org/extra/clangd.html
+# 	https://clang.llvm.org/extra/clangd/
 # 	https://microsoft.github.io/language-server-protocol/
+#
+# clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment variable.
+#
 # USAGE: clangd [options]
 #
 # OPTIONS:
 #
 # Color Options:
 #
-#   -color                                   - Use colors in output (default=autodetect)
+#   This option category has no options.
 #
 # General options:
 #
-#   -all-scopes-completion                   - If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers.
-#   -as-secure-log-file-name=<value>         - As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
-#   -asm-macro-max-nesting-depth=<uint>      - The maximum nesting depth allowed for assembly macros.
-#   -background-index                        - Index project code in the background and persist index on disk. Experimental
-#   -background-index-rebuild-period=<int>   - If set to non-zero, the background index rebuilds the symbol index periodically every X milliseconds; otherwise, the symbol index will be updated for each indexed file.
-#   -clang-tidy                              - Enable clang-tidy diagnostics.
-#   -clang-tidy-checks=<string>              - List of clang-tidy checks to run (this will override .clang-tidy files). Only meaningful when -clang-tidy flag is on.
-#   -compile-commands-dir=<string>           - Specify a path to look for compile_commands.json. If path is invalid, clangd will look in the current directory and parent paths of each source file.
-#   -compile_args_from=<value>               - The source of compile commands
-#     =lsp                                   -   All compile commands come from LSP and 'compile_commands.json' files are ignored
-#     =filesystem                            -   All compile commands come from the 'compile_commands.json' files
-#   -completion-style=<value>                - Granularity of code completion suggestions
-#     =detailed                              -   One completion item for each semantically distinct completion, with full type information.
-#     =bundled                               -   Similar completion items (e.g. function overloads) are combined. Type information shown where possible.
-#   -debug-origin                            - Show origins of completion items
-#   -disable-symbolication                   - Disable symbolizing crash backtraces.
-#   -enable-test-uri-scheme                  - Enable 'test:' URI scheme. Only use in lit tests.
-#   -function-arg-placeholders               - When disabled, completions contain only parentheses for function calls. When enabled, completions also contain placeholders for method parameters.
-#   -header-insertion-decorators             - Prepend a circular dot or space before the completion label, depending on whether an include line will be inserted or not.
-#   -include-ineligible-results              - Include ineligible completion results (e.g. private members)
-#   -index                                   - Enable index-based features. By default, clangd maintains an index built from symbols in opened files. Global index support needs to enabled separatedly.
-#   -index-file=<string>                     - Index file to build the static index. The file must have been created by a compatible clangd-indexer.
-#                                              WARNING: This option is experimental only, and will be removed eventually. Don't rely on it.
-#   -info-output-file=<filename>             - File to append -stats and -timer output to
-#   -input-mirror-file=<string>              - Mirror all LSP input to the specified file. Useful for debugging.
-#   -input-style=<value>                     - Input JSON stream encoding
-#     =standard                              -   usual LSP protocol
-#     =delimited                             -   messages delimited by --- lines, with # comment support
-#   -j=<uint>                                - Number of async workers used by clangd
-#   -limit-results=<int>                     - Limit the number of results returned by clangd. 0 means no limit.
-#   -lit-test                                - Abbreviation for -input-style=delimited -pretty -run-synchronously -enable-test-scheme. Intended to simplify lit tests.
-#   -log=<value>                             - Verbosity of log messages written to stderr
-#     =error                                 -   Error messages only
-#     =info                                  -   High level execution tracing
-#     =verbose                               -   Low level details
-#   -non-global-value-max-name-size=<uint>   - Maximum size for the name of non-global values.
-#   -offset-encoding=<value>                 - Force the offsetEncoding used for character positions. This bypasses negotiation via client capabilities.
-#     =utf-8                                 -   Offsets are in UTF-8 bytes
-#     =utf-16                                -   Offsets are in UTF-16 code units
-#   -opt-bisect-limit=<int>                  - Maximum optimization to perform
-#   -pass-remarks=<pattern>                  - Enable optimization remarks from passes whose name match the given regular expression
-#   -pass-remarks-analysis=<pattern>         - Enable optimization analysis remarks from passes whose name match the given regular expression
-#   -pass-remarks-missed=<pattern>           - Enable missed optimization remarks from passes whose name match the given regular expression
-#   -pch-storage=<value>                     - Storing PCHs in memory increases memory usages, but may improve performance
-#     =disk                                  -   store PCHs on disk
-#     =memory                                -   store PCHs in memory
-#   -pretty                                  - Pretty-print JSON output
-#   -resource-dir=<string>                   - Directory for system clang headers
-#   -rng-seed=<seed>                         - Seed for the random number generator
-#   -run-synchronously                       - Parse on main thread. If set, -j is ignored
-#   -static-func-full-module-prefix          - Use full module build paths in the profile counter names for static functions.
-#   -static-func-strip-dirname-prefix=<uint> - Strip specified level of directory name from source path in the profile counter name for static functions.
-#   -stats                                   - Enable statistics output from program (available with Asserts)
-#   -stats-json                              - Display statistics as json data
-#   -suggest-missing-includes                - Attempts to fix diagnostic errors caused by missing includes using index.
-#   -track-memory                            - Enable -time-passes memory tracking (this may be slow)
-#   -use-dbg-addr                            - Use llvm.dbg.addr for all local variables
-#   -use-dex-index                           - Use experimental Dex dynamic index.
-#   -view-background                         - Execute graph viewer in the background. Creates tmp file litter.
+#   This option category has no options.
 #
 # Generic Options:
 #
-#   -help                                    - Display available options (-help-hidden for more)
-#   -help-hidden                             - Display all available options
-#   -help-list                               - Display list of available options (-help-list-hidden for more)
-#   -help-list-hidden                        - Display list of all available options
-#   -print-all-options                       - Print all option values after command line parsing
-#   -print-options                           - Print non-default options after command line parsing
-#   -version                                 - Display the version of this program
+#   -h                              - Alias for --help
+#   --help                          - Display available options (--help-hidden for more)
+#   --help-hidden                   - Display all available options
+#   --help-list                     - Display list of available options (--help-list-hidden for more)
+#   --help-list-hidden              - Display list of all available options
+#   --print-all-options             - Print all option values after command line parsing
+#   --print-options                 - Print non-default options after command line parsing
+#   --version                       - Display the version of this program
+#
+# clangd compilation flags options:
+#
+#   --compile-commands-dir=<string> - Specify a path to look for compile_commands.json. If path is invalid, clangd will look in the current directory and parent paths of each source file
+#   --compile_args_from=<value>     - The source of compile commands
+#     =lsp                          -   All compile commands come from LSP and 'compile_commands.json' files are ignored
+#     =filesystem                   -   All compile commands come from the 'compile_commands.json' files
+#   --query-driver=<string>         - Comma separated list of globs for white-listing gcc-compatible drivers that are safe to execute. Drivers matching any of these globs will be used to extract system includes. e.g. /usr/bin/**/clang-*,/path/to/repo/**/g++-*
+#   --resource-dir=<string>         - Directory for system clang headers
+#
+# clangd feature options:
+#
+#   --all-scopes-completion         - If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers
+#   --background-index              - Index project code in the background and persist index on disk. Experimental
+#   --clang-tidy                    - Enable clang-tidy diagnostics
+#   --clang-tidy-checks=<string>    - List of clang-tidy checks to run (this will override .clang-tidy files). Only meaningful when -clang-tidy flag is on
+#   --completion-parse=<value>      - Whether the clang-parser is used for code-completion
+#     =always                       -   Block until the parser can be used
+#     =auto                         -   Use text-based completion if the parser is not ready
+#     =never                        -   Always used text-based completion
+#   --completion-style=<value>      - Granularity of code completion suggestions
+#     =detailed                     -   One completion item for each semantically distinct completion, with full type information
+#     =bundled                      -   Similar completion items (e.g. function overloads) are combined. Type information shown where possible
+#   --debug-origin                  - Show origins of completion items
+#   --fallback-style=<string>       - clang-format style to apply by default when no .clang-format file is found
+#   --function-arg-placeholders     - When disabled, completions contain only parentheses for function calls. When enabled, completions also contain placeholders for method parameters
+#   --header-insertion=<value>      - Add #include directives when accepting code completions
+#     =iwyu                         -   Include what you use. Insert the owning header for top-level symbols, unless the header is already directly included or the symbol is forward-declared
+#     =never                        -   Never insert #include directives as part of code completion
+#   --header-insertion-decorators   - Prepend a circular dot or space before the completion label, depending on whether an include line will be inserted or not
+#   --hidden-features               - Enable hidden features mostly useful to clangd developers
+#   --include-ineligible-results    - Include ineligible completion results (e.g. private members)
+#   --index                         - Enable index-based features. By default, clangd maintains an index built from symbols in opened files. Global index support needs to enabled separatedly
+#   --limit-results=<int>           - Limit the number of results returned by clangd. 0 means no limit (default=100)
+#   --suggest-missing-includes      - Attempts to fix diagnostic errors caused by missing includes using index
+#   --tweaks=<string>               - Specify a list of Tweaks to enable (only for clangd developers).
+#
+# clangd miscellaneous options:
+#
+#   --index-file=<string>           - Index file to build the static index. The file must have been created by a compatible clangd-indexer
+#                                     WARNING: This option is experimental only, and will be removed eventually. Don't rely on it
+#   -j=<uint>                       - Number of async workers used by clangd. Background index also uses this many workers.
+#   --lit-test                      - Abbreviation for -input-style=delimited -pretty -sync -enable-test-scheme -log=verbose. Intended to simplify lit tests
+#   --pch-storage=<value>           - Storing PCHs in memory increases memory usages, but may improve performance
+#     =disk                         -   store PCHs on disk
+#     =memory                       -   store PCHs in memory
+#   --sync                          - Handle client requests on main thread. Background index still uses its own thread.
+#
+# clangd protocol and logging options:
+#
+#   --enable-test-uri-scheme        - Enable 'test:' URI scheme. Only use in lit tests
+#   --input-mirror-file=<string>    - Mirror all LSP input to the specified file. Useful for debugging
+#   --input-style=<value>           - Input JSON stream encoding
+#     =standard                     -   usual LSP protocol
+#     =delimited                    -   messages delimited by --- lines, with # comment support
+#   --log=<value>                   - Verbosity of log messages written to stderr
+#     =error                        -   Error messages only
+#     =info                         -   High level execution tracing
+#     =verbose                      -   Low level details
+#   --offset-encoding=<value>       - Force the offsetEncoding used for character positions. This bypasses negotiation via client capabilities
+#     =utf-8                        -   Offsets are in UTF-8 bytes
+#     =utf-16                       -   Offsets are in UTF-16 code units
+#     =utf-32                       -   Offsets are in unicode codepoints
+#   --pretty                        - Pretty-print JSON output
 #
 # -----------------------------------------------------------------------------
 
 function _clangd() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
-
-  _llvm_generic_options() {
-    local -a llvm_generic_options
-    llvm_generic_options=(
-    '-help[Display available options \(-help-hidden for more\)]'
-    '-help-hidden[Display all available options]'
-    '-help-list[Display list of available options \(-help-list-hidden for more\)]'
-    '-help-list-hidden[Display list of all available options]'
-    '-print-all-options[Print all option values after command line parsing]'
-    '-print-options[Print non-default options after command line parsing]'
-    '-version[Display the version of this program]'
-    )
-
-    _values 'Generic options' $llvm_generic_options
-  }
 
   _color_options() {
     local -a color_options
@@ -157,54 +153,56 @@ function _clangd() {
   _arguments -C \
     ': :->_color_options' \
     \
-    '-all-scopes-completion[If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers.]' \
-    '-as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]:value' \
-    '-asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro max nesting depth]' \
-    '-background-index[Index project code in the background and persist index on disk. Experimental]' \
-    '-background-index-rebuild-period=[If set to non-zero, the background index rebuilds the symbol index periodically every X milliseconds; otherwise, the symbol index will be updated for each indexed file.]:background index rebuild period' \
-    '-clang-tidy[Enable clang-tidy diagnostics.]' \
-    '-clang-tidy-checks=[List of clang-tidy checks to run (this will override .clang-tidy files). Only meaningful when -clang-tidy flag is on.]:clang-tidy checks list' \
-    '-color[Use colors in output \(default=autodetect\)]' \
-    '-compile-commands-dir=[Specify a path to look for compile_commands.json. If path is invalid, clangd will look in the current directory and parent paths of each source file.]:compile_commands.json dir:_directories' \
-    '-compile_args_from=[The source of compile commands]:compile args source:->compile_args_from' \
-    '-completion-style=[Granularity of code completion suggestions]:completion style:->completion-style' \
-    '-debug-origin[Show origins of completion items]' \
-    '-disable-symbolication[Disable symbolizing crash backtraces.]' \
-    "-enable-test-uri-scheme[Enable 'test:' URI scheme. Only use in lit tests.]" \
-    '-function-arg-placeholders[When disabled, completions contain only parentheses for function calls. When enabled, completions also contain placeholders for method parameters.]' \
-    '-header-insertion-decorators[Prepend a circular dot or space before the completion label, depending on whether an include line will be inserted or not.]' \
-    '-include-ineligible-results[Include ineligible completion results \(e.g. private members\)]' \
-    '-index[Enable index-based features. By default, clangd maintains an index built from symbols in opened files. Global index support needs to enabled separatedly.]' \
-    '-index-file=[Index file to build the static index. The file must have been created by a compatible clangd-indexer.]:index file path:_files' \
-    '-info-output-file=[File to append -stats and -timer output to]:info output file path:_files' \
-    '-input-mirror-file=[Mirror all LSP input to the specified file. Useful for debugging.]:input mirror file path:_files' \
-    '-input-style=[Input JSON stream encoding]:input style:->input-style' \
-    '-j=[Number of async workers used by clangd]:number of async worker' \
-    '-limit-results=[Limit the number of results returned by clangd. 0 means no limit.]:number of limit results' \
-    '-lit-test[Abbreviation for -input-style=delimited -pretty -run-synchronously -enable-test-scheme. Intended to simplify lit tests.]' \
-    '-log=[Verbosity of log messages written to stderr]:log level:->log' \
-    '-non-global-value-max-name-size=[Maximum size for the name of non-global values.]:size of non-global values name' \
-    '-offset-encoding=[Force the offsetEncoding used for character positions. This bypasses negotiation via client capabilities.]:encoding:->offset-encoding' \
-    '-opt-bisect-limit=[Maximum optimization to perform]:limit of opt bisect' \
-    '-pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:remarks regexp pattern' \
-    '-pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:analysis remarks regexp pattern' \
-    '-pass-remarks-missed=<p[Enable missed optimization remarks from passes whose name match the given regular expression]:missed remarks regexp pattern' \
-    '-pch-storage=[Storing PCHs in memory increases memory usages, but may improve performance]:pch storage type:->pch-storage' \
-    '-pretty[Pretty-print JSON output]' \
-    '-resource-dir=[Directory for system clang headers]:resource directory path:_directories' \
-    '-rng-seed=[Seed for the random number generator]:seed' \
-    '-run-synchronously[Parse on main thread. If set, -j is ignored]' \
-    '-static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
-    '-static-func-strip-dirname-prefix=[Strip specified level of directory name from source path in the profile counter name for static functions.]:static functions strip dirname prefix' \
-    '-stats[Enable statistics output from program \(available with Asserts\)]' \
-    '-stats-json[Display statistics as json data]' \
-    '-suggest-missing-includes[Attempts to fix diagnostic errors caused by missing includes using index.]' \
-    '-track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
-    '-use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
-    '-use-dex-index[Use experimental Dex dynamic index.]' \
-    '-view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
+    '--all-scopes-completion[If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers.]' \
+    '--as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]:value' \
+    '--asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro max nesting depth]' \
+    '--background-index[Index project code in the background and persist index on disk. Experimental]' \
+    '--background-index-rebuild-period=[If set to non-zero, the background index rebuilds the symbol index periodically every X milliseconds; otherwise, the symbol index will be updated for each indexed file.]:background index rebuild period' \
+    '--clang-tidy[Enable clang-tidy diagnostics.]' \
+    '--clang-tidy-checks=[List of clang-tidy checks to run (this will override .clang-tidy files). Only meaningful when -clang-tidy flag is on.]:clang-tidy checks list' \
+    '--color[Use colors in output \(default=autodetect\)]' \
+    '--compile-commands-dir=[Specify a path to look for compile_commands.json. If path is invalid, clangd will look in the current directory and parent paths of each source file.]:compile_commands.json dir:_directories' \
+    '--compile_args_from=[The source of compile commands]:compile args source:->compile_args_from' \
+    '--completion-parse=[Whether the clang-parser is used for code-completion]:clang-parser:->clang-parser' \
+    '--completion-style=[Granularity of code completion suggestions]:completion style:->completion-style' \
+    '--debug-origin[Show origins of completion items]' \
+    '--disable-symbolication[Disable symbolizing crash backtraces.]' \
+    "--enable-test-uri-scheme[Enable 'test:' URI scheme. Only use in lit tests.]" \
+    '--function-arg-placeholders[When disabled, completions contain only parentheses for function calls. When enabled, completions also contain placeholders for method parameters.]' \
+    '--header-insertion=[Add #include directives when accepting code completions]:header-insertion:->header-insertion' \
+    '--header-insertion-decorators[Prepend a circular dot or space before the completion label, depending on whether an include line will be inserted or not.]' \
+    '--include-ineligible-results[Include ineligible completion results \(e.g. private members\)]' \
+    '--index[Enable index-based features. By default, clangd maintains an index built from symbols in opened files. Global index support needs to enabled separatedly.]' \
+    '--index-file=[Index file to build the static index. The file must have been created by a compatible clangd-indexer.]:index file path:_files' \
+    '--info-output-file=[File to append -stats and -timer output to]:info output file path:_files' \
+    '--input-mirror-file=[Mirror all LSP input to the specified file. Useful for debugging.]:input mirror file path:_files' \
+    '--input-style=[Input JSON stream encoding]:input style:->input-style' \
+    '--j=[Number of async workers used by clangd]:number of async worker' \
+    '--limit-results=[Limit the number of results returned by clangd. 0 means no limit.]:number of limit results' \
+    '--lit-test[Abbreviation for -input-style=delimited -pretty -run-synchronously -enable-test-scheme. Intended to simplify lit tests.]' \
+    '--log=[Verbosity of log messages written to stderr]:log level:->log' \
+    '--non-global-value-max-name-size=[Maximum size for the name of non-global values.]:size of non-global values name' \
+    '--offset-encoding=[Force the offsetEncoding used for character positions. This bypasses negotiation via client capabilities.]:encoding:->offset-encoding' \
+    '--opt-bisect-limit=[Maximum optimization to perform]:limit of opt bisect' \
+    '--pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:remarks regexp pattern' \
+    '--pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:analysis remarks regexp pattern' \
+    '--pass-remarks-missed=<p[Enable missed optimization remarks from passes whose name match the given regular expression]:missed remarks regexp pattern' \
+    '--pch-storage=[Storing PCHs in memory increases memory usages, but may improve performance]:pch storage type:->pch-storage' \
+    '--pretty[Pretty-print JSON output]' \
+    '--resource-dir=[Directory for system clang headers]:resource directory path:_directories' \
+    '--rng-seed=[Seed for the random number generator]:seed' \
+    '--static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
+    '--static-func-strip-dirname-prefix=[Strip specified level of directory name from source path in the profile counter name for static functions.]:static functions strip dirname prefix' \
+    '--stats[Enable statistics output from program \(available with Asserts\)]' \
+    '--stats-json[Display statistics as json data]' \
+    '--suggest-missing-includes[Attempts to fix diagnostic errors caused by missing includes using index.]' \
+    '--switch-inst-prof-update-wrapper-strict[Assert that prof branch_weights metadata is valid when creating an instance of SwitchInstProfUpdateWrapper]' \
+    '--sync[Parse on main thread. If set, -j is ignored]' \
+    '--time-trace-granularity=[Minimum time granularity \(in microseconds\) traced by time profiler]:minimum time granularity' \
+    '--track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
+    '--use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
+    '--view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
     \
-    ': :->_llvm_generic_options' \
     '*:: :->args' \
     && ret=0
 
@@ -227,6 +225,27 @@ function _clangd() {
       )
       _arguments \
         "*: :{_describe 'completion style' completion_style_args}"
+      ;;
+
+    clang-parser)
+      local -a clang_parser_args
+      clang_parser_args=(
+      'always:Block until the parser can be used'
+      'auto:Use text-based completion if the parser is not ready'
+      'never:Always used text-based completion'
+      )
+      _arguments \
+        "*: :{_describe 'clang-parser style' clang_parser_args}"
+      ;;
+
+    header-insertion)
+      local -a header_insertion_args
+      header_insertion_args=(
+      'iwyu:Include what you use. Insert the owning header for top-level symbols, unless the header is already directly included or the symbol is forward-declared'
+      'never:Never insert #include directives as part of code completion'
+      )
+      _arguments \
+        "*: :{_describe 'header insertion' header_insertion_args}"
       ;;
 
     input-style)
@@ -270,6 +289,18 @@ function _clangd() {
         "*: :{_describe 'pch storage type' pch_storage_args}"
       ;;
   esac
+
+  local -a llvm_generic_options
+  llvm_generic_options=(
+  [-h,-help]'[Display available options]'
+  '-help-hidden[Display all available options]'
+  '-help-list[Display list of available options]'
+  '-help-list-hidden[Display list of all available options]'
+  '-print-all-options[Print all option values after command line parsing]'
+  '-print-options[Print non-default options after command line parsing]'
+  '-version[Display the version of this program]'
+  )
+  _values 'LLVM generic options' $llvm_generic_options
 
   return ret
 }
