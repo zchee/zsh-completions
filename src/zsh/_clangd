@@ -34,7 +34,7 @@
 # -----------------------------------------------------------------------------
 #
 # clangd version 10.0.0
-#   https://github.com/llvm/llvm-project/tree/b4806822d2d52e0e7a29ba1c15a435e2e97a82e7/clang-tools-extra/clangd
+#   https://github.com/llvm/llvm-project/tree/db751c37782d10548e62d08bf23075ac9b5d4362/clang-tools-extra/clangd
 #
 # https://clang.llvm.org/extra/clangd.html
 #
