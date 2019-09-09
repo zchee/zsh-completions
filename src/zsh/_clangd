@@ -34,7 +34,7 @@
 # -----------------------------------------------------------------------------
 #
 # clangd version 10.0.0
-#   https://github.com/llvm/llvm-project/tree/db751c37782d10548e62d08bf23075ac9b5d4362/clang-tools-extra/clangd
+#   https://github.com/llvm/llvm-project/tree/d9c4060bd5c9e6c24a96cd7e4501be30301dad9d/clang-tools-extra/clangd
 #
 # https://clang.llvm.org/extra/clangd.html
 #
@@ -83,7 +83,7 @@
 # clangd feature options:
 #
 #   --all-scopes-completion         - If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers
-#   --background-index              - Index project code in the background and persist index on disk. Experimental
+#   --background-index              - Index project code in the background and persist index on disk.
 #   --clang-tidy                    - Enable clang-tidy diagnostics
 #   --clang-tidy-checks=<string>    - List of clang-tidy checks to run (this will override .clang-tidy files). Only meaningful when -clang-tidy flag is on
 #   --completion-parse=<value>      - Whether the clang-parser is used for code-completion
@@ -293,12 +293,12 @@ function _clangd() {
   local -a llvm_generic_options
   llvm_generic_options=(
   [-h,-help]'[Display available options]'
-  '-help-hidden[Display all available options]'
-  '-help-list[Display list of available options]'
-  '-help-list-hidden[Display list of all available options]'
-  '-print-all-options[Print all option values after command line parsing]'
-  '-print-options[Print non-default options after command line parsing]'
-  '-version[Display the version of this program]'
+  '--help-hidden[Display all available options]'
+  '--help-list[Display list of available options]'
+  '--help-list-hidden[Display list of all available options]'
+  '--print-all-options[Print all option values after command line parsing]'
+  '--print-options[Print non-default options after command line parsing]'
+  '--version[Display the version of this program]'
   )
   _values 'LLVM generic options' $llvm_generic_options
 
