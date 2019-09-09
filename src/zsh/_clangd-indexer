@@ -37,9 +37,17 @@
 # https://github.com/llvm-mirror/clang-tools-extra
 # https://clang.llvm.org/extra/clangd.html
 #
+# LLVM (http://llvm.org/):
+#   LLVM version 10.0.0svn
+#   Optimized build.
+#   Default target: x86_64-apple-darwin18.7.0
+#   Host CPU: skylake
+#
+# https://github.com/llvm/llvm-project/tree/d9c4060bd5c9e6c24a96cd7e4501be30301dad9d/clang-tools-extra/clangd/indexer
+#
 # -----------------------------------------------------------------------------
 #
-# OVERVIEW:
+# OVERVIEW: 
 #   Creates an index of symbol information etc in a whole project.
 #
 #   Example usage for a project using CMake compile commands:
@@ -51,7 +59,7 @@
 #   $ clangd-indexer File1.cpp File2.cpp ... FileN.cpp > clangd.dex
 #
 #   Note: only symbols from header files will be indexed.
-#
+#  
 # USAGE: clangd-indexer [options] <source0> [... <sourceN>]
 #
 # OPTIONS:
@@ -62,45 +70,44 @@
 #
 # General options:
 #
-#   -as-secure-log-file-name=<value>         - As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
-#   -asm-macro-max-nesting-depth=<uint>      - The maximum nesting depth allowed for assembly macros.
-#   -disable-symbolication                   - Disable symbolizing crash backtraces.
-#   -execute-concurrency=<uint>              - The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.
-#   -executor=<string>                       - The name of the executor to use.
-#   -extra-arg=<string>                      - Additional argument to append to the compiler command line
-#   -extra-arg-before=<string>               - Additional argument to prepend to the compiler command line
-#   -filter=<string>                         - Only process files that match this filter. This flag only applies to all-TUs.
-#   -format=<value>                          - Format of the index to be written
-#     =yaml                                  -   human-readable YAML format
-#     =binary                                -   binary RIFF format
-#   -info-output-file=<filename>             - File to append -stats and -timer output to
-#   -non-global-value-max-name-size=<uint>   - Maximum size for the name of non-global values.
-#   -opt-bisect-limit=<int>                  - Maximum optimization to perform
-#   -p=<string>                              - Build path
-#   -pass-remarks=<pattern>                  - Enable optimization remarks from passes whose name match the given regular expression
-#   -pass-remarks-analysis=<pattern>         - Enable optimization analysis remarks from passes whose name match the given regular expression
-#   -pass-remarks-missed=<pattern>           - Enable missed optimization remarks from passes whose name match the given regular expression
-#   -remarks-yaml-string-table               -
-#   -rng-seed=<seed>                         - Seed for the random number generator
-#   -static-func-full-module-prefix          - Use full module build paths in the profile counter names for static functions.
-#   -static-func-strip-dirname-prefix=<uint> - Strip specified level of directory name from source path in the profile counter name for static functions.
-#   -stats                                   - Enable statistics output from program (available with Asserts)
-#   -stats-json                              - Display statistics as json data
-#   -time-trace-granularity=<uint>           - Minimum time granularity (in microseconds) traced by time profiler
-#   -track-memory                            - Enable -time-passes memory tracking (this may be slow)
-#   -use-dbg-addr                            - Use llvm.dbg.addr for all local variables
-#   -view-background                         - Execute graph viewer in the background. Creates tmp file litter.
+#   --as-secure-log-file-name=<value>         - As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
+#   --asm-macro-max-nesting-depth=<uint>      - The maximum nesting depth allowed for assembly macros.
+#   --disable-symbolication                   - Disable symbolizing crash backtraces.
+#   --execute-concurrency=<uint>              - The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.
+#   --executor=<string>                       - The name of the executor to use.
+#   --extra-arg=<string>                      - Additional argument to append to the compiler command line
+#   --extra-arg-before=<string>               - Additional argument to prepend to the compiler command line
+#   --filter=<string>                         - Only process files that match this filter. This flag only applies to all-TUs.
+#   --format=<value>                          - Format of the index to be written
+#     =yaml                                   -   human-readable YAML format
+#     =binary                                 -   binary RIFF format
+#   --info-output-file=<filename>             - File to append -stats and -timer output to
+#   --non-global-value-max-name-size=<uint>   - Maximum size for the name of non-global values.
+#   --opt-bisect-limit=<int>                  - Maximum optimization to perform
+#   -p=<string>                               - Build path
+#   --pass-remarks=<pattern>                  - Enable optimization remarks from passes whose name match the given regular expression
+#   --pass-remarks-analysis=<pattern>         - Enable optimization analysis remarks from passes whose name match the given regular expression
+#   --pass-remarks-missed=<pattern>           - Enable missed optimization remarks from passes whose name match the given regular expression
+#   --rng-seed=<seed>                         - Seed for the random number generator
+#   --static-func-full-module-prefix          - Use full module build paths in the profile counter names for static functions.
+#   --static-func-strip-dirname-prefix=<uint> - Strip specified level of directory name from source path in the profile counter name for static functions.
+#   --stats                                   - Enable statistics output from program (available with Asserts)
+#   --stats-json                              - Display statistics as json data
+#   --switch-inst-prof-update-wrapper-strict  - Assert that prof branch_weights metadata is valid when creating an instance of SwitchInstProfUpdateWrapper
+#   --track-memory                            - Enable -time-passes memory tracking (this may be slow)
+#   --use-dbg-addr                            - Use llvm.dbg.addr for all local variables
+#   --view-background                         - Execute graph viewer in the background. Creates tmp file litter.
 #
 # Generic Options:
 #
-#   -h                                       - Alias for -help
-#   -help                                    - Display available options (-help-hidden for more)
-#   -help-hidden                             - Display all available options
-#   -help-list                               - Display list of available options (-help-list-hidden for more)
-#   -help-list-hidden                        - Display list of all available options
-#   -print-all-options                       - Print all option values after command line parsing
-#   -print-options                           - Print non-default options after command line parsing
-#   -version                                 - Display the version of this program
+#   -h                                        - Alias for --help
+#   --help                                    - Display available options (--help-hidden for more)
+#   --help-hidden                             - Display all available options
+#   --help-list                               - Display list of available options (--help-list-hidden for more)
+#   --help-list-hidden                        - Display list of all available options
+#   --print-all-options                       - Print all option values after command line parsing
+#   --print-options                           - Print non-default options after command line parsing
+#   --version                                 - Display the version of this program
 #
 # -----------------------------------------------------------------------------
 
@@ -109,32 +116,32 @@ function _clangd-indexer() {
   declare -A opt_args
 
   _arguments -C \
-    '-as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]' \
-    "-asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro's max nesting depth" \
-    '-debug-buffer-size=[Buffer the last N characters of debug output until program termination. \[default 0 -- immediate print-out\]]:uint' \
-    '-disable-symbolication[Disable symbolizing crash backtraces.]' \
-    '-execute-concurrency=[The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.]:num of concurrency execute' \
-    '-executor=[The name of the executor to use.]:executor:(all-TUs)' \
-    '-extra-arg=[Additional argument to append to the compiler command line]:extra-arg' \
-    '-extra-arg-before=[Additional argument to prepend to the compiler command line]:before extra args' \
-    '-filter=[Only process files that match this filter. This flag only applies to all-TUs.]:filter:(all-TUs)' \
-    '-format=[Format of the index to be written]: :->format' \
-    '-info-output-file=[File to append -stats and -timer output to]:filename:_files' \
-    '-non-global-value-max-name-size=[Maximum size for the name of non-global values.]:non global value max size' \
-    '-opt-bisect-limit=[Maximum optimization to perform]:bisect limit' \
-    '-p=[Build path]:build path:_files' \
-    '-pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:pattern' \
-    '-pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:pattern' \
-    '-pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:pattern' \
-    '-rng-seed=[Seed for the random number generator]:seed' \
-    '-static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
-    '-static-func-strip-dirname-prefix=[Strip specified level of directory name from source path in the profile counter name for static functions.]:uint' \
-    '-stats[Enable statistics output from program \(available with Asserts\)]' \
-    '-stats-json[Display statistics as json data]' \
-    '-time-trace-granularity=[Minimum time granularity (in microseconds) traced by time profiler]:Minimum time granularity' \
-    '-track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
-    '-use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
-    '-view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
+    '--as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]' \
+    "--asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro's max nesting depth" \
+    '--debug-buffer-size=[Buffer the last N characters of debug output until program termination. \[default 0 -- immediate print-out\]]:uint' \
+    '--disable-symbolication[Disable symbolizing crash backtraces.]' \
+    '--execute-concurrency=[The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.]:num of concurrency execute' \
+    '--executor=[The name of the executor to use.]:executor:(all-TUs)' \
+    '--extra-arg=[Additional argument to append to the compiler command line]:extra-arg' \
+    '--extra-arg-before=[Additional argument to prepend to the compiler command line]:before extra args' \
+    '--filter=[Only process files that match this filter. This flag only applies to all-TUs.]:filter:(all-TUs)' \
+    '--format=[Format of the index to be written]: :->format' \
+    '--info-output-file=[File to append -stats and -timer output to]:filename:_files' \
+    '--non-global-value-max-name-size=[Maximum size for the name of non-global values.]:non global value max size' \
+    '--opt-bisect-limit=[Maximum optimization to perform]:bisect limit' \
+    '--p=[Build path]:build path:_files' \
+    '--pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:pattern' \
+    '--pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:pattern' \
+    '--pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:pattern' \
+    '--rng-seed=[Seed for the random number generator]:seed' \
+    '--static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
+    '--static-func-strip-dirname-prefix=[Strip specified level of directory name from source path in the profile counter name for static functions.]:uint' \
+    '--stats[Enable statistics output from program \(available with Asserts\)]' \
+    '--stats-json[Display statistics as json data]' \
+    '--time-trace-granularity=[Minimum time granularity (in microseconds) traced by time profiler]:Minimum time granularity' \
+    '--track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
+    '--use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
+    '--view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
     '1:files or compile_commands.json:_files' \
     '*:: :->args' \
     && ret=0
@@ -154,12 +161,12 @@ function _clangd-indexer() {
   local -a llvm_generic_options
   llvm_generic_options=(
   [-h,-help]'[Display available options]'
-  '-help-hidden[Display all available options]'
-  '-help-list[Display list of available options]'
-  '-help-list-hidden[Display list of all available options]'
-  '-print-all-options[Print all option values after command line parsing]'
-  '-print-options[Print non-default options after command line parsing]'
-  '-version[Display the version of this program]'
+  '--help-hidden[Display all available options]'
+  '--help-list[Display list of available options]'
+  '--help-list-hidden[Display list of all available options]'
+  '--print-all-options[Print all option values after command line parsing]'
+  '--print-options[Print non-default options after command line parsing]'
+  '--version[Display the version of this program]'
   )
   _values 'LLVM generic options' $llvm_generic_options
 
