@@ -1,0 +1,347 @@
+#compdef viewcore
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# golang.org/x/debug/cmd/viewcore
+#
+# -----------------------------------------------------------------------------
+#
+# viewcore is a set of tools for analyzing core dumped from Go process.
+#
+# The following command starts an interactive shell for analysis of the
+# specified core.
+#
+#   viewcore <corefile>
+#
+# When provided a command in the following form, viewcore invokes the
+# command directly rather than starting in interactive mode.
+#
+#   viewcore <corefile> <command>
+#
+# Example:
+#
+#   viewcore mycore overview
+#
+# For available analysis tools, run the following command.
+#
+#   viewcore help
+#
+# Usage:
+#   viewcore <corefile> [flags]
+#   viewcore <corefile> [flags] [command]
+#
+# Available Commands:
+#   breakdown   print memory use by class
+#   goroutines  list goroutines
+#   help        Help about any command
+#   histogram   print histogram of heap memory use by Go type
+#   html        start an http server for browsing core file data on the port specified with -port
+#   mappings    print virtual memory mappings
+#   objects     print a list of all live objects
+#   objgraph    dump object graph (dot)
+#   overview    print a few overall statistics
+#   reachable   find path from root to an object
+#   read        read a chunk of memory
+#
+# Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#   -h, --help          help for viewcore
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# Use "viewcore [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# print memory use by class
+#
+# Usage:
+#   viewcore <corefile> breakdown [flags]
+#
+# Flags:
+#   -h, --help   help for breakdown
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# list goroutines
+#
+# Usage:
+#   viewcore <corefile> goroutines [flags]
+#
+# Flags:
+#   -h, --help   help for goroutines
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+# Simply type viewcore help [path to command] for full details.
+#
+# Usage:
+#   viewcore <corefile> help [command] [flags]
+#
+# Flags:
+#   -h, --help   help for help
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# print histogram of heap memory use by Go type.
+# If N is specified, it will reports only the top N buckets
+# based on the total bytes.
+#
+# Usage:
+#   viewcore <corefile> histogram [flags]
+#
+# Aliases:
+#   histogram, histo
+#
+# Flags:
+#   -h, --help      help for histogram
+#       --top int   reports only top N entries if N>0
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# start an http server for browsing core file data on the port specified with -port
+#
+# Usage:
+#   viewcore <corefile> html [flags]
+#
+# Flags:
+#   -h, --help       help for html
+#   -p, --port int   port for http server (default 8080)
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# print virtual memory mappings
+#
+# Usage:
+#   viewcore <corefile> mappings [flags]
+#
+# Flags:
+#   -h, --help   help for mappings
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# print a list of all live objects
+#
+# Usage:
+#   viewcore <corefile> objects [flags]
+#
+# Flags:
+#   -h, --help   help for objects
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# dump object graph (dot)
+#
+# Usage:
+#   viewcore <corefile> objgraph <output_filename> [flags]
+#
+# Flags:
+#   -h, --help   help for objgraph
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# print a few overall statistics
+#
+# Usage:
+#   viewcore <corefile> overview [flags]
+#
+# Flags:
+#   -h, --help   help for overview
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# find path from root to an object
+#
+# Usage:
+#   viewcore <corefile> reachable <address> [flags]
+#
+# Flags:
+#   -h, --help   help for reachable
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+#
+# read a chunk of memory
+#
+# Usage:
+#   viewcore <corefile> read <address> [<size>] [flags]
+#
+# Flags:
+#   -h, --help   help for read
+#
+# Global Flags:
+#       --base string   root directory to find core dump file references
+#       --exe string    main executable file
+#       --prof string   write cpu profile of viewcore to this file for viewcore's developers
+#
+# -----------------------------------------------------------------------------
+
+function _viewcore() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'breakdown:print memory use by class'
+    'goroutines:list goroutines'
+    'histogram:print histogram of heap memory use by Go type'
+    'html:start an http server for browsing core file data on the port specified with -port'
+    'mappings:print virtual memory mappings'
+    'objects:print a list of all live objects'
+    'objgraph:dump object graph (dot)'
+    'overview:print a few overall statistics'
+    'reachable:find path from root to an object'
+    'read:read a chunk of memory'
+  )
+  local -a help
+  help=(
+    'help:Help about any command'
+  )
+
+  function _files_and_help() {
+    _arguments \
+      "1: :{_describe 'viewcore help' help}" \
+      '*:: :->args'
+
+    case $words[1] in
+      *)
+        _arguments '*:corefile:_files'
+        ;;
+
+      help)
+        _arguments "*: :{_describe 'command' commands}"
+        ;;
+    esac
+  }
+
+  _arguments -C \
+    '1:corefile:_files_and_help' \
+    "2: :{_describe 'viewcore commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    (breakdown|goroutines|histogram|html|mappings|objects|overview)
+      _arguments \
+        '--base[root directory to find core dump file references]:base root directory:_directories' \
+        '--exe[main executable file]:executable file:_files' \
+        {-h,--help}'[help for viewcore]' \
+        "--prof[write cpu profile of viewcore to this file for viewcore's developers]:cpu profile out:_files"
+      ;;
+
+    objgraph)
+      _arguments \
+        '--base[root directory to find core dump file references]:base root directory:_directories' \
+        '--exe[main executable file]:executable file:_files' \
+        {-h,--help}'[help for viewcore]' \
+        "--prof[write cpu profile of viewcore to this file for viewcore's developers]:cpu profile out:_files" \
+        '*:output_filename:_files'
+      ;;
+
+    reachable)
+      _arguments \
+        '--base[root directory to find core dump file references]:base root directory:_directories' \
+        '--exe[main executable file]:executable file:_files' \
+        {-h,--help}'[help for viewcore]' \
+        "--prof[write cpu profile of viewcore to this file for viewcore's developers]:cpu profile out:_files" \
+        '*:address'
+      ;;
+
+    read)
+      _arguments \
+        '--base[root directory to find core dump file references]:base root directory:_directories' \
+        '--exe[main executable file]:executable file:_files' \
+        {-h,--help}'[help for viewcore]' \
+        "--prof[write cpu profile of viewcore to this file for viewcore's developers]:cpu profile out:_files" \
+        '3:address' \
+        '4:size'
+      ;;
+  esac
+
+  return ret
+}
+
+_viewcore "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
