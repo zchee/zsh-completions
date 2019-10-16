@@ -37,116 +37,94 @@
 #
 # -----------------------------------------------------------------------------
 #
-# kustomize manages declarative configuration of Kubernetes.
-#
+# Manages declarative configuration of Kubernetes.
 # See https://sigs.k8s.io/kustomize
 #
 # Usage:
 #   kustomize [command]
 #
 # Available Commands:
-#   build       Print current configuration per contents of kustomization.yaml
+#   build       Print configuration per contents of kustomization.yaml
 #   config      Config Kustomize transformers
+#   create      Create a new kustomization in the current directory
 #   edit        Edits a kustomization file
 #   help        Help about any command
 #   version     Prints the kustomize version
 #
 # Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#   -h, --help                             help for kustomize
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-#
-# -----------------------------------------------------------------------------
-#
-# Print current configuration per contents of kustomization.yaml
-#
-# Usage:
-#   kustomize build [path] [flags]
-#
-# Examples:
-#
-# Use the file somedir/kustomization.yaml to generate a set of api resources:
-#     build somedir
-#
-# Use a url pointing to a remote directory/kustomization.yaml to generate a set of api resources:
-#     build url
-# The url should follow hashicorp/go-getter URL format described in
-# https://github.com/hashicorp/go-getter#url-format
-#
-# url examples:
-#   sigs.k8s.io/kustomize//examples/multibases?ref=v1.0.6
-#   github.com/Liujingfang1/mysql
-#   github.com/Liujingfang1/kustomize//examples/helloWorld?ref=repoUrl2
-#
-#
-# Flags:
-#   -h, --help            help for build
-#   -o, --output string   If specified, write the build output to this path.
-#
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#   -h, --help   help for kustomize
 #
 # Use "kustomize [command] --help" for more information about a command.
 #
 # -----------------------------------------------------------------------------
 #
+# Print configuration per contents of kustomization.yaml
+#
+# Usage:
+#   kustomize build {path} [flags]
+#   kustomize build [command]
+#
+# Examples:
+#
+# To generate the resources specified in 'someDir/kustomization.yaml', run
+#
+#   kustomize build someDir
+#
+# The default argument to 'build' is '.' (the current working directory).
+#
+# The argument can be a URL resolving to a directory
+# with a kustomization.yaml file, e.g.
+#
+#   kustomize build \
+#     github.com/kubernetes-sigs/kustomize//examples/multibases/dev/?ref=v1.0.6
+#
+# The URL should be formulated as described at
+# https://github.com/hashicorp/go-getter#url-format
+#
+#
+# Available Commands:
+#   alpha-inventory Print the inventory object which contains a list of all other objects
+#
+# Flags:
+#       --enable_alpha_plugins     enable plugins, an alpha feature.
+#                                  See https://github.com/kubernetes-sigs/kustomize/blob/master/docs/plugins.md
+#                                 
+#   -h, --help                     help for build
+#       --load_restrictor string   if set to 'none', local kustomizations may load files from outside their root. This does, however, break the relocatability of the kustomization. (default "rootOnly")
+#   -o, --output string            If specified, write the build output to this path.
+#       --reorder string           Reorder the resources just before output. Use 'legacy' to apply a legacy reordering (Namespaces first, Webhooks last, etc). Use 'none' to suppress a final reordering. (default "legacy")
+#
+# Use "kustomize build [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Print the inventory object which contains a list of all other objects
+#
+# Usage:
+#   kustomize build alpha-inventory [path] [flags]
+#
+# Examples:
+#
+# To generate the resources specified in 'someDir/kustomization.yaml', run
+#
+#   kustomize build someDir
+#
+# The default argument to 'build' is '.' (the current working directory).
+#
+# The argument can be a URL resolving to a directory
+# with a kustomization.yaml file, e.g.
+#
+#   kustomize build \
+#     github.com/kubernetes-sigs/kustomize//examples/multibases/dev/?ref=v1.0.6
+#
+# The URL should be formulated as described at
+# https://github.com/hashicorp/go-getter#url-format
+#
+#
+# Flags:
+#   -h, --help   help for alpha-inventory
+#
+# -----------------------------------------------------------------------------
 # Config Kustomize transformers
 #
 # Usage:
@@ -154,7 +132,7 @@
 #
 # Examples:
 #
-# 	# Save the default transformer configrations to a local directory
+# 	# Save the default transformer configurations to a local directory
 # 	kustomize config save -d ~/.kustomize/config
 #
 #
@@ -164,25 +142,18 @@
 # Flags:
 #   -h, --help   help for config
 #
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-#
 # Use "kustomize config [command] --help" for more information about a command.
 #
 # -----------------------------------------------------------------------------
+#
+# Save default kustomize transformer configurations to a local directory
 #
 # Usage:
 #   kustomize config save [flags]
 #
 # Examples:
 #
-# 	# Save the default transformer configrations to a local directory
+# 	# Save the default transformer configurations to a local directory
 # 	save -d ~/.kustomize/config
 #
 #
@@ -191,14 +162,35 @@
 #   -d, --directory string   Directory to save the default transformer configurations
 #   -h, --help               help for save
 #
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+# -----------------------------------------------------------------------------
+#
+# Create a new kustomization in the current directory
+#
+# Usage:
+#   kustomize create [flags]
+#
+# Examples:
+#
+# 	# Create a new overlay from the base '../base".
+# 	kustomize create --resources ../base
+#
+# 	# Create a new kustomization detecting resources in the current directory.
+# 	kustomize create --autodetect
+#
+# 	# Create a new kustomization with multiple resources and fields set.
+# 	kustomize create --resources deployment.yaml,service.yaml,../base --namespace staging --nameprefix acme-
+#
+#
+# Flags:
+#       --annotations string   Add one or more common annotations.
+#       --autodetect           Search for kubernetes resources in the current directory to be added to the kustomization file.
+#   -h, --help                 help for create
+#       --labels string        Add one or more common labels.
+#       --nameprefix string    Sets the value of the namePrefix field in the kustomization file.
+#       --namespace string     Set the value of the namespace field in the customization file.
+#       --namesuffix string    Sets the value of the nameSuffix field in the kustomization file.
+#       --recursive            Enable recursive directory searching for resource auto-detection.
+#       --resources string     Name of a file containing a file to add to the kustomization file.
 #
 # -----------------------------------------------------------------------------
 #
@@ -215,56 +207,32 @@
 # 	# Sets the nameprefix field
 # 	kustomize edit set nameprefix <prefix-value>
 #
+# 	# Sets the namesuffix field
+# 	kustomize edit set namesuffix <suffix-value>
+#
 #
 # Available Commands:
-#   add         Adds configmap/resource/patch/base to the kustomization file.
+#   add         Adds an item to the kustomization file.
+#   fix         Fix the missing fields in kustomization file
+#   remove      Removes items from the kustomization file.
 #   set         Sets the value of different fields in kustomization file.
 #
 # Flags:
 #   -h, --help   help for edit
 #
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-#
 # Use "kustomize edit [command] --help" for more information about a command.
 #
 # -----------------------------------------------------------------------------
 #
-# Adds configmap/resource/patch/base to the kustomization file.
+# Adds an item to the kustomization file.
 #
 # Usage:
 #   kustomize edit add [command]
 #
 # Examples:
+#
+# 	# Adds a secret to the kustomization file
+# 	kustomize edit add secret NAME --from-literal=k=v
 #
 # 	# Adds a configmap to the kustomization file
 # 	kustomize edit add configmap NAME --from-literal=k=v
@@ -293,43 +261,185 @@
 #   label       Adds one or more commonLabels to kustomization.yaml
 #   patch       Add the name of a file containing a patch to the kustomization file.
 #   resource    Add the name of a file containing a resource to the kustomization file.
+#   secret      Adds a secret to the kustomization file.
 #
 # Flags:
 #   -h, --help   help for add
 #
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-#
 # Use "kustomize edit add [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Adds one or more commonAnnotations to kustomization.yaml
+#
+# Usage:
+#   kustomize edit add annotation [flags]
+#
+# Examples:
+#
+# 		add annotation {annotationKey1:annotationValue1},{annotationKey2:annotationValue2}
+#
+# Flags:
+#   -f, --force   overwrite commonAnnotation if it already exists
+#   -h, --help    help for annotation
+#
+# -----------------------------------------------------------------------------
+#
+# Adds one or more bases to the kustomization.yaml in current directory
+#
+# Usage:
+#   kustomize edit add base [flags]
+#
+# Examples:
+#
+# 		add base {filepath1},{filepath2}
+#
+# Flags:
+#   -h, --help   help for base
+#
+# -----------------------------------------------------------------------------
+#
+# Adds a configmap to the kustomization file.
+#
+# Usage:
+#   kustomize edit add configmap NAME [--from-file=[key=]source] [--from-literal=key1=value1] [flags]
+#
+# Examples:
+#
+# 	# Adds a configmap to the kustomization file (with a specified key)
+# 	kustomize edit add configmap my-configmap --from-file=my-key=file/path --from-literal=my-literal=12345
+#
+# 	# Adds a configmap to the kustomization file (key is the filename)
+# 	kustomize edit add configmap my-configmap --from-file=file/path
+#
+# 	# Adds a configmap from env-file
+# 	kustomize edit add configmap my-configmap --from-env-file=env/path.env
+#
+#
+# Flags:
+#       --from-env-file string       Specify the path to a file to read lines of key=val pairs to create a configmap (i.e. a Docker .env file).
+#       --from-file strings          Key file can be specified using its file path, in which case file basename will be used as configmap key, or optionally with a key and file path, in which case the given key will be used.  Specifying a directory will iterate each named file in the directory whose basename is a valid configmap key.
+#       --from-literal stringArray   Specify a key and literal value to insert in configmap (i.e. mykey=somevalue)
+#   -h, --help                       help for configmap
+#
+# -----------------------------------------------------------------------------
+#
+# Adds one or more commonLabels to kustomization.yaml
+#
+# Usage:
+#   kustomize edit add label [flags]
+#
+# Examples:
+#
+# 		add label {labelKey1:labelValue1},{labelKey2:labelValue2}
+#
+# Flags:
+#   -f, --force   overwrite commonLabel if it already exists
+#   -h, --help    help for label
+#
+# -----------------------------------------------------------------------------
+#
+# Add the name of a file containing a patch to the kustomization file.
+#
+# Usage:
+#   kustomize edit add patch [flags]
+#
+# Examples:
+#
+# 		add patch {filepath}
+#
+# Flags:
+#   -h, --help   help for patch
+#
+# -----------------------------------------------------------------------------
+#
+# Add the name of a file containing a resource to the kustomization file.
+#
+# Usage:
+#   kustomize edit add resource [flags]
+#
+# Examples:
+#
+# 		add resource {filepath}
+#
+# Flags:
+#   -h, --help   help for resource
+#
+# -----------------------------------------------------------------------------
+# Adds a secret to the kustomization file.
+#
+# Usage:
+#   kustomize edit add secret NAME [--from-file=[key=]source] [--from-literal=key1=value1] [--type=Opaque|kubernetes.io/tls] [flags]
+#
+# Examples:
+#
+# 	# Adds a secret to the kustomization file (with a specified key)
+# 	kustomize edit add secret my-secret --from-file=my-key=file/path --from-literal=my-literal=12345
+#
+# 	# Adds a secret to the kustomization file (key is the filename)
+# 	kustomize edit add secret my-secret --from-file=file/path
+#
+# 	# Adds a secret from env-file
+# 	kustomize edit add secret my-secret --from-env-file=env/path.env
+#
+#
+# Flags:
+#       --from-env-file string       Specify the path to a file to read lines of key=val pairs to create a secret (i.e. a Docker .env file).
+#       --from-file strings          Key file can be specified using its file path, in which case file basename will be used as secret key, or optionally with a key and file path, in which case the given key will be used.  Specifying a directory will iterate each named file in the directory whose basename is a valid secret key.
+#       --from-literal stringArray   Specify a key and literal value to insert in secret (i.e. mykey=somevalue)
+#   -h, --help                       help for secret
+#       --type string                Specify the secret type this can be 'Opaque' (default), or 'kubernetes.io/tls' (default "Opaque")
+#
+# -----------------------------------------------------------------------------
+#
+# Fix the missing fields in kustomization file
+#
+# Usage:
+#   kustomize edit fix [flags]
+#
+# Examples:
+#
+# 	# Fix the missing and deprecated fields in kustomization file
+# 	kustomize edit fix
+#
+#
+#
+# Flags:
+#   -h, --help   help for fix
+#
+# -----------------------------------------------------------------------------
+#
+# Removes items from the kustomization file.
+#
+# Usage:
+#   kustomize edit remove [command]
+#
+# Examples:
+#
+# 	# Removes resources from the kustomization file
+# 	kustomize edit remove resource {filepath} {filepath}
+# 	kustomize edit remove resource {pattern}
+#
+# 	# Removes one or more patches from the kustomization file
+# 	kustomize edit remove patch <filepath>
+#
+# 	# Removes one or more commonLabels from the kustomization file
+# 	kustomize edit remove label {labelKey1},{labelKey2}
+#
+# 	# Removes one or more commonAnnotations from the kustomization file
+# 	kustomize edit remove annotation {annotationKey1},{annotationKey2}
+#
+#
+# Available Commands:
+#   annotation  Removes one or more commonAnnotations from kustomization.yaml
+#   label       Removes one or more commonLabels from kustomization.yaml
+#   patch       Removes one or more patches from kustomization.yaml
+#   resource    Removes one or more resource file paths from kustomization.yaml
+#
+# Flags:
+#   -h, --help   help for remove
+#
+# Use "kustomize edit remove [command] --help" for more information about a command.
 #
 # -----------------------------------------------------------------------------
 #
@@ -343,48 +453,117 @@
 # 	# Sets the nameprefix field
 # 	kustomize edit set nameprefix <prefix-value>
 #
+# 	# Sets the namesuffix field
+# 	kustomize edit set namesuffix <suffix-value>
+#
 #
 # Available Commands:
-#   imagetag    Sets images and their new tags or digests in the kustomization file
+#   image       Sets images and their new names, new tags or digests in the kustomization file
 #   nameprefix  Sets the value of the namePrefix field in the kustomization file.
 #   namespace   Sets the value of the namespace field in the kustomization file
+#   namesuffix  Sets the value of the nameSuffix field in the kustomization file.
 #
 # Flags:
 #   -h, --help   help for set
 #
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-#
 # Use "kustomize edit set [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Sets images and their new names, new tags or digests in the kustomization file
+#
+# Usage:
+#   kustomize edit set image [flags]
+#
+# Examples:
+#
+# The command
+#   set image postgres=eu.gcr.io/my-project/postgres:latest my-app=my-registry/my-app@sha256:24a0c4b4a4c0eb97a1aabb8e29f18e917d05abfe1b7a7c07857230879ce7d3d3
+# will add
+#
+# images:
+# - name: postgres
+#   newName: eu.gcr.io/my-project/postgres
+#   newTag: latest
+# - digest: sha256:24a0c4b4a4c0eb97a1aabb8e29f18e917d05abfe1b7a7c07857230879ce7d3d3
+#   name: my-app
+#   newName: my-registry/my-app
+#
+# to the kustomization file if it doesn't exist,
+# and overwrite the previous ones if the image name exists.
+#
+# The command
+#   set image node:8.15.0 mysql=mariadb alpine@sha256:24a0c4b4a4c0eb97a1aabb8e29f18e917d05abfe1b7a7c07857230879ce7d3d3
+# will add
+#
+# images:
+# - name: node
+#   newTag: 8.15.0
+# - name: mysql
+#   newName: mariadb
+# - digest: sha256:24a0c4b4a4c0eb97a1aabb8e29f18e917d05abfe1b7a7c07857230879ce7d3d3
+#   name: alpine
+#
+# to the kustomization file if it doesn't exist,
+# and overwrite the previous ones if the image name exists.
+#
+#
+# Flags:
+#   -h, --help   help for image
+#
+# -----------------------------------------------------------------------------
+#
+# Sets the value of the namePrefix field in the kustomization file.
+#
+# Usage:
+#   kustomize edit set nameprefix [flags]
+#
+# Examples:
+#
+# The command
+#   set nameprefix acme-
+# will add the field "namePrefix: acme-" to the kustomization file if it doesn't exist,
+# and overwrite the value with "acme-" if the field does exist.
+#
+#
+# Flags:
+#   -h, --help   help for nameprefix
+#
+# -----------------------------------------------------------------------------
+#
+# Sets the value of the namespace field in the kustomization file
+#
+# Usage:
+#   kustomize edit set namespace [flags]
+#
+# Examples:
+#
+# The command
+# 	set namespace staging
+# will add the field "namespace: staging" to the kustomization file if it doesn't exist,
+# and overwrite the value with "staging" if the field does exist.
+#
+#
+# Flags:
+#   -h, --help   help for namespace
+#
+# -----------------------------------------------------------------------------
+#
+# Sets the value of the nameSuffix field in the kustomization file.
+#
+# Usage:
+#   kustomize edit set namesuffix [flags]
+#
+# Examples:
+#
+# The command
+#   set namesuffix -- -acme
+# will add the field "nameSuffix: -acme" to the kustomization file if it doesn't exist,
+# and overwrite the value with "-acme" if the field does exist.
+#
+#
+# Flags:
+#   -h, --help   help for namesuffix
 #
 # -----------------------------------------------------------------------------
 #
@@ -397,38 +576,6 @@
 # Flags:
 #   -h, --help   help for help
 #
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-#
 # -----------------------------------------------------------------------------
 #
 # Prints the kustomize version
@@ -440,39 +587,8 @@
 # kustomize version
 #
 # Flags:
-#   -h, --help   help for version
-#
-# Global Flags:
-#       --alsologtostderr                  log to standard error as well as files
-#       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-#       --log_dir string                   If non-empty, write log files in this directory
-#       --logtostderr                      log to standard error instead of files
-#       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-#       --test.bench regexp                run only benchmarks matching regexp
-#       --test.benchmem                    print memory allocations for benchmarks
-#       --test.benchtime d                 run each benchmark for duration d (default 1s)
-#       --test.blockprofile file           write a goroutine blocking profile to file
-#       --test.blockprofilerate rate       set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
-#       --test.count n                     run tests and benchmarks n times (default 1)
-#       --test.coverprofile file           write a coverage profile to file
-#       --test.cpu list                    comma-separated list of cpu counts to run each test with
-#       --test.cpuprofile file             write a cpu profile to file
-#       --test.failfast                    do not start new tests after the first test failure
-#       --test.list regexp                 list tests, examples, and benchmarks matching regexp then exit
-#       --test.memprofile file             write an allocation profile to file
-#       --test.memprofilerate rate         set memory allocation profiling rate (see runtime.MemProfileRate)
-#       --test.mutexprofile string         write a mutex contention profile to the named file after execution
-#       --test.mutexprofilefraction int    if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
-#       --test.outputdir dir               write profiles to dir
-#       --test.parallel n                  run at most n tests in parallel (default 12)
-#       --test.run regexp                  run only tests and examples matching regexp
-#       --test.short                       run smaller test suite to save time
-#       --test.testlogfile file            write test action log to file (for use only by cmd/go)
-#       --test.timeout d                   panic test binary after duration d (default 0, timeout disabled) (default 0s)
-#       --test.trace file                  write an execution trace to file
-#       --test.v                           verbose: print additional output
-#   -v, --v Level                          log level for V logs
-#       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+#   -h, --help    help for version
+#       --short   print just the version number
 #
 # -----------------------------------------------------------------------------
 
@@ -480,25 +596,23 @@ function _kustomize() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
   local -a commands
   commands=(
-  'build:Print current configuration per contents of kustomization.yaml'
+  'build:Print configuration per contents of kustomization.yaml'
   'config:Config Kustomize transformers'
+  'create:Create a new kustomization in the current directory'
   'edit:Edits a kustomization file'
   'help:Help about any command'
   'version:Prints the kustomize version'
-  )
-
-  local -a _global_flags
-  _global_flags=(
-  '--alsologtostderr[log to standard error as well as files]'
-  '--log_backtrace_at[when logging hits line file:N, emit a stack trace \(default :0\)]:traceLocation'
-  '--log_dir[If non-empty, write log files in this directory]:dir:_directories'
-  '--logtostderr[log to standard error instead of files]'
-  '--stderrthreshold[logs at or above this threshold go to stderr \(default 2\)]:severity]'
-  {-v,--v}'[log level for V logs]:Level'\
-  '--vmodule[comma-separated list of pattern=N settings for file-filtered logging]:moduleSpec'
-  {-h,--help}'[help for build]'
   )
 
   _arguments -C \
@@ -508,10 +622,33 @@ function _kustomize() {
 
   case $words[1] in
     build)
+      local -a build_cmds
+      build_cmds=(
+      'alpha-inventory:Print the inventory object which contains a list of all other objects'
+      )
+
       _arguments \
+        '--enable_alpha_plugins[enable plugins, an alpha feature.]' \
+        "--load_restrictor[if set to 'none', local kustomizations may load files from outside their root.]:load restrictor:(none rootOnly)" \
         {-o,--output}'[If specified, write the build output to this path.]:output path:_files' \
-        ${_global_flags[@]} \
+        "--reorder[Reorder the resources just before output. Use 'legacy' to apply a legacy reordering]:reorder type:(namespaces webhooks none legacy)" \
+        {-h,--help}'[help for kustomize]' \
         '*:path:_files'
+
+      # TODO(zchee): add alpha-inventory after the stable
+      #   "1: :{_describe 'build command' build_cmds}" \
+      #   '*:: :->args'
+      #
+      # case $words[1] in
+      #   *)
+      #     _arguments '*:file:_files'
+      #     ;;
+      #
+      #   alpha-inventory)
+      #     _arguments \
+      #       '*:path:_files'
+      #     ;;
+      # esac
       ;;
 
     config)
@@ -520,30 +657,45 @@ function _kustomize() {
       'save:Save default kustomize transformer configurations to a local directory'
       )
       _arguments \
+        {-h,--help}'[help for kustomize]' \
         "1: :{_describe 'kustomize config command' config_cmds}" \
-        '*:: :->args' \
-        ${_global_flags[@]}
+        '*:: :->args'
 
       case $words[1] in
         save)
           _arguments \
-            {-d,--directory}'[Directory to save the default transformer configurations]:directory:_directories' \
-            ${_global_flags[@]}
+            {-h,--help}'[help for kustomize]' \
+            {-d,--directory}'[Directory to save the default transformer configurations]:directory:_directories'
           ;;
       esac
+      ;;
+
+    create)
+      _arguments \
+        {-h,--help}'[help for kustomize]' \
+        '--annotations[Add one or more common annotations.]:annotationss' \
+        '--autodetect[Search for kubernetes resources in the current directory to be added to the kustomization file.]' \
+        '--labels[Add one or more common labels.]:labels' \
+        '--nameprefix[Sets the value of the namePrefix field in the kustomization file.]:prefix name' \
+        '--namespace[Set the value of the namespace field in the customization file.]:namespace' \
+        '--namesuffix[Sets the value of the nameSuffix field in the kustomization file.]:suffix name' \
+        '--recursive[Enable recursive directory searching for resource auto-detection.]' \
+        '--resources[Name of a file containing a file to add to the kustomization file.]:resources file:_files'
       ;;
 
     edit)
       local -a edit_cmds
       edit_cmds=(
-      'add:Adds configmap/resource/patch/base to the kustomization file.'
+      'add:Adds an item to the kustomization file.'
+      'fix:Fix the missing fields in kustomization file'
+      'remove:Removes items from the kustomization file.'
       'set:Sets the value of different fields in kustomization file.'
       )
 
       _arguments \
+        {-h,--help}'[help for kustomize]' \
         "1: :{_describe 'kustomize edit command' edit_cmds}" \
-        '*:: :->args' \
-        ${_global_flags[@]}
+        '*:: :->args'
 
       case $words[1] in
         add)
@@ -555,28 +707,150 @@ function _kustomize() {
           'label:Adds one or more commonLabels to kustomization.yaml'
           'patch:Add the name of a file containing a patch to the kustomization file.'
           'resource:Add the name of a file containing a resource to the kustomization file.'
+          'secret:Adds a secret to the kustomization file.'
           )
 
           _arguments \
+            {-h,--help}'[help for kustomize]' \
             "1: :{_describe 'kustomize edit add commands' edit_add_cmds}" \
-            '*:: :->args' \
-            ${_global_flags[@]}
+            '*:: :->args'
+
+          case $words[1] in
+            annotation)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                {-f,--force}'[overwrite commonAnnotation if it already exists]' \
+                '*:annotations'
+              ;;
+
+            base)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '*:filepath:_files'
+              ;;
+
+            configmap)
+              _arguments \
+                '--from-env-file[Specify the path to a file to read lines of key=val pairs to create a configmap]:env file:_files' \
+                '--from-file[Key file can be specified using its file path, in which case file basename will be used as configmap key, or optionally with a key and file path, in which case the given key will be used.]:key file:_files' \
+                '--from-literal[Specify a key and literal value to insert in configmap]:key and literal' \
+              ;;
+
+            label)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                {-f,--force}'[overwrite commonAnnotation if it already exists]' \
+                '*:label'
+              ;;
+
+            (patch|resource)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '*:filepath:_files'
+              ;;
+
+            secret)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '--from-env-file[Specify the path to a file to read lines of key=val pairs to create a secret]:env file:_files' \
+                '--from-file[Key file can be specified using its file path, in which case file basename will be used as secret key, or optionally with a key and file path, in which case the given key will be used.]:key file:_files' \
+                '--from-literal[Specify a key and literal value to insert in secret]:key and literal' \
+                '--type[Specify the secret type]:secret type:(Opaque kubernetes.io/tls)' \
+                '*:secret name'
+              ;;
+          esac
+          ;;
+
+        fix)
+          _arguments \
+            {-h,--help}'[help for kustomize]'
+          ;;
+
+        remove)
+          local -a edit_remove_cmds
+          edit_remove_cmds=(
+          'annotation:Removes one or more commonAnnotations from kustomization.yaml'
+          'label:Removes one or more commonLabels from kustomization.yaml'
+          'patch:Removes one or more patches from kustomization.yaml'
+          'resource:Removes one or more resource file paths from kustomization.yaml'
+          )
+
+          _arguments \
+            {-h,--help}'[help for kustomize]' \
+            "1: :{_describe 'kustomize remove commands' edit_remove_cmds}" \
+            '*:: :->args'
+
+          case $words[1] in
+            annotation)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                {-f,--force}'[overwrite commonAnnotation if it already exists]' \
+                '*:annotations'
+              ;;
+
+            label)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                {-f,--force}'[overwrite commonAnnotation if it already exists]' \
+                '*:label'
+              ;;
+
+            (patch|resource)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '*:filepath:_files'
+              ;;
+          esac
           ;;
 
         set)
           local -a edit_set_cmds
           edit_set_cmds=(
-          'imagetag :Sets images and their new tags or digests in the kustomization file'
+          'image:Sets images and their new names, new tags or digests in the kustomization file'
           'nameprefix:Sets the value of the namePrefix field in the kustomization file.'
           'namespace:Sets the value of the namespace field in the kustomization file'
+          'namesuffix:Sets the value of the nameSuffix field in the kustomization file.'
           )
 
           _arguments \
+            {-h,--help}'[help for kustomize]' \
             "1: :{_describe 'kustomize edit set commands' edit_set_cmds}" \
-            '*:: :->args' \
-            ${_global_flags[@]}
+            '*:: :->args'
+
+          case $words[1] in
+            image)
+              ;;
+
+            nameprefix)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '1:prefix name'
+              ;;
+
+            namespace)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '1:namespace name'
+              ;;
+
+            namesuffix)
+              _arguments \
+                {-h,--help}'[help for kustomize]' \
+                '1:suffix name'
+              ;;
+          esac
           ;;
       esac
+      ;;
+
+    help)
+      _arguments \
+        "1: :{_describe 'command' commands}"
+      ;;
+
+    version)
+      _arguments \
+        '--short[print just the version number]'
       ;;
   esac
 
