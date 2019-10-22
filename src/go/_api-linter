@@ -1,0 +1,116 @@
+#compdef api-linter
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/googleapis/api-linter/cmd/api-linter
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    api-linter - A linter for APIs
+#
+# USAGE:
+#    api-linter [global options] command [command options] [arguments...]
+#
+# VERSION:
+#    0.1
+#
+# COMMANDS:
+#    checkproto, cp  Check protobuf files that define an API
+#    help, h         Shows a list of commands or help for one command
+#
+# GLOBAL OPTIONS:
+#    --help, -h     show help
+#    --version, -v  print the version
+#
+# -----------------------------------------------------------------------------
+#
+# NAME:
+#    api-linter checkproto - Check protobuf files that define an API
+#
+# USAGE:
+#    api-linter checkproto [command options] files...
+#
+# OPTIONS:
+#    --cfg value         configuration file path
+#    --out value         output file path (default: stdout)
+#    --fmt value         output format (default: "yaml")
+#    --proto_path value  the directories in which for protoc to search for imports (default: ".")
+#
+# -----------------------------------------------------------------------------
+
+function _api-linter() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    {checkproto,cp}':Check protobuf files that define an API'
+  )
+
+  local -a help
+  help=(
+    {help,h}':Shows a list of commands or help for one command'
+  )
+
+  _arguments -C \
+    {--help,-h}'[show help]' \
+    {--version,-v}'[print the version]' \
+    "1: :{_describe 'api-linter commands' commands -- help}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    (cp|checkproto)
+      _arguments \
+        {--help,-h}'[show help]' \
+        {--version,-v}'[print the version]' \
+        '--cfg[configuration file path]:configuration file:_files' \
+        '--out[output file path \(default\: stdout\)]:output path:_files' \
+        '--fmt[output format \(default: "yaml"\)]:output format:(yaml json summary)' \
+        '--proto_path[the directories in which for protoc to search for imports \(default: "."\)]:import directories:_directories' \
+        '*:proto file:_files'
+      ;;
+
+    (h|help)
+      _arguments "1: :{_describe 'command' commands}"
+      ;;
+  esac
+
+  return ret
+}
+
+_api-linter "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
