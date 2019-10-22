@@ -33,17 +33,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# https://git.llvm.org/git/clang-tools-extra.git
-# https://github.com/llvm-mirror/clang-tools-extra
-# https://clang.llvm.org/extra/clangd.html
-#
 # LLVM (http://llvm.org/):
 #   LLVM version 10.0.0svn
 #   Optimized build.
 #   Default target: x86_64-apple-darwin18.7.0
 #   Host CPU: skylake
 #
-# https://github.com/llvm/llvm-project/tree/d9c4060bd5c9e6c24a96cd7e4501be30301dad9d/clang-tools-extra/clangd/indexer
+# https://github.com/llvm/llvm-project/tree/4e039e2720f97753b4d5d2c183cbf240c9f1e259/clang-tools-extra/clangd/indexer
 #
 # -----------------------------------------------------------------------------
 #
@@ -93,7 +89,6 @@
 #   --static-func-strip-dirname-prefix=<uint> - Strip specified level of directory name from source path in the profile counter name for static functions.
 #   --stats                                   - Enable statistics output from program (available with Asserts)
 #   --stats-json                              - Display statistics as json data
-#   --switch-inst-prof-update-wrapper-strict  - Assert that prof branch_weights metadata is valid when creating an instance of SwitchInstProfUpdateWrapper
 #   --track-memory                            - Enable -time-passes memory tracking (this may be slow)
 #   --use-dbg-addr                            - Use llvm.dbg.addr for all local variables
 #   --view-background                         - Execute graph viewer in the background. Creates tmp file litter.
