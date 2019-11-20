@@ -1,4 +1,4 @@
-#compdef llvm-config
+#compdef llvm-config llvm-config-64
 
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
@@ -105,7 +105,7 @@ function _llvm-config() {
     '--shared-mode[Print how the provided components can be collectively linked (shared or static)]' \
     '--link-shared[Link the components as shared libraries]' \
     '--link-static[Link the component libraries statically]' \
-    "*::llvm components:($(llvm-config --components))" \
+    "*::llvm components:($($service --components))" \
     && ret=0
 
   return ret
