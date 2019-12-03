@@ -11,7 +11,6 @@
 #
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
@@ -39,7 +38,7 @@
 #   Default target: x86_64-apple-darwin18.7.0
 #   Host CPU: skylake
 #
-# https://github.com/llvm/llvm-project/tree/4e039e2720f97753b4d5d2c183cbf240c9f1e259/clang-tools-extra/clangd/indexer
+# https://github.com/llvm/llvm-project/tree/bf830b01a21e6ff2f44c17be4ad4ee897465a677/clang-tools-extra/clangd/indexer
 #
 # -----------------------------------------------------------------------------
 #
@@ -84,6 +83,7 @@
 #   --pass-remarks=<pattern>                  - Enable optimization remarks from passes whose name match the given regular expression
 #   --pass-remarks-analysis=<pattern>         - Enable optimization analysis remarks from passes whose name match the given regular expression
 #   --pass-remarks-missed=<pattern>           - Enable missed optimization remarks from passes whose name match the given regular expression
+#   --remarks-section                         - Emit a section containing remark diagnostics metadata. By default, this is enabled for the following formats: yaml-strtab, bitstream.
 #   --rng-seed=<seed>                         - Seed for the random number generator
 #   --static-func-full-module-prefix          - Use full module build paths in the profile counter names for static functions.
 #   --static-func-strip-dirname-prefix=<uint> - Strip specified level of directory name from source path in the profile counter name for static functions.
@@ -110,6 +110,21 @@ function _clangd-indexer() {
   local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
+  _llvm_generic_options() {
+    local -a llvm_generic_options
+    llvm_generic_options=(
+    '--help[Display available options \(-help-hidden for more\)]'
+    '--help-hidden[Display all available options]'
+    '--help-list[Display list of available options \(-help-list-hidden for more\)]'
+    '--help-list-hidden[Display list of all available options]'
+    '--print-all-options[Print all option values after command line parsing]'
+    '--print-options[Print non-default options after command line parsing]'
+    '--version[Display the version of this program]'
+    )
+
+    _values 'Generic options' $llvm_generic_options
+  }
+
   _arguments -C \
     '--as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]' \
     "--asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro's max nesting depth" \
@@ -128,6 +143,7 @@ function _clangd-indexer() {
     '--pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:pattern' \
     '--pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:pattern' \
     '--pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:pattern' \
+    '--remarks-section[Emit a section containing remark diagnostics metadata. By default, this is enabled for the following formats: yaml-strtab, bitstream.]' \
     '--rng-seed=[Seed for the random number generator]:seed' \
     '--static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
     '--static-func-strip-dirname-prefix=[Strip specified level of directory name from source path in the profile counter name for static functions.]:uint' \
@@ -137,8 +153,9 @@ function _clangd-indexer() {
     '--track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
     '--use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
     '--view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
-    '1:files or compile_commands.json:_files' \
-    '*:: :->args' \
+    ':: :{_alternative ":LLVM generic options:_llvm_generic_options"}' \
+    '*:source:_files' \
+    ':: :->args' \
     && ret=0
 
   case $state in
@@ -149,21 +166,9 @@ function _clangd-indexer() {
       'binary[binary RIFF format]'
       )
 
-      _values 'format type' $format_args
-    ;;
+      _values 'index file format' $format_args
+      ;;
   esac
-
-  local -a llvm_generic_options
-  llvm_generic_options=(
-  [-h,-help]'[Display available options]'
-  '--help-hidden[Display all available options]'
-  '--help-list[Display list of available options]'
-  '--help-list-hidden[Display list of all available options]'
-  '--print-all-options[Print all option values after command line parsing]'
-  '--print-options[Print non-default options after command line parsing]'
-  '--version[Display the version of this program]'
-  )
-  _values 'LLVM generic options' $llvm_generic_options
 
   return ret
 }
