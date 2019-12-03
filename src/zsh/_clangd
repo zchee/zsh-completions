@@ -34,7 +34,7 @@
 # -----------------------------------------------------------------------------
 #
 # clangd version 10.0.0
-#   https://github.com/llvm/llvm-project/tree/4e039e2720f97753b4d5d2c183cbf240c9f1e259/clang-tools-extra/clangd
+#   https://github.com/llvm/llvm-project/tree/bf830b01a21e6ff2f44c17be4ad4ee897465a677/clang-tools-extra/clangd
 #
 # https://clang.llvm.org/extra/clangd.html
 #
@@ -93,6 +93,7 @@
 #   --completion-style=<value>      - Granularity of code completion suggestions
 #     =detailed                     -   One completion item for each semantically distinct completion, with full type information
 #     =bundled                      -   Similar completion items (e.g. function overloads) are combined. Type information shown where possible
+#   --cross-file-rename             - Enable cross-file rename feature. Note that this feature is experimental and may lead to broken code or incomplete rename results
 #   --debug-origin                  - Show origins of completion items
 #   --fallback-style=<string>       - clang-format style to apply by default when no .clang-format file is found
 #   --function-arg-placeholders     - When disabled, completions contain only parentheses for function calls. When enabled, completions also contain placeholders for method parameters
@@ -165,6 +166,7 @@ function _clangd() {
     '--compile_args_from=[The source of compile commands]:compile args source:->compile_args_from' \
     '--completion-parse=[Whether the clang-parser is used for code-completion]:clang-parser:->clang-parser' \
     '--completion-style=[Granularity of code completion suggestions]:completion style:->completion-style' \
+    '--cross-file-rename[Enable cross-file rename feature. Note that this feature is experimental and may lead to broken code or incomplete rename results]' \
     '--debug-origin[Show origins of completion items]' \
     '--disable-symbolication[Disable symbolizing crash backtraces.]' \
     "--enable-test-uri-scheme[Enable 'test:' URI scheme. Only use in lit tests.]" \
