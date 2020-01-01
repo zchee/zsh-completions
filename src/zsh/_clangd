@@ -142,18 +142,25 @@ function _clangd() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
-  _color_options() {
-    local -a color_options
-    color_options=(
-    '-color[Use colors in output \(default=autodetect\)'
+  _llvm_generic_options() {
+    local -a llvm_generic_options
+    llvm_generic_options=(
+      [-h,-help]'[Display available options]'
+      '--help-hidden[Display all available options]'
+      '--help-list[Display list of available options]'
+      '--help-list-hidden[Display list of all available options]'
+      '--print-all-options[Print all option values after command line parsing]'
+      '--print-options[Print non-default options after command line parsing]'
+      '--version[Display the version of this program]'
+    )
+    llvm_generic_options+=(
+      '--color[Use colors in output \(default=autodetect\)]'
     )
 
-    _values 'Color Options' $color_options
+    _values 'Generic options' $llvm_generic_options
   }
 
   _arguments -C \
-    ': :->_color_options' \
-    \
     '--all-scopes-completion[If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers.]' \
     '--as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]:value' \
     '--asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro max nesting depth]' \
@@ -292,17 +299,7 @@ function _clangd() {
       ;;
   esac
 
-  local -a llvm_generic_options
-  llvm_generic_options=(
-  [-h,-help]'[Display available options]'
-  '--help-hidden[Display all available options]'
-  '--help-list[Display list of available options]'
-  '--help-list-hidden[Display list of all available options]'
-  '--print-all-options[Print all option values after command line parsing]'
-  '--print-options[Print non-default options after command line parsing]'
-  '--version[Display the version of this program]'
-  )
-  _values 'LLVM generic options' $llvm_generic_options
+  _llvm_generic_options
 
   return ret
 }
