@@ -256,6 +256,7 @@
 #   process     Validate an orb and print its form after all pre-registration processing
 #   publish     Publish an orb to the registry
 #   source      Show the source of an orb
+#   unlist      Disable or enable an orb's listing in the registry
 #   validate    Validate an orb.yml
 #
 # Flags:
@@ -318,7 +319,9 @@
 #
 #
 # Flags:
+#   -d, --details       output all the commands, executors, and jobs, along with a tree of their parameters
 #   -h, --help          help for list
+#       --sort string   one of "builds"|"projects"|"orgs"
 #   -u, --uncertified   include uncertified orbs
 #
 # Global Flags:
@@ -441,6 +444,27 @@
 # Global Flags:
 #       --host string    URL to your CircleCI host (default "https://circleci.com")
 #       --token string   your token for using CircleCI
+#
+# -----------------------------------------------------------------------------
+#
+# Disable or enable an orb's listing in the registry.
+# This only affects whether the orb is displayed in registry search results;
+# the orb remains world-readable as long as referenced with a valid name.
+#
+# Example: Run 'circleci orb unlist foo/bar true' to disable the listing of the
+# orb in the registry and 'circleci orb unlist foo/bar false' to re-enable the
+# listing of the orb in the registry.
+#
+#
+# Usage:
+#   circleci orb unlist <namespace>/<orb> <true|false> [flags]
+#
+# Flags:
+#   -h, --help   help for unlist
+#
+# Global Flags:
+#       --host string    URL to your CircleCI host, also CIRCLECI_CLI_HOST (default "https://circleci.com")
+#       --token string   your token for using CircleCI, also CIRCLECI_CLI_TOKEN
 #
 # -----------------------------------------------------------------------------
 #
@@ -729,6 +753,7 @@ function _circleci() {
           'process:Validate an orb and print its form after all pre-registration processing'
           'publish:Publish an orb to the registry'
           'source:Show the source of an orb'
+          "unlist:Disable or enable an orb's listing in the registry"
           'validate:Validate an orb.yml'
           )
 
@@ -760,6 +785,8 @@ function _circleci() {
 
                 list)
                   _arguments \
+                    {-d,--details}'[output all the commands, executors, and jobs, along with a tree of their parameters]' \
+                    '--sort[sort of]:(builds projects orgs)' \
                     {-u,--uncertified}'[include uncertified orbs]' \
                     "*:namespace:->all_namespaces"
 
@@ -810,6 +837,12 @@ function _circleci() {
                 source)
                   _arguments \
                     "*:<orb> A fully-qualified reference to an orb. This takes the form namespace/orb@version:_files"
+                  ;;
+
+                unlint)
+                  _arguments \
+                    "1:<namespace>/<orb>:_wanted all-orbs expl 'orbs' compadd -a _zsh_circleci_all_orbs" \
+                    "2:enable or disable the listing:(true false)"
                   ;;
 
                 validate)
