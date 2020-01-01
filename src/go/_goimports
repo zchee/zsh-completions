@@ -35,24 +35,28 @@
 #
 # golang.org/x/tools/cmd/goimports
 #
+# -----------------------------------------------------------------------------
+#
 # usage: goimports [flags] [path ...]
 #   -cpuprofile string
-#         CPU profile output
-#   -d    display diffs instead of rewriting files
-#   -e    report all errors (not just the first 10 on different lines)
-#   -l    list files whose formatting differs from goimport's
+#     	CPU profile output
+#   -d	display diffs instead of rewriting files
+#   -e	report all errors (not just the first 10 on different lines)
+#   -format-only
+#     	if true, don't fix imports and only format. In this mode, goimports is effectively gofmt, with the addition that imports are grouped into sections.
+#   -l	list files whose formatting differs from goimport's
 #   -local string
-#         put imports beginning with this string after 3rd-party packages
+#     	put imports beginning with this string after 3rd-party packages; comma-separated list
 #   -memprofile string
-#         memory profile output
+#     	memory profile output
 #   -memrate int
-#         if > 0, sets runtime.MemProfileRate
+#     	if > 0, sets runtime.MemProfileRate
 #   -srcdir dir
-#         choose imports as if source code is from dir. When operating on a single file, dir may instead be the complete file name.
+#     	choose imports as if source code is from dir. When operating on a single file, dir may instead be the complete file name.
 #   -trace string
-#         trace profile output
-#   -v    verbose logging
-#   -w    write result to (source) file instead of stdout
+#     	trace profile output
+#   -v	verbose logging
+#   -w	write result to (source) file instead of stdout
 #
 # -----------------------------------------------------------------------------
 
@@ -61,17 +65,18 @@ function _goimports() {
   declare -A opt_args
 
   _arguments -C \
-    '-cpuprofile[CPU profile output]:cpu output file:_files' \
+    '-cpuprofile[CPU profile output]:output file:_files' \
     '-d[display diffs instead of rewriting files]' \
-    '-e[report all errors (not just the first 10 on different lines)]' \
+    '-e[report all errors \(not just the first 10 on different lines\)]' \
+    "-format-only[if true, don't fix imports and only format. In this mode, goimports is effectively gofmt, with the addition that imports are grouped into sections.]" \
     "-l[list files whose formatting differs from goimport's]" \
-    '-local[put imports beginning with this string after 3rd-party packages]:local package' \
-    '-memprofile[memory profile output]:output memory profile:_files' \
+    '-local[put imports beginning with this string after 3rd-party comma-separated package list]:local package' \
+    '-memprofile[memory profile output]:output file:_files' \
     '-memrate[if > 0, sets runtime.MemProfileRate]:memory profile rate' \
     '-srcdir[choose imports as if source code is from dir]:srcdir:_directories' \
-    '-trace[trace profile output]:output trace profile:_files' \
+    '-trace[trace profile output]:output file:_files' \
     '-v[verbose logging]' \
-    '-w[write result to (source) file instead of stdout]' \
+    '-w[write result to \(source\) file instead of stdout]' \
     '*::filepath:_files' \
     && ret=0
 
