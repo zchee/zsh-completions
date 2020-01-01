@@ -38,7 +38,7 @@
 #   Default target: x86_64-apple-darwin18.7.0
 #   Host CPU: skylake
 #
-# https://github.com/llvm/llvm-project/tree/bf830b01a21e6ff2f44c17be4ad4ee897465a677/clang-tools-extra/clangd/indexer
+# https://github.com/llvm/llvm-project/tree/8304781cae97f72c737610460bcb25aa2082807d/clang-tools-extra/clangd/indexer
 #
 # -----------------------------------------------------------------------------
 #
