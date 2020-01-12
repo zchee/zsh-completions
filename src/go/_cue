@@ -1,0 +1,972 @@
+#compdef cue
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# cuelang.org/go
+#
+# -----------------------------------------------------------------------------
+#
+# cue evaluates CUE files, an extension of JSON, and sends them
+# to user-defined commands for processing.
+#
+# Commands are defined in CUE as follows:
+#
+# 	command deploy: {
+# 		cmd:   "kubectl"
+# 		args:  [ "-f", "deploy" ]
+# 		in:    json.Encode($) // encode the emitted configuration.
+# 	}
+#
+# cue can also combine the results of http or grpc request with the input
+# configuration for further processing. For more information on defining commands
+# run 'cue help cmd' or go to cuelang.org/pkg/cmd.
+#
+# For more information on writing CUE configuration files see cuelang.org.
+#
+# Usage:
+#   cue [command]
+#
+# Available Commands:
+#   cmd         run a user-defined shell command
+#   eval        evaluate and print a configuration
+#   export      output data in a standard format
+#   fmt         formats CUE configuration files
+#   get         add dependencies to the current module
+#   help        Help about any command
+#   import      convert other data formats to CUE files
+#   mod         module maintenace
+#   trim        remove superfluous fields
+#   version     print CUE version
+#   vet         validate data
+#
+# Flags:
+#       --debug            give detailed error info
+#   -h, --help             help for cue
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# Use "cue [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Append a common snippet of CUE to many files and commit atomically.
+#
+# Usage:
+#   cue add <glob> [--list] [flags]
+#
+# Flags:
+#   -n, --dryrun   only run simulation
+#   -h, --help     help for add
+#       --list     text executed as Go template with instance info
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# eval evaluates, validates, and prints a configuration.
+#
+# Printing is skipped if validation fails.
+#
+# The --expression flag is used to evaluate an expression within the
+# configuration file, instead of the entire configuration file itself.
+#
+# Examples:
+#
+#   $ cat <<EOF > foo.cue
+#   a: [ "a", "b", "c" ]
+#   EOF
+#
+#   $ cue eval foo.cue -e a[0] -e a[2]
+#   "a"
+#   "c"
+#
+# Usage:
+#   cue eval [flags]
+#
+# Flags:
+#   -a, --all                      show optional and hidden fields
+#   -l, --attributes               display field attributes
+#   -c, --concrete                 require the evaluation to be concrete
+#   -e, --expression stringArray   evaluate this expression only
+#   -h, --help                     help for eval
+#   -H, --show-hidden              display hidden attributes
+#   -O, --show-optional            display hidden attributes
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# export evaluates the configuration found in the current
+# directory and prints the emit value to stdout.
+#
+# Examples:
+# Evaluated and emit
+#
+# 	# a single file
+# 	cue export config.cue
+#
+# 	# multiple files: these are combined at the top-level. Order doesn't matter.
+# 	cue export file1.cue foo/file2.cue
+#
+# 	# all files within the "mypkg" package: this includes all files in the
+# 	# current directory and its ancestor directories that are marked with the
+# 	# same package.
+# 	cue export -p cloud
+#
+# 	# the -p flag can be omitted if the directory only contains files for
+# 	# the "mypkg" package.
+# 	cue export
+#
+# Emit value:
+# For CUE files, the generated configuration is derived from the top-level
+# single expression, the emit value. For example, the file
+#
+# 	// config.cue
+# 	arg1: 1
+# 	arg2: "my string"
+#
+# 	{
+# 		a: arg1
+# 		b: arg2
+# 	}
+#
+# yields the following JSON:
+#
+# 	{
+# 		"a": 1,
+# 		"b", "my string"
+# 	}
+#
+# In absence of arguments, the current directory is loaded as a package instance.
+# A package instance for a directory contains all files in the directory and its
+# ancestor directories, up to the module root, belonging to the same package.
+# If the package is not explicitly defined by the '-p' flag, it must be uniquely
+# defined by the files in the current directory.
+#
+#
+# Formats
+# The following formats are recognized:
+#
+# json    output as JSON
+# 		Outputs any CUE value.
+#
+# text    output as raw text
+#         The evaluated value must be of type string.
+#
+# Usage:
+#   cue export [flags]
+#
+# Flags:
+#       --escape       use HTML escaping
+#   -h, --help         help for export
+#       --out string   output format (json or text) (default "json")
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# Fmt formats the given files or the files for the given packages in place
+#
+# Usage:
+#   cue fmt [-s] [packages] [flags]
+#
+# Flags:
+#   -h, --help   help for fmt
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# Get downloads packages or modules for CUE or another language
+# to include them in the module's pkg directory.
+#
+# Get requires an additional language field to determine for which
+# language definitions should be fetched. If get fetches definitions
+# for a language other than CUE, the definitions are extracted from
+# the source of the respective language and stored.
+# The specifics on how dependencies are fechted and converted vary
+# per language and are documented in the respective subcommands.
+#
+# Usage:
+#   cue get <language> [packages] [flags]
+#   cue get [command]
+#
+# Available Commands:
+#   go          add Go dependencies to the current module
+#
+# Flags:
+#   -h, --help   help for get
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# Use "cue get [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# go converts Go types into CUE definitions
+#
+# The command "cue get go" is like "go get", but converts the retrieved Go
+# packages to CUE. The retrieved packages are put in the CUE module's pkg
+# directory at the import path of the corresponding Go package. The converted
+# definitions are available to any CUE file within the CUE module by using
+# this import path.
+#
+# The Go type definitions are converted to CUE based on how they would be
+# interpreted by Go's encoding/json package. Definitions for a Go file foo.go
+# are written to a CUE file named foo_go_gen.cue.
+#
+# It is safe for users to add additional files to the generated directories,
+# as long as their name does not end with _gen.*.
+#
+#
+# Rules of Converting Go types to CUE
+#
+# Go structs are converted to cue structs adhering to the following conventions:
+#
+# 	- field names are translated based on the definition of a "json" or "yaml"
+# 	  tag, in that order.
+#
+# 	- embedded structs marked with a json inline tag unify with struct
+# 	  definition. For instance, the Go struct
+#
+# 	    struct MyStruct {
+# 			Common  json:",inline"
+# 			Field string
+# 		 }
+#
+# 	  translates to the CUE struct
+#
+# 		 MyStruct: Common & {
+# 			 Field: string
+# 		 }
+#
+# 	- a type that implements MarshalJSON, UnmarshalJSON, MarshalYAML, or
+# 	  UnmarshalYAML is translated to top (_) to indicate it may be any
+# 	  value. For some Go core types for which the implementation of these
+# 	  methods is known, like time.Time, the type may be more specific.
+#
+# 	- a type implementing MarshalText or UnmarshalText is represented as
+# 	  the CUE type string
+#
+# 	- slices and arrays convert to CUE lists, except when the element type is
+# 	  byte, in which case it translates to the CUE bytes type.
+# 	  In the case of arrays, the length of the CUE value is constrained
+# 	  accordingly, when possible.
+#
+# 	- Maps translate to a CUE struct, where all elements are constrained to
+# 	  be of Go map element type. Like for JSON, maps may only have string keys.
+#
+# 	- Pointers translate to a sum type with the default value of null and
+# 	  the Go type as an alternative value.
+#
+# 	- Field tags are translated to CUE's field attributes. In some cases,
+# 	  the contents are rewritten to reflect the corresponding types in CUE.
+# 	  The @go attribute is added if the field name or type definition differs
+# 	  between the generated CUE and the original Go.
+#
+#
+# Native CUE Constraints
+#
+# Native CUE constraints may be defined in separate cue files alongside the
+# generated files either in the original Go directory or in the generated
+# directory. These files can impose additional constraints on types and values
+# that are not otherwise expressible in Go. The package name for these CUE files
+# must be the same as that of the Go package.
+#
+# For instance, for the type
+#
+# 	package foo
+#
+#     type IP4String string
+#
+# defined in the Go package, one could add a cue file foo.cue with the following
+# contents to allow IP4String to assume only valid IP4 addresses:
+#
+# 	package foo
+#
+# 	// IP4String defines a valid IP4 address.
+# 	IP4String: =~#"^\#(byte)\.\#(byte)\.\#(byte)\.\#(byte)$"#
+#
+# 	// byte defines string allowing integer values of 0-255.
+# 	byte = #"([01]?\d?\d|2[0-4]\d|25[0-5])"#
+#
+#
+# The "cue get go" command copies any cue files in the original Go package
+# directory that has a package clause with the same name as the Go package to the
+# destination directory, replacing its .cue ending with _gen.cue.
+#
+# Alternatively, the additional native constraints can be added to the generated
+# package, as long as the file name does not end with _gen.cue.
+# Running cue get go again to regenerate the package will never overwrite any
+# files not ending with _gen.*.
+#
+#
+# Constants and Enums
+#
+# Go does not have an enum or sum type. Conventionally, a type that is supposed
+# to be an enum is followed by a const block with the allowed values for that
+# type. However, as that is only a guideline and not a hard rule, these cases
+# cannot be translated to CUE disjunctions automatically.
+#
+# Constant values, however, are generated in a way that makes it easy to convert
+# a type to a proper enum using native CUE constraints. For instance, the Go type
+#
+# 	package foo
+#
+# 	type Switch int
+#
+# 	const (
+# 		Off Switch = iota
+# 		On
+# 	)
+#
+# translates into the following CUE definitions:
+#
+# 	package foo
+#
+# 	Switch: int // enumSwitch
+#
+# 	enumSwitch: Off | On
+#
+# 	Off: 0
+# 	On:  1
+#
+# This definition allows any integer value for Switch, while the enumSwitch value
+# defines all defined constants for Switch and thus all valid values if Switch
+# were to be interpreted as an enum type. To turn Switch into an enum,
+# include the following constraint in, say, enum.cue, in either the original
+# source directory or the generated directory:
+#
+# 	package foo
+#
+# 	// limit the valid values for Switch to those existing as constants with
+# 	// the same type.
+# 	Switch: enumSwitch
+#
+# This tells CUE that only the values enumerated by enumSwitch are valid
+# values for Switch. Note that there are now two definitions of Switch.
+# CUE handles this in the usual way by unifying the two definitions, in which case
+# the more restrictive enum interpretation of Switch remains.
+#
+# Usage:
+#   cue get go [packages] [flags]
+#
+# Flags:
+#   -e, --exclude string   comma-separated list of regexps of entries
+#   -h, --help             help for go
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# terminating because of errors
+# import converts other data formats, like JSON and YAML to CUE files
+#
+# The following file formats are currently supported:
+#
+#   Format       Extensions
+# 	JSON       .json .jsonl .ndjson
+# 	YAML       .yaml .yml
+# 	protobuf   .proto
+#
+# Files can either be specified explicitly, or inferred from the specified
+# packages. In either case, the file extension is replaced with .cue. It will
+# fail if the file already exists by default. The -f flag overrides this.
+#
+# Examples:
+#
+#   # Convert individual files:
+#   $ cue import foo.json bar.json  # create foo.yaml and bar.yaml
+#
+#   # Convert all json files in the indicated directories:
+#   $ cue import ./... -type=json
+#
+#
+# The -path flag
+#
+# By default the parsed files are included as emit values. This default can be
+# overridden by specifying a sequence of labels as you would in a CUE file.
+# An identifier or string label are interpreted as usual. A label expression is
+# evaluated within the context of the imported file. label expressions may also
+# refer to builtin packages, which will be implicitly imported.
+#
+#
+# Handling multiple documents or streams
+#
+# To handle Multi-document files, such as concatenated JSON objects or
+# YAML files with document separators (---) the user must specify either the
+# -path, -list, or -files flag. The -path flag assign each element to a path
+# (identical paths are treated as usual); -list concatenates the entries, and
+# -files causes each entry to be written to a different file. The -files flag
+# may only be used if files are explicitly imported. The -list flag may be
+# used in combination with the -path flag, concatenating each entry to the
+# mapped location.
+#
+#
+# Examples:
+#
+#   $ cat <<EOF > foo.yaml
+#   kind: Service
+#   name: booster
+#   EOF
+#
+#   # include the parsed file as an emit value:
+#   $ cue import foo.yaml
+#   $ cat foo.cue
+#   {
+#       kind: Service
+#       name: booster
+#   }
+#
+#   # include the parsed file at the root of the CUE file:
+#   $ cue import -f -l "" foo.yaml
+#   $ cat foo.cue
+#   kind: Service
+#   name: booster
+#
+#   # include the import config at the mystuff path
+#   $ cue import -f -l mystuff foo.yaml
+#   $ cat foo.cue
+#   myStuff: {
+#       kind: Service
+#       name: booster
+#   }
+#
+#   # append another object to the input file
+#   $ cat <<EOF >> foo.yaml
+#   ---
+#   kind: Deployment
+#   name: booster
+#   replicas: 1
+#
+#   # base the path values on th input
+#   $ cue import -f -l '"\(strings.ToLower(kind))" "\(x.name)"' foo.yaml
+#   $ cat foo.cue
+#   service booster: {
+#       kind: "Service"
+#       name: "booster"
+#   }
+#
+#   deployment booster: {
+#       kind:     "Deployment"
+#       name:     "booster
+#       replicas: 1
+#   }
+#
+#   # base the path values on th input
+#   $ cue import -f -list -foo.yaml
+#   $ cat foo.cue
+#   [{
+#       kind: "Service"
+#       name: "booster"
+#   }, {
+#       kind:     "Deployment"
+#       name:     "booster
+#       replicas: 1
+#   }]
+#
+#   # base the path values on th input
+#   $ cue import -f -list -l '"\(strings.ToLower(kind))"' foo.yaml
+#   $ cat foo.cue
+#   service: [{
+#       kind: "Service"
+#       name: "booster"
+#   }
+#   deployment: [{
+#       kind:     "Deployment"
+#       name:     "booster
+#       replicas: 1
+#   }]
+#
+#
+# Embedded data files
+#
+# The --recursive or -R flag enables the parsing of fields that are string
+# representations of data formats themselves. A field that can be parsed is
+# replaced with a call encoding the data from a structured form that is placed
+# in a sibling field.
+#
+# It is also possible to recursively hoist data formats:
+#
+# Example:
+#   $ cat <<EOF > example.json
+#   "a": {
+#       "data": '{ "foo": 1, "bar": 2 }',
+#   }
+#   EOF
+#
+#   $ cue import -R example.json
+#   $ cat example.cue
+#   import "encode/json"
+#
+#   a: {
+#       data: json.Encode(_data),
+#       _data: {
+#           foo: 1
+#           bar: 2
+#       }
+#   }
+#
+# Usage:
+#   cue import [flags]
+#
+# Flags:
+#       --dryrun                   force overwriting existing files
+#       --files                    split multiple entries into different files
+#       --fix string               apply given fix
+#   -f, --force                    force overwriting existing files
+#   -h, --help                     help for import
+#       --list                     concatenate multiple objects into a list
+#   -n, --name string              glob filter for file names
+#   -o, --out string               alternative output or - for stdout
+#   -l, --path string              path to include root
+#   -I, --proto_path stringArray   paths in which to search for imports
+#   -R, --recursive                recursively parse string values
+#       --type string              only apply to files of this type
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:
+#   cue mod <cmd> [arguments] [flags]
+#   cue mod [command]
+#
+# Available Commands:
+#   init        initialize new module in current director
+#
+# Flags:
+#   -h, --help   help for mod
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# Use "cue mod [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Init initializes a cue.mod directory in the current directory,
+# in effect creating a new module rooted at the current directory.
+# The cue.mod directory must not already exist.
+# A legacy cue.mod file in the current directory is moved
+# to the new subdirectory.
+#
+# A module name is optional, but if it is not given a packages
+# within the module cannot imported another package defined
+# in the module.
+#
+# Usage:
+#   cue mod init [module] [flags]
+#
+# Flags:
+#   -f, --force   force moving old-style cue.mod file
+#   -h, --help    help for init
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# trim removes fields from structs that are already defined by a template
+#
+# A field, struct, or list is removed if it is implied by a template, a list type
+# value, a comprehension or any other implied content. It will modify the files
+# in place.
+#
+# Limitations
+# Removal is on a best effort basis. Some caveats:
+# - Fields in implied content may refer to fields within the struct in which
+#   they are included, but are only resolved on a best-effort basis.
+# - Disjunctions that contain structs in implied content cannot be used to
+#   remove fields.
+# - There is currently no verification step: manual verification is required.
+#
+# Examples:
+#
+# 	$ cat <<EOF > foo.cue
+# 	light <Name>: {
+# 		room:          string
+# 		brightnessOff: 0.0 | >=0 & <=100.0
+# 		brightnessOn:  100.0 | >=0 & <=100.0
+# 	}
+#
+# 	light ceiling50: {
+# 		room:         "MasterBedroom"
+# 		brightnessOn:  100 // this line
+# 		brightnessOff: 0   // and this line will be removed
+# 	}
+# 	EOF
+#
+# 	$ cue trim foo.cue
+# 	$ cat foo.cue
+# 	light <Name>: {
+# 		room:          string
+# 		brightnessOff: 0.0 | >=0 & <=100.0
+# 		brightnessOn:  100.0 | >=0 & <=100.0
+# 	}
+#
+# 	light ceiling50: {
+# 		room: "MasterBedroom"
+# 	}
+#
+# It is guaranteed that the resulting files give the same output as before the
+# removal.
+#
+# Usage:
+#   cue trim [flags]
+#
+# Flags:
+#   -h, --help         help for trim
+#   -o, --out string   alternative output or - for stdout
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# print CUE version
+#
+# Usage:
+#   cue version [flags]
+#
+# Flags:
+#   -h, --help   help for version
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# vet validates CUE and other data files
+#
+# By default it will only validate if there are no errors.
+# The -c validates that all regular fields are concrete.
+#
+#
+# Checking non-CUE files
+#
+# Vet can also check non-CUE files. The following file formats are
+# currently supported:
+#
+#   Format       Extensions
+# 	JSON       .json .jsonl .ndjson
+# 	YAML       .yaml .yml
+#
+# To activate this mode, the non-cue files must be explicitly mentioned on the
+# command line. There must also be at least one CUE file to hold the constraints.
+#
+# In this mode, each file will be verified against a CUE constraint. If the files
+# contain multiple objects (such as using --- in YAML), they will all be verified
+# individually.
+#
+# By default, each file is checked against the root of the loaded CUE files.
+# The -e can be used to only verify files against the result of an expression
+# evaluated within the CUE files. This can be useful if the CUE files contain
+# a set of definitions to pick from.
+#
+# Examples:
+#
+#   # Check files against a CUE file:
+#   cue vet foo.yaml foo.cue
+#
+#   # Check files against a particular expression
+#   cue vet translations/*.yaml foo.cue -e Translation
+#
+# If more than one expression is given, all must match all values.
+#
+# Usage:
+#   cue vet [flags]
+#
+# Flags:
+#   -c, --concrete                 require the evaluation to be concrete
+#   -e, --expression stringArray   use this expression to validate non-CUE files
+#   -h, --help                     help for vet
+#
+# Global Flags:
+#       --debug            give detailed error info
+#   -i, --ignore           proceed in the presence of errors
+#   -p, --package string   CUE package to evaluate
+#   -s, --simplify         simplify output
+#       --trace            trace computation
+#   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+
+function _cue() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'add:bulk append to CUE files'
+    'cmd:run a user-defined shell command'
+    'eval:evaluate and print a configuration'
+    'export:output data in a standard format'
+    'fmt:formats CUE configuration files'
+    'get:add dependencies to the current module'
+    'help:Help about any command'
+    'import:convert other data formats to CUE files'
+    'mod:module maintenace'
+    'trim:remove superfluous fields'
+    'version:print CUE version'
+    'vet:validate CUE configurations'
+  )
+
+  local -a _gloabal_flags
+  _gloabal_flags=(
+    '--debug[give detailed error info]'
+    {-i,--ignore}'[proceed in the presence of errors]'
+    {-p,--package}'[CUE package to evaluate]:package'
+    {-s,--simplify}'[simplify output]'
+    '--trace[trace computation]'
+    {-v,--verbose}'[print information about progress]'
+  )
+
+  function _cue_files() {
+    _alternative '*:cue file:_path_files -g "**/*.cue(-.)"'
+  }
+
+  _arguments -C \
+    "1: :{_describe 'cue commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+      case $words[1] in
+        add)
+          _arguments \
+            {-n,--dryrun}'[only run simulation]' \
+            '--list[text executed as Go template with instance info]' \
+            {-h,--help}'[help for add]' \
+            $_gloabal_flags \
+            '*:cue file:_files'
+          ;;
+
+        cmd)
+          _command
+          ;;
+
+        eval)
+          _arguments \
+            {-a,--all}'[show optional and hidden fields]' \
+            {-l,--attributes}'[display field attributes]' \
+            {-c,--concrete}'[require the evaluation to be concrete]' \
+            {-e,--expression}'[evaluate this expression only]:expressions]' \
+            {-h,--help}'[help for eval]' \
+            {-H,--show-hidden}'[display hidden attributes]' \
+            {-O,--show-optional}'[display optional]' \
+            $_gloabal_flags \
+            '1:cue file:_cue_files'
+          ;;
+
+        export)
+          _arguments \
+            '--escape[use HTML escaping]' \
+            {-h,--help}'[help for export]' \
+            '--out=[output format \(default "json"\)]:output format:(json text)' \
+            $_gloabal_flags \
+            '*:input file:_cue_files'
+          ;;
+
+        fmt)
+          _arguments \
+            $_gloabal_flags \
+            {-h,--help}'[help for eval]'
+          ;;
+
+        get)
+          local -a get_commands
+          get_commands=(
+            'go:add Go dependencies to the current module'
+          )
+
+          _arguments -C \
+            "1: :{_describe 'cue get commands' get_commands}" \
+            $_gloabal_flags \
+            '*:: :->args'
+
+          case $words[1] in
+            go)
+              _arguments \
+                {-e,--exclude}'[comma-separated list of regexps of entries]:exclude lists' \
+                {-h,--help}'[help for go]' \
+                $_gloabal_flags \
+                '1:package'
+              ;;
+          esac
+          ;;
+
+        help)
+          _arguments "1: :{_describe 'command' commands}"
+          ;;
+
+        import)
+          _arguments \
+            '--dryrun[only run simulation]' \
+            '--files[split multiple entries into different files]' \
+            '--fix[apply given fix]:string' \
+            {-f,--force}'[force overwriting existing files]' \
+            {-h,--help}'[help for import]' \
+            '--list[concatenate multiple objects into a list]' \
+            {-n,--name}'[glob filter for file names]:filename' \
+            {-o,--out}'[alternative output or - for stdout]:output' \
+            {-l,--path}'[path to include root]:include root path]' \
+            {-I,--proto_path}'[paths in which to search for imports]:proto paths' \
+            {-R,--recursive}'[recursively parse string values]' \
+            '--type[only apply to files of this type]' \
+            $_gloabal_flags \
+            '*:input file:_files'
+          ;;
+
+        mod)
+          local -a mod_commands
+          mod_commands=(
+            'init:initialize new module in current director'
+          )
+
+          _arguments -C \
+            "1: :{_describe 'cue mod commands' mod_commands}" \
+            $_gloabal_flags \
+            '*:: :->args'
+
+          case $words[1] in
+            init)
+              _arguments \
+                {-f,--force}'[force moving old-style cue.mod file]' \
+                {-h,--help}'[help for init]' \
+                $_gloabal_flags \
+                '1:module'
+              ;;
+          esac
+          ;;
+
+        trim)
+          _arguments \
+            {-h,--help}'[help for trim]' \
+            {-o,--out}'[alternative output or - for stdout]:output path]' \
+            $_gloabal_flags \
+            '*:cue file:_path_files -g "*.cue(-.)"'
+          ;;
+
+        version)
+          _arguments \
+            $_gloabal_flags \
+            {-h,--help}'[help for trim]]'
+          ;;
+
+        vet)
+          _arguments \
+            {-c,--concrete}'[require the evaluation to be concrete]' \
+            {-e,--expression}'[use this expression to validate non-CUE files]:expressions' \
+            {-h,--help}'[help for vet]' \
+            $_gloabal_flags \
+            '*:files:_files'
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_cue "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
