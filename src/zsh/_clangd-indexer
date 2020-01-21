@@ -33,12 +33,12 @@
 # -----------------------------------------------------------------------------
 #
 # LLVM (http://llvm.org/):
-#   LLVM version 10.0.0svn
-#   Optimized build.
-#   Default target: x86_64-apple-darwin18.7.0
+#   LLVM version 11.0.0git
+#   Optimized build with assertions.
+#   Default target: x86_64-apple-darwin19.3.0
 #   Host CPU: skylake
 #
-# https://github.com/llvm/llvm-project/tree/8304781cae97f72c737610460bcb25aa2082807d/clang-tools-extra/clangd/indexer
+# https://github.com/llvm/llvm-project/tree/2e42cc7a50e867d939cac6ee3d375a85a30b984d/clang-tools-extra/clangd/indexer
 #
 # -----------------------------------------------------------------------------
 #
@@ -67,6 +67,9 @@
 #
 #   --as-secure-log-file-name=<value>         - As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
 #   --asm-macro-max-nesting-depth=<uint>      - The maximum nesting depth allowed for assembly macros.
+#   --debug                                   - Enable debug output
+#   --debug-buffer-size=<uint>                - Buffer the last N characters of debug output until program termination. [default 0 -- immediate print-out]
+#   --debug-only=<debug string>               - Enable a specific type of debug output (comma separated list of types)
 #   --disable-symbolication                   - Disable symbolizing crash backtraces.
 #   --execute-concurrency=<uint>              - The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.
 #   --executor=<string>                       - The name of the executor to use.
@@ -110,25 +113,23 @@ function _clangd-indexer() {
   local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
-  _llvm_generic_options() {
-    local -a llvm_generic_options
-    llvm_generic_options=(
-    '--help[Display available options \(-help-hidden for more\)]'
+  local -a _llvm_generic_options
+  _llvm_generic_options=(
+    {-h,--help}'[Display available options]'
     '--help-hidden[Display all available options]'
-    '--help-list[Display list of available options \(-help-list-hidden for more\)]'
+    '--help-list[Display list of available options]'
     '--help-list-hidden[Display list of all available options]'
     '--print-all-options[Print all option values after command line parsing]'
     '--print-options[Print non-default options after command line parsing]'
     '--version[Display the version of this program]'
-    )
-
-    _values 'Generic options' $llvm_generic_options
-  }
+  )
 
   _arguments -C \
     '--as-secure-log-file-name=[As secure log file name \(initialized from AS_SECURE_LOG_FILE env variable\)]' \
     "--asm-macro-max-nesting-depth=[The maximum nesting depth allowed for assembly macros.]:asm macro's max nesting depth" \
+    '--debug[Enable debug output]' \
     '--debug-buffer-size=[Buffer the last N characters of debug output until program termination. \[default 0 -- immediate print-out\]]:uint' \
+    '--debug-only=[Enable a specific type of debug output \(comma separated list of types\)]:debug types' \
     '--disable-symbolication[Disable symbolizing crash backtraces.]' \
     '--execute-concurrency=[The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.]:num of concurrency execute' \
     '--executor=[The name of the executor to use.]:executor:(all-TUs)' \
@@ -153,9 +154,8 @@ function _clangd-indexer() {
     '--track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
     '--use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
     '--view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
-    ':: :{_alternative ":LLVM generic options:_llvm_generic_options"}' \
+    $_llvm_generic_options \
     '*:source:_files' \
-    ':: :->args' \
     && ret=0
 
   case $state in
