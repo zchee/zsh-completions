@@ -33,8 +33,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# clangd version 10.0.0
-#   https://github.com/llvm/llvm-project/tree/8304781cae97f72c737610460bcb25aa2082807d/clang-tools-extra/clangd
+# clangd version 11.0.0 (https://github.com/llvm/llvm-project 2e42cc7a50e867d939cac6ee3d375a85a30b984d)
+#
+# https://github.com/llvm/llvm-project/tree/2e42cc7a50e867d939cac6ee3d375a85a30b984d/clang-tools-extra/clangd
 #
 # https://clang.llvm.org/extra/clangd.html
 #
@@ -134,6 +135,7 @@
 #     =utf-8                        -   Offsets are in UTF-8 bytes
 #     =utf-16                       -   Offsets are in UTF-16 code units
 #     =utf-32                       -   Offsets are in unicode codepoints
+#   --path-mappings=<string>        - Translates between client paths (as seen by a remote editor) and server paths (where clangd sees files on disk). Comma separated list of '<client_path>=<server_path>' pairs, the first entry matching a given path is used. e.g. /home/project/incl=/opt/include,/home/project=/workarea/project
 #   --pretty                        - Pretty-print JSON output
 #
 # -----------------------------------------------------------------------------
@@ -142,23 +144,19 @@ function _clangd() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
 
-  _llvm_generic_options() {
-    local -a llvm_generic_options
-    llvm_generic_options=(
-      [-h,-help]'[Display available options]'
-      '--help-hidden[Display all available options]'
-      '--help-list[Display list of available options]'
-      '--help-list-hidden[Display list of all available options]'
-      '--print-all-options[Print all option values after command line parsing]'
-      '--print-options[Print non-default options after command line parsing]'
-      '--version[Display the version of this program]'
-    )
-    llvm_generic_options+=(
-      '--color[Use colors in output \(default=autodetect\)]'
-    )
-
-    _values 'Generic options' $llvm_generic_options
-  }
+  local -a _llvm_generic_options
+  _llvm_generic_options=(
+    {-h,--help}'[Display available options]'
+    '--help-hidden[Display all available options]'
+    '--help-list[Display list of available options]'
+    '--help-list-hidden[Display list of all available options]'
+    '--print-all-options[Print all option values after command line parsing]'
+    '--print-options[Print non-default options after command line parsing]'
+    '--version[Display the version of this program]'
+  )
+  _llvm_generic_options+=(
+    '--color[Use colors in output \(default=autodetect\)]'
+  )
 
   _arguments -C \
     '--all-scopes-completion[If set to true, code completion will include index symbols that are not defined in the scopes (e.g. namespaces) visible from the code completion point. Such completions can insert scope qualifiers.]' \
@@ -197,6 +195,7 @@ function _clangd() {
     '--pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:analysis remarks regexp pattern' \
     '--pass-remarks-missed=<p[Enable missed optimization remarks from passes whose name match the given regular expression]:missed remarks regexp pattern' \
     '--pch-storage=[Storing PCHs in memory increases memory usages, but may improve performance]:pch storage type:->pch-storage' \
+    '--path-mappings=[Translates between client paths \(as seen by a remote editor\) and server paths \(where clangd sees files on disk\).]:path mappings' \
     '--pretty[Pretty-print JSON output]' \
     '--resource-dir=[Directory for system clang headers]:resource directory path:_directories' \
     '--rng-seed=[Seed for the random number generator]:seed' \
@@ -211,8 +210,8 @@ function _clangd() {
     '--track-memory[Enable -time-passes memory tracking \(this may be slow\)]' \
     '--use-dbg-addr[Use llvm.dbg.addr for all local variables]' \
     '--view-background[Execute graph viewer in the background. Creates tmp file litter.]' \
+    $_llvm_generic_options \
     \
-    '*:: :->args' \
     && ret=0
 
   case $state in
@@ -298,8 +297,6 @@ function _clangd() {
         "*: :{_describe 'pch storage type' pch_storage_args}"
       ;;
   esac
-
-  _llvm_generic_options
 
   return ret
 }
