@@ -1,0 +1,253 @@
+#compdef redress
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/goretk/redress
+#
+# -----------------------------------------------------------------------------
+#
+# Usage of redress:
+#   -compiler
+#     	Print information
+#   -filepath
+#     	Include file path for packages
+#   -force-version string
+#     	Forcing and using the given version when analyzing
+#   -interface
+#     	Print interfaces
+#   -method
+#     	Print type's methods
+#   -pkg
+#     	List packages
+#   -src
+#     	Print source tree
+#   -std
+#     	Include standard library packages
+#   -struct
+#     	Print structs
+#   -type
+#     	Print all type information
+#   -unknown
+#     	Include unknown packages
+#   -vendor
+#     	Include vendor packages
+#   -version
+#     	Print redress version
+#
+# -----------------------------------------------------------------------------
+
+function _redress() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  # -force-version:
+  #   - https://github.com/goretk/gore/blob/master/goversion_gen.go
+  #   - $ curl -sSL https://raw.githubusercontent.com/goretk/gore/master/goversion_gen.go | awk -F'(:|})' 'NR>11 {print $1}' | tr -d '([:punct:]|\t)'
+  _arguments -C \
+    '-compiler[Print information]' \
+    '-filepath[Include file path for packages]' \
+    '-force-version[Forcing and using the given version when analyzing]:version:(
+      "go1"
+      "go1.0.1"
+      "go1.0.2"
+      "go1.0.3"
+      "go1.1"
+      "go1.1.1"
+      "go1.1.2"
+      "go1.1rc2"
+      "go1.1rc3"
+      "go1.2"
+      "go1.2.1"
+      "go1.2.2"
+      "go1.2rc2"
+      "go1.2rc3"
+      "go1.2rc4"
+      "go1.2rc5"
+      "go1.3"
+      "go1.3.1"
+      "go1.3.2"
+      "go1.3.3"
+      "go1.3beta1"
+      "go1.3beta2"
+      "go1.3rc1"
+      "go1.3rc2"
+      "go1.4"
+      "go1.4.1"
+      "go1.4.2"
+      "go1.4.3"
+      "go1.4beta1"
+      "go1.4rc1"
+      "go1.4rc2"
+      "go1.5"
+      "go1.5.1"
+      "go1.5.2"
+      "go1.5.3"
+      "go1.5.4"
+      "go1.5beta1"
+      "go1.5beta2"
+      "go1.5beta3"
+      "go1.5rc1"
+      "go1.6"
+      "go1.6.1"
+      "go1.6.2"
+      "go1.6.3"
+      "go1.6.4"
+      "go1.6beta1"
+      "go1.6beta2"
+      "go1.6rc1"
+      "go1.6rc2"
+      "go1.7"
+      "go1.7.1"
+      "go1.7.2"
+      "go1.7.3"
+      "go1.7.4"
+      "go1.7.5"
+      "go1.7.6"
+      "go1.7beta1"
+      "go1.7beta2"
+      "go1.7rc1"
+      "go1.7rc2"
+      "go1.7rc3"
+      "go1.7rc4"
+      "go1.7rc5"
+      "go1.7rc6"
+      "go1.8"
+      "go1.8.1"
+      "go1.8.2"
+      "go1.8.3"
+      "go1.8.4"
+      "go1.8.5"
+      "go1.8.5rc4"
+      "go1.8.5rc5"
+      "go1.8.6"
+      "go1.8.7"
+      "go1.8beta1"
+      "go1.8beta2"
+      "go1.8rc1"
+      "go1.8rc2"
+      "go1.8rc3"
+      "go1.9"
+      "go1.9.1"
+      "go1.9.2"
+      "go1.9.3"
+      "go1.9.4"
+      "go1.9.5"
+      "go1.9.6"
+      "go1.9.7"
+      "go1.9beta1"
+      "go1.9beta2"
+      "go1.9rc1"
+      "go1.9rc2"
+      "go1.10"
+      "go1.10.1"
+      "go1.10.2"
+      "go1.10.3"
+      "go1.10.4"
+      "go1.10.5"
+      "go1.10.6"
+      "go1.10.7"
+      "go1.10.8"
+      "go1.10beta1"
+      "go1.10beta2"
+      "go1.10rc1"
+      "go1.10rc2"
+      "go1.11"
+      "go1.11.1"
+      "go1.11.10"
+      "go1.11.11"
+      "go1.11.12"
+      "go1.11.13"
+      "go1.11.2"
+      "go1.11.3"
+      "go1.11.4"
+      "go1.11.5"
+      "go1.11.6"
+      "go1.11.7"
+      "go1.11.8"
+      "go1.11.9"
+      "go1.11beta1"
+      "go1.11beta2"
+      "go1.11beta3"
+      "go1.11rc1"
+      "go1.11rc2"
+      "go1.12"
+      "go1.12.1"
+      "go1.12.10"
+      "go1.12.11"
+      "go1.12.12"
+      "go1.12.13"
+      "go1.12.14"
+      "go1.12.15"
+      "go1.12.2"
+      "go1.12.3"
+      "go1.12.4"
+      "go1.12.5"
+      "go1.12.6"
+      "go1.12.7"
+      "go1.12.8"
+      "go1.12.9"
+      "go1.12beta1"
+      "go1.12beta2"
+      "go1.12rc1"
+      "go1.13"
+      "go1.13.1"
+      "go1.13.2"
+      "go1.13.3"
+      "go1.13.4"
+      "go1.13.5"
+      "go1.13.6"
+      "go1.13beta1"
+      "go1.13rc1"
+      "go1.13rc2"
+      "go1.14beta1"
+    )' \
+    '-interface[Print interfaces]' \
+    "-method[Print type's methods]" \
+    '-pkg[List packages]' \
+    '-src[Print source tree]' \
+    '-std[Include standard library packages]' \
+    '-struct[Print structs]' \
+    '-type[Print all type information]' \
+    '-unknown[Include unknown packages]' \
+    '-vendor[Include vendor packages]' \
+    '-version[Print redress version]' \
+    '*:go binary:_files' \
+    && ret=0
+
+  return ret
+}
+
+_redress "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
