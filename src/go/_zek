@@ -1,0 +1,89 @@
+#compdef zek
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/miku/zek
+#
+# -----------------------------------------------------------------------------
+#
+# Usage of zek:
+#   -C	emit less compact struct
+#   -F	skip formatting
+#   -c	emit more compact struct (noop, as this is the default since 0.1.7)
+#   -d	debug output
+#   -e	add comments with example
+#   -j	add JSON tags
+#   -max-examples int
+#     	limit number of examples (default 10)
+#   -n string
+#     	use a different name for the top-level struct
+#   -p	write out an example program
+#   -s	strict parsing and writing
+#   -t string
+#     	emit struct for tag matching this name
+#   -u	filter out duplicated examples
+#   -version
+#     	show version
+#   -x int
+#     	max chars for example (default 25)
+#
+# -----------------------------------------------------------------------------
+
+function _zek() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    '-C[emit less compact struct]' \
+    '-F[skip formatting]' \
+    '-d[debug output]' \
+    '-e[add comments with example]' \
+    '-j[add JSON tags]' \
+    '-max-examples[limit number of examples \(default 10\)]:examples limit' \
+    '-n[use a different name for the top-level struct]:struct name' \
+    '-p[write out an example program]' \
+    '-s[strict parsing and writing]' \
+    '-t[emit struct for tag matching this name]:emit struct name' \
+    '-u[filter out duplicated examples]' \
+    '-version[show version]' \
+    '-x[max chars for example \(default 25\)]:max example chars' \
+    '*:xml files:_files' \
+    && ret=0
+
+  return ret
+}
+
+_zek "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
