@@ -3422,7 +3422,7 @@ _go() {
           '-goversion[Specify required go tool version of the runtime.]:go version'
           '-h[Halt with a stack trace at the first error detected.]'
           '-importcfg[Read import configuration from file.]:import configuration file:_files'
-          "-importmap[Interpret import \"old\" as import \"new\" during compilation. The option may be repeated to add multiple mappings.]import map definition old=new"
+          "-importmap[Interpret import \"old\" as import \"new\" during compilation. The option may be repeated to add multiple mappings.]:import map definition old=new"
           '-installsuffix[set pkg directory suffix]:install suffix'
           '-l[Disable inlining.]'
           '-lang[Set language version to compile, as in -lang=go1.12. Default is current version.]:lang version'
