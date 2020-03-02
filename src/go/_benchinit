@@ -1,0 +1,90 @@
+#compdef benchinit
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# mvdan.cc/benchinit
+#
+# -----------------------------------------------------------------------------
+
+function _benchinit() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  _test_flags=(
+  "-bench[Run (sub)benchmarks matching a regular expression]:regexp of Benchmark functions:(.)"
+  '-benchmem[Print memory allocation statistics for benchmarks]'
+  '-count[Run each test and benchmark n times \(default: 1\)]:count'
+  '-cover[Enable coverage analysis]'
+  '-covermode[Set the mode for coverage analysis for the packages being tested \(default: set\)]:(set count atomic)'
+  '-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages'
+  '-cpu[Specify a list of GOMAXPROCS values for which the tests or benchmarks should be executed]:(1 2 4)'
+  '-parallel=[Allow parallel execution of test functions that call t.Parallel]:number of parallel'
+  '-run[Run only those tests and examples matching the regular expression]:regexp of Tests or Examples'
+  '-short[Tell long-running tests to shorten their run time]'
+  '-timeout[If a test runs longer than arg time, panic \(default: 10m\)]:timeout'
+  '-v[output log all tests as they are run and print all text from Log and Logf]'
+  '-benchtime[Run enough iterations of each benchmark to take arg time]:bench time (specified as a time.Duration: e.g. 1h30s)'
+  '-blockprofile[Write a goroutine blocking profile to the specified file]:profile file path:_files'
+  '-blockprofilerate[Control the detail provided in goroutine blocking profiles by calling runtime.SetBlockProfileRate]:block profile rate'
+  '-coverprofile[Write a coverage profile to the file after all tests have passed]:output filename:_files'
+  '-cpuprofile[Write a CPU profile to the specified file before exiting]:cpu profile file path:_files'
+  '-memprofile[Write a memory profile to the file after all tests have passed]:memory profile file:_files'
+  '-memprofilerate[Enable more precise memory profiles by setting runtime.MemProfileRate]:memory profile rate'
+  '-mutexprofile[Enable more precise (and expensive) memory profiles]:mutex profile file:_files'
+  '-mutexprofilefraction[Sample 1 in n stack traces of goroutines holding a contended mutex]:mutex fraction'
+  '-outputdir[Place output files from profiling in the specified directory]:output directory:_path_files -/'
+  '-trace[Write an execution trace to the specified file before exiting]:output trace file path:_files'
+  )
+
+  _arguments -C \
+    '-r[include inits of transitive dependencies]' \
+    ${_test_flags[@]} \
+    "*:package:_go_packages" \
+    && ret=0
+
+  return ret
+}
+
+_benchinit "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
