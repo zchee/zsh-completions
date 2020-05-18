@@ -1,0 +1,317 @@
+#compdef spool
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2020, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/gcpug/spool
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool [<flags>] <command> [<args> ...]
+#
+# A CLI tool to manage Cloud Spanner databases for testing.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#
+# Commands:
+#   help [<command>...]
+#     Show help.
+#
+#   setup
+#     Setup the database for spool metadata.
+#
+#   create --db-name-prefix=DB-NAME-PREFIX [<flags>]
+#     Add new databases to the pool.
+#
+#   get
+#     Get a idle database from the pool.
+#
+#   get-or-create --db-name-prefix=DB-NAME-PREFIX
+#     Get or create a idle database from the pool.
+#
+#   list [<flags>]
+#     Print databases.
+#
+#   put <database>
+#     Return the database to the pool.
+#
+#   clean [<flags>]
+#     Drop all idle databases.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool setup
+#
+# Setup the database for spool metadata.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool create --db-name-prefix=DB-NAME-PREFIX [<flags>]
+#
+# Add new databases to the pool.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#       --db-name-prefix=DB-NAME-PREFIX  
+#                            Set new database name prefix.
+#       --num=1              Set the number of new databases.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool get
+#
+# Get a idle database from the pool.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool get-or-create --db-name-prefix=DB-NAME-PREFIX
+#
+# Get or create a idle database from the pool.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#       --db-name-prefix=DB-NAME-PREFIX  
+#                            Set new database name prefix.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool list [<flags>]
+#
+# Print databases.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#       --all                Print databases. (without checksum filtering)
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool put <database>
+#
+# Return the database to the pool.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#
+# Args:
+#   <database>  database name
+#
+# -----------------------------------------------------------------------------
+#
+# usage: spool clean [<flags>]
+#
+# Drop all idle databases.
+#
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#   -p, --project=PROJECT    Set GCP project ID. (use $SPANNER_PROJECT_ID or
+#                            $GOOGLE_CLOUD_PROJECT as default value)
+#   -i, --instance=INSTANCE  Set Cloud Spanner instance name. (use
+#                            $SPANNER_INSTANCE_ID as default value)
+#   -d, --database=DATABASE  Set Cloud Spanner database name. (use
+#                            $SPOOL_SPANNER_DATABASE_ID as default value)
+#   -s, --schema=SCHEMA      Set schema file path.
+#       --all                Drop all idle databases. (without checksum filtering)
+#       --ignore-used-within-days=IGNORE-USED-WITHIN-DAYS  
+#                            Ignore databases which used within n days.
+#       --force              Drop all databases. (include busy databases)
+#
+# -----------------------------------------------------------------------------
+
+function _spool() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'help:Show help.'
+    'setup:Setup the database for spool metadata.'
+    'create:Add new databases to the pool.'
+    'get:Get a idle database from the pool.'
+    'get-or-create:Get or create a idle database from the pool.'
+    'list:Print databases.'
+    'put:Return the database to the pool.'
+    'clean:Drop all idle databases.'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'spool commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    setup)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files'
+      ;;
+
+    create)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        '--db-name-prefix=[Set new database name prefix.]:DB-NAME-PREFIX' \
+        '--num=[Set the number of new databases.]:number of databases'
+      ;;
+
+    get)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files'
+      ;;
+
+    get-or-create)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        '--db-name-prefix=[Set new database name prefix.]:DB-NAME-PREFIX'
+      ;;
+
+    list)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        '--all[Print databases. \(without checksum filtering\)]'
+      ;;
+
+    put)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        '*:database name'
+      ;;
+
+    clean)
+      _arguments \
+        '--help[Show context-sensitive help.]' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
+        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        '--all[Drop all idle databases. (without checksum filtering)' \
+        '--ignore-used-within-days=[Ignore databases which used within n days.]:IGNORE-USED-WITHIN-DAYS' \
+        '--force[Drop all databases. \(include busy databases\)]'
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' commands}"
+      ;;
+  esac
+
+  return ret
+}
+
+_spool "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
