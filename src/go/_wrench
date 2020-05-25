@@ -49,6 +49,7 @@
 #   load        Load schema from server to file
 #   apply       Apply DDL file to database
 #   migrate     Migrate database
+#   truncate    Truncate all tables without deleting a database
 #   help        Help about any command
 #
 # Flags:
@@ -287,6 +288,7 @@ function _wrench() {
     'load:Load schema from server to file'
     'apply:Apply DDL file to database'
     'migrate:Migrate database'
+    'truncate:Truncate all tables without deleting a database'
     'help:Help about any command'
   )
 
@@ -306,7 +308,7 @@ function _wrench() {
     && ret=0
 
   case $words[1] in
-    (create|drop|reset|load)
+    (create|drop|reset|load|truncate)
       _arguments \
         {-h,--help}'[show help]' \
         $_gloabal_flags
