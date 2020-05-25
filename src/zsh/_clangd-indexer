@@ -38,7 +38,7 @@
 #   Default target: x86_64-apple-darwin19.3.0
 #   Host CPU: skylake
 #
-# https://github.com/llvm/llvm-project/tree/2e42cc7a50e867d939cac6ee3d375a85a30b984d/clang-tools-extra/clangd/indexer
+# https://github.com/llvm/llvm-project/tree/84e4c09995a779d5057e2ce831ced9307a8164af/clang-tools-extra/clangd/indexer
 #
 # -----------------------------------------------------------------------------
 #
@@ -71,6 +71,7 @@
 #   --debug-buffer-size=<uint>                - Buffer the last N characters of debug output until program termination. [default 0 -- immediate print-out]
 #   --debug-only=<debug string>               - Enable a specific type of debug output (comma separated list of types)
 #   --disable-symbolication                   - Disable symbolizing crash backtraces.
+#   --enable-name-compression                 - Enable name/filename string compression
 #   --execute-concurrency=<uint>              - The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.
 #   --executor=<string>                       - The name of the executor to use.
 #   --extra-arg=<string>                      - Additional argument to append to the compiler command line
@@ -79,6 +80,7 @@
 #   --format=<value>                          - Format of the index to be written
 #     =yaml                                   -   human-readable YAML format
 #     =binary                                 -   binary RIFF format
+#   --import-constants-with-refs              - Import constant global variables with references
 #   --info-output-file=<filename>             - File to append -stats and -timer output to
 #   --non-global-value-max-name-size=<uint>   - Maximum size for the name of non-global values.
 #   --opt-bisect-limit=<int>                  - Maximum optimization to perform
@@ -86,6 +88,7 @@
 #   --pass-remarks=<pattern>                  - Enable optimization remarks from passes whose name match the given regular expression
 #   --pass-remarks-analysis=<pattern>         - Enable optimization analysis remarks from passes whose name match the given regular expression
 #   --pass-remarks-missed=<pattern>           - Enable missed optimization remarks from passes whose name match the given regular expression
+#   --propagate-attrs                         - Propagate attributes in index
 #   --remarks-section                         - Emit a section containing remark diagnostics metadata. By default, this is enabled for the following formats: yaml-strtab, bitstream.
 #   --rng-seed=<seed>                         - Seed for the random number generator
 #   --static-func-full-module-prefix          - Use full module build paths in the profile counter names for static functions.
@@ -131,12 +134,14 @@ function _clangd-indexer() {
     '--debug-buffer-size=[Buffer the last N characters of debug output until program termination. \[default 0 -- immediate print-out\]]:uint' \
     '--debug-only=[Enable a specific type of debug output \(comma separated list of types\)]:debug types' \
     '--disable-symbolication[Disable symbolizing crash backtraces.]' \
+    '--enable-name-compression[Enable name/filename string compression]' \
     '--execute-concurrency=[The number of threads used to process all files in parallel. Set to 0 for hardware concurrency. This flag only applies to all-TUs.]:num of concurrency execute' \
     '--executor=[The name of the executor to use.]:executor:(all-TUs)' \
     '--extra-arg=[Additional argument to append to the compiler command line]:extra-arg' \
     '--extra-arg-before=[Additional argument to prepend to the compiler command line]:before extra args' \
     '--filter=[Only process files that match this filter. This flag only applies to all-TUs.]:filter:(all-TUs)' \
     '--format=[Format of the index to be written]: :->format' \
+    '--import-constants-with-refs[Import constant global variables with references]' \
     '--info-output-file=[File to append -stats and -timer output to]:filename:_files' \
     '--non-global-value-max-name-size=[Maximum size for the name of non-global values.]:non global value max size' \
     '--opt-bisect-limit=[Maximum optimization to perform]:bisect limit' \
@@ -144,6 +149,7 @@ function _clangd-indexer() {
     '--pass-remarks=[Enable optimization remarks from passes whose name match the given regular expression]:pattern' \
     '--pass-remarks-analysis=[Enable optimization analysis remarks from passes whose name match the given regular expression]:pattern' \
     '--pass-remarks-missed=[Enable missed optimization remarks from passes whose name match the given regular expression]:pattern' \
+    '--propagate-attrs[Propagate attributes in index]' \
     '--remarks-section[Emit a section containing remark diagnostics metadata. By default, this is enabled for the following formats: yaml-strtab, bitstream.]' \
     '--rng-seed=[Seed for the random number generator]:seed' \
     '--static-func-full-module-prefix[Use full module build paths in the profile counter names for static functions.]' \
