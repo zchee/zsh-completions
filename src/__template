@@ -1,9 +1,10 @@
 #compdef $BIN
 
 # -----------------------------------------------------------------------------
+#
 # The BSD-3-Clause License
 #
-# Copyright (c) 2020, Koichi Shiraishi
+# Copyright (c) 2020, The zsh-completions Authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +32,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#
 # -----------------------------------------------------------------------------
 #
 # github.com/foo/bar
@@ -43,9 +45,9 @@ function _$BIN() {
 
   local -a commands
   commands=(
-  'subcommand1:description1'
-  'subcommand2:description2'
-  'subcommand3:description3'
+    'subcommand1:description1'
+    'subcommand2:description2'
+    'subcommand3:description3'
   )
 
   _arguments -C \
