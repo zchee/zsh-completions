@@ -33,11 +33,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# clangd version 11.0.0 (https://github.com/llvm/llvm-project 2e42cc7a50e867d939cac6ee3d375a85a30b984d)
+# clangd version 11.0.0 (https://github.com/llvm/llvm-project de6cd3e836e10ca1b893459d38e7052b7513d55e)
 #
-# https://github.com/llvm/llvm-project/tree/2e42cc7a50e867d939cac6ee3d375a85a30b984d/clang-tools-extra/clangd
-#
-# https://clang.llvm.org/extra/clangd.html
+# https://github.com/llvm/llvm-project/tree/de6cd3e836e10ca1b893459d38e7052b7513d55e/clang-tools-extra/clangd
 #
 # -----------------------------------------------------------------------------
 #
@@ -106,6 +104,7 @@
 #   --include-ineligible-results    - Include ineligible completion results (e.g. private members)
 #   --index                         - Enable index-based features. By default, clangd maintains an index built from symbols in opened files. Global index support needs to enabled separatedly
 #   --limit-results=<int>           - Limit the number of results returned by clangd. 0 means no limit (default=100)
+#   --recovery-ast                  - Preserve expressions in AST for broken code (C++ only). Note that this feature is experimental and may lead to crashes
 #   --suggest-missing-includes      - Attempts to fix diagnostic errors caused by missing includes using index
 #   --tweaks=<string>               - Specify a list of Tweaks to enable (only for clangd developers).
 #
@@ -186,6 +185,7 @@ function _clangd() {
     '--input-style=[Input JSON stream encoding]:input style:->input-style' \
     '--j=[Number of async workers used by clangd]:number of async worker' \
     '--limit-results=[Limit the number of results returned by clangd. 0 means no limit.]:number of limit results' \
+    '--recovery-ast[Preserve expressions in AST for broken code \(C++ only\).'] \
     '--lit-test[Abbreviation for -input-style=delimited -pretty -run-synchronously -enable-test-scheme. Intended to simplify lit tests.]' \
     '--log=[Verbosity of log messages written to stderr]:log level:->log' \
     '--non-global-value-max-name-size=[Maximum size for the name of non-global values.]:size of non-global values name' \
