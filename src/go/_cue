@@ -1193,21 +1193,9 @@ function _cue() {
                 {-h,--help}'[help for go]' \
                 '--local[generates files in the main module locally]' \
                 $_gloabal_flags \
-                '1:package'
+                '*:package'
               ;;
           esac
-          ;;
-
-        help)
-          local -a topics
-          topics=(
-            'commands:user-defined commands'
-            'filetypes:supported file types and qualifiers'
-            'flags:common flags for composing packages'
-            'injection:inject values from the command line'
-            'inputs:package list, patterns, and files'
-          )
-          _arguments "1: :{_describe 'command' commands -- topics}"
           ;;
 
         import)
@@ -1284,6 +1272,18 @@ function _cue() {
             '--with-context[import as object with contextual data]' \
             $_gloabal_flags \
             '*:files:_files'
+          ;;
+
+        help)
+          local -a topics
+          topics=(
+            'commands:user-defined commands'
+            'filetypes:supported file types and qualifiers'
+            'flags:common flags for composing packages'
+            'injection:inject values from the command line'
+            'inputs:package list, patterns, and files'
+          )
+          _arguments "1: :{_describe 'topics' commands -- topics}"
           ;;
       esac
       ;;
