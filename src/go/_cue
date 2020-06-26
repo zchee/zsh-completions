@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
 #
-# Copyright (c) 2018, Koichi Shiraishi
+# Copyright (c) 2020, The zsh-completions Authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -42,10 +42,12 @@
 #
 # Commands are defined in CUE as follows:
 #
-# 	command deploy: {
+# 	import "tool/exec"
+# 	command: deploy: {
+# 		exec.Run
 # 		cmd:   "kubectl"
 # 		args:  [ "-f", "deploy" ]
-# 		in:    json.Encode($) // encode the emitted configuration.
+# 		in:    json.Encode(userValue) // encode the emitted configuration.
 # 	}
 #
 # cue can also combine the results of http or grpc request with the input
@@ -59,27 +61,36 @@
 #
 # Available Commands:
 #   cmd         run a user-defined shell command
+#   def         print consolidated definitions
 #   eval        evaluate and print a configuration
 #   export      output data in a standard format
+#   fix         rewrite packages to latest standards
 #   fmt         formats CUE configuration files
 #   get         add dependencies to the current module
 #   help        Help about any command
-#   import      convert other data formats to CUE files
-#   mod         module maintenace
+#   import      convert other formats to CUE files
+#   mod         module maintenance
 #   trim        remove superfluous fields
 #   version     print CUE version
 #   vet         validate data
 #
 # Flags:
-#       --debug            give detailed error info
-#   -h, --help             help for cue
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -h, --help         help for cue
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress
 #
-# Use "cue [command] --help" for more information about a command.
+# Additional help topics:
+#   cue commands  user-defined commands
+#   cue filetypes supported file types and qualifiers
+#   cue flags     common flags for composing packages
+#   cue injection inject values from the command line
+#   cue inputs    package list, patterns, and files
+#
+# Use "cue [command] --help" for more information about a command.#
 #
 # -----------------------------------------------------------------------------
 #
@@ -100,6 +111,163 @@
 #   -s, --simplify         simplify output
 #       --trace            trace computation
 #   -v, --verbose          print information about progress
+#
+# -----------------------------------------------------------------------------
+#
+# cmd executes defined the named command for each of the named instances.
+#
+# Commands define actions on instances. For example, they may
+# specify how to upload a configuration to Kubernetes. Commands are
+# defined directly in tool files, which are regular CUE files
+# within the same package with a filename ending in _tool.cue.
+# These are typically defined at the module root so that they apply
+# to all instances.
+#
+# Each command consists of one or more tasks. A task may, for
+# example, load or write a file, consult a user on the command
+# line, fetch a web page, and so on. Each task has inputs and
+# outputs. Outputs are typically filled out by the task
+# implementation as the task completes.
+#
+# Inputs of tasks my refer to outputs of other tasks. The cue tool
+# does a static analysis of the configuration and only starts tasks
+# that are fully specified. Upon completion of each task, cue
+# rewrites the instance, filling in the completed task, and
+# reevaluates which other tasks can now start, and so on until all
+# tasks have completed.
+#
+# Available tasks can be found in the package documentation at
+#
+# 	https://pkg.go.dev/cuelang.org/go/pkg/tool?tab=subdirectories
+#
+# Examples:
+#
+# In this simple example, we define a command called "hello",
+# which declares a single task called "print" which uses
+# "tool/exec.Run" to execute a shell command that echos output to
+# the terminal:
+#
+# 	$ cat <<EOF > hello_tool.cue
+# 	package foo
+#
+# 	import "tool/exec"
+#
+# 	city: "Amsterdam"
+# 	who: *"World" | string @tag(who)
+#
+# 	// Say hello!
+# 	command: hello: {
+# 		print: exec.Run & {
+# 			cmd: "echo Hello \(who)! Welcome to \(city)."
+# 		}
+# 	}
+# 	EOF
+#
+# We run the "hello" command like this:
+#
+# 	$ cue cmd hello
+# 	Hello World! Welcome to Amsterdam.
+#
+# 	$ cue cmd --inject who=Jan hello
+# 	Hello Jan! Welcome to Amsterdam.
+#
+#
+# In this example we declare the "prompted" command which has four
+# tasks. The first task prompts the user for a string input. The
+# second task depends on the first, and echos the response back to
+# the user with a friendly message. The third task pipes the output
+# from the second to a file. The fourth task pipes the output from
+# the second to standard output (i.e. it echos it again).
+#
+# 	package foo
+#
+# 	import (
+# 		"tool/cli"
+# 		"tool/exec"
+# 		"tool/file"
+# 	)
+#
+# 	city: "Amsterdam"
+#
+# 	// Say hello!
+# 	command: prompter: {
+# 		// save transcript to this file
+# 		var: file: *"out.txt" | string @tag(file)
+#
+# 		ask: cli.Ask & {
+# 			prompt:   "What is your name?"
+# 			response: string
+# 		}
+#
+# 		// starts after ask
+# 		echo: exec.Run & {
+# 			cmd:    ["echo", "Hello", ask.response + "!"]
+# 			stdout: string // capture stdout
+# 		}
+#
+# 		// starts after echo
+# 		file.Append & {
+# 			filename: var.file
+# 			contents: echo.stdout
+# 		}
+#
+# 		// also starts after echo
+# 		print: cli.Print & {
+# 			text: echo.stdout
+# 		}
+# 	}
+#
+# Run "cue help commands" for more details on tasks and commands.
+#
+# Usage:
+#   cue cmd <name> [inputs] [flags]
+#
+# Flags:
+#   -h, --help                 help for cmd
+#   -t, --inject stringArray   set the value of a tagged field
+#
+# Global Flags:
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
+#
+# -----------------------------------------------------------------------------
+#
+# def prints consolidated configuration as a single file.
+#
+# Printing is skipped if validation fails.
+#
+# The --expression flag is used to only print parts of a configuration.
+#
+# Usage:
+#   cue def [flags]
+#
+# Flags:
+#   -e, --expression stringArray   evaluate this expression only
+#   -h, --help                     help for def
+#   -t, --inject stringArray       set the value of a tagged field
+#       --list                     concatenate multiple objects into a list
+#       --merge                    merge non-CUE files (default true)
+#   -n,--name string              glob filter for file names
+#       --out string               output format (run 'cue filetypes' for more info)
+#   -o, --outfile string           filename or - for stdout with optional file prefix (run 'cue filetypes' for more info)
+#   -p, --package string           package name for non-CUE files
+#   -l, --path stringArray         CUE expression for single path component
+#   -I, --proto_path stringArray   paths in which to search for imports
+#   -d, --schema string            expression to select schema for evaluating values in non-CUE files
+#   -A, --show-attributes          display field attributes
+#       --with-context             import as object with contextual data
+#
+# Global Flags:
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress
 #
 # -----------------------------------------------------------------------------
 #
@@ -125,20 +293,31 @@
 #
 # Flags:
 #   -a, --all                      show optional and hidden fields
-#   -l, --attributes               display field attributes
 #   -c, --concrete                 require the evaluation to be concrete
 #   -e, --expression stringArray   evaluate this expression only
 #   -h, --help                     help for eval
-#   -H, --show-hidden              display hidden attributes
-#   -O, --show-optional            display hidden attributes
+#   -t, --inject stringArray       set the value of a tagged field
+#       --list                     concatenate multiple objects into a list
+#       --merge                    merge non-CUE files (default true)
+#   -n,--name string              glob filter for file names
+#       --out string               output format (run 'cue filetypes' for more info)
+#   -o, --outfile string           filename or - for stdout with optional file prefix (run 'cue filetypes' for more info)
+#   -p, --package string           package name for non-CUE files
+#   -l, --path stringArray         CUE expression for single path component
+#   -I, --proto_path stringArray   paths in which to search for imports
+#   -d, --schema string            expression to select schema for evaluating values in non-CUE files
+#   -A, --show-attributes          display field attributes
+#   -H, --show-hidden              display hidden fields
+#   -O, --show-optional            display optional fields
+#       --with-context             import as object with contextual data
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
@@ -194,26 +373,40 @@
 # The following formats are recognized:
 #
 # json    output as JSON
-# 		Outputs any CUE value.
+#                Outputs any CUE value.
 #
 # text    output as raw text
-#         The evaluated value must be of type string.
+#                 The evaluated value must be of type string.
+#
+# yaml    output as YAML
+#                 Outputs any CUE value.
 #
 # Usage:
 #   cue export [flags]
 #
 # Flags:
-#       --escape       use HTML escaping
-#   -h, --help         help for export
-#       --out string   output format (json or text) (default "json")
+#       --escape                   use HTML escaping
+#   -e, --expression stringArray   export this expression only
+#   -h, --help                     help for export
+#   -t, --inject stringArray       set the value of a tagged field
+#       --list                     concatenate multiple objects into a list
+#       --merge                    merge non-CUE files (default true)
+#   -n,--name string              glob filter for file names
+#       --out string               output format (run 'cue filetypes' for more info)
+#   -o, --outfile string           filename or - for stdout with optional file prefix (run 'cue filetypes' for more info)
+#   -p, --package string           package name for non-CUE files
+#   -l, --path stringArray         CUE expression for single path component
+#   -I, --proto_path stringArray   paths in which to search for imports
+#   -d, --schema string            expression to select schema for evaluating values in non-CUE files
+#       --with-context             import as object with contextual data
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
@@ -300,7 +493,7 @@
 #
 # 	  translates to the CUE struct
 #
-# 		 MyStruct: Common & {
+# 		 #MyStruct: Common & {
 # 			 Field: string
 # 		 }
 #
@@ -349,7 +542,7 @@
 # 	package foo
 #
 # 	// IP4String defines a valid IP4 address.
-# 	IP4String: =~#"^\#(byte)\.\#(byte)\.\#(byte)\.\#(byte)$"#
+# 	#IP4String: =~#"^\#(byte)\.\#(byte)\.\#(byte)\.\#(byte)$"#
 #
 # 	// byte defines string allowing integer values of 0-255.
 # 	byte = #"([01]?\d?\d|2[0-4]\d|25[0-5])"#
@@ -388,7 +581,7 @@
 #
 # 	package foo
 #
-# 	Switch: int // enumSwitch
+# 	#Switch: int // enumSwitch
 #
 # 	enumSwitch: Off | On
 #
@@ -405,7 +598,7 @@
 #
 # 	// limit the valid values for Switch to those existing as constants with
 # 	// the same type.
-# 	Switch: enumSwitch
+# 	#Switch: enumSwitch
 #
 # This tells CUE that only the values enumerated by enumSwitch are valid
 # values for Switch. Note that there are now two definitions of Switch.
@@ -418,60 +611,101 @@
 # Flags:
 #   -e, --exclude string   comma-separated list of regexps of entries
 #   -h, --help             help for go
+#       --local            generates files in the main module locally
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
-# terminating because of errors
-# import converts other data formats, like JSON and YAML to CUE files
+# import converts other formats, like JSON and YAML to CUE files
 #
-# The following file formats are currently supported:
+# Files can either be specified explicitly, or inferred from the
+# specified packages. Within packages, import only looks for JSON
+# and YAML files by default (see the "filetypes" help topic for
+# more info). This behavior can be overridden by specifying one of
+# the following modes:
 #
-#   Format       Extensions
-# 	JSON       .json .jsonl .ndjson
-# 	YAML       .yaml .yml
-# 	protobuf   .proto
+#    Mode       Extensions
+#    json       Look for JSON files (.json, .jsonl, .ldjson).
+#    yaml       Look for YAML files (.yaml .yml).
+#    text       Look for text files (.txt).
+#    jsonschema Interpret JSON, YAML or CUE files as JSON Schema.
+#    openapi    Interpret JSON, YAML or CUE files as OpenAPI.
+#    auto       Look for JSON or YAML files and interpret them as
+#               data, JSON Schema, or OpenAPI, depending on
+#               existing fields.
+#    data       Look for JSON or YAML files and interpret them
+#               as data.
+#    proto      Convert Protocol buffer definition files and
+#               transitive dependencies.
 #
-# Files can either be specified explicitly, or inferred from the specified
-# packages. In either case, the file extension is replaced with .cue. It will
-# fail if the file already exists by default. The -f flag overrides this.
+# For user-specified files the modes only affect the
+#
+# auto mode
+#
+# In auto mode, data files are interpreted based on some marker
+# fields. JSON Schema is identified by a top-level "$schema" field
+# with a URL of the form "https?://json-schema.org/.*schema#?".
+# OpenAPI is identified by the existence of a top-level field
+# "openapi", which must have a major semantic version of 3, and
+# the info.title and info.version fields.
+#
+#
+# proto mode
+#
+# Proto mode converts .proto files containing Prototcol Buffer
+# definitions to CUE. The -I defines the path for includes. The
+# module root is added implicitly if it exists.
+#
+# The package name for a converted file is derived from the
+# go_package option. It can be overridden with the -p flag.
+#
+# A module root must be specified if a .proto files includes other
+# files within the module. Files include from outside the module
+# are also imported and stored within the cue.mod directory. The
+# import path is defined by either the go_package option or, in the
+# absence of this option, the googleapis.com/<proto package>
+# convention.
+#
+# The following command imports all .proto files in all
+# subdirectories as well all dependencies.
+#
+#    cue import proto -I ../include ./...
+#
+# The module root is implicitly added as an import path.
+#
+#
+# JSON/YAML mode
+#
+# The -f option allows overwriting of existing files. This only
+# applies to files generated for explicitly specified files or
+# files contained in explicitly specified packages.
+#
+# Use the -R option in addition to overwrite files generated for
+# transitive dependencies (files written to cue.mod/gen/...).
+#
+# The -n option is a regexp used to filter file names in the
+# matched package directories.
+#
+# The -I flag is used to specify import paths for proto mode.
+# The module root is implicitly added as an import if it exists.
 #
 # Examples:
 #
 #   # Convert individual files:
-#   $ cue import foo.json bar.json  # create foo.yaml and bar.yaml
+#   $ cue import foo.json bar.json  # create foo.cue and bar.cue
 #
 #   # Convert all json files in the indicated directories:
-#   $ cue import ./... -type=json
+#   $ cue import json ./...
 #
-#
-# The -path flag
-#
-# By default the parsed files are included as emit values. This default can be
-# overridden by specifying a sequence of labels as you would in a CUE file.
-# An identifier or string label are interpreted as usual. A label expression is
-# evaluated within the context of the imported file. label expressions may also
-# refer to builtin packages, which will be implicitly imported.
-#
-#
-# Handling multiple documents or streams
-#
-# To handle Multi-document files, such as concatenated JSON objects or
-# YAML files with document separators (---) the user must specify either the
-# -path, -list, or -files flag. The -path flag assign each element to a path
-# (identical paths are treated as usual); -list concatenates the entries, and
-# -files causes each entry to be written to a different file. The -files flag
-# may only be used if files are explicitly imported. The -list flag may be
-# used in combination with the -path flag, concatenating each entry to the
-# mapped location.
-#
+# The "flags" help topic describes how to assign values to a
+# specific path within a CUE namespace. Some examples of that
 #
 # Examples:
 #
@@ -489,13 +723,13 @@
 #   }
 #
 #   # include the parsed file at the root of the CUE file:
-#   $ cue import -f -l "" foo.yaml
+#   $ cue import -f foo.yaml
 #   $ cat foo.cue
 #   kind: Service
 #   name: booster
 #
 #   # include the import config at the mystuff path
-#   $ cue import -f -l mystuff foo.yaml
+#   $ cue import -f -l '"mystuff"' foo.yaml
 #   $ cat foo.cue
 #   myStuff: {
 #       kind: Service
@@ -509,21 +743,29 @@
 #   name: booster
 #   replicas: 1
 #
-#   # base the path values on th input
-#   $ cue import -f -l '"\(strings.ToLower(kind))" "\(x.name)"' foo.yaml
+#   # base the path values on the input
+#   $ cue import -f -l 'strings.ToLower(kind)' -l name foo.yaml
 #   $ cat foo.cue
-#   service booster: {
+#   service: booster: {
 #       kind: "Service"
 #       name: "booster"
 #   }
 #
-#   deployment booster: {
+#   # base the path values on the input and file name
+#   $ cue import -f --with-context -l 'path.Base(filename)' -l data.kind foo.yaml
+#   $ cat foo.cue
+#   "foo.yaml": Service: {
+#       kind: "Service"
+#       name: "booster"
+#   }
+#
+#   "foo.yaml": Deployment: {
 #       kind:     "Deployment"
 #       name:     "booster
 #       replicas: 1
 #   }
 #
-#   # base the path values on th input
+#   # include all files as list elements
 #   $ cue import -f -list -foo.yaml
 #   $ cat foo.cue
 #   [{
@@ -535,8 +777,8 @@
 #       replicas: 1
 #   }]
 #
-#   # base the path values on th input
-#   $ cue import -f -list -l '"\(strings.ToLower(kind))"' foo.yaml
+#   # collate files with the same path into a list
+#   $ cue import -f -list -l 'strings.ToLower(kind)' foo.yaml
 #   $ cat foo.cue
 #   service: [{
 #       kind: "Service"
@@ -567,40 +809,42 @@
 #
 #   $ cue import -R example.json
 #   $ cat example.cue
-#   import "encode/json"
+#   import "encoding/json"
 #
 #   a: {
 #       data: json.Encode(_data),
-#       _data: {
+#       _data = {
 #           foo: 1
 #           bar: 2
 #       }
 #   }
 #
 # Usage:
-#   cue import [flags]
+#   cue import [mode] [inputs] [flags]
 #
 # Flags:
-#       --dryrun                   force overwriting existing files
+#       --dryrun                   only run simulation
 #       --files                    split multiple entries into different files
-#       --fix string               apply given fix
 #   -f, --force                    force overwriting existing files
 #   -h, --help                     help for import
 #       --list                     concatenate multiple objects into a list
+#       --merge                    merge non-CUE files (default true)
 #   -n, --name string              glob filter for file names
-#   -o, --out string               alternative output or - for stdout
-#   -l, --path string              path to include root
+#   -o, --outfile string           filename or - for stdout with optional file prefix (run 'cue filetypes' for more info)
+#   -p, --package string           package name for non-CUE files
+#   -l, --path stringArray         CUE expression for single path component
 #   -I, --proto_path stringArray   paths in which to search for imports
 #   -R, --recursive                recursively parse string values
-#       --type string              only apply to files of this type
+#   -d, --schema string            expression to select schema for evaluating values in non-CUE files
+#       --with-context             import as object with contextual data
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
@@ -609,20 +853,20 @@
 #   cue mod [command]
 #
 # Available Commands:
-#   init        initialize new module in current director
+#   init        initialize new module in current directory
 #
 # Flags:
 #   -h, --help   help for mod
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress
 #
-# Use "cue mod [command] --help" for more information about a command.
+# Use "cue mod [command] --help" for more information about a command.#
 #
 # -----------------------------------------------------------------------------
 #
@@ -644,12 +888,12 @@
 #   -h, --help    help for init
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
@@ -703,15 +947,15 @@
 #
 # Flags:
 #   -h, --help         help for trim
-#   -o, --out string   alternative output or - for stdout
+#   -o, --outfile string   filename or - for stdout with optional file prefix (run 'cue filetypes' for more info)
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
@@ -724,12 +968,12 @@
 #   -h, --help   help for version
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
 #
@@ -747,6 +991,7 @@
 #   Format       Extensions
 # 	JSON       .json .jsonl .ndjson
 # 	YAML       .yaml .yml
+# 	TEXT       .txt  (validate a single string value)
 #
 # To activate this mode, the non-cue files must be explicitly mentioned on the
 # command line. There must also be at least one CUE file to hold the constraints.
@@ -775,19 +1020,26 @@
 #
 # Flags:
 #   -c, --concrete                 require the evaluation to be concrete
-#   -e, --expression stringArray   use this expression to validate non-CUE files
 #   -h, --help                     help for vet
+#   -t, --inject stringArray       set the value of a tagged field
+#       --list                     concatenate multiple objects into a list
+#       --merge                    merge non-CUE files (default true)
+#   -n, --name string              glob filter for file names
+#   -p, --package string           package name for non-CUE files
+#   -l, --path stringArray         CUE expression for single path component
+#   -I, --proto_path stringArray   paths in which to search for imports
+#   -d, --schema string            expression to select schema for evaluating values in non-CUE files
+#       --with-context             import as object with contextual data
 #
 # Global Flags:
-#       --debug            give detailed error info
-#   -i, --ignore           proceed in the presence of errors
-#   -p, --package string   CUE package to evaluate
-#   -s, --simplify         simplify output
-#       --trace            trace computation
-#   -v, --verbose          print information about progress
+#   -E, --all-errors   print all available errors
+#   -i, --ignore       proceed in the presence of errors
+#   -s, --simplify     simplify output
+#       --strict       report errors for lossy mappings
+#       --trace        trace computation
+#   -v, --verbose      print information about progress#
 #
 # -----------------------------------------------------------------------------
-#
 
 function _cue() {
   local context curcontext=$curcontext state line expl ret=1
@@ -797,13 +1049,15 @@ function _cue() {
   commands=(
     'add:bulk append to CUE files'
     'cmd:run a user-defined shell command'
+    'def:print consolidated definitions'
     'eval:evaluate and print a configuration'
+    'fix:rewrite packages to latest standards'
     'export:output data in a standard format'
     'fmt:formats CUE configuration files'
     'get:add dependencies to the current module'
     'help:Help about any command'
-    'import:convert other data formats to CUE files'
-    'mod:module maintenace'
+    'import:convert other formats to CUE files'
+    'mod:module maintenance'
     'trim:remove superfluous fields'
     'version:print CUE version'
     'vet:validate CUE configurations'
@@ -811,10 +1065,10 @@ function _cue() {
 
   local -a _gloabal_flags
   _gloabal_flags=(
-    '--debug[give detailed error info]'
+    {-E,--all-errors}'[print all available errors]'
     {-i,--ignore}'[proceed in the presence of errors]'
-    {-p,--package}'[CUE package to evaluate]:package'
     {-s,--simplify}'[simplify output]'
+    '--strict[report errors for lossy mappings]'
     '--trace[trace computation]'
     {-v,--verbose}'[print information about progress]'
   )
@@ -824,6 +1078,7 @@ function _cue() {
   }
 
   _arguments -C \
+    $_gloabal_flags \
     "1: :{_describe 'cue commands' commands}" \
     '*:: :->args' \
     && ret=0
@@ -834,25 +1089,61 @@ function _cue() {
         add)
           _arguments \
             {-n,--dryrun}'[only run simulation]' \
-            '--list[text executed as Go template with instance info]' \
             {-h,--help}'[help for add]' \
+            '--list[text executed as Go template with instance info]' \
+            {-p,--package}'[package to append to]:package' \
             $_gloabal_flags \
             '*:cue file:_files'
           ;;
 
         cmd)
-          _command
+          _arguments \
+            {-h,--help}'[help for cmd]' \
+            {-t,--inject}'[set the value of a tagged field]' \
+            $_gloabal_flags \
+            '1:name' \
+            '*:inputs'
+          ;;
+
+        def)
+          _arguments \
+            {-e,--expression}'[evaluate this expression only]:expressions' \
+            {-h,--help}'[help for def]' \
+            {-t,--inject}'[set the value of a tagged field]:tag field values' \
+            '--list[concatenate multiple objects into a list]' \
+            '--merge[merge non-CUE files \(default true\)]' \
+            {-n,--name}'[glob filter for file names]:name' \
+            '--out[output format]:output format:(cue json yaml jsonl jsonschema openapi proto go text)' \
+            {-o,--outfile}'[filename or - for stdout with optional file prefix]:filename:_files' \
+            {-p,--package}'[package name for non-CUE files]:package name' \
+            {-l,--path}'[CUE expression for single path component]:components' \
+            {-I,--proto_path}'[paths in which to search for imports]:proto import paths]' \
+            {-d,--schema}'[expression to select schema for evaluating values in non-CUE files]:schema' \
+            {-A,--show-attributes}'[display field attributes]' \
+            '--with-context[import as object with contextual data]' \
+            $_gloabal_flags
           ;;
 
         eval)
           _arguments \
             {-a,--all}'[show optional and hidden fields]' \
-            {-l,--attributes}'[display field attributes]' \
             {-c,--concrete}'[require the evaluation to be concrete]' \
-            {-e,--expression}'[evaluate this expression only]:expressions]' \
+            {-e,--expression}'[evaluate this expression only]:expressions' \
             {-h,--help}'[help for eval]' \
+            {-t,--inject}'[set the value of a tagged field]:tag field values' \
+            '--list[concatenate multiple objects into a list]' \
+            '--merge[merge non-CUE files \(default true\)]' \
+            {-n,--name}'[glob filter for file names]:name' \
+            '--out[output format]:output format:(cue json yaml jsonl jsonschema openapi proto go text)' \
+            {-o,--outfile}'[filename or - for stdout with optional file prefix]:filename:_files' \
+            {-p,--package}'[package name for non-CUE files]:package name' \
+            {-l,--path}'[CUE expression for single path component]:components' \
+            {-I,--proto_path}'[paths in which to search for imports]:proto import paths]' \
+            {-d,--schema}'[expression to select schema for evaluating values in non-CUE files]:schema' \
+            {-A,--show-attributes}'[display field attributes]' \
             {-H,--show-hidden}'[display hidden attributes]' \
-            {-O,--show-optional}'[display optional]' \
+            {-O,--show-optional}'[display optional fields]' \
+            '--with-context[import as object with contextual data]' \
             $_gloabal_flags \
             '1:cue file:_cue_files'
           ;;
@@ -860,16 +1151,28 @@ function _cue() {
         export)
           _arguments \
             '--escape[use HTML escaping]' \
+            {-e,--expression}'[evaluate this expression only]:expressions' \
             {-h,--help}'[help for export]' \
-            '--out=[output format \(default "json"\)]:output format:(json text)' \
+            {-t,--inject}'[set the value of a tagged field]:tag field values' \
+            '--list[concatenate multiple objects into a list]' \
+            '--merge[merge non-CUE files \(default true\)]' \
+            {-n,--name}'[glob filter for file names]:name' \
+            '--out[output format]:output format:(cue json yaml jsonl jsonschema openapi proto go text)' \
+            {-o,--outfile}'[filename or - for stdout with optional file prefix]:filename:_files' \
+            {-p,--package}'[package name for non-CUE files]:package name' \
+            {-l,--path}'[CUE expression for single path component]:components' \
+            {-I,--proto_path}'[paths in which to search for imports]:proto import paths]' \
+            {-d,--schema}'[expression to select schema for evaluating values in non-CUE files]:schema' \
+            '--with-context[import as object with contextual data]' \
             $_gloabal_flags \
-            '*:input file:_cue_files'
+            '*:cue file:_cue_files'
           ;;
 
         fmt)
           _arguments \
+            {-h,--help}'[help for fmt]' \
             $_gloabal_flags \
-            {-h,--help}'[help for eval]'
+            '*:input file:_cue_files'
           ;;
 
         get)
@@ -888,6 +1191,7 @@ function _cue() {
               _arguments \
                 {-e,--exclude}'[comma-separated list of regexps of entries]:exclude lists' \
                 {-h,--help}'[help for go]' \
+                '--local[generates files in the main module locally]' \
                 $_gloabal_flags \
                 '1:package'
               ;;
@@ -895,23 +1199,34 @@ function _cue() {
           ;;
 
         help)
-          _arguments "1: :{_describe 'command' commands}"
+          local -a topics
+          topics=(
+            'commands:user-defined commands'
+            'filetypes:supported file types and qualifiers'
+            'flags:common flags for composing packages'
+            'injection:inject values from the command line'
+            'inputs:package list, patterns, and files'
+          )
+          _arguments "1: :{_describe 'command' commands -- topics}"
           ;;
 
         import)
           _arguments \
             '--dryrun[only run simulation]' \
             '--files[split multiple entries into different files]' \
-            '--fix[apply given fix]:string' \
             {-f,--force}'[force overwriting existing files]' \
             {-h,--help}'[help for import]' \
             '--list[concatenate multiple objects into a list]' \
-            {-n,--name}'[glob filter for file names]:filename' \
-            {-o,--out}'[alternative output or - for stdout]:output' \
-            {-l,--path}'[path to include root]:include root path]' \
-            {-I,--proto_path}'[paths in which to search for imports]:proto paths' \
+            '--merge[merge non-CUE files \(default true\)]' \
+            {-n,--name}'[glob filter for file names]:name' \
+            '--out[output format]:output format:(cue json yaml jsonl jsonschema openapi proto go text)' \
+            {-o,--outfile}'[filename or - for stdout with optional file prefix]:filename:_files' \
+            {-p,--package}'[package name for non-CUE files]:package name' \
+            {-l,--path}'[CUE expression for single path component]:components' \
+            {-I,--proto_path}'[paths in which to search for imports]:proto import paths]' \
             {-R,--recursive}'[recursively parse string values]' \
-            '--type[only apply to files of this type]' \
+            {-d,--schema}'[expression to select schema for evaluating values in non-CUE files]:schema' \
+            '--with-context[import as object with contextual data]' \
             $_gloabal_flags \
             '*:input file:_files'
           ;;
@@ -919,7 +1234,7 @@ function _cue() {
         mod)
           local -a mod_commands
           mod_commands=(
-            'init:initialize new module in current director'
+            'init:initialize new module in current directory'
           )
 
           _arguments -C \
@@ -941,7 +1256,7 @@ function _cue() {
         trim)
           _arguments \
             {-h,--help}'[help for trim]' \
-            {-o,--out}'[alternative output or - for stdout]:output path]' \
+            {-o,--outfile}'[filename or - for stdout with optional file prefix]:filename:_files' \
             $_gloabal_flags \
             '*:cue file:_path_files -g "*.cue(-.)"'
           ;;
@@ -955,8 +1270,18 @@ function _cue() {
         vet)
           _arguments \
             {-c,--concrete}'[require the evaluation to be concrete]' \
-            {-e,--expression}'[use this expression to validate non-CUE files]:expressions' \
             {-h,--help}'[help for vet]' \
+            {-t,--inject}'[set the value of a tagged field]:tag field values' \
+            '--list[concatenate multiple objects into a list]' \
+            '--merge[merge non-CUE files \(default true\)]' \
+            {-n,--name}'[glob filter for file names]:name' \
+            '--out[output format]:output format:(cue json yaml jsonl jsonschema openapi proto go text)' \
+            {-o,--outfile}'[filename or - for stdout with optional file prefix]:filename:_files' \
+            {-p,--package}'[package name for non-CUE files]:package name' \
+            {-l,--path}'[CUE expression for single path component]:components' \
+            {-I,--proto_path}'[paths in which to search for imports]:proto import paths]' \
+            {-d,--schema}'[expression to select schema for evaluating values in non-CUE files]:schema' \
+            '--with-context[import as object with contextual data]' \
             $_gloabal_flags \
             '*:files:_files'
           ;;
