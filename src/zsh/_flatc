@@ -32,60 +32,126 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
-# USAGE:
 #
-# flatc [OPTION]... FILE... [-- FILE...]
-#   --binary     -b Generate wire format binaries for any data definitions.
-#   --json       -t Generate text output for any data definitions.
-#   --cpp        -c Generate C++ headers for tables/structs.
-#   --go         -g Generate Go files for tables/structs.
-#   --java       -j Generate Java classes for tables/structs.
-#   --js         -s Generate JavaScript code for tables/structs.
-#   --csharp     -n Generate C# classes for tables/structs.
-#   --python     -p Generate Python files for tables/structs.
-#   --php           Generate PHP files for tables/structs.
-#   --grpc          Generate GRPC interfaces.
-#   -o PATH            Prefix PATH to all generated files.
-#   -I PATH            Search for includes in the specified path.
-#   -M                 Print make rules for generated files.
-#   --version          Print the version number of flatc and exit.
-#   --strict-json      Strict JSON: field names must be / will be quoted,
-#                      no trailing commas in tables/vectors.
-#   --allow-non-utf8   Pass non-UTF-8 input through parser and emit nonstandard
-#                      \x escapes in JSON. (Default is to raise parse error on
-#                      non-UTF-8 input.)
-#   --defaults-json    Output fields whose value is the default when
-#                      writing JSON
-#   --unknown-json     Allow fields in JSON that are not defined in the
-#                      schema. These fields will be discared when generating
-#                      binaries.
-#   --no-prefix        Don't prefix enum values with the enum type in C++.
-#   --scoped-enums     Use C++11 style scoped and strongly typed enums.
-#                      also implies --no-prefix.
-#   --gen-includes     (deprecated), this is the default behavior.
-#                      If the original behavior is required (no include
-#                      statements) use --no-includes.
-#   --no-includes      Don't generate include statements for included
-#                      schemas the generated file depends on (C++).
-#   --gen-mutable      Generate accessors that can mutate buffers in-place.
-#   --gen-onefile      Generate single output file for C#.
-#   --gen-name-strings Generate type name functions for C++.
-#   --escape-proto-ids Disable appending '_' in namespaces names.
-#   --gen-object-api   Generate an additional object-based API.
-#   --cpp-ptr-type T   Set object API pointer type (default std::unique_ptr)
-#   --raw-binary       Allow binaries without file_indentifier to be read.
-#                      This may crash flatc given a mismatched schema.
-#   --proto            Input is a .proto, translate to .fbs.
-#   --schema           Serialize schemas instead of JSON (use with -b)
-#   --conform FILE     Specify a schema the following schemas should be
-#                      an evolution of. Gives errors if not.
-#   --conform-includes Include path for the schema given with --conform
+# Usage: flatc [OPTION]... FILE... [-- FILE...]
+#   --binary         -b    Generate wire format binaries for any data definitions.
+#   --json           -t    Generate text output for any data definitions.
+#   --cpp            -c    Generate C++ headers for tables/structs.
+#   --go             -g    Generate Go files for tables/structs.
+#   --java           -j    Generate Java classes for tables/structs.
+#   --js             -s    Generate JavaScript code for tables/structs.
+#   --dart           -d    Generate Dart classes for tables/structs.
+#   --ts             -T    Generate TypeScript code for tables/structs.
+#   --csharp         -n    Generate C# classes for tables/structs.
+#   --python         -p    Generate Python files for tables/structs.
+#   --lobster              Generate Lobster files for tables/structs.
+#   --lua            -l    Generate Lua files for tables/structs.
+#   --rust           -r    Generate Rust files for tables/structs.
+#   --php                  Generate PHP files for tables/structs.
+#   --kotlin               Generate Kotlin classes for tables/structs.
+#   --jsonschema           Generate Json schema.
+#   --swift                Generate Swift files for tables/structs.
+#   -o PATH                Prefix PATH to all generated files.
+#   -I PATH                Search for includes in the specified path.
+#   -M                     Print make rules for generated files.
+#   --version              Print the version number of flatc and exit.
+#   --strict-json          Strict JSON: field names must be / will be quoted,
+#                          no trailing commas in tables/vectors.
+#   --allow-non-utf8       Pass non-UTF-8 input through parser and emit nonstandard
+#                          \x escapes in JSON. (Default is to raise parse error on
+#                          non-UTF-8 input.)
+#   --natural-utf8         Output strings with UTF-8 as human-readable strings.
+#                          By default, UTF-8 characters are printed as \uXXXX escapes.
+#   --defaults-json        Output fields whose value is the default when
+#                          writing JSON
+#   --unknown-json         Allow fields in JSON that are not defined in the
+#                          schema. These fields will be discared when generating
+#                          binaries.
+#   --no-prefix            Don't prefix enum values with the enum type in C++.
+#   --scoped-enums         Use C++11 style scoped and strongly typed enums.
+#                          also implies --no-prefix.
+#   --gen-includes         (deprecated), this is the default behavior.
+#                          If the original behavior is required (no include
+#                          statements) use --no-includes.
+#   --no-includes          Don't generate include statements for included
+#                          schemas the generated file depends on (C++ / Python).
+#   --gen-mutable          Generate accessors that can mutate buffers in-place.
+#   --gen-onefile          Generate single output file for C# and Go.
+#   --gen-name-strings     Generate type name functions for C++ and Rust.
+#   --gen-object-api       Generate an additional object-based API.
+#   --gen-compare          Generate operator== for object-based API types.
+#   --gen-nullable         Add Clang _Nullable for C++ pointer. or @Nullable for Java
+#   --java-checkerframe    work Add @Pure for Java.
+#   --gen-generated        Add @Generated annotation for Java
+#   --gen-all              Generate not just code for the current schema files,
+#                          but for all files it includes as well.
+#                          If the language uses a single file for output (by default
+#                          the case for C++ and JS), all code will end up in this one
+#                          file.
+#   --cpp-include          Adds an #include in generated file.
+#   --cpp-ptr-type T       Set object API pointer type (default std::unique_ptr).
+#   --cpp-str-type T       Set object API string type (default std::string).
+#                          T::c_str(), T::length() and T::empty() must be supported.
+#                          The custom type also needs to be constructible from std::string
+#                          (see the --cpp-str-flex-ctor option to change this behavior).
+#   --cpp-str-flex-ctor    Don't construct custom string types by passing std::string
+#                          from Flatbuffers, but (char* + length).
+#   --cpp-std CPP_STD      Generate a C++ code using features of selected C++ standard.
+#                          Supported CPP_STD values:
+#                           * 'c++0x' - generate code compatible with old compilers;
+#                           * 'c++11' - use C++11 code generator (default);
+#                           * 'c++17' - use C++17 features in generated code (experimental).
+#   --object-prefix        Customise class prefix for C++ object-based API.
+#   --object-suffix        Customise class suffix for C++ object-based API.
+#                          Default value is "T".
+#   --no-js-exports        Removes Node.js style export lines in JS.
+#   --goog-js-export       Uses goog.exports* for closure compiler exporting in JS.
+#   --es6-js-export        Uses ECMAScript 6 export style lines in JS.
+#   --go-namespace         Generate the overrided namespace in Golang.
+#   --go-import            Generate the overrided import for flatbuffers in Golang
+#                          (default is "github.com/google/flatbuffers/go").
+#   --raw-binary           Allow binaries without file_indentifier to be read.
+#                          This may crash flatc given a mismatched schema.
+#   --size-prefixed        Input binaries are size prefixed buffers.
+#   --proto                Input is a .proto, translate to .fbs.
+#   --proto-namespace-suffix Add this namespace to any flatbuffers generated
+#     SUFFIX                 from protobufs.
+#   --oneof-union          Translate .proto oneofs to flatbuffer unions.
+#   --grpc                 Generate GRPC interfaces for the specified languages.
+#   --schema               Serialize schemas instead of JSON (use with -b).
+#   --bfbs-comments        Add doc comments to the binary schema files.
+#   --bfbs-builtins        Add builtin attributes to the binary schema files.
+#   --bfbs-gen-embed       Generate code to embed the bfbs schema to the source.
+#   --conform FILE         Specify a schema the following schemas should be
+#                          an evolution of. Gives errors if not.
+#   --conform-includes     Include path for the schema given with --conform PATH
+#   --filename-suffix      The suffix appended to the generated file names.
+#                          Default is '_generated'.
+#   --filename-ext         The extension appended to the generated file names.
+#                          Default is language-specific (e.g., '.h' for C++)
+#   --include-prefix       Prefix this path to any generated include statements.
 #     PATH
-# FILEs may be schemas, or JSON files (conforming to preceding schema)
-# FILEs after the -- must be binary flatbuffer format files.
+#   --keep-prefix          Keep original prefix of schema include statement.
+#   --no-fb-import         Don't include flatbuffers import statement for TypeScript.
+#   --no-ts-reexport       Don't re-export imported dependencies for TypeScript.
+#   --short-names          Use short function names for JS and TypeScript.
+#   --reflect-types        Add minimal type reflection to code generation.
+#   --reflect-names        Add minimal type/name reflection.
+#   --root-type T          Select or override the default root_type
+#   --force-defaults       Emit default values in binary output from JSON
+#   --force-empty          When serializing from object API representation,
+#                          force strings and vectors to empty rather than null.
+#   --force-empty-vectors  When serializing from object API representation,
+#                          force vectors to empty rather than null.
+#   --flexbuffers          Used with "binary" and "json" options, it generates
+#                          data using schema-less FlexBuffers.
+# FILEs may be schemas (must end in .fbs), binary schemas (must end in .bfbs),
+# or JSON files (conforming to preceding schema). FILEs after the -- must be
+# binary flatbuffer format files.
 # Output files are named using the base file name of the input,
 # and written to the current directory or the path given by -o.
-# example: flatc -c -b schema1.fbs schema2.fbs data.json
+# example: flatc -c -b schema1.fbs schema2.fbs data.json#
+#
 # -----------------------------------------------------------------------------
 
 function _flatc() {
@@ -93,42 +159,98 @@ function _flatc() {
   declare -A opt_args
 
   _arguments -C \
-    '--allow-non-utf8[Pass non-UTF-8 input through parser and emit nonstandard \x escapes in JSON. (default\: To raise parse error on non-UTF-8 input)]' \
-    {--binary,-b}'[Generate wire format binaries for any data definitions]' \
-    {--cpp,-c}'[Generate C++ headers for tables/structs]' \
-    {--csharp,-n}'[Generate C# classes for tables/structs]' \
-    '--cpp-ptr-type[Set object API pointer type (default std::unique_ptr)]:pointer type (default\: std\:\:unique_ptr)' \
-    '--conform[Specify a schema the following schemas should be an evolution of. Gives errors if not]:schema file:_files' \
-    '--conform-includes[Include path for the schema given with --conform]' \
+    '--binary[Generate wire format binaries for any data definitions.]' \
+    '--json[Generate text output for any data definitions.]' \
+    '--cpp[Generate C++ headers for tables/structs.]' \
+    '--go[Generate Go files for tables/structs.]' \
+    '--java[Generate Java classes for tables/structs.]' \
+    '--js[Generate JavaScript code for tables/structs.]' \
+    '--dart[Generate Dart classes for tables/structs.]' \
+    '--ts[Generate TypeScript code for tables/structs.]' \
+    '--csharp[Generate C# classes for tables/structs.]' \
+    '--python[Generate Python files for tables/structs.]' \
+    '--lobste[Generate Lobster files for tables/structs.]' \
+    '--lua[Generate Lua files for tables/structs.]' \
+    '--rust[Generate Rust files for tables/structs.]' \
+    '--php[Generate PHP files for tables/structs.]' \
+    '--kotlin[Generate Kotlin classes for tables/structs.]' \
+    '--jsonschema[Generate Json schema.]' \
+    '--swift[Generate Swift files for tables/structs.]' \
+    '-o[Prefix PATH to all generated files.]:output directory:_directories' \
+    '-I[Search for includes in the specified path.]:include paths:_files' \
+    '-M[Print make rules for generated files.]' \
+    '--version[Print the version number of flatc and exit.]' \
+    '--strict-json[Strict JSON: field names must be / will be quoted, no trailing commas in tables/vectors.]' \
+    '--allow-non-utf8[Pass non-UTF-8 input through parser and emit nonstandard \x escapes in JSON. (Default is to raise parse error on non-UTF-8 input.)]' \
+    '--natural-utf8[Output strings with UTF-8 as human-readable strings. By default, UTF-8 characters are printed as \uXXXX escapes.]' \
     '--defaults-json[Output fields whose value is the default when writing JSON]' \
-    '--escape-proto-ids[Disable appending '_' in namespaces names]' \
-    {--go,-g}'[Generate Go files for tables/structs]' \
-    '--grpc[Generate GRPC interfaces for the specified languages]' \
-    '--gen-includes[(deprecated), this is the default behavior. If the original behavior is required (no include statements) use --no-includes]' \
-    '--gen-mutable[Generate accessors that can mutate buffers in-place]' \
-    '--gen-onefile[Generate single output file for C#]' \
-    '--gen-name-strings[Generate type name functions for C++]' \
-    '--gen-object-api[Generate an additional object-based API]' \
-    '-I[Search for includes in the specified path]:include dir:_path_files -/' \
-    {--json,-t}'[Generate text output for any data definitions]' \
-    {--java,-j}'[Generate Java classes for tables/structs]' \
-    {--js,-s}'[Generate JavaScript code for tables/structs]' \
-    '-M[Print make rules for generated files]' \
-    "--no-prefix[Don't prefix enum values with the enum type in C++]" \
-    "--no-includes[Don't generate include statements for included schemas the generated file depends on (C++)]" \
-    '-o[Prefix PATH to all generated files]:output dir:_path_files -/' \
-    {--python,-p}'[Generate Python files for tables/structs]' \
-    '--php[Generate PHP files for tables/structs]' \
-    '--proto[Input is a .proto, translate to .fbs]:proto:->proto' \
-    '--raw-binary[Allow binaries without file_indentifier to be read. This may crash flatc given a mismatched schema]' \
-    '--strict-json[Strict JSON: field names must be / will be quoted, no trailing commas in tables/vectors]' \
-    '--scoped-enums[Use C++11 style scoped and strongly typed enums. also implies --no-prefix]' \
-    '--schema[Serialize schemas instead of JSON (use with -b)]' \
-    '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries]' \
-    '--version[Print the version number of flatc and exit]' \
-    '*:schema file:_path_files -/ -g "*.(fbs|json|proto)"' \
+    '--unknown-json[Allow fields in JSON that are not defined in the schema. These fields will be discared when generating binaries.]' \
+    "--no-prefix[Don't prefix enum values with the enum type in C++.]" \
+    '--scoped-enums[Use C++11 style scoped and strongly typed enums. also implies --no-prefix.]' \
+    '--gen-includes[(deprecated), this is the default behavior. If the original behavior is required \(no include statements\) use --no-includes.]' \
+    "--no-includes[Don't generate include statements for included schemas the generated file depends on C++ / Python.]" \
+    '--gen-mutable[Generate accessors that can mutate buffers in-place.]' \
+    '--gen-onefile[Generate single output file for C# and Go.]' \
+    '--gen-name-strings[Generate type name functions for C++ and Rust.]' \
+    '--gen-object-api[Generate an additional object-based API.]' \
+    '--gen-compare[Generate operator== for object-based API types.]' \
+    '--gen-nullable[Add Clang _Nullable for C++ pointer. or @Nullable for Java]' \
+    '--java-checkerframe[work Add @Pure for Java.]' \
+    '--gen-generated[Add @Generated annotation for Java]' \
+    '--gen-all[Generate not just code for the current schema files, but for all files it includes as well.]' \
+    '--cpp-include[Adds an #include in generated file.]' \
+    '--cpp-ptr-type[Set object API pointer type \(default std::unique_ptr\).]:type' \
+    '--cpp-str-type[Set object API string type \(default std::string\).]:type' \
+    "--cpp-str-flex-ctor[Don't construct custom string types by passing std::string from Flatbuffers, but (char* + length).]" \
+    '--cpp-std=[Generate a C++ code using features of selected C++ standard.]:CPP_STD:->cpp_std' \
+    '--object-prefix[Customise class prefix for C++ object-based API.]' \
+    '--object-suffix[Customise class suffix for C++ object-based API. Default value is "T".]' \
+    '--no-js-exports[Removes Node.js style export lines in JS.]' \
+    '--goog-js-export[Uses goog.exports* for closure compiler exporting in JS.]' \
+    '--es6-js-export[Uses ECMAScript 6 export style lines in JS.]' \
+    '--go-namespace[Generate the overrided namespace in Golang.]:overrided namespace' \
+    '--go-import[Generate the overrided import for flatbuffers in Golang \(default is "github.com/google/flatbuffers/go"\).]' \
+    '--raw-binary[Allow binaries without file_indentifier to be read. This may crash flatc given a mismatched schema.]' \
+    '--size-prefixed[Input binaries are size prefixed buffers.]' \
+    '--proto[Input is a .proto, translate to .fbs.]' \
+    '--proto-namespace-suffix=[Add this namespace to any flatbuffers generated from protobufs.]:name suffix' \
+    '--oneof-union[Translate .proto oneofs to flatbuffer unions.]' \
+    '--grpc[Generate GRPC interfaces for the specified languages.]' \
+    '--schema[Serialize schemas instead of JSON (use with -b).]' \
+    '--bfbs-comments[Add doc comments to the binary schema files.]' \
+    '--bfbs-builtins[Add builtin attributes to the binary schema files.]' \
+    '--bfbs-gen-embed[Generate code to embed the bfbs schema to the source.]' \
+    '--conform=[Specify a schema the following schemas should be an evolution of. Gives errors if not.]:FILE:_files' \
+    '--conform-includes[Include path for the schema given with --conform PATH]' \
+    "--filename-suffix=[The suffix appended to the generated file names. Default is '_generated'.]:filename suffix" \
+    "--filename-ext=[The extension appended to the generated file names. Default is language-specific (e.g., '.h' for C++)]:filename extension" \
+    '--include-prefix=[Prefix this path to any generated include statements.]:include prefix' \
+    '--keep-prefix[Keep original prefix of schema include statement.]' \
+    "--no-fb-import[Don't include flatbuffers import statement for TypeScript.]" \
+    "--no-ts-reexport[Don't re-export imported dependencies for TypeScript.]" \
+    '--short-names[Use short function names for JS and TypeScript.]' \
+    '--reflect-types[Add minimal type reflection to code generation.]' \
+    '--reflect-names[Add minimal type/name reflection.]' \
+    '--root-type=[Select or override the default root_type]:root type' \
+    '--force-defaults[Emit default values in binary output from JSON]' \
+    '--force-empty[When serializing from object API representation, force strings and vectors to empty rather than null.]' \
+    '--force-empty-vectors[When serializing from object API representation, force vectors to empty rather than null.]' \
+    '--flexbuffers[Used with "binary" and "json" options, it generates data using schema-less FlexBuffers.]' \
     \
+    '*:schemas:_files' \
     && ret=0
+
+  case $state in
+    (cpp_std)
+      local -a cpp_stds
+      cpp_stds=(
+        'c++0x:generate code compatible with old compilers'
+        'c++11:use C++11 code generator \(default\)'
+        'c++17:use C++17 features in generated code \(experimental\).'
+      )
+      _describe 'C++ standard' cpp_stds
+      ;;
+  esac
 
   return ret
 }
