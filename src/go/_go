@@ -3972,8 +3972,10 @@ _go() {
             'link:reads the Go archive or object for a package, and combines them into an executable binary'
             'nm:lists the symbols defined or used by an object file, archive, or executable'
             'objdump:disassembles executable files'
+            'oldlink:reads the Go archive or object for a package main, along with its dependencies, and combines them into an executable binary.'
             'pack:simple version of the traditional Unix ar tool'
             'pprof:interprets and displays profiles of Go programs'
+            'test2json:converts go test output to a machine-readable JSON stream'
             'trace:viewing trace files'
             'vet:examines Go source code and reports suspicious constructs'
           )
@@ -4124,7 +4126,7 @@ _go() {
                     '*:files:_files'
                   ;;
 
-                link)
+                (link|oldlink)
                   _arguments \
                     '-B[add an ELF NT_GNU_BUILD_ID note when using ELF]:note' \
                     '-C[check Go calls to C code]' \
@@ -4282,6 +4284,13 @@ _go() {
                   _describe -t miscellaneous "miscellaneous:" miscellaneous
                   ;;
 
+                test2json)
+                  _arguments \
+                    '-p=[sets the package reported in each test event.]:package' \
+                    '-t[flag requests that time stamps be added to each test event.]' \
+                    '*:pkg.test:_files'
+                  ;;
+
                 trace)
                   _arguments \
                     '-http=[HTTP service address]:addr' \
@@ -4336,7 +4345,7 @@ _go() {
             '-n[print commands that would be executed]' \
             '-x[prints commands as they are executed]' \
             '-vettool[path to vet tool binary]:binary:_files' \
-            '*:build flags:_go_packages'
+            '*:packages:_go_packages'
 
           _alternative ':build flags:_build_flags'
           ;;
@@ -4344,6 +4353,7 @@ _go() {
         help)
           local -a topics
           topics=(
+            'buildconstraint:build constraints'
             'buildmode:build modes'
             'c:calling between Go and C'
             'cache:build and test caching'
