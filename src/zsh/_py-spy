@@ -1,0 +1,194 @@
+#compdef py-spy
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2020, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/benfred/py-spy@d95f8d1235a8
+#
+# -----------------------------------------------------------------------------
+
+function _py-spy() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'record:Records stack trace information to a flamegraph, speedscope or raw file'
+    'top:Displays a top like view of functions consuming CPU'
+    'dump:Dumps stack traces for a target program to stdout'
+    'help:Prints this message or the help of the given subcommand(s)'
+  )
+
+  function _processes() {
+    _alternative 'processes:: _pids' 'jobs:: _jobs -t'
+  }
+
+  _arguments -C \
+    {-h,--help}'[Prints help information]' \
+    {-V,--version}'[Prints version information]' \
+    "1: :{_describe 'py-spy commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    record)
+      _arguments \
+        {-p,--pid}'[PID of a running python program to spy on]:pid:_processes' \
+        {-o,--output}'[Output filename]:filename:_filename' \
+        {-f,--format}'[Output file format]:format:(flamegraph raw speedscope)' \
+        {-d,--duration}'[The number of seconds to sample for \(default: unlimited\)]:duration' \
+        {-r,--rate}'[The number of samples to collect per second \(default: 100\)]:rate' \
+        {-s,--subprocesses}'[Profile subprocesses of the original process]' \
+        {-F,--function}'[Aggregate samples by function name instead of by line number]' \
+        {-g,--gil}'[Only include traces that are holding on to the GIL]' \
+        {-t,--threads}'[Show thread ids in the output]' \
+        {-i,--idle}'[Include stack traces for idle threads]' \
+        "--nonblocking[Don't pause the python process when collecting samples.]" \
+        {-h,--help}'[Prints help information]' \
+        {-V,--version}'[Prints version information]' \
+        '*:python program args:_files'
+      ;;
+
+    top)
+      _arguments \
+        {-p,--pid}'[PID of a running python program to spy on]:pid:_processes' \
+        {-r,--rate}'[The number of samples to collect per second \(default: 100\)]:rate' \
+        {-s,--subprocesses}'[Profile subprocesses of the original process]' \
+        "--nonblocking[Don't pause the python process when collecting samples.]" \
+        {-h,--help}'[Prints help information]' \
+        {-V,--version}'[Prints version information]' \
+        '*:python program args:_files'
+      ;;
+
+    dump)
+      _arguments \
+        {-p,--pid}'[PID of a running python program to spy on]:pid:_processes' \
+        {-l,--locals}'[Show local variables for each frame]' \
+        {-j,--json}'[Format output as JSON]' \
+        "--nonblocking[Don't pause the python process when collecting samples.]" \
+        {-h,--help}'[Prints help information]' \
+        {-V,--version}'[Prints version information]'
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' commands}"
+      ;;
+  esac
+
+  return ret
+}
+
+_py-spy "$*"
+
+# -----------------------------------------------------------------------------
+#
+# py-spy 0.3.3
+# Sampling profiler for Python programs
+#
+# USAGE:
+#     py-spy <SUBCOMMAND>
+#
+# OPTIONS:
+#     -h, --help       Prints help information
+#     -V, --version    Prints version information
+#
+# SUBCOMMANDS:
+#     record    Records stack trace information to a flamegraph, speedscope or raw file
+#     top       Displays a top like view of functions consuming CPU
+#     dump      Dumps stack traces for a target program to stdout
+#     help      Prints this message or the help of the given subcommand(s)
+#
+# -----------------------------------------------------------------------------
+#
+# py-spy-record
+# Records stack trace information to a flamegraph, speedscope or raw file
+#
+# USAGE:
+#     py-spy record [OPTIONS] --output <filename> --pid <pid> [python_program]...
+#
+# OPTIONS:
+#     -p, --pid <pid>              PID of a running python program to spy on
+#     -o, --output <filename>      Output filename
+#     -f, --format <format>        Output file format [default: flamegraph]  [possible values: flamegraph, raw, speedscope]
+#     -d, --duration <duration>    The number of seconds to sample for [default: unlimited]
+#     -r, --rate <rate>            The number of samples to collect per second [default: 100]
+#     -s, --subprocesses           Profile subprocesses of the original process
+#     -F, --function               Aggregate samples by function name instead of by line number
+#     -g, --gil                    Only include traces that are holding on to the GIL
+#     -t, --threads                Show thread ids in the output
+#     -i, --idle                   Include stack traces for idle threads
+#         --nonblocking            Don't pause the python process when collecting samples. Setting this option will reduce the perfomance impact of sampling, but may lead to inaccurate results
+#     -h, --help                   Prints help information
+#     -V, --version                Prints version information
+#
+# ARGS:
+#     <python_program>...    commandline of a python program to run#
+#
+# -----------------------------------------------------------------------------
+#
+# py-spy-top
+# Displays a top like view of functions consuming CPU
+#
+# USAGE:
+#     py-spy top [OPTIONS] --pid <pid> [python_program]...
+#
+# OPTIONS:
+#     -p, --pid <pid>       PID of a running python program to spy on
+#     -r, --rate <rate>     The number of samples to collect per second [default: 100]
+#     -s, --subprocesses    Profile subprocesses of the original process
+#         --nonblocking     Don't pause the python process when collecting samples. Setting this option will reduce the perfomance impact of sampling, but may lead to inaccurate results
+#     -h, --help            Prints help information
+#     -V, --version         Prints version information
+#
+# ARGS:
+#     <python_program>...    commandline of a python program to run#
+#
+# -----------------------------------------------------------------------------
+#
+# py-spy-dump
+# Dumps stack traces for a target program to stdout
+#
+# USAGE:
+#     py-spy dump [OPTIONS] --pid <pid>
+#
+# OPTIONS:
+#     -p, --pid <pid>      PID of a running python program to spy on
+#     -l, --locals         Show local variables for each frame
+#     -j, --json           Format output as JSON
+#         --nonblocking    Don't pause the python process when collecting samples. Setting this option will reduce the perfomance impact of sampling, but may lead to inaccurate results
+#     -h, --help           Prints help information
+#     -V, --version        Prints version information#
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
