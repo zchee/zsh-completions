@@ -2,9 +2,7 @@
 
 # -----------------------------------------------------------------------------
 #
-# The BSD-3-Clause License
-#
-# Copyright (c) 2020, The zsh-completions Authors
+# Copyright 2020, The zsh-completions Authors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -69,12 +67,39 @@ function _$BIN() {
             '-foo[subcommand2 -foo argument comment]' \
             '*:file:_files'
           ;;
+
         subcommand2)
           _arguments \
             '-bar[subcommand2 -bar argument comment]' \
             '-baz[subcommand2 -baz argument comment]' \
             '*:devices:_devices'
           ;;
+
+        help)
+          local -a topics
+          topics=(
+            'buildconstraint:build constraints'
+            'buildmode:build modes'
+            'c:calling between Go and C'
+            'cache:build and test caching'
+            'environment:environment variables'
+            'filetype:file types'
+            'go.mod:the go.mod file'
+            'gopath:GOPATH environment variable'
+            'gopath-get:legacy GOPATH go get'
+            'goproxy:module proxy protocol'
+            'importpath:import path syntax'
+            'modules:modules, module versions, and more'
+            'module-get:module-aware go get'
+            'module-auth:module authentication using go.sum'
+            'module-private:module configuration for non-public modules'
+            'packages:package lists and patterns'
+            'testflag:testing flags'
+            'testfunc:testing functions'
+          )
+          _arguments "1: :{_describe 'command' commands -- topics}"
+          ;;
+
       esac
       ;;
   esac
