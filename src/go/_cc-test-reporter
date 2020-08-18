@@ -1,0 +1,130 @@
+#compdef cc-test-reporter
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2020, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/codeclimate/test-reporter
+#
+# -----------------------------------------------------------------------------
+
+function _cc-test-reporter() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'after-build:Locate, parse, and re-format supported coverage sources. Upload pre-formatted coverage payloads to Code Climate servers.'
+    'before-build:To be run before a build'
+    'env:Infer and output information about the environment the reporter is running in.'
+    'format-coverage:Locate, parse, and re-format supported coverage sources.'
+    'help:Help about any command'
+    'show-coverage:Show coverage results in standard output'
+    'sum-coverage:Combine (sum) multiple pre-formatted coverage payloads into one.'
+    'upload-coverage:Upload pre-formatted coverage payloads to Code Climate servers.'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+    {-d,--debug}'[run in debug mode]'
+  )
+
+  _arguments -C \
+    "1: :{_describe 'cc-test-reporter commands' commands}" \
+    '*:: :->args' \
+    {-v,--version}'[Show version information]' \
+    $_global_flags \
+    && ret=0
+
+  case $words[1] in
+    after-build)
+      _arguments \
+        {-s,--batch-size}'[batch size for source files \(default 500\)]:batch size' \
+        {-e,--coverage-endpoint}'[endpoint to upload coverage information to \(default "https://api.codeclimate.com/v1/test_reports"\)]:endpoint url' \
+        {-t,--coverage-input-type}'[type of input source to use]:input source type:(clover cobertura coverage.py excoveralls gcov gocov jacoco lcov simplecov xccov)' \
+        '--exit-code[exit code of the test run]:exit code' \
+        {-r,--id}'[reporter identifier]:reporter id' \
+        '--insecure[send coverage insecurely \(without HTTPS\)]' \
+        {-p,--prefix}'[the root directory where the coverage analysis was performed \(default: current directory\)]:prefix:_files' \
+        $_global_flags
+      ;;
+
+    (before-build|show-coverage)
+      _arguments \
+        $_global_flags
+      ;;
+
+    env)
+      _arguments \
+        {-f,--format}'[formats the output \(default "string"\)]:output format' \
+        $_global_flags
+      ;;
+
+    format-coverage)
+      _arguments \
+        '--add-prefix[add this prefix to file paths]:prefix' \
+        {-t,--input-type}'[type of input source to use]:input source type:(clover cobertura coverage.py excoveralls gcov gocov jacoco lcov simplecov xccov)' \
+        {-o,--output}'[output path \(default "coverage/codeclimate.json"\)]:output path:_files' \
+        {-p,--prefix}'[the root directory where the coverage analysis was performed \(default: current directory\)]:prefix:_files' \
+        $_global_flags \
+        '*:coverage file:_files'
+      ;;
+
+    sum-coverage)
+      _arguments \
+        {-o,--output}'[output path \(default "coverage/codeclimate.json"\)]:output path:_files' \
+        {-p,--parts}}'[total number of parts to sum]:total num of parts' \
+        $_global_flags
+      ;;
+
+    upload-coverage)
+      _arguments \
+        {-s,--batch-size}'[batch size for source files \(default 500\)]:batch size' \
+        {-e,--endpoint}'[endpoint to upload coverage information to \(default "https://api.codeclimate.com/v1/test_reports"\)]:endpoint url' \
+        {-r,--id}'[reporter identifier]:reporter id' \
+        {-i,--input}'[input path \(default "coverage/codeclimate.json"\)]:input path:_files' \
+        '--insecure[send coverage insecurely \(without HTTPS\)]' \
+        $_global_flags
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' commands}"
+      ;;
+
+  esac
+
+  return ret
+}
+
+_cc-test-reporter "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
