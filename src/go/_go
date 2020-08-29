@@ -3898,7 +3898,7 @@ _go() {
                   '-dropexclude=[drop a exclude of the given module path and version pair.]:old\[@v\]=new\[@v\]' \
                   '-replace=[add a replacement of the given module path and version pair.]:old\[@v\]=new\[@v\]' \
                   '-dropreplace=[drop a replacement of the given module path and version pair.]:old\[@v\]' \
-                  '-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14)' \
+                  '-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15)' \
                   '-print[prints the final go.mod in its text format instead of writing it back to go.mod.]' \
                   '-json[prints the final go.mod in its json format instead of writing it back to go.mod.]'
                 ;;
