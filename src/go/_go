@@ -3449,9 +3449,9 @@ _go() {
   }
 
   _go_mod_vendor_packages() {
-    local -a packages
-    packages=("$(go list -m -f '{{if not .Indirect}}{{.Path}}{{end}}' all)")
-    _arguments '*:vendor packages:($packages)'
+    for p in $(go list -mod=mod -m -f '{{if not .Indirect}}{{.Path}}{{end}}' all | tr '\n' ' '); do
+      _alternative ':module packages:($p)'
+    done
   }
 
   _go_file() {
