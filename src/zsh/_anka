@@ -39,33 +39,33 @@ function _anka() {
 
   local -a commands
   commands=(
+  'attach:Attach USB device(s) to running VM'
   'clone:Clones a VM'
+  'config:Manage Anka configuration'
   'create:Creates a VM'
-  'create-disk:creates an empty disk with unique name'
   'delete:Deletes a VM (or list of vms)'
   'describe:Shows all VM info'
+  'detach:Detach USB device(s) from the VM'
+  'license:Licensing commands'
   'list:Shows a list of VMs, ids and names'
-  'list-images:Shows a list of image names available'
   'modify:Modifies a VM settings'
-  'mount:Mount local folder into VM (filesystem...'
-  'print-config'
+  'mount:Mount local folder into VM'
   'reboot:Restarts a VM'
   'registry:VMs registry'
   'run:Run commands inside VM environment'
   'show:Show runtime VM state and properties.'
-  'show-image-infoShows parents of an image'
   'start:Starts or resumes paused VM'
   'stop:Shuts down a vm'
   'suspend:Supsends a VM'
   'unmount:Unmount shared folder (filesystem...'
-  'usb:Do actions on USB devices'
+  'usb:Manage USB devices'
   'usb-group:manage usb device groups'
   'version:prints out version'
   'view:Open VM display viewer'
   )
 
   _arguments \
-    '--machine-readable[Use this option when scripting with ankactl]' \
+    '--machine-readable[JSON output format - Use this option when scripting with ankactl]' \
     '--log-level:level:(debug info error)' \
     '--debug' \
     '--help[Show this message and exit]' \
