@@ -53,6 +53,9 @@ function _$BIN() {
     '*:: :->args' \
     && ret=0
 
+  local opts_help help="--help"
+  opts_help=("(: -)--help[Help for $words[1]]")
+
   case $state in
     args)
       if (( CURRENT == 2 )); then
@@ -64,15 +67,18 @@ function _$BIN() {
       case $words[1] in
         subcommand1)
           _arguments \
-            '-foo[subcommand2 -foo argument comment]' \
-            '*:file:_files'
+            $opts_help \
+            "($help)-foo[subcommand1 -foo argument]" \
+            "($help -)*:file:_files" && ret=0
           ;;
 
         subcommand2)
           _arguments \
-            '-bar[subcommand2 -bar argument comment]' \
-            '-baz[subcommand2 -baz argument comment]' \
-            '*:devices:_devices'
+            $opts_help \
+            "($help)-bar[subcommand2 -bar argument]" \
+            "($help)-baz[subcommand2 -baz argument]" \
+            "($help -q -qux)"{-q,-qux}"[subcommand2 -bar argument comment]" \
+            "($help -)*:devices:_devices" && ret=0
           ;;
 
         help)
@@ -109,4 +115,10 @@ function _$BIN() {
 
 _$BIN "$*"
 
+# -----------------------------------------------------------------------------
+#
+
+#
+# -----------------------------------------------------------------------------
+ 
 # vim:ft=zsh:et:sts=2:sw=2
