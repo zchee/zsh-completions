@@ -1,0 +1,1011 @@
+#compdef vctl
+
+# -----------------------------------------------------------------------------
+#
+# The BSD-3-Clause License
+#
+# Copyright (c) 2020, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# /Applications/VMware Fusion.app/Contents/Library/vkd/bin/vctl
+#
+# vctl version: 1.1.0
+# containerd github.com/containerd/containerd v1.3.2-vmw
+#
+# -----------------------------------------------------------------------------
+
+function _vctl() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'build:Build a container image from a Dockerfile.'
+    'create:Create a new container from a container image.'
+    'describe:Show details of a container.'
+    'exec:Execute a command within a running container.'
+    'execvm:Execute a command within a running virtual machine that hosts container.'
+    'help:Help about any command.'
+    'images:List container images.'
+    'inspect:Return low-level information on objects.'
+    'kind:Get system environment ready for vctl-based KIND.'
+    'login:Log in to a registry.'
+    'logout:Log out from a registry.'
+    'ps:List containers.'
+    'pull:Pull a container image from a registry.'
+    'push:Push a container image to a registry.'
+    'rm:Remove one or more containers.'
+    'rmi:Remove one or more container images.'
+    'run:Run a new container from a container image.'
+    'start:Start an existing container.'
+    'stop:Stop a container.'
+    'system:Manage the container engine.'
+    'tag:Tag container images.'
+    'version:Print the version of vctl.'
+    'volume:Manage volumes.'
+  )
+
+  _vctl_get_containers() {
+    [[ $PREFIX = -* ]] && return 1
+    integer ret=1
+    local kind type line s
+    declare -a running stopped lines args names
+
+    kind=$1; shift
+    type=$1; shift
+    [[ $kind = (stopped|all) ]] && args=($args -a)
+
+    lines=(${(f)${:-"$(_call_program commands vctl $vctl_options ps $args)"$'\n'}})
+
+    # Parse header line to find columns
+    local i=1 j=1 k header=${lines[2]}
+    declare -A begin end
+    while (( j < ${#header} - 1 )); do
+      i=$(( j + ${${header[$j,-1]}[(i)[^ ]]} - 1 ))
+      j=$(( i + ${${header[$i,-1]}[(i)  ]} - 1 ))
+      k=$(( j + ${${header[$j,-1]}[(i)[^ ]]} - 2 ))
+      begin[${header[$i,$((j-1))]}]=$i
+      end[${header[$i,$((j-1))]}]=$k
+    done
+    end[${header[$i,$((j-1))]}]=-1 # Last column, should go to the end of the line
+    lines=(${lines[4,-1]})
+
+    # Names: we only display the one without slash. All other names
+    # are generated and may clutter the completion. However, with
+    # Swarm, all names may be prefixed by the swarm node name.
+    if [[ $type = (names|all) ]]; then
+      # echo $lines
+      for line in $lines; do
+        # echo $line
+        names=(${(ps:,:)${${line[${begin[NAME]},${end[NAME]}]}%% *}})
+        # names=(${line[${begin[NAME]},${end[NAME]}]})
+        # echo $names
+        # First step: find a common prefix and strip it (swarm node case)
+        (( ${#${(u)names%%/*}} == 1 )) && names=${names#${names[1]%%/*}/}
+        # Second step: only keep the first name without a /
+        s=${${names:#*/*}[1]}
+        # If no name, well give up.
+        (( $#s != 0 )) || continue
+        s="$s:${(l:15:: :::)${${line[${begin[CREATION TIME]},${end[CREATION TIME]}]}%% ##}}"
+        s="$s, ${${${line[${begin[IMAGE]},${end[IMAGE]}]}/:/\\:}%% ##}"
+        if [[ ${line[${begin[STATUS]},${end[STATUS]}]} = (stopped*|running*) ]]; then
+          stopped=($stopped $s)
+        else
+          running=($running $s)
+        fi
+      done
+    fi
+
+    [[ $kind = (running|all) ]] && _describe -t containers-running "running containers" running "$@" && ret=0
+    [[ $kind = (stopped|all) ]] && _describe -t containers-stopped "stopped containers" stopped "$@" && ret=0
+    return ret
+  }
+
+  _vctl_complete_stopped_containers() {
+      [[ $PREFIX = -* ]] && return 1
+      _vctl_get_containers stopped all "$@"
+  }
+
+  _vctl_complete_running_containers() {
+      [[ $PREFIX = -* ]] && return 1
+      _vctl_get_containers running all "$@"
+  }
+
+  _vctl_complete_containers() {
+      [[ $PREFIX = -* ]] && return 1
+      _vctl_get_containers all all "$@"
+  }
+
+  # _vctl_complete_containers_ids() {
+  #     [[ $PREFIX = -* ]] && return 1
+  #     _vctl_get_containers all ids "$@"
+  # }
+
+  _vctl_complete_containers_names() {
+      [[ $PREFIX = -* ]] && return 1
+      _vctl_get_containers all names "$@"
+  }
+
+  # _vctl_complete_info_plugins() {
+  #     [[ $PREFIX = -* ]] && return 1
+  #     integer ret=1
+  #     emulate -L zsh
+  #     setopt extendedglob
+  #     local -a plugins
+  #     plugins=(${(ps: :)${(M)${(f)${${"$(_call_program commands docker $vctl_options info)"##*$'\n'Plugins:}%%$'\n'^ *}}:# $1: *}## $1: })
+  #     _describe -t plugins "$1 plugins" plugins && ret=0
+  #     return ret
+  # }
+
+  _vctl_complete_images() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a images
+      images=(${${${(f)${:-"$(_call_program commands vctl $vctl_options images)"$'\n'}}[2,-1]}/(#b)([^ ]##) ##([^ ]##) ##([^ ]##)*/${match[3]}:${(r:15:: :::)match[2]} in ${match[1]}})
+      _describe -t docker-images "images" images && ret=0
+      _vctl_complete_repositories_with_tags && ret=0
+      return ret
+  }
+
+  _vctl_complete_repositories() {
+      [[ $PREFIX = -* ]] && return 1
+      integer ret=1
+      declare -a repos
+      repos=(${${${(f)${:-"$(_call_program commands vctl $vctl_options images)"$'\n'}}%% *}[4,-1]})
+      repos=(${repos#<none>})
+      _describe -t docker-repos "repositories" repos && ret=0
+      return ret
+  }
+
+  # _vctl_complete_repositories_with_tags() {
+  #     [[ $PREFIX = -* ]] && return 1
+  #     integer ret=1
+  #     declare -a repos onlyrepos matched
+  #     declare m
+  #     repos=(${${${${(f)${:-"$(_call_program commands docker $vctl_options images)"$'\n'}}[2,-1]}/ ##/:::}%% *})
+  #     repos=(${${repos%:::<none>}#<none>})
+  #     # Check if we have a prefix-match for the current prefix.
+  #     onlyrepos=(${repos%::*})
+  #     for m in $onlyrepos; do
+  #         [[ ${PREFIX##${~~m}} != ${PREFIX} ]] && {
+  #             # Yes, complete with tags
+  #             repos=(${${repos/:::/:}/:/\\:})
+  #             _describe -t docker-repos-with-tags "repositories with tags" repos && ret=0
+  #             return ret
+  #         }
+  #     done
+  #     # No, only complete repositories
+  #     onlyrepos=(${${repos%:::*}/:/\\:})
+  #     _describe -t docker-repos "repositories" onlyrepos -qS : && ret=0
+  #
+  #     return ret
+  # }
+
+  _arguments -C \
+    {-h,--help}'[Help for vctl]' \
+    "1: :{_describe 'vctl commands' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  local opts_help help="--help"
+  opts_help=("(: -)--help[Help for $words[1]]")
+
+  case $words[1] in
+
+    build)
+      _arguments \
+        $opts_help \
+        '--builder-mem[Limit on memory available to the builder \(in MB, must be a multiple of 4\) \(default 4096\)]:limit memory' \
+        {-c,--credential}'[Path to the file storing private registry authentication credentials]:credential path:_files' \
+        {-f,--file}'[Path to the target Dockerfile to build from \(Default: PATH/Dockerfile\)]:Dockerfile path:_files' \
+        '--no-local-cache[Do not use local storage as cache for base image]' \
+        {-t,--tag}'[Name of the container image to build]:container image name' \
+        '*:path:_files'
+      ;;
+
+    create)
+      _arguments \
+        $opts_help \
+        '--entrypoint[Override the default entrypoint of the container image]:entrypoint' \
+        {-e,--env}'[Environment variables to set in the container]:env' \
+        '--hostname[Host name of the container]:hostname' \
+        {-i,--interactive}'[Keep STDIN open even if not attached]' \
+        {-l,--label}'[Set additional labels to the container]:label' \
+        {-n,--name}'[Assign a name to the container]:container name' \
+        {-r,--privileged}'[Run the container with extended privileges]' \
+        {-p,--publish}'[Bind host network ports to container ports]:bind port' \
+        {-t,--tty}'[Allocate a terminal for the container]' \
+        {-v,--volume}'[Bind host folders to container folders]:bind folder:_directories' \
+        {-w,--workdir}'[Working directory of the new process]:working directory:_directories' \
+        '1:image' \
+        '2:[command]' \
+        '*:[arguments...]'
+      ;;
+
+    describe)
+      _arguments \
+        $opts_help \
+        '*:container'
+      ;;
+
+    exec)
+      _arguments \
+        $opts_help \
+        {-d,--detach}'[Run the command in background]' \
+        {-i,--interactive}'[Keep STDIN open even if not attached]' \
+        {-t,--tty}'[Allocate a terminal for the container]' \
+        '1:container' \
+        '2:[command]' \
+        '*:[arguments...]'
+      ;;
+
+    execvm)
+      _arguments \
+        $opts_help \
+        {-c,--container}'[Use container as the identifier of the virtual machine hosting it]:container' \
+        {-s,--sh}'[Shell into the virtual machine]' \
+        '1:vmx:_files' \
+        '2:command' \
+        '*:[arguments...]'
+      ;;
+
+    images)
+      _arguments \
+        $opts_help \
+        {-d,--digests}'[Show digests]' \
+        '*:images:_files'
+      ;;
+
+    inspect)
+      _arguments \
+        $opts_help \
+        '*:container name'
+      ;;
+
+    kind)
+      _arguments \
+        $opts_help \
+      _kind
+      ;;
+
+    login)
+      _arguments \
+        $opts_help \
+        '--http[Use plain http to connect remote registry \(Default uses https\)]' \
+        {-p,--password}'[Password used to connect remote registry]:password' \
+        '--password-stdin[Read password from stdin]' \
+        '--skip-ssl-check[Skip ssl certificate validation]' \
+        {-u,--username}'[Username used to connect remote registry]:username' \
+        '*:server'
+      ;;
+
+    logout)
+      _arguments \
+        $opts_help \
+      ;;
+
+    ps)
+      _arguments \
+        $opts_help \
+        {-a,--all}'[Show all containers]' \
+        {-l,--label}'[Filter containers with additional labels]:label' \
+        '*:container...'
+      ;;
+
+    pull|push)
+      _arguments \
+        $opts_help \
+        '--http[Use plain http to connect remote registry \(Default uses https\)]' \
+        {-p,--password}'[Password used to connect remote registry]:password' \
+        '--password-stdin[Read password from stdin]' \
+        '--skip-ssl-check[Skip ssl certificate validation]' \
+        {-u,--username}'[Username used to connect remote registry]:username' \
+        '*:image'
+      ;;
+
+    rm|rmi)
+      _arguments \
+        $opts_help \
+        {-a,--all}'[Delete all containers]' \
+        {-f,--force}'[Force removal of container regardless of its status]' \
+        '*:image'
+      ;;
+
+    run)
+      _arguments \
+        $opts_help \
+        {-c,--cpus}'[Number of CPU cores \(default 2\)]:cpus' \
+        {-d,--detach}'[Run the container in background]' \
+        '--entrypoint[Override the default entrypoint of the container image]:entrypoint' \
+        {-e,--env}'[Environment variables to set in the container]:env' \
+        '--hostname[Host name of the container]:hostname' \
+        {-i,--interactive}'[Keep STDIN open even if not attached]' \
+        '--keepVM[\[EXPERIMENTAL\] Keep the host virtual machine running after container stops]' \
+        {-l,--label}'[Set additional labels to the container]:label' \
+        {-m,--memory}'[Limit on memory available to the container \(in MB, must be a multiple of 4\) \(default 512\)]:limit memory' \
+        {-n,--name}'[Assign a name to the container]:container name' \
+        {-r,--privileged}[Run the container with extended privileges]' \
+        {-p,--publish}[Bind host network ports to container ports]:bind port' \
+        {-t,--tty}'[Allocate a terminal for the container]' \
+        {-v,--volume}'[Bind host folders to container folders]:bind folder:_directories' \
+        {-w,--workdir}'[Working directory of the new process]:working directory:_directories' \
+        '1:image' \
+        '2:[command]' \
+        '*:[arguments...]'
+      ;;
+
+    start)
+      _arguments \
+        $opts_help \
+        "($help -c --cpus)"{-c,--cpus}'[Number of CPU cores \(default 2\)]:cpus' \
+        "($help -d --detach)"{-d,--detach}'[Run the container in background]' \
+        "($help)--keepVM[\\[EXPERIMENTAL\\] Keep the host virtual machine running after container stops]" \
+        "($help -m --memory)"{-m,--memory}'[Limit on memory available to the container \(in MB, must be a multiple of 4\) \(default 512\)]:limit memory' \
+        "($help -)*:containers:_vctl_complete_stopped_containers" && ret=0
+      ;;
+
+    stop)
+      _arguments \
+        $opts_help \
+        "($help -)*:containers:_vctl_complete_running_containers" && ret=0
+      ;;
+
+    system)
+      local curcontext="$curcontext" state
+
+      _vctl_system_commands() {
+        local -a _vctl_image_subcommands
+        _vctl_image_subcommands=(
+          "config:Config and initialize the system environment for the Nautilus Container Engine."
+          "info:Display the Nautilus Container Engine information."
+          "start:Start the Nautilus Container Engine."
+          "stop:Stop the Nautilus Container Engine."
+        )
+        _describe -t vctl-system-commands "vctl system command" _vctl_image_subcommands
+      }
+
+      _arguments \
+        $opts_help \
+        "($help)--cache-location[Specify the cache file location (default '$HOME/.vctl')]:cache location:_files" \
+        "($help)--mount-name[Mount name for container storage (default 'Fusion Container Storage')]:mount name" \
+        "($help -s --storage)"{-s,--storage}'[Container storage size \(default "128g"\)]:storage size' \
+        "($help -c --vm-cpus)"{-c,--vm-cpus}'[CPU cores of base virtual machine that hosts container \(default 2\)]:vm cpus' \
+        "($help -m --vm-mem)"{-m,--vm-mem}'[Memory size (MB) for virtual machine that hosts container \(default 1024\)]:vm memory' \
+        "($help -): :->command" \
+        "($help -)*:: :->option-or-argument" && ret=0
+
+      case $state in
+        (command)
+          _vctl_system_commands && ret=0
+          ;;
+        (option-or-argument)
+          curcontext=${curcontext%:*:*}:vctl-${words[-1]}:
+          _vctl_system_commands && ret=0
+          ;;
+        args)
+          case $words[1] in
+            (config)
+              _arguments \
+                $opts_help \
+                "($help)--cache-location[Specify the cache file location (default '$HOME/.vctl')]:cache location:_files" \
+                "($help)--mount-name[Mount name for container storage (default 'Fusion Container Storage')]:mount name" \
+                "($help -s --storage)"{-s,--storage}'[Container storage size \(default "128g"\)]:storage size' \
+                "($help -c --vm-cpus)"{-c,--vm-cpus}'[CPU cores of base virtual machine that hosts container \(default 2\)]:vm cpus' \
+                "($help -m --vm-mem)"{-m,--vm-mem}'[Memory size (MB) for virtual machine that hosts container \(default 1024\)]:vm memory' && ret=0
+              ;;
+
+            (info)
+              _arguments \
+                $opts_help && ret=0
+              ;;
+
+            (start)
+              _arguments \
+                $opts_help \
+                "($help -c --compact)"{-c,--compact}'[Compact container storage upon start']
+                "($help -l, --log-level)"{-l,--log-level}'[Log level for Nautilus Container Engine]:log level:(trace debug info warn error fatal panic)' \
+                "($help)--log-location[Log location for Nautilus Container Engine (default '$HOME/.vctl/containerd.log')]:log location:_files" && ret=0
+              ;;
+
+            (stop)
+              _arguments \
+                $opts_help && ret=0
+              ;;
+          esac
+          ;;
+      esac
+      ;;
+
+    tag)
+      _arguments \
+        {-f,--force}'[Replace an existing image if the TARGET_IMAGE name has been taken]' \
+        {-h,--help}'[Help for tag]' \
+        '1:SOURCE_IMAGE' \
+        '2:TARGET_IMAGE' \
+        '*:[TARGET_IMAGE...]'
+      ;;
+
+    version)
+      _arguments \
+        {-h,--help}'[Help for version]' \
+        '*:file:_files'
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' commands}"
+      ;;
+  esac
+
+  return ret
+}
+
+_vctl "$*"
+
+# -----------------------------------------------------------------------------
+#
+# vctl - A CLI tool for the container engine powered by VMware Fusion
+# vctl Highlights:
+# • Build and run OCI containers.
+# • Push and pull container images between remote registries & local storage.
+# • Use a lightweight virtual machine (CRX VM) based on VMware Photon OS to host a container. Use 'vctl system config -h' to learn more.
+# • Easy shell access into virtual machine that hosts container. See 'vctl execvm’.
+#
+# USAGE:
+#   vctl COMMAND [OPTIONS]
+#
+# COMMANDS:
+#   build       Build a container image from a Dockerfile.
+#   create      Create a new container from a container image.
+#   describe    Show details of a container.
+#   exec        Execute a command within a running container.
+#   execvm      Execute a command within a running virtual machine that hosts container.
+#   help        Help about any command.
+#   images      List container images.
+#   inspect     Return low-level information on objects.
+#   kind        Get system environment ready for vctl-based KIND.
+#   login       Log in to a registry.
+#   logout      Log out from a registry.
+#   ps          List containers.
+#   pull        Pull a container image from a registry.
+#   push        Push a container image to a registry.
+#   rm          Remove one or more containers.
+#   rmi         Remove one or more container images.
+#   run         Run a new container from a container image.
+#   start       Start an existing container.
+#   stop        Stop a container.
+#   system      Manage the container engine.
+#   tag         Tag container images.
+#   version     Print the version of vctl.
+#   volume      Manage volumes.
+#
+# Run 'vctl COMMAND --help' for more information on a command.
+#
+# OPTIONS:
+#   -h, --help   Help for vctl
+#
+# -----------------------------------------------------------------------------
+#
+# Build a container image from a Dockerfile.
+# Build an OCI compliant container image from the given PATH, and store it in the local nautilus container storage volume.
+# * A random name will be assigned to the container image to build if '--tag' is not used.
+#
+# USAGE:
+#   vctl build [OPTIONS] PATH
+#
+# OPTIONS:
+#       --builder-mem int     Limit on memory available to the builder (in MB, must be a multiple of 4) (default 4096)
+#   -c, --credential string   Path to the file storing private registry authentication credentials
+#   -f, --file string         Path to the target Dockerfile to build from (Default: PATH/Dockerfile)
+#   -h, --help                Help for build
+#       --no-local-cache      Do not use local storage as cache for base image
+#   -t, --tag string          Name of the container image to build
+#
+# EXAMPLES:
+#   # To use current directory as the build context. (Dockerfile will be used for the build instruction by default; a random name will be assigned to the image to build.)
+#   vctl build .
+#
+#   # To specify file Dockerfile.test for the build instructions and /Users/username/myapp as root of build context.
+#   vctl build -f Dockerfiles/Dockerfile.test /Users/username/myapp 
+#
+#   # To tag the image using mynamespace/myrepo:1.0 as name after building.
+#   vctl build --tag mynamespace/myrepo:1.0 .
+#
+# -----------------------------------------------------------------------------
+#
+# Create a new container from a container image.
+# Create a container with the given name, from the specified container image.
+#
+# USAGE:
+#   vctl create [OPTIONS] IMAGE [COMMAND] [ARGUMENTS...]
+#
+# OPTIONS:
+#       --entrypoint string   Override the default entrypoint of the container image
+#   -e, --env strings         Environment variables to set in the container
+#   -h, --help                Help for create
+#       --hostname string     Host name of the container
+#   -i, --interactive         Keep STDIN open even if not attached
+#   -l, --label strings       Set additional labels to the container (e.g. foo=bar)
+#   -n, --name string         Assign a name to the container
+#   -r, --privileged          Run the container with extended privileges
+#   -p, --publish strings     Bind host network ports to container ports
+#   -t, --tty                 Allocate a terminal for the container
+#   -v, --volume strings      Bind host folders to container folders
+#   -w, --workdir string      Working directory of the new process
+#
+# -----------------------------------------------------------------------------
+#
+# Print detailed description of the given container and practical information for debug and troubleshooting.
+# * Guide for quick access to & execution in container-hosting virtual machine is available in output.
+#
+# USAGE:
+#   vctl describe [OPTIONS] CONTAINER
+#
+# OPTIONS:
+#   -h, --help   Help for describe
+#
+# -----------------------------------------------------------------------------
+#
+# Execute a command within a running container.
+# Run the given command within the specified container.
+#
+# USAGE:
+#   vctl exec [OPTIONS] CONTAINER COMMAND [ARGUMENTS...]
+#
+# OPTIONS:
+#   -d, --detach        Run the command in background
+#   -h, --help          Help for exec
+#   -i, --interactive   Keep STDIN open even if not attached
+#   -t, --tty           Allocate a terminal for the container
+#
+# EXAMPLES:
+#   # To execute 'top' in container myContainer in background (detached from current terminal).
+#   vctl exec --detach myContainer top
+#
+#   # To get output from running 'date' command in myContainer.
+#   vctl exec myContainer date
+#
+#   # To allocate a terminal for myContainer and send stdin to 'bash' in myContainer.
+#   vctl exec -it myContainer bash
+#
+# -----------------------------------------------------------------------------
+#
+# Execute a command within a running virtual machine that hosts container.
+# Run the given command within the specified virtual machine.
+# * VMX must be provided with full path (e.g. /Users/user_name/.vctl/.r/vms/mycontainer/mycontainer.vmx).
+# * Use '--container' to identify the virtual machine which hosts the specified CONTAINER.
+# * Use '--sh' for easier shell access to a virtual machine.
+#
+# Aliases: execvm, execv
+#
+# USAGE:
+#   vctl execvm [OPTIONS] (VMX|-c=CONTAINER) COMMAND [ARGUMENTS...]
+#   vctl execvm --sh  (VMX|-c=CONTAINER)
+#
+# OPTIONS:
+#   -c, --container string   Use container as the identifier of the virtual machine hosting it
+#   -h, --help               Help for execvm
+#   -s, --sh                 Shell into the virtual machine
+#
+# EXAMPLES:
+#   # To identify a virtual machine with the container myContainer that runs in it, and shell into the virtual machine.
+#   vctl execvm --sh -c myContainer
+#
+# -----------------------------------------------------------------------------
+#
+# List container images.
+# Print basic information about one or more container images.
+#
+# USAGE:
+#   vctl images [OPTIONS] [IMAGE...]
+#
+# OPTIONS:
+#   -d, --digests   Show digests
+#   -h, --help      Help for images
+#
+# -----------------------------------------------------------------------------
+#
+# Return low-level information on objects.
+# Print detailed information on objects controlled by vctl
+# * Currently only container is supported.
+#
+# USAGE:
+#   vctl inspect [OPTIONS] NAME
+#
+# OPTIONS:
+#   -h, --help   Help for inspect
+#
+# EXAMPLES:
+#   # To inspect container myContainer
+#   vctl inspect myContainer
+#
+# -----------------------------------------------------------------------------
+#
+# Get system environment ready for vctl-based KIND.
+# Using vctl as the provider for KIND instead of Docker, set up system environment to be ready for vctl-based KIND.
+# * KIND will be downloaded and installed if it's not detected.
+# * All Docker commands will be aliased to vctl in the current terminal.
+# * System is only configured for current terminal. All configuration for KIND will be lost when the terminal is closed.
+#
+# USAGE:
+#   vctl kind [OPTIONS]
+#
+# OPTIONS:
+#   -h, --help   Help for kind
+#
+# -----------------------------------------------------------------------------
+#
+# Log in to a registry.
+# If no server is specified, the default is Docker Hub.
+#
+# USAGE:
+#   vctl login [OPTIONS] [SERVER]
+#
+# OPTIONS:
+#   -h, --help              Help for login
+#       --http              Use plain http to connect remote registry (Default uses https)
+#   -p, --password string   Password used to connect remote registry
+#       --password-stdin    Read password from stdin
+#       --skip-ssl-check    Skip ssl certificate validation
+#   -u, --username string   Username used to connect remote registry
+#
+# EXAMPLES:
+#   # To enable insecure registry access using plain HTTP when login to the target registry.
+#   vctl login --http my-plain-http-registry.com:5000
+#
+# -----------------------------------------------------------------------------
+#
+# Log out from a registry.
+# If no server is specified, the default is Docker Hub.
+#
+# USAGE:
+#   vctl logout [SERVER]
+#
+# OPTIONS:
+#   -h, --help   Help for logout
+#
+# -----------------------------------------------------------------------------
+#
+# List containers.
+# Print basic information about one or more containers.
+#
+# USAGE:
+#   vctl ps [OPTIONS] [CONTAINER...]
+#
+# OPTIONS:
+#   -a, --all             Show all containers (Default only shows running containers)
+#   -h, --help            Help for ps
+#   -l, --label strings   Filter containers with additional labels (e.g. foo=bar)
+#
+# -----------------------------------------------------------------------------
+#
+# Pull a container image from a registry.
+# Download a container image from remote location and store it locally on host.
+# * Docker Hub will be used by default if no registry is specified.
+# * Leave '--password' empty to input your password interactively or use '--password-stdin'.
+# * ':latest' will be used by default if no tag is specified.
+#
+# USAGE:
+#   vctl pull [OPTIONS] IMAGE
+#
+# OPTIONS:
+#   -h, --help              Help for pull
+#       --http              Use plain http to connect remote registry (Default uses https)
+#   -p, --password string   Password used to connect remote registry
+#       --password-stdin    Read password from stdin
+#       --skip-ssl-check    Skip ssl certificate validation
+#   -u, --username string   Username used to connect remote registry
+#
+# EXAMPLES:
+#   # To pull nginx from Docker Hub (nginx:latest will be pulled by default).
+#   vctl pull nginx
+#
+#   # To read the password from a file to access a remote registry repository that needs authentication. (Image will be pulled from Docker Hub by default)
+#   cat mypassword.txt | vctl pull -u myUsername --password-stdin mynamespace/myrepo:latest
+#
+# -----------------------------------------------------------------------------
+#
+# Push a container image to a registry.
+# Upload pre-built container images to a given registry URL.
+# * If no REMOTE_URL is specified, URL will be inferred from the given IMAGE name, Docker Hub will be used by default if no registry is specified.
+# * Leave '--password' empty to input your password interactively or use '--password-stdin'.
+#
+# USAGE:
+#   vctl push [OPTIONS] IMAGE [REMOTE_URL]
+#
+# OPTIONS:
+#   -h, --help              Help for push
+#       --http              Use plain http to connect remote registry (Default uses https)
+#   -p, --password string   Password used to connect remote registry
+#       --password-stdin    Read password from stdin
+#       --skip-ssl-check    Skip ssl certificate validation
+#   -u, --username string   Username used to connect remote registry
+#
+# EXAMPLES:
+#   # To push local image mynamespace/nginx:latest to Docker Hub. (Registry URL is inferred from the IMAGE)
+#   vctl push mynamespace/nginx:latest
+#
+#   # To read the password from a file to access a remote registry repository that needs authentication. (Image will be pushed to Docker Hub by default)
+#   cat mypassword.txt | vctl push -u myUsername --password-stdin mynamespace/myrepo:latest
+#
+# -----------------------------------------------------------------------------
+#
+# Remove one or more containers.
+# Delete all containers or delete by the given container(s).
+#
+# USAGE:
+#   vctl rm [OPTIONS] ([CONTAINER...]|--all)
+#
+# OPTIONS:
+#   -a, --all     Delete all containers
+#   -f, --force   Force removal of container regardless of its status
+#   -h, --help    Help for rm
+#
+# -----------------------------------------------------------------------------
+#
+# Remove one or more container images.
+# Delete all images or delete by the given container image(s).
+#
+# USAGE:
+#   vctl rmi [OPTIONS] ([IMAGE...]|--all)
+#
+# OPTIONS:
+#   -a, --all     Delete all images
+#   -f, --force   Force removal of image regardless of its status
+#   -h, --help    Help for rmi
+#
+# -----------------------------------------------------------------------------
+#
+# Run a new container from a container image.
+# Create and start a container with the given name, from the specified container image, then run a command in it.
+# * Every container runs in a separate virtual machine (CRX VM), the virtual machine is created with the same name as the container and starts up when a container starts. It shuts down and is removed when the container stops.
+# * Use '--memory' and '--cpus' to make specific configurations to the CPU and memory that is available to the container.
+# * A container running in a virtual machine shares the memory with its hosting virtual machine. (e.g. Within a virtual machine with 1024MB memory, max memory available for the container will be 512MB, and rest of the memory are reserved for the operating system.)
+# * Use 'vctl system config' to manage the default settings of the virtual machine hosting container. (e.g. vctl system config --vm-mem 2048)
+# * If no COMMAND is provided, the default command from the image will be executed.
+# * When '--keepVM' is used, use 'vmrun stop VMX' to manually stop the host virtual machine before using the container again.
+#
+# USAGE:
+#   vctl run [OPTIONS] IMAGE [COMMAND] [ARGUMENTS...]
+#
+# OPTIONS:
+#   -c, --cpus int            Number of CPU cores (default 2)
+#   -d, --detach              Run the container in background
+#       --entrypoint string   Override the default entrypoint of the container image
+#   -e, --env strings         Environment variables to set in the container
+#   -h, --help                Help for run
+#       --hostname string     Host name of the container
+#   -i, --interactive         Keep STDIN open even if not attached
+#       --keepVM              [EXPERIMENTAL] Keep the host virtual machine running after container stops
+#   -l, --label strings       Set additional labels to the container (e.g. foo=bar)
+#   -m, --memory int          Limit on memory available to the container (in MB, must be a multiple of 4) (default 512)
+#   -n, --name string         Assign a name to the container
+#   -r, --privileged          Run the container with extended privileges
+#   -p, --publish strings     Bind host network ports to container ports
+#   -t, --tty                 Allocate a terminal for the container
+#   -v, --volume strings      Bind host folders to container folders
+#   -w, --workdir string      Working directory of the new process
+#
+# EXAMPLES:
+#   # To run a new container using 'myImage' image.
+#   vctl run myImage
+#
+#   # To set environment variables "FOO=BAR" when running a new container using 'myImage' image.
+#   vctl run --env="FOO=BAR" myImage
+#
+#   # To set 4 CPU cores limit and 2GB memory limit for a new container using 'myImage' image. (In this case the virtual machine hosting the container will be configured with 4 CPU cores and 2560MB memory.)
+#   vctl run -c 4 -m 2048 myImage
+#
+#   # To run a new container in background. (detached from current terminal)
+#   vctl run --detach myImage
+#
+#   # To assign name 'myContainer' to the new container to run.
+#   vctl run --name myContainer myImage
+#
+#   # To keep the host virtual machine running after container stops for potential debug and troubleshooting needs.
+#   vctl run --keepVM myImage
+#
+#   # To mount folder ~/Documents/toolchain on host to the new container using 'myImage' image.
+#   vctl run --volume ~/Documents/toolchain:/toolchain myImage
+#
+# -----------------------------------------------------------------------------
+#
+# Start an existing container.
+# Start a created or stopped container.
+# * Every container runs in a separate virtual machine, a virtual machine is created with the same name as the container and starts up when a container starts. It shuts down and is removed when the container stops.
+# * Use '--memory' and '--cpus' to make specific configurations to the CPU and memory available to the container.
+# * A container running in a virtual machine shares the memory with the operating system. (e.g. Within a virtual machine with 1024MB memory, max memory available for the container will be 512MB, and rest of the memory are reserved for the operating system.)
+# * Use 'vctl system config' to manage the default settings of the virtual machine hosting container. (e.g. vctl system config --vm-mem 2048)
+# * When '--keepVM' is used, use 'vmrun stop VMX' to manually stop the host virtual machine before using the container again.
+#
+# USAGE:
+#   vctl start [OPTIONS] CONTAINER
+#
+# OPTIONS:
+#   -c, --cpus int     Number of CPU cores (default 2)
+#   -d, --detach       Run the container in background
+#   -h, --help         Help for start
+#       --keepVM       [EXPERIMENTAL] Keep the host virtual machine running after container stops
+#   -m, --memory int   Limit on memory available to the container (in MB, must be a multiple of 4) (default 512)
+#
+# EXAMPLES:
+#   # To set 4 CPU cores limit and 2GB memory limit for myContainer. (In this case the virtual machine hosting the container will be configured with 4 CPU cores and 2560MB memory.)
+#   vctl start -c 4 -m 2048 myContainer
+#
+# -----------------------------------------------------------------------------
+#
+# Stop a container.
+# Stop a running container.
+#
+# USAGE:
+#   vctl stop [OPTIONS] CONTAINER
+#
+# OPTIONS:
+#   -h, --help   Help for stop
+#
+# -----------------------------------------------------------------------------
+#
+# Manage the Nautilus Container Engine.
+# Manage the Nautilus Container Engine and the system environment.
+#
+# USAGE:
+#   vctl system COMMAND [OPTIONS]
+#
+# COMMANDS:
+#   config      Config and initialize the system environment for the Nautilus Container Engine.
+#   info        Display the Nautilus Container Engine information.
+#   start       Start the Nautilus Container Engine.
+#   stop        Stop the Nautilus Container Engine.
+#
+# Run 'vctl system COMMAND --help' for more information on a command.
+#
+# OPTIONS:
+#   -h, --help   Help for system
+#
+# -----------------------------------------------------------------------------
+#
+# Config and initialize the system environment for the Nautilus Container Engine.
+# Initialize the system environment using default configurations or using the specified configurations.
+# * Every container runs in a separate virtual machine (CRX VM). The virtual machine is created with the same name as the container and starts up when a container starts. It shuts down and is removed when the container stops.
+# * A container running in a virtual machine shares the memory with the operating system. (e.g. Within a virtual machine with 1024MB memory, max memory available for the container will be 512MB, and rest of the memory are reserved for the operating system.)
+# * Use '--vm-cpus' and '--vm-mem' to configure the default CPU & memory values of the virtual machine, the changes will be applied globally to all new virtual machines.
+# * All local container images and containers will be deleted and the system environment will be initialized if '--mount-name' is used and modified.
+#
+# USAGE:
+#   vctl system config [OPTIONS]
+#
+# OPTIONS:
+#       --cache-location string   Specify the cache file location (default "/Users/zchee/.vctl")
+#   -h, --help                    Help for config
+#       --mount-name string       Mount name for container storage (default "Fusion Container Storage")
+#   -s, --storage string          Container storage size (default "128g")
+#   -c, --vm-cpus int             CPU cores of base virtual machine that hosts container (default 2)
+#   -m, --vm-mem int              Memory size (MB) for virtual machine that hosts container (default 1024)
+#
+# EXAMPLES:
+#   # To configure the virtual machine that hosts container with 4 CPU cores and 2GB memory by default.
+#   vctl system config --vm-cpus 4 --vm-mem 2048
+#
+# -----------------------------------------------------------------------------
+#
+# Display the Nautilus Container Engine information.
+# Print detailed information of the Nautilus Container Engine.
+#
+# USAGE:
+#   vctl system info [OPTIONS]
+#
+# OPTIONS:
+#   -h, --help   Help for info
+#
+# -----------------------------------------------------------------------------
+#
+# Start the Nautilus Container Engine.
+# Initialize host OS environment for the Nautilus Container Engine using default configurations, then start Nautilus Container Engine.
+#
+# USAGE:
+#   vctl system start [OPTIONS]
+#
+# OPTIONS:
+#   -c, --compact               Compact container storage upon start
+#   -h, --help                  Help for start
+#   -l, --log-level string      Log level for Nautilus Container Engine (trace|debug|info|warn|error|fatal|panic) (default "info")
+#       --log-location string   Log location for Nautilus Container Engine (default "/Users/zchee/.vctl/containerd.log")
+#
+# EXAMPLES:
+#   # To set the log level to debug upon the start of the Nautilus Container Engine.
+#   vctl system start -l debug
+#
+# -----------------------------------------------------------------------------
+#
+# Stop the Nautilus Container Engine.
+# Terminate the Nautilus Container Engine services.
+#
+# USAGE:
+#   vctl system stop [OPTIONS]
+#
+# OPTIONS:
+#   -c, --compact   Compact container storage upon stop
+#   -f, --force     Force quit the Nautilus Container Engine and terminate backend virtual machines
+#   -h, --help      Help for stop
+#
+# -----------------------------------------------------------------------------
+#
+# Tag container images.
+# Create an image alias with the name of the TARGET_IMAGE.
+#
+# USAGE:
+#   vctl tag [OPTIONS] SOURCE_IMAGE TARGET_IMAGE [TARGET_IMAGE...]
+#
+# OPTIONS:
+#   -f, --force   Replace an existing image if the TARGET_IMAGE name has been taken
+#   -h, --help    Help for tag
+#
+# -----------------------------------------------------------------------------
+#
+# Print the version of vctl.
+# Show the version information of vctl.
+#
+# USAGE:
+#   vctl version [OPTIONS]
+#
+# OPTIONS:
+#   -h, --help   Help for version
+#
+# -----------------------------------------------------------------------------
+#
+# Manage volumes.
+# Manage volumes, currently only support volume prune.
+#
+# USAGE:
+#   vctl volume COMMAND [OPTIONS]
+#
+# COMMANDS:
+#   prune       Remove all unused local volumes.
+#
+# Run 'vctl volume COMMAND --help' for more information on a command.
+#
+# OPTIONS:
+#   -h, --help   Help for volume
+#
+# -----------------------------------------------------------------------------
+#
+# Remove all unused local volumes.
+# Remove all unused local volumes.
+#
+# USAGE:
+#   vctl volume prune [flags]
+#
+# OPTIONS:
+#   -f, --force   Do not prompt for confirmation
+#   -h, --help    Help for prune
+#
+# -----------------------------------------------------------------------------
+#
+# vim:ft=zsh:et:sts=2:sw=2
