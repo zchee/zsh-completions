@@ -102,12 +102,9 @@ function _vctl() {
     # are generated and may clutter the completion. However, with
     # Swarm, all names may be prefixed by the swarm node name.
     if [[ $type = (names|all) ]]; then
-      # echo $lines
       for line in $lines; do
-        # echo $line
         names=(${(ps:,:)${${line[${begin[NAME]},${end[NAME]}]}%% *}})
         # names=(${line[${begin[NAME]},${end[NAME]}]})
-        # echo $names
         # First step: find a common prefix and strip it (swarm node case)
         (( ${#${(u)names%%/*}} == 1 )) && names=${names#${names[1]%%/*}/}
         # Second step: only keep the first name without a /
@@ -219,7 +216,6 @@ function _vctl() {
   opts_help=("(: -)--help[Help for $words[1]]")
 
   case $words[1] in
-
     build)
       _arguments \
         $opts_help \
@@ -379,67 +375,69 @@ function _vctl() {
       ;;
 
     system)
-      local curcontext="$curcontext" state
+      local curcontext="$curcontext"
 
-      _vctl_system_commands() {
-        local -a _vctl_image_subcommands
-        _vctl_image_subcommands=(
+      function _vctl_system_commands() {
+        local -a _vctl_system_subcommands
+        _vctl_system_subcommands=(
           "config:Config and initialize the system environment for the Nautilus Container Engine."
           "info:Display the Nautilus Container Engine information."
           "start:Start the Nautilus Container Engine."
           "stop:Stop the Nautilus Container Engine."
         )
-        _describe -t vctl-system-commands "vctl system command" _vctl_image_subcommands
+        _describe -t vctl-system-commands "vctl system command" _vctl_system_subcommands
       }
 
       _arguments \
         $opts_help \
-        "($help)--cache-location[Specify the cache file location (default '$HOME/.vctl')]:cache location:_files" \
-        "($help)--mount-name[Mount name for container storage (default 'Fusion Container Storage')]:mount name" \
-        "($help -s --storage)"{-s,--storage}'[Container storage size \(default "128g"\)]:storage size' \
-        "($help -c --vm-cpus)"{-c,--vm-cpus}'[CPU cores of base virtual machine that hosts container \(default 2\)]:vm cpus' \
-        "($help -m --vm-mem)"{-m,--vm-mem}'[Memory size (MB) for virtual machine that hosts container \(default 1024\)]:vm memory' \
         "($help -): :->command" \
         "($help -)*:: :->option-or-argument" && ret=0
+
+      opts_help=("(: -)--help[Help for $words[1]]")
 
       case $state in
         (command)
           _vctl_system_commands && ret=0
           ;;
+
         (option-or-argument)
           curcontext=${curcontext%:*:*}:vctl-${words[-1]}:
-          _vctl_system_commands && ret=0
           ;;
-        args)
-          case $words[1] in
-            (config)
-              _arguments \
-                $opts_help \
-                "($help)--cache-location[Specify the cache file location (default '$HOME/.vctl')]:cache location:_files" \
-                "($help)--mount-name[Mount name for container storage (default 'Fusion Container Storage')]:mount name" \
-                "($help -s --storage)"{-s,--storage}'[Container storage size \(default "128g"\)]:storage size' \
-                "($help -c --vm-cpus)"{-c,--vm-cpus}'[CPU cores of base virtual machine that hosts container \(default 2\)]:vm cpus' \
-                "($help -m --vm-mem)"{-m,--vm-mem}'[Memory size (MB) for virtual machine that hosts container \(default 1024\)]:vm memory' && ret=0
-              ;;
+      esac
 
-            (info)
-              _arguments \
-                $opts_help && ret=0
-              ;;
+      case $words[1] in
+        config)
+          _arguments \
+            $opts_help \
+            "($help)--cache-location[Specify the cache file location (default '\$HOME/.vctl')]:cache location:_files" \
+            "($help)--k8s-cpus[CPU cores of base virtual machine that hosts Kubernetes node (default 2)]:k8s cpus" \
+            "($help)--k8s-mem[Memory size (MB/GB) for virtual machine that hosts Kubernetes node (default \"2g\")]:k8s memory" \
+            "($help)--mount-name[Mount name for container storage (default 'Fusion Container Storage')]:mount name" \
+            "($help -s --storage)"{-s,--storage}'[Container storage size \(default "128g"\)]:storage size' \
+            "($help -c --vm-cpus)"{-c,--vm-cpus}'[CPU cores of base virtual machine that hosts container \(default 2\)]:vm cpus' \
+            "($help -m --vm-mem)"{-m,--vm-mem}'[Memory size (MB) for virtual machine that hosts container \(default 1024\)]:vm memory' \
+           && ret=0
+          ;;
 
-            (start)
-              _arguments \
-                $opts_help \
-                "($help -c --compact)"{-c,--compact}'[Compact container storage upon start']
-                "($help -l, --log-level)"{-l,--log-level}'[Log level for Nautilus Container Engine]:log level:(trace debug info warn error fatal panic)' \
-                "($help)--log-location[Log location for Nautilus Container Engine (default '$HOME/.vctl/containerd.log')]:log location:_files" && ret=0
-              ;;
+        info)
+          _arguments \
+            $opts_help \
+           && ret=0
+          ;;
 
-            (stop)
-              _arguments \
-                $opts_help && ret=0
-              ;;
-          esac
+        start)
+          _arguments \
+            $opts_help \
+            "($help -c --compact)"{-c,--compact}'[Compact container storage upon start'] \
+            "($help -l, --log-level)"{-l,--log-level}'[Log level for Nautilus Container Engine]:log level:(trace debug info warn error fatal panic)' \
+            "($help)--log-location[Log location for Nautilus Container Engine (default '\$HOME/.vctl/containerd.log')]:log location:_files" \
+           && ret=0
+          ;;
+
+        stop)
+          _arguments \
+            $opts_help \
+           && ret=0
           ;;
       esac
       ;;
@@ -533,7 +531,7 @@ _vctl "$*"
 #   vctl build .
 #
 #   # To specify file Dockerfile.test for the build instructions and /Users/username/myapp as root of build context.
-#   vctl build -f Dockerfiles/Dockerfile.test /Users/username/myapp 
+#   vctl build -f Dockerfiles/Dockerfile.test /Users/username/myapp
 #
 #   # To tag the image using mynamespace/myrepo:1.0 as name after building.
 #   vctl build --tag mynamespace/myrepo:1.0 .
@@ -891,7 +889,7 @@ _vctl "$*"
 #
 # -----------------------------------------------------------------------------
 #
-# Config and initialize the system environment for the Nautilus Container Engine.
+# Config and initialize the system environment for the container engine.
 # Initialize the system environment using default configurations or using the specified configurations.
 # * Every container runs in a separate virtual machine (CRX VM). The virtual machine is created with the same name as the container and starts up when a container starts. It shuts down and is removed when the container stops.
 # * A container running in a virtual machine shares the memory with the operating system. (e.g. Within a virtual machine with 1024MB memory, max memory available for the container will be 512MB, and rest of the memory are reserved for the operating system.)
@@ -904,14 +902,16 @@ _vctl "$*"
 # OPTIONS:
 #       --cache-location string   Specify the cache file location (default "/Users/zchee/.vctl")
 #   -h, --help                    Help for config
+#       --k8s-cpus int            CPU cores of base virtual machine that hosts Kubernetes node (default 2)
+#       --k8s-mem string          Memory size (MB/GB) for virtual machine that hosts Kubernetes node (default "2g")
 #       --mount-name string       Mount name for container storage (default "Fusion Container Storage")
 #   -s, --storage string          Container storage size (default "128g")
 #   -c, --vm-cpus int             CPU cores of base virtual machine that hosts container (default 2)
-#   -m, --vm-mem int              Memory size (MB) for virtual machine that hosts container (default 1024)
+#   -m, --vm-mem string           Memory size (MB/GB) for virtual machine that hosts container (default "1g")
 #
 # EXAMPLES:
-#   # To configure the virtual machine that hosts container with 4 CPU cores and 2GB memory by default.
-#   vctl system config --vm-cpus 4 --vm-mem 2048
+#   # To configure the virtual machine that hosts container with 4 CPU cores and 2GB memory by default. (Memory size could also be provided as “2048m”.)
+#   vctl system config --vm-cpus 4 --vm-mem 2g
 #
 # -----------------------------------------------------------------------------
 #
