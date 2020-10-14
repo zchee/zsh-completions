@@ -429,7 +429,7 @@ function _vctl() {
           _arguments \
             $opts_help \
             "($help -c --compact)"{-c,--compact}'[Compact container storage upon start'] \
-            "($help -l, --log-level)"{-l,--log-level}'[Log level for Nautilus Container Engine]:log level:(trace debug info warn error fatal panic)' \
+            "($help -l --log-level)"{-l,--log-level}'[Log level for Nautilus Container Engine]:log level:(trace debug info warn error fatal panic)' \
             "($help)--log-location[Log location for Nautilus Container Engine (default '\$HOME/.vctl/containerd.log')]:log location:_files" \
            && ret=0
           ;;
@@ -437,6 +437,8 @@ function _vctl() {
         stop)
           _arguments \
             $opts_help \
+            "($help -c --compact)"{-c,--compact}'[Compact container storage upon stop'] \
+            "($help -f --force)"{-f,--force}'[Force quit the container engine and terminate backend virtual machines'] \
            && ret=0
           ;;
       esac
@@ -944,15 +946,15 @@ _vctl "$*"
 #
 # -----------------------------------------------------------------------------
 #
-# Stop the Nautilus Container Engine.
-# Terminate the Nautilus Container Engine services.
+# Stop the container engine.
+# Terminate the container engine services.
 #
 # USAGE:
 #   vctl system stop [OPTIONS]
 #
 # OPTIONS:
 #   -c, --compact   Compact container storage upon stop
-#   -f, --force     Force quit the Nautilus Container Engine and terminate backend virtual machines
+#   -f, --force     Force quit the container engine and terminate backend virtual machines
 #   -h, --help      Help for stop
 #
 # -----------------------------------------------------------------------------
