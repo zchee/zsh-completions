@@ -219,159 +219,186 @@ function _vctl() {
     build)
       _arguments \
         $opts_help \
-        '--builder-mem[Limit on memory available to the builder \(in MB, must be a multiple of 4\) \(default 4096\)]:limit memory' \
-        {-c,--credential}'[Path to the file storing private registry authentication credentials]:credential path:_files' \
-        {-f,--file}'[Path to the target Dockerfile to build from \(Default: PATH/Dockerfile\)]:Dockerfile path:_files' \
-        '--no-local-cache[Do not use local storage as cache for base image]' \
-        {-t,--tag}'[Name of the container image to build]:container image name' \
-        '*:path:_files'
+        "($help)--builder-mem[Limit on memory (MB/GB) available to the container (default \"4g\")]:limit memory" \
+        "($help -c --credential)"{-c,--credential}'[Path to the file storing private registry authentication credentials]:credential path:_files' \
+        "($help -f --file)"{-f,--file}"[Path to the target Dockerfile to build from (Default: PATH/Dockerfile)]:Dockerfile path:_files" \
+        "($help)--kind-load[Load the image to local kind cluster]" \
+        "($help)--no-local-cache[Do not use local storage as cache for base image]" \
+        "($help -t --tag)"{-t,--tag}"[Name of the container image to build]:container image name" \
+        '*:path:_files' \
+      && ret=0
       ;;
 
     create)
       _arguments \
         $opts_help \
-        '--entrypoint[Override the default entrypoint of the container image]:entrypoint' \
-        {-e,--env}'[Environment variables to set in the container]:env' \
-        '--hostname[Host name of the container]:hostname' \
-        {-i,--interactive}'[Keep STDIN open even if not attached]' \
-        {-l,--label}'[Set additional labels to the container]:label' \
-        {-n,--name}'[Assign a name to the container]:container name' \
-        {-r,--privileged}'[Run the container with extended privileges]' \
-        {-p,--publish}'[Bind host network ports to container ports]:bind port' \
-        {-t,--tty}'[Allocate a terminal for the container]' \
-        {-v,--volume}'[Bind host folders to container folders]:bind folder:_directories' \
-        {-w,--workdir}'[Working directory of the new process]:working directory:_directories' \
+        "($help)--entrypoint[Override the default entrypoint of the container image]:entrypoint" \
+        "($help -e --env)"{-e,--env}'[Environment variables to set in the container]:env' \
+        "($help)--hostname[Host name of the container]:hostname" \
+        "($help -i --interactive)"{-i,--interactive}'[Keep STDIN open even if not attached]' \
+        "($help -l --label)"{-l,--label}'[Set additional labels to the container]:label' \
+        "($help -n --name)"{-n,--name}'[Assign a name to the container]:container name' \
+        "($help -r --privileged)"{-r,--privileged}'[Run the container with extended privileges]' \
+        "($help -p --publish)"{-p,--publish}'[Bind host network ports to container ports]:bind port' \
+        "($help -t --tty)"{-t,--tty}'[Allocate a terminal for the container]' \
+        "($help -v --volume)"{-v,--volume}'[Bind host folders to container folders]:bind folder:_directories' \
+        "($help -w --workdir)"{-w,--workdir}'[Working directory of the new process]:working directory:_directories' \
         '1:image' \
         '2:[command]' \
-        '*:[arguments...]'
+        '*:[arguments...]' \
+      && ret=0
       ;;
 
     describe)
       _arguments \
         $opts_help \
-        '*:container'
+        '*:container:_vctl_complete_containers_names' \
+      && ret=0
       ;;
 
     exec)
       _arguments \
         $opts_help \
-        {-d,--detach}'[Run the command in background]' \
-        {-i,--interactive}'[Keep STDIN open even if not attached]' \
-        {-t,--tty}'[Allocate a terminal for the container]' \
-        '1:container' \
+        "($help -d --detach)"{-d,--detach}'[Run the command in background]' \
+        "($help -i --interactive)"{-i,--interactive}'[Keep STDIN open even if not attached]' \
+        "($help -t --tty)"{-t,--tty}'[Allocate a terminal for the container]' \
+        '1:container:_vctl_complete_containers_names' \
         '2:[command]' \
-        '*:[arguments...]'
+        '*:[arguments...]' \
+      && ret=0
       ;;
 
     execvm)
       _arguments \
         $opts_help \
-        {-c,--container}'[Use container as the identifier of the virtual machine hosting it]:container' \
-        {-s,--sh}'[Shell into the virtual machine]' \
+        "($help -c --container)"{-c,--container}'[Use container as the identifier of the virtual machine hosting it]:container' \
+        "($help -s --sh)"{-s,--sh}'[Shell into the virtual machine]' \
         '1:vmx:_files' \
         '2:command' \
-        '*:[arguments...]'
+        '*:[arguments...]' \
+      && ret=0
       ;;
 
     images)
       _arguments \
         $opts_help \
-        {-d,--digests}'[Show digests]' \
-        '*:images:_files'
+        "($help -d --digests)"{-d,--digests}'[Show digests]' \
+        '*:images:_vctl_complete_images' \
+      && ret=0
       ;;
 
     inspect)
       _arguments \
         $opts_help \
-        '*:container name'
+        '*:container name:_vctl_complete_containers_names' \
+      && ret=0
       ;;
 
     kind)
       _arguments \
         $opts_help \
-      _kind
+      && ret=0
       ;;
 
     login)
       _arguments \
         $opts_help \
-        '--http[Use plain http to connect remote registry \(Default uses https\)]' \
-        {-p,--password}'[Password used to connect remote registry]:password' \
-        '--password-stdin[Read password from stdin]' \
-        '--skip-ssl-check[Skip ssl certificate validation]' \
-        {-u,--username}'[Username used to connect remote registry]:username' \
-        '*:server'
+        "($help)--http[Use plain http to connect remote registry (Default uses https)]" \
+        "($help -p --password)"{-p,--password}'[Password used to connect remote registry]:password' \
+        "($help)--password-stdin[Read password from stdin]" \
+        "($help)--skip-ssl-check[Skip ssl certificate validation]" \
+        "($help -u --username)"{-u,--username}'[Username used to connect remote registry]:username' \
+        '*:server' \
+      && ret=0
       ;;
 
     logout)
       _arguments \
         $opts_help \
+      && ret=0
       ;;
 
     ps)
       _arguments \
         $opts_help \
-        {-a,--all}'[Show all containers]' \
-        {-l,--label}'[Filter containers with additional labels]:label' \
-        '*:container...'
+        "($help -a --all)"{-a,--all}'[Show all containers]' \
+        "($help -l --label)"{-l,--label}'[Filter containers with additional labels]:label' \
+        '*:container...' \
+      && ret=0
       ;;
 
     pull|push)
       _arguments \
         $opts_help \
-        '--http[Use plain http to connect remote registry \(Default uses https\)]' \
-        {-p,--password}'[Password used to connect remote registry]:password' \
-        '--password-stdin[Read password from stdin]' \
-        '--skip-ssl-check[Skip ssl certificate validation]' \
-        {-u,--username}'[Username used to connect remote registry]:username' \
-        '*:image'
+        "($help)--http[Use plain http to connect remote registry (Default uses https)]" \
+        "($help -p --password)"{-p,--password}'[Password used to connect remote registry]:password' \
+        "($help)--password-stdin[Read password from stdin]" \
+        "($help)--skip-ssl-check[Skip ssl certificate validation]" \
+        "($help -u --username)"{-u,--username}'[Username used to connect remote registry]:username' \
+        '*:image' \
+      && ret=0
       ;;
 
-    rm|rmi)
+    rm)
       _arguments \
         $opts_help \
-        {-a,--all}'[Delete all containers]' \
-        {-f,--force}'[Force removal of container regardless of its status]' \
-        '*:image'
+        "($help -a --all)"{-a,--all}'[Delete all containers]' \
+        "($help -f --force)"{-f,--force}'[Force removal of container regardless of its status]' \
+        "($help -v --volume)"{-v,--volume}'[Remove anonymous volume used by the container]' \
+        '*:image' \
+      && ret=0
+      ;;
+
+    rmi)
+      _arguments \
+        $opts_help \
+        "($help -a --all)"{-a,--all}'[Delete all containers]' \
+        "($help -f --force)"{-f,--force}'[Force removal of container regardless of its status]' \
+        '*:image' \
+      && ret=0
       ;;
 
     run)
       _arguments \
         $opts_help \
-        {-c,--cpus}'[Number of CPU cores \(default 2\)]:cpus' \
-        {-d,--detach}'[Run the container in background]' \
-        '--entrypoint[Override the default entrypoint of the container image]:entrypoint' \
-        {-e,--env}'[Environment variables to set in the container]:env' \
-        '--hostname[Host name of the container]:hostname' \
-        {-i,--interactive}'[Keep STDIN open even if not attached]' \
-        '--keepVM[\[EXPERIMENTAL\] Keep the host virtual machine running after container stops]' \
-        {-l,--label}'[Set additional labels to the container]:label' \
-        {-m,--memory}'[Limit on memory available to the container \(in MB, must be a multiple of 4\) \(default 512\)]:limit memory' \
-        {-n,--name}'[Assign a name to the container]:container name' \
-        {-r,--privileged}[Run the container with extended privileges]' \
-        {-p,--publish}[Bind host network ports to container ports]:bind port' \
-        {-t,--tty}'[Allocate a terminal for the container]' \
-        {-v,--volume}'[Bind host folders to container folders]:bind folder:_directories' \
-        {-w,--workdir}'[Working directory of the new process]:working directory:_directories' \
+        "($help -c --cpus)"{-c,--cpus}"[Number of CPU cores (default 2)]:cpus" \
+        "($help -d --detach)"{-d,--detach}"[Run the container in background]" \
+        "($help)--entrypoint[Override the default entrypoint of the container image]:entrypoint" \
+        "($help -e --env)"{-e,--env}"[Environment variables to set in the container]:env" \
+        "($help)--hostname[Host name of the container]:hostname" \
+        "($help -i --interactive)"{-i,--interactive}"[Keep STDIN open even if not attached]" \
+        "($help)--keepVM[\[EXPERIMENTAL\] Keep the host virtual machine running after container stops]" \
+        "($help -l --label)"{-l,--label}"[Set additional labels to the container]:label" \
+        "($help -m --memory)"{-m,--memory}"[Limit on memory (MB/GB) available to the container (default \"512m\")]:limit memory" \
+        "($help -n --name)"{-n,--name}"[Assign a name to the container]:container name" \
+        "($help -r --privileged)"{-r,--privileged}"[Run the container with extended privileges]" \
+        "($help -p --publish)"{-p,--publish}"[Bind host network ports to container ports]:bind port" \
+        "($help)--rm[Automatically remove the container when it exits]" \
+        "($help -t --tty)"{-t,--tty}"[Allocate a terminal for the container]" \
+        "($help -v --volume)"{-v,--volume}"[Bind host folders to container folders]:bind folder:_directories" \
+        "($help -w --workdir)"{-w,--workdir}"[Working directory of the new process]:working directory:_directories" \
         '1:image' \
         '2:[command]' \
-        '*:[arguments...]'
+        '*:[arguments...]' \
+      && ret=0
       ;;
 
     start)
       _arguments \
         $opts_help \
-        "($help -c --cpus)"{-c,--cpus}'[Number of CPU cores \(default 2\)]:cpus' \
-        "($help -d --detach)"{-d,--detach}'[Run the container in background]' \
+        "($help -c --cpus)"{-c,--cpus}"[Number of CPU cores (default 2)]:cpus" \
+        "($help -d --detach)"{-d,--detach}"[Run the container in background]" \
         "($help)--keepVM[\\[EXPERIMENTAL\\] Keep the host virtual machine running after container stops]" \
-        "($help -m --memory)"{-m,--memory}'[Limit on memory available to the container \(in MB, must be a multiple of 4\) \(default 512\)]:limit memory' \
-        "($help -)*:containers:_vctl_complete_stopped_containers" && ret=0
+        "($help -m --memory)"{-m,--memory}"[Limit on memory (MB/GB) available to the container (default \"512m\")]:limit memory" \
+        "($help -)*:containers:_vctl_complete_stopped_containers" \
+      && ret=0
       ;;
 
     stop)
       _arguments \
         $opts_help \
-        "($help -)*:containers:_vctl_complete_running_containers" && ret=0
+        "($help -)*:containers:_vctl_complete_running_containers" \
+      && ret=0
       ;;
 
     system)
@@ -413,9 +440,9 @@ function _vctl() {
             "($help)--k8s-cpus[CPU cores of base virtual machine that hosts Kubernetes node (default 2)]:k8s cpus" \
             "($help)--k8s-mem[Memory size (MB/GB) for virtual machine that hosts Kubernetes node (default \"2g\")]:k8s memory" \
             "($help)--mount-name[Mount name for container storage (default 'Fusion Container Storage')]:mount name" \
-            "($help -s --storage)"{-s,--storage}'[Container storage size \(default "128g"\)]:storage size' \
-            "($help -c --vm-cpus)"{-c,--vm-cpus}'[CPU cores of base virtual machine that hosts container \(default 2\)]:vm cpus' \
-            "($help -m --vm-mem)"{-m,--vm-mem}'[Memory size (MB) for virtual machine that hosts container \(default 1024\)]:vm memory' \
+            "($help -s --storage)"{-s,--storage}"[Container storage size (default \"128g\")]:storage size" \
+            "($help -c --vm-cpus)"{-c,--vm-cpus}"[CPU cores of base virtual machine that hosts container (default 2)]:vm cpus" \
+            "($help -m --vm-mem)"{-m,--vm-mem}"[Memory size (MB/GB) for virtual machine that hosts container (default \"1g\")]:vm memory" \
            && ret=0
           ;;
 
@@ -428,8 +455,8 @@ function _vctl() {
         start)
           _arguments \
             $opts_help \
-            "($help -c --compact)"{-c,--compact}'[Compact container storage upon start'] \
-            "($help -l --log-level)"{-l,--log-level}'[Log level for container engine]:log level:(trace debug info warn error fatal panic)' \
+            "($help -c --compact)"{-c,--compact}"[Compact container storage upon start]" \
+            "($help -l --log-level)"{-l,--log-level}"[Log level for container engine]:log level:(trace debug info warn error fatal panic)" \
             "($help)--log-location[Log location for container engine (default '\$HOME/.vctl/containerd.log')]:log location:_files" \
            && ret=0
           ;;
@@ -437,8 +464,8 @@ function _vctl() {
         stop)
           _arguments \
             $opts_help \
-            "($help -c --compact)"{-c,--compact}'[Compact container storage upon stop'] \
-            "($help -f --force)"{-f,--force}'[Force quit the container engine and terminate backend virtual machines'] \
+            "($help -c --compact)"{-c,--compact}"[Compact container storage upon stop]" \
+            "($help -f --force)"{-f,--force}"[Force quit the container engine and terminate backend virtual machines]" \
            && ret=0
           ;;
       esac
@@ -446,21 +473,23 @@ function _vctl() {
 
     tag)
       _arguments \
-        {-f,--force}'[Replace an existing image if the TARGET_IMAGE name has been taken]' \
-        {-h,--help}'[Help for tag]' \
+        $opts_help \
+        "($help -f --force)"{-f,--force}"[Replace an existing image if the TARGET_IMAGE name has been taken]" \
         '1:SOURCE_IMAGE' \
         '2:TARGET_IMAGE' \
-        '*:[TARGET_IMAGE...]'
+        '*:[TARGET_IMAGE...]' \
+      && ret=0
       ;;
 
     version)
       _arguments \
-        {-h,--help}'[Help for version]' \
-        '*:file:_files'
+        $opts_help \
+      && ret=0
       ;;
 
     help)
-      _arguments "1: :{_describe 'command' commands}"
+      _arguments "1: :{_describe 'command' commands}" \
+      && ret=0
       ;;
   esac
 
@@ -521,12 +550,13 @@ _vctl "$*"
 #   vctl build [OPTIONS] PATH
 #
 # OPTIONS:
-#       --builder-mem int     Limit on memory available to the builder (in MB, must be a multiple of 4) (default 4096)
-#   -c, --credential string   Path to the file storing private registry authentication credentials
-#   -f, --file string         Path to the target Dockerfile to build from (Default: PATH/Dockerfile)
-#   -h, --help                Help for build
-#       --no-local-cache      Do not use local storage as cache for base image
-#   -t, --tag string          Name of the container image to build
+#       --builder-mem string   Limit on memory (MB/GB) available to the container (default "4g")
+#   -c, --credential string    Path to the file storing private registry authentication credentials
+#   -f, --file string          Path to the target Dockerfile to build from (Default: PATH/Dockerfile)
+#   -h, --help                 Help for build
+#       --kind-load            Load the image to local kind cluster
+#       --no-local-cache       Do not use local storage as cache for base image
+#   -t, --tag string           Name of the container image to build
 #
 # EXAMPLES:
 #   # To use current directory as the build context. (Dockerfile will be used for the build instruction by default; a random name will be assigned to the image to build.)
@@ -537,6 +567,9 @@ _vctl "$*"
 #
 #   # To tag the image using mynamespace/myrepo:1.0 as name after building.
 #   vctl build --tag mynamespace/myrepo:1.0 .
+#
+#   # To load the image into a local kind cluster in current kubectl context after building.
+#   vctl build -t myImage --kind-load .
 #
 # -----------------------------------------------------------------------------
 #
@@ -562,6 +595,7 @@ _vctl "$*"
 #
 # -----------------------------------------------------------------------------
 #
+# Show details of a container.
 # Print detailed description of the given container and practical information for debug and troubleshooting.
 # * Guide for quick access to & execution in container-hosting virtual machine is available in output.
 #
@@ -764,9 +798,10 @@ _vctl "$*"
 #   vctl rm [OPTIONS] ([CONTAINER...]|--all)
 #
 # OPTIONS:
-#   -a, --all     Delete all containers
-#   -f, --force   Force removal of container regardless of its status
-#   -h, --help    Help for rm
+#   -a, --all      Delete all containers
+#   -f, --force    Force removal of container regardless of its status
+#   -h, --help     Help for rm
+#   -v, --volume   Remove anonymous volume used by the container
 #
 # -----------------------------------------------------------------------------
 #
@@ -788,7 +823,7 @@ _vctl "$*"
 # * Every container runs in a separate virtual machine (CRX VM), the virtual machine is created with the same name as the container and starts up when a container starts. It shuts down and is removed when the container stops.
 # * Use '--memory' and '--cpus' to make specific configurations to the CPU and memory that is available to the container.
 # * A container running in a virtual machine shares the memory with its hosting virtual machine. (e.g. Within a virtual machine with 1024MB memory, max memory available for the container will be 512MB, and rest of the memory are reserved for the operating system.)
-# * Use 'vctl system config' to manage the default settings of the virtual machine hosting container. (e.g. vctl system config --vm-mem 2048)
+# * Use 'vctl system config' to manage the default settings of the virtual machine hosting container. (e.g. vctl system config --vm-mem 2g)
 # * If no COMMAND is provided, the default command from the image will be executed.
 # * When '--keepVM' is used, use 'vmrun stop VMX' to manually stop the host virtual machine before using the container again.
 #
@@ -805,10 +840,11 @@ _vctl "$*"
 #   -i, --interactive         Keep STDIN open even if not attached
 #       --keepVM              [EXPERIMENTAL] Keep the host virtual machine running after container stops
 #   -l, --label strings       Set additional labels to the container (e.g. foo=bar)
-#   -m, --memory int          Limit on memory available to the container (in MB, must be a multiple of 4) (default 512)
+#   -m, --memory string       Limit on memory (MB/GB) available to the container (default "512m")
 #   -n, --name string         Assign a name to the container
 #   -r, --privileged          Run the container with extended privileges
 #   -p, --publish strings     Bind host network ports to container ports
+#       --rm                  Automatically remove the container when it exits
 #   -t, --tty                 Allocate a terminal for the container
 #   -v, --volume strings      Bind host folders to container folders
 #   -w, --workdir string      Working directory of the new process
@@ -821,7 +857,7 @@ _vctl "$*"
 #   vctl run --env="FOO=BAR" myImage
 #
 #   # To set 4 CPU cores limit and 2GB memory limit for a new container using 'myImage' image. (In this case the virtual machine hosting the container will be configured with 4 CPU cores and 2560MB memory.)
-#   vctl run -c 4 -m 2048 myImage
+#   vctl run -c 4 -m 2g myImage
 #
 #   # To run a new container in background. (detached from current terminal)
 #   vctl run --detach myImage
@@ -842,22 +878,22 @@ _vctl "$*"
 # * Every container runs in a separate virtual machine, a virtual machine is created with the same name as the container and starts up when a container starts. It shuts down and is removed when the container stops.
 # * Use '--memory' and '--cpus' to make specific configurations to the CPU and memory available to the container.
 # * A container running in a virtual machine shares the memory with the operating system. (e.g. Within a virtual machine with 1024MB memory, max memory available for the container will be 512MB, and rest of the memory are reserved for the operating system.)
-# * Use 'vctl system config' to manage the default settings of the virtual machine hosting container. (e.g. vctl system config --vm-mem 2048)
+# * Use 'vctl system config' to manage the default settings of the virtual machine hosting container. (e.g. vctl system config --vm-mem 2g)
 # * When '--keepVM' is used, use 'vmrun stop VMX' to manually stop the host virtual machine before using the container again.
 #
 # USAGE:
 #   vctl start [OPTIONS] CONTAINER
 #
 # OPTIONS:
-#   -c, --cpus int     Number of CPU cores (default 2)
-#   -d, --detach       Run the container in background
-#   -h, --help         Help for start
-#       --keepVM       [EXPERIMENTAL] Keep the host virtual machine running after container stops
-#   -m, --memory int   Limit on memory available to the container (in MB, must be a multiple of 4) (default 512)
+#   -c, --cpus int        Number of CPU cores (default 2)
+#   -d, --detach          Run the container in background
+#   -h, --help            Help for start
+#       --keepVM          [EXPERIMENTAL] Keep the host virtual machine running after container stops
+#   -m, --memory string   Limit on memory (MB/GB) available to the container (default "512m")
 #
 # EXAMPLES:
 #   # To set 4 CPU cores limit and 2GB memory limit for myContainer. (In this case the virtual machine hosting the container will be configured with 4 CPU cores and 2560MB memory.)
-#   vctl start -c 4 -m 2048 myContainer
+#   vctl start -c 4 -m 2g myContainer
 #
 # -----------------------------------------------------------------------------
 #
