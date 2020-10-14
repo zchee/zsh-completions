@@ -429,8 +429,8 @@ function _vctl() {
           _arguments \
             $opts_help \
             "($help -c --compact)"{-c,--compact}'[Compact container storage upon start'] \
-            "($help -l --log-level)"{-l,--log-level}'[Log level for Nautilus Container Engine]:log level:(trace debug info warn error fatal panic)' \
-            "($help)--log-location[Log location for Nautilus Container Engine (default '\$HOME/.vctl/containerd.log')]:log location:_files" \
+            "($help -l --log-level)"{-l,--log-level}'[Log level for container engine]:log level:(trace debug info warn error fatal panic)' \
+            "($help)--log-location[Log location for container engine (default '\$HOME/.vctl/containerd.log')]:log location:_files" \
            && ret=0
           ;;
 
@@ -928,8 +928,8 @@ _vctl "$*"
 #
 # -----------------------------------------------------------------------------
 #
-# Start the Nautilus Container Engine.
-# Initialize host OS environment for the Nautilus Container Engine using default configurations, then start Nautilus Container Engine.
+# Start the container engine.
+# Initialize host OS environment for the container engine using default configurations, then start container engine.
 #
 # USAGE:
 #   vctl system start [OPTIONS]
@@ -937,11 +937,11 @@ _vctl "$*"
 # OPTIONS:
 #   -c, --compact               Compact container storage upon start
 #   -h, --help                  Help for start
-#   -l, --log-level string      Log level for Nautilus Container Engine (trace|debug|info|warn|error|fatal|panic) (default "info")
-#       --log-location string   Log location for Nautilus Container Engine (default "/Users/zchee/.vctl/containerd.log")
+#   -l, --log-level string      Log level for container engine (trace|debug|info|warn|error|fatal|panic) (default "info")
+#       --log-location string   Log location for container engine (default "/Users/zchee/.vctl/containerd.log")
 #
 # EXAMPLES:
-#   # To set the log level to debug upon the start of the Nautilus Container Engine.
+#   # To set the log level to debug upon the start of the container engine.
 #   vctl system start -l debug
 #
 # -----------------------------------------------------------------------------
