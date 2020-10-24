@@ -1096,6 +1096,7 @@ _go "$*"
 #
 #  Use "go help <topic>" for more information about that topic.
 #
+# ------------------------------------------------------------------------------
 #
 #  Start a bug report
 #
@@ -1106,6 +1107,7 @@ _go "$*"
 #  Bug opens the default browser and starts a new bug report.
 #  The report includes useful system information.
 #
+# ------------------------------------------------------------------------------
 #
 #  Compile packages and dependencies
 #
@@ -1253,6 +1255,7 @@ _go "$*"
 #
 #  See also: go install, go get, go clean.
 #
+# ------------------------------------------------------------------------------
 #
 #  Remove object files and cached files
 #
@@ -1310,6 +1313,7 @@ _go "$*"
 #
 #  For more about specifying packages, see 'go help packages'.
 #
+# ------------------------------------------------------------------------------
 #
 #  Show documentation for package or symbol
 #
@@ -1428,6 +1432,7 @@ _go "$*"
 #  		Show documentation for unexported as well as exported
 #  		symbols, methods, and fields.
 #
+# ------------------------------------------------------------------------------
 #
 #  Print Go environment information
 #
@@ -1455,6 +1460,7 @@ _go "$*"
 #
 #  For more about environment variables, see 'go help environment'.
 #
+# ------------------------------------------------------------------------------
 #
 #  Update packages to use new APIs
 #
@@ -1471,6 +1477,7 @@ _go "$*"
 #
 #  See also: go fmt, go vet.
 #
+# ------------------------------------------------------------------------------
 #
 #  Gofmt (reformat) package sources
 #
@@ -1494,6 +1501,7 @@ _go "$*"
 #
 #  See also: go fix, go vet.
 #
+# ------------------------------------------------------------------------------
 #
 #  Generate Go files by processing source
 #
@@ -1615,6 +1623,7 @@ _go "$*"
 #
 #  For more about specifying packages, see 'go help packages'.
 #
+# ------------------------------------------------------------------------------
 #
 #  Add dependencies to current module and install them
 #
@@ -1744,6 +1753,7 @@ _go "$*"
 #
 #  See also: go build, go install, go clean, go mod.
 #
+# ------------------------------------------------------------------------------
 #
 #  Compile and install packages and dependencies
 #
@@ -1796,6 +1806,7 @@ _go "$*"
 #
 #  See also: go build, go get, go clean.
 #
+# ------------------------------------------------------------------------------
 #
 #  List packages or modules
 #
@@ -2072,6 +2083,7 @@ _go "$*"
 #
 #  For more about modules, see 'go help modules'.
 #
+# ------------------------------------------------------------------------------
 #
 #  Module maintenance
 #
@@ -2137,6 +2149,7 @@ _go "$*"
 #
 #  See 'go help modules' for more about module queries.
 #
+# ------------------------------------------------------------------------------
 #
 #  Edit go.mod from tools or scripts
 #
@@ -2241,6 +2254,7 @@ _go "$*"
 #  parsing the output of 'go mod edit -json' and can then make changes
 #  by invoking 'go mod edit' with -require, -exclude, and so on.
 #
+# ------------------------------------------------------------------------------
 #
 #  Print module requirement graph
 #
@@ -2253,6 +2267,7 @@ _go "$*"
 #  and one of its requirements. Each module is identified as a string of the form
 #  path@version, except for the main module, which has no @version suffix.
 #
+# ------------------------------------------------------------------------------
 #
 #  Initialize new module in current directory
 #
@@ -2267,6 +2282,7 @@ _go "$*"
 #  (see 'go help importpath') or from version control configuration.
 #  To override this guess, supply the module path as an argument.
 #
+# ------------------------------------------------------------------------------
 #
 #  Add missing and remove unused modules
 #
@@ -2286,6 +2302,7 @@ _go "$*"
 #  The -e flag causes tidy to attempt to proceed despite errors
 #  encountered while loading packages.
 #
+# ------------------------------------------------------------------------------
 #
 #  Make vendored copy of dependencies
 #
@@ -2303,6 +2320,7 @@ _go "$*"
 #  The -e flag causes vendor to attempt to proceed despite errors
 #  encountered while loading packages.
 #
+# ------------------------------------------------------------------------------
 #
 #  Verify dependencies have expected content
 #
@@ -2317,6 +2335,7 @@ _go "$*"
 #  modules have been changed and causes 'go mod' to exit with a
 #  non-zero status.
 #
+# ------------------------------------------------------------------------------
 #
 #  Explain why packages or modules are needed
 #
@@ -2353,6 +2372,7 @@ _go "$*"
 #  	(main module does not need package golang.org/x/text/encoding)
 #  	$
 #
+# ------------------------------------------------------------------------------
 #
 #  Compile and run Go program
 #
@@ -2382,6 +2402,7 @@ _go "$*"
 #
 #  See also: go build.
 #
+# ------------------------------------------------------------------------------
 #
 #  Test packages
 #
@@ -2508,6 +2529,7 @@ _go "$*"
 #
 #  See also: go build, go vet.
 #
+# ------------------------------------------------------------------------------
 #
 #  Run specified go tool
 #
@@ -2523,6 +2545,7 @@ _go "$*"
 #
 #  For more about each tool command, see 'go doc cmd/<command>'.
 #
+# ------------------------------------------------------------------------------
 #
 #  Print Go version
 #
@@ -2550,6 +2573,7 @@ _go "$*"
 #
 #  See also: go doc runtime/debug.BuildInfo.
 #
+# ------------------------------------------------------------------------------
 #
 #  Report likely mistakes in packages
 #
@@ -2580,6 +2604,7 @@ _go "$*"
 #
 #  See also: go fmt, go fix.
 #
+# ------------------------------------------------------------------------------
 #
 #  Build constraints
 #
@@ -2672,6 +2697,7 @@ _go "$*"
 #  building the package for Windows; similarly, math_386.s will be included
 #  only when building the package for 32-bit x86.
 #
+# ------------------------------------------------------------------------------
 #
 #  Build modes
 #
@@ -2721,6 +2747,7 @@ _go "$*"
 #  On AIX, when linking a C program that uses a Go archive built with
 #  -buildmode=c-archive, you must pass -Wl,-bnoobjreorder to the C compiler.
 #
+# ------------------------------------------------------------------------------
 #
 #  Calling between Go and C
 #
@@ -2740,6 +2767,7 @@ _go "$*"
 #  compiler. The CC or CXX environment variables may be set to determine
 #  the C or C++ compiler, respectively, to use.
 #
+# ------------------------------------------------------------------------------
 #
 #  Build and test caching
 #
@@ -2779,6 +2807,7 @@ _go "$*"
 #  GODEBUG=gocachetest=1 causes the go command to print details of its
 #  decisions about whether to reuse a cached test result.
 #
+# ------------------------------------------------------------------------------
 #
 #  Environment variables
 #
@@ -2946,6 +2975,7 @@ _go "$*"
 #  	GOTOOLDIR
 #  		The directory where the go tools (compile, cover, doc, etc...) are installed.
 #
+# ------------------------------------------------------------------------------
 #
 #  File types
 #
@@ -2982,6 +3012,7 @@ _go "$*"
 #  line comment. See the go/build package documentation for
 #  more details.
 #
+# ------------------------------------------------------------------------------
 #
 #  The go.mod file
 #
@@ -3073,6 +3104,7 @@ _go "$*"
 #  will not be available. Note that the language version does not affect
 #  build tags, which are determined by the Go release being used.
 #
+# ------------------------------------------------------------------------------
 #
 #  GOPATH environment variable
 #
@@ -3167,6 +3199,7 @@ _go "$*"
 #                  quux/              (go code in package main)
 #                      y.go
 #
+# ------------------------------------------------------------------------------
 #
 #  The code in z.go is imported as "foo/internal/baz", but that
 #  import statement can only appear in source files in the subtree
@@ -3228,6 +3261,7 @@ _go "$*"
 #
 #  See https://golang.org/s/go15vendor for details.
 #
+# ------------------------------------------------------------------------------
 #
 #  Legacy GOPATH go get
 #
@@ -3298,6 +3332,7 @@ _go "$*"
 #
 #  See also: go build, go install, go clean.
 #
+# ------------------------------------------------------------------------------
 #
 #  Module proxy protocol
 #
@@ -3366,6 +3401,7 @@ _go "$*"
 #  https://example.com/proxy would let other users access those
 #  cached module versions with GOPROXY=https://example.com/proxy.
 #
+# ------------------------------------------------------------------------------
 #
 #  Import path syntax
 #
@@ -3553,6 +3589,7 @@ _go "$*"
 #
 #  See https://golang.org/s/go14customimport for details.
 #
+# ------------------------------------------------------------------------------
 #
 #  Modules, module versions, and more
 #
@@ -3946,6 +3983,7 @@ _go "$*"
 #  Unlike vendoring in GOPATH, the go command ignores vendor directories in
 #  locations other than the main module's root directory.
 #
+# ------------------------------------------------------------------------------
 #
 #  Module authentication using go.sum
 #
@@ -4034,6 +4072,7 @@ _go "$*"
 #  The 'go env -w' command (see 'go help env') can be used to set these variables
 #  for future go command invocations.
 #
+# ------------------------------------------------------------------------------
 #
 #  Module configuration for non-public modules
 #
@@ -4079,6 +4118,7 @@ _go "$*"
 #  The 'go env -w' command (see 'go help env') can be used to set these variables
 #  for future go command invocations.
 #
+# ------------------------------------------------------------------------------
 #
 #  Package lists and patterns
 #
@@ -4163,6 +4203,7 @@ _go "$*"
 #  Directory and file names that begin with "." or "_" are ignored
 #  by the go tool, as are directories named "testdata".
 #
+# ------------------------------------------------------------------------------
 #
 #  Testing flags
 #
@@ -4397,6 +4438,7 @@ _go "$*"
 #  In the second example, the argument math is passed through to the test
 #  binary, instead of being interpreted as the package list.
 #
+# ------------------------------------------------------------------------------
 #
 #  Testing functions
 #
