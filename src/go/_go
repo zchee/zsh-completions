@@ -564,12 +564,14 @@ _go() {
 
               tidy)
                 _arguments \
-                  '-v[tidy to print information about removed modules to standard error.]'
+                  '-v[print information about removed modules to standard error.]' \
+                  '-e[attempt to proceed despite errors encountered while loading packages.]'
                 ;;
 
               vendor)
                 _arguments \
-                  '-v[vendor to print the names of vendored modules and packages to standard error.]'
+                  '-v[print the names of vendored modules and packages to standard error.]' \
+                  '-e[attempt to proceed despite errors encountered while loading packages.]'
                 ;;
 
               verify)
@@ -1034,9 +1036,12 @@ _go "$*"
 
 # ------------------------------------------------------------------------------
 #
-# generate follows help comment:
+# generate alldoc comment:
 # NOTE(zchee): `go help documentation` command is undocument.
-#  $ go help documentation | sed 's|^//|# |g' | awk '{if(NR>7)print}' | head -n -3
+#  $ line="$(printf '%s' $(printf '-%.0s' {1..78}))"; go help documentation | sed 's|^//|# |g' | awk '{if(NR>7)print}' | head -n -3 | sed -e '1h;2,$H;$!d;g' -re "s/(# \\n# )\\n/\1$line\\n#\\n/g"; unset line
+#
+# generate tools doc comment:
+#  $ touch tmp.txt; for t in $(go tool | tr '\n' ' '); do printf '#\n# %s\n#\n' $(printf '-%.0s' {1..78})>>tmp.txt && ( go tool $t -h 2>&1 | sed 's|^|# |g'>>tmp.txt ); done && printf '#\n#\n# %s\n' $(printf '-%.0s' {1..78})>>tmp.txt; cat tmp.txt; rm -f tmp.txt
 #
 # ------------------------------------------------------------------------------
 #
@@ -1128,8 +1133,9 @@ _go "$*"
 #
 #  The -o flag forces build to write the resulting executable or object
 #  to the named output file or directory, instead of the default behavior described
-#  in the last two paragraphs. If the named output is a directory that exists,
-#  then any resulting executables will be written to that directory.
+#  in the last two paragraphs. If the named output is an existing directory or
+#  ends with a slash or backslash, then any resulting executables
+#  will be written to that directory.
 #
 #  The -i flag installs the packages that are dependencies of the target.
 #
@@ -1696,10 +1702,12 @@ _go "$*"
 #  this automatically as well.
 #
 #  The -insecure flag permits fetching from repositories and resolving
-#  custom domains using insecure schemes such as HTTP. Use with caution. The
-#  GOINSECURE environment variable is usually a better alternative, since it
-#  provides control over which modules may be retrieved using an insecure scheme.
-#  See 'go help environment' for details.
+#  custom domains using insecure schemes such as HTTP, and also bypassess
+#  module sum validation using the checksum database. Use with caution.
+#  This flag is deprecated and will be removed in a future version of go.
+#  To permit the use of insecure schemes, use the GOINSECURE environment
+#  variable instead. To bypass module sum validation, use GOPRIVATE or
+#  GONOSUMDB. See 'go help environment' for details.
 #
 #  The second step is to download (if needed), build, and install
 #  the named packages.
@@ -1828,26 +1836,28 @@ _go "$*"
 #          BinaryOnly    bool     // binary-only package (no longer supported)
 #          ForTest       string   // package is only for use in named test
 #          Export        string   // file containing export data (when using -export)
+#          BuildID       string   // build ID of the export data (when using -export)
 #          Module        *Module  // info about package's containing module, if any (can be nil)
 #          Match         []string // command-line patterns matching this package
 #          DepOnly       bool     // package is only a dependency, not explicitly listed
 #
 #          // Source files
-#          GoFiles         []string // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
-#          CgoFiles        []string // .go source files that import "C"
-#          CompiledGoFiles []string // .go files presented to compiler (when using -compiled)
-#          IgnoredGoFiles  []string // .go source files ignored due to build constraints
-#          CFiles          []string // .c source files
-#          CXXFiles        []string // .cc, .cxx and .cpp source files
-#          MFiles          []string // .m source files
-#          HFiles          []string // .h, .hh, .hpp and .hxx source files
-#          FFiles          []string // .f, .F, .for and .f90 Fortran source files
-#          SFiles          []string // .s source files
-#          SwigFiles       []string // .swig files
-#          SwigCXXFiles    []string // .swigcxx files
-#          SysoFiles       []string // .syso object files to add to archive
-#          TestGoFiles     []string // _test.go files in package
-#          XTestGoFiles    []string // _test.go files outside package
+#          GoFiles         []string   // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
+#          CgoFiles        []string   // .go source files that import "C"
+#          CompiledGoFiles []string   // .go files presented to compiler (when using -compiled)
+#          IgnoredGoFiles  []string   // .go source files ignored due to build constraints
+#          IgnoredOtherFiles []string // non-.go source files ignored due to build constraints
+#          CFiles          []string   // .c source files
+#          CXXFiles        []string   // .cc, .cxx and .cpp source files
+#          MFiles          []string   // .m source files
+#          HFiles          []string   // .h, .hh, .hpp and .hxx source files
+#          FFiles          []string   // .f, .F, .for and .f90 Fortran source files
+#          SFiles          []string   // .s source files
+#          SwigFiles       []string   // .swig files
+#          SwigCXXFiles    []string   // .swigcxx files
+#          SysoFiles       []string   // .syso object files to add to archive
+#          TestGoFiles     []string   // _test.go files in package
+#          XTestGoFiles    []string   // _test.go files outside package
 #
 #          // Cgo directives
 #          CgoCFLAGS    []string // cgo: flags for C compiler
@@ -2262,7 +2272,7 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go mod tidy [-v]
+#  	go mod tidy [-e] [-v]
 #
 #  Tidy makes sure go.mod matches the source code in the module.
 #  It adds any missing modules necessary to build the current module's
@@ -2273,12 +2283,15 @@ _go "$*"
 #  The -v flag causes tidy to print information about removed modules
 #  to standard error.
 #
+#  The -e flag causes tidy to attempt to proceed despite errors
+#  encountered while loading packages.
+#
 #
 #  Make vendored copy of dependencies
 #
 #  Usage:
 #
-#  	go mod vendor [-v]
+#  	go mod vendor [-e] [-v]
 #
 #  Vendor resets the main module's vendor directory to include all packages
 #  needed to build and test all the main module's packages.
@@ -2286,6 +2299,9 @@ _go "$*"
 #
 #  The -v flag causes vendor to print the names of vendored
 #  modules and packages to standard error.
+#
+#  The -e flag causes vendor to attempt to proceed despite errors
+#  encountered while loading packages.
 #
 #
 #  Verify dependencies have expected content
@@ -2633,6 +2649,9 @@ _go "$*"
 #  Using GOOS=illumos matches build tags and files as for GOOS=solaris
 #  in addition to illumos tags and files.
 #
+#  Using GOOS=ios matches build tags and files as for GOOS=darwin
+#  in addition to ios tags and files.
+#
 #  To keep a file from being considered for the build:
 #
 #  	// +build ignore
@@ -2876,8 +2895,8 @@ _go "$*"
 #  		For GOARCH=arm, the ARM architecture for which to compile.
 #  		Valid values are 5, 6, 7.
 #  	GO386
-#  		For GOARCH=386, the floating point instruction set.
-#  		Valid values are 387, sse2.
+#  		For GOARCH=386, how to implement floating point instructions.
+#  		Valid values are sse2 (default), softfloat.
 #  	GOMIPS
 #  		For GOARCH=mips{,le}, whether to use floating point instructions.
 #  		Valid values are hardfloat (default), softfloat.
@@ -3234,10 +3253,11 @@ _go "$*"
 #  before resolving dependencies or building the code.
 #
 #  The -insecure flag permits fetching from repositories and resolving
-#  custom domains using insecure schemes such as HTTP. Use with caution. The
-#  GOINSECURE environment variable is usually a better alternative, since it
-#  provides control over which modules may be retrieved using an insecure scheme.
-#  See 'go help environment' for details.
+#  custom domains using insecure schemes such as HTTP. Use with caution.
+#  This flag is deprecated and will be removed in a future version of go.
+#  The GOINSECURE environment variable should be used instead, since it
+#  provides control over which packages may be retrieved using an insecure
+#  scheme. See 'go help environment' for details.
 #
 #  The -t flag instructs get to also download the packages required to build
 #  the tests for the specified packages.
@@ -4437,6 +4457,28 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
+# usage: addr2line binary
+# reads addresses from standard input and writes two lines for each:
+# 	function name
+# 	file:line
+#
+# ------------------------------------------------------------------------------
+#
+# Usage of /usr/local/go/pkg/tool/darwin_amd64/api:
+#   -allow_new
+#     	allow API additions (default true)
+#   -c string
+#     	optional comma-separated filename(s) to check API against
+#   -contexts string
+#     	optional comma-separated list of <goos>-<goarch>[-cgo] to override default contexts.
+#   -except string
+#     	optional filename of packages that are allowed to change without triggering a failure in the tool
+#   -next string
+#     	optional filename of tentative upcoming API features for the next release. This file can be lazily maintained. It only affects the delta warnings from the -c file printed on success.
+#   -v	verbose debugging
+#
+# ------------------------------------------------------------------------------
+#
 # usage: asm [options] file.s ...
 # Flags:
 #   -D value
@@ -4445,6 +4487,8 @@ _go "$*"
 #     	include directory; can be set multiple times
 #   -S	print assembly and machine code
 #   -V	print version and exit
+#   -compiling-runtime
+#     	source to be compiled is part of the Go runtime
 #   -debug
 #     	dump instructions as they are parsed
 #   -dynlink
@@ -4462,6 +4506,11 @@ _go "$*"
 #     	enable spectre mitigations in list (all, ret)
 #   -trimpath string
 #     	remove prefix from recorded source file paths
+#
+# ------------------------------------------------------------------------------
+#
+# usage: go tool buildid [-w] file
+#   -w	write build ID
 #
 # ------------------------------------------------------------------------------
 #
@@ -4518,102 +4567,671 @@ _go "$*"
 #   -S	print assembly listing
 #   -V	print version and exit
 #   -W	debug parse tree after type checking
-#   -asmhdr file write assembly header to file
-#   -bench file append benchmark times to file
-#   -blockprofile file write block profile to file
-#   -buildid id record id as the build id in the export metadata
-#   -c int concurrency during compilation, 1 means no concurrency (default 1)
-#   -complete compiling complete package (no C or assembly)
-#   -cpuprofile file write cpu profile to file
-#   -d list print debug information about items in list; try -d help
-#   -dwarf generate DWARF symbols (default true)
-#   -dwarfbasentries use base address selection entries in DWARF
-#   -dwarflocationlists add location lists to DWARF in optimized mode (default true)
-#   -dynlink support references to Go symbols defined in other shared libraries
+#   -asmhdr file
+#     	write assembly header to file
+#   -bench file
+#     	append benchmark times to file
+#   -blockprofile file
+#     	write block profile to file
+#   -buildid id
+#     	record id as the build id in the export metadata
+#   -c int
+#     	concurrency during compilation, 1 means no concurrency (default 1)
+#   -complete
+#     	compiling complete package (no C or assembly)
+#   -cpuprofile file
+#     	write cpu profile to file
+#   -d list
+#     	print debug information about items in list; try -d help
+#   -dwarf
+#     	generate DWARF symbols (default true)
+#   -dwarfbasentries
+#     	use base address selection entries in DWARF
+#   -dwarflocationlists
+#     	add location lists to DWARF in optimized mode (default true)
+#   -dynlink
+#     	support references to Go symbols defined in other shared libraries
 #   -e	no limit on number of errors reported
-#   -gendwarfinl int generate DWARF inline info records (default 2)
-#   -goversion string required version of the runtime
+#   -embedcfg file
+#     	read go:embed configuration from file
+#   -gendwarfinl int
+#     	generate DWARF inline info records (default 2)
+#   -goversion string
+#     	required version of the runtime
 #   -h	halt on error
-#   -importcfg file read import configuration from file
-#   -importmap definition add definition of the form source=actual to import map
-#   -installsuffix suffix set pkg directory suffix
+#   -importcfg file
+#     	read import configuration from file
+#   -importmap definition
+#     	add definition of the form source=actual to import map
+#   -installsuffix suffix
+#     	set pkg directory suffix
 #   -j	debug runtime-initialized variables
-#   -json string version,destination for JSON compiler/optimizer logging
+#   -json string
+#     	version,destination for JSON compiler/optimizer logging
 #   -l	disable inlining
-#   -lang string release to compile for
-#   -linkobj file write linker-specific object to file
-#   -linkshared generate code that will be linked against Go shared libraries
-#   -live debug liveness analysis
+#   -lang string
+#     	release to compile for
+#   -linkobj file
+#     	write linker-specific object to file
+#   -linkshared
+#     	generate code that will be linked against Go shared libraries
+#   -live
+#     	debug liveness analysis
 #   -m	print optimization decisions
-#   -memprofile file write memory profile to file
-#   -memprofilerate rate set runtime.MemProfileRate to rate
-#   -mutexprofile file write mutex profile to file
-#   -nolocalimports reject local (relative) imports
-#   -o file write output to file
-#   -p path set expected package import path
-#   -pack write to file.a instead of file.o
+#   -memprofile file
+#     	write memory profile to file
+#   -memprofilerate rate
+#     	set runtime.MemProfileRate to rate
+#   -mutexprofile file
+#     	write mutex profile to file
+#   -nolocalimports
+#     	reject local (relative) imports
+#   -o file
+#     	write output to file
+#   -p path
+#     	set expected package import path
+#   -pack
+#     	write to file.a instead of file.o
 #   -r	debug generated wrappers
-#   -race enable race detector
-#   -shared generate code that can be linked into a shared library
-#   -smallframes reduce the size limit for stack allocated objects
-#   -spectre list enable spectre mitigations in list (all, index, ret)
-#   -std compiling standard library
-#   -symabis file read symbol ABIs from file
-#   -traceprofile file write an execution trace to file
-#   -trimpath prefix remove prefix from recorded source file paths
+#   -race
+#     	enable race detector
+#   -shared
+#     	generate code that can be linked into a shared library
+#   -smallframes
+#     	reduce the size limit for stack allocated objects
+#   -spectre list
+#     	enable spectre mitigations in list (all, index, ret)
+#   -std
+#     	compiling standard library
+#   -symabis file
+#     	read symbol ABIs from file
+#   -traceprofile file
+#     	write an execution trace to file
+#   -trimpath prefix
+#     	remove prefix from recorded source file paths
 #   -v	increase debug verbosity
 #   -w	debug type checking
-#   -wb enable write barrier (default true)#
+#   -wb
+#     	enable write barrier (default true)
+#
+# ------------------------------------------------------------------------------
+#
+# usage: compile [options] file.go...
+#   -%=0: debug non-static initializers
+#   -+=false: compiling runtime
+#   -B=0: disable bounds checking
+#   -C=0: disable printing of columns in error messages
+#   -D="": set relative `path` for local imports
+#   -E=0: debug symbol export
+#   -I=: add `directory` to import search path
+#   -K=0: debug missing line numbers
+#   -L=0: show full file names in error messages
+#   -N=0: disable optimizations
+#   -S=0: print assembly listing
+#   -V=: print version and exit
+#   -W=0: debug parse tree after type checking
+#   -asmhdr="": write assembly header to `file`
+#   -bench="": append benchmark times to `file`
+#   -blockprofile="": write block profile to `file`
+#   -buildid="": record `id` as the build id in the export metadata
+#   -c=1: concurrency during compilation, 1 means no concurrency
+#   -complete=false: compiling complete package (no C or assembly)
+#   -cpuprofile="": write cpu profile to `file`
+#   -d="": print debug information about items in `list`; try -d help
+#   -dwarf=true: generate DWARF symbols
+#   -dwarfbasentries=false: use base address selection entries in DWARF
+#   -dwarflocationlists=true: add location lists to DWARF in optimized mode
+#   -dynlink=false: support references to Go symbols defined in other shared libraries
+#   -e=0: no limit on number of errors reported
+#   -embedcfg=: read go:embed configuration from `file`
+#   -gendwarfinl=2: generate DWARF inline info records
+#   -goversion="": required version of the runtime
+#   -h=0: halt on error
+#   -importcfg=: read import configuration from `file`
+#   -importmap=: add `definition` of the form source=actual to import map
+#   -installsuffix="": set pkg directory `suffix`
+#   -j=0: debug runtime-initialized variables
+#   -json="": version,destination for JSON compiler/optimizer logging
+#   -l=0: disable inlining
+#   -lang="": release to compile for
+#   -linkobj="": write linker-specific object to `file`
+#   -linkshared=false: generate code that will be linked against Go shared libraries
+#   -live=0: debug liveness analysis
+#   -m=0: print optimization decisions
+#   -memprofile="": write memory profile to `file`
+#   -memprofilerate=0: set runtime.MemProfileRate to `rate`
+#   -mutexprofile="": write mutex profile to `file`
+#   -nolocalimports=false: reject local (relative) imports
+#   -o="": write output to `file`
+#   -p="": set expected package import `path`
+#   -pack=false: write to file.a instead of file.o
+#   -r=0: debug generated wrappers
+#   -race=false: enable race detector
+#   -shared=false: generate code that can be linked into a shared library
+#   -smallframes=false: reduce the size limit for stack allocated objects
+#   -spectre="": enable spectre mitigations in `list` (all, index, ret)
+#   -std=false: compiling standard library
+#   -symabis="": read symbol ABIs from `file`
+#   -traceprofile="": write an execution trace to `file`
+#   -trimpath="": remove `prefix` from recorded source file paths
+#   -v=false: increase debug verbosity
+#   -w=0: debug type checking
+#   -wb=true: enable write barrier
+#
+# ------------------------------------------------------------------------------
+#
+# usage: compile [options] file.go...
+#   -%	debug non-static initializers
+#   -+	compiling runtime
+#   -B	disable bounds checking
+#   -C	disable printing of columns in error messages
+#   -D path
+#     	set relative path for local imports
+#   -E	debug symbol export
+#   -I directory
+#     	add directory to import search path
+#   -K	debug missing line numbers
+#   -L	show full file names in error messages
+#   -N	disable optimizations
+#   -S	print assembly listing
+#   -V	print version and exit
+#   -W	debug parse tree after type checking
+#   -asmhdr file
+#     	write assembly header to file
+#   -bench file
+#     	append benchmark times to file
+#   -blockprofile file
+#     	write block profile to file
+#   -buildid id
+#     	record id as the build id in the export metadata
+#   -c int
+#     	concurrency during compilation, 1 means no concurrency (default 1)
+#   -complete
+#     	compiling complete package (no C or assembly)
+#   -cpuprofile file
+#     	write cpu profile to file
+#   -d list
+#     	print debug information about items in list; try -d help
+#   -dwarf
+#     	generate DWARF symbols (default true)
+#   -dwarfbasentries
+#     	use base address selection entries in DWARF
+#   -dwarflocationlists
+#     	add location lists to DWARF in optimized mode (default true)
+#   -dynlink
+#     	support references to Go symbols defined in other shared libraries
+#   -e	no limit on number of errors reported
+#   -embedcfg file
+#     	read go:embed configuration from file
+#   -gendwarfinl int
+#     	generate DWARF inline info records (default 2)
+#   -goversion string
+#     	required version of the runtime
+#   -h	halt on error
+#   -importcfg file
+#     	read import configuration from file
+#   -importmap definition
+#     	add definition of the form source=actual to import map
+#   -installsuffix suffix
+#     	set pkg directory suffix
+#   -j	debug runtime-initialized variables
+#   -json string
+#     	version,destination for JSON compiler/optimizer logging
+#   -l	disable inlining
+#   -lang string
+#     	release to compile for
+#   -linkobj file
+#     	write linker-specific object to file
+#   -linkshared
+#     	generate code that will be linked against Go shared libraries
+#   -live
+#     	debug liveness analysis
+#   -m	print optimization decisions
+#   -memprofile file
+#     	write memory profile to file
+#   -memprofilerate rate
+#     	set runtime.MemProfileRate to rate
+#   -mutexprofile file
+#     	write mutex profile to file
+#   -nolocalimports
+#     	reject local (relative) imports
+#   -o file
+#     	write output to file
+#   -p path
+#     	set expected package import path
+#   -pack
+#     	write to file.a instead of file.o
+#   -r	debug generated wrappers
+#   -race
+#     	enable race detector
+#   -shared
+#     	generate code that can be linked into a shared library
+#   -smallframes
+#     	reduce the size limit for stack allocated objects
+#   -spectre list
+#     	enable spectre mitigations in list (all, index, ret)
+#   -std
+#     	compiling standard library
+#   -symabis file
+#     	read symbol ABIs from file
+#   -traceprofile file
+#     	write an execution trace to file
+#   -trimpath prefix
+#     	remove prefix from recorded source file paths
+#   -v	increase debug verbosity
+#   -w	debug type checking
+#   -wb
+#     	enable write barrier (default true)
+#
+# ------------------------------------------------------------------------------
+#
+# usage: compile [options] file.go...
+#   -%	debug non-static initializers
+#   -+	compiling runtime
+#   -B	disable bounds checking
+#   -C	disable printing of columns in error messages
+#   -D path
+#     	set relative path for local imports
+#   -E	debug symbol export
+#   -I directory
+#     	add directory to import search path
+#   -K	debug missing line numbers
+#   -L	show full file names in error messages
+#   -N	disable optimizations
+#   -S	print assembly listing
+#   -V	print version and exit
+#   -W	debug parse tree after type checking
+#   -asmhdr file
+#     	write assembly header to file
+#   -bench file
+#     	append benchmark times to file
+#   -blockprofile file
+#     	write block profile to file
+#   -buildid id
+#     	record id as the build id in the export metadata
+#   -c int
+#     	concurrency during compilation, 1 means no concurrency (default 1)
+#   -complete
+#     	compiling complete package (no C or assembly)
+#   -cpuprofile file
+#     	write cpu profile to file
+#   -d list
+#     	print debug information about items in list; try -d help
+#   -dwarf
+#     	generate DWARF symbols (default true)
+#   -dwarfbasentries
+#     	use base address selection entries in DWARF
+#   -dwarflocationlists
+#     	add location lists to DWARF in optimized mode (default true)
+#   -dynlink
+#     	support references to Go symbols defined in other shared libraries
+#   -e	no limit on number of errors reported
+#   -embedcfg file
+#     	read go:embed configuration from file
+#   -gendwarfinl int
+#     	generate DWARF inline info records (default 2)
+#   -goversion string
+#     	required version of the runtime
+#   -h	halt on error
+#   -importcfg file
+#     	read import configuration from file
+#   -importmap definition
+#     	add definition of the form source=actual to import map
+#   -installsuffix suffix
+#     	set pkg directory suffix
+#   -j	debug runtime-initialized variables
+#   -json string
+#     	version,destination for JSON compiler/optimizer logging
+#   -l	disable inlining
+#   -lang string
+#     	release to compile for
+#   -linkobj file
+#     	write linker-specific object to file
+#   -linkshared
+#     	generate code that will be linked against Go shared libraries
+#   -live
+#     	debug liveness analysis
+#   -m	print optimization decisions
+#   -memprofile file
+#     	write memory profile to file
+#   -memprofilerate rate
+#     	set runtime.MemProfileRate to rate
+#   -mutexprofile file
+#     	write mutex profile to file
+#   -nolocalimports
+#     	reject local (relative) imports
+#   -o file
+#     	write output to file
+#   -p path
+#     	set expected package import path
+#   -pack
+#     	write to file.a instead of file.o
+#   -r	debug generated wrappers
+#   -race
+#     	enable race detector
+#   -shared
+#     	generate code that can be linked into a shared library
+#   -smallframes
+#     	reduce the size limit for stack allocated objects
+#   -spectre list
+#     	enable spectre mitigations in list (all, index, ret)
+#   -std
+#     	compiling standard library
+#   -symabis file
+#     	read symbol ABIs from file
+#   -traceprofile file
+#     	write an execution trace to file
+#   -trimpath prefix
+#     	remove prefix from recorded source file paths
+#   -v	increase debug verbosity
+#   -w	debug type checking
+#   -wb
+#     	enable write barrier (default true)
+#
+# ------------------------------------------------------------------------------
+#
+# usage: compile [options] file.go...
+#   -%	debug non-static initializers
+#   -+	compiling runtime
+#   -B	disable bounds checking
+#   -C	disable printing of columns in error messages
+#   -D path
+#     	set relative path for local imports
+#   -E	debug symbol export
+#   -I directory
+#     	add directory to import search path
+#   -K	debug missing line numbers
+#   -L	show full file names in error messages
+#   -N	disable optimizations
+#   -S	print assembly listing
+#   -V	print version and exit
+#   -W	debug parse tree after type checking
+#   -asmhdr file
+#     	write assembly header to file
+#   -bench file
+#     	append benchmark times to file
+#   -blockprofile file
+#     	write block profile to file
+#   -buildid id
+#     	record id as the build id in the export metadata
+#   -c int
+#     	concurrency during compilation, 1 means no concurrency (default 1)
+#   -complete
+#     	compiling complete package (no C or assembly)
+#   -cpuprofile file
+#     	write cpu profile to file
+#   -d list
+#     	print debug information about items in list; try -d help
+#   -dwarf
+#     	generate DWARF symbols (default true)
+#   -dwarfbasentries
+#     	use base address selection entries in DWARF
+#   -dwarflocationlists
+#     	add location lists to DWARF in optimized mode (default true)
+#   -dynlink
+#     	support references to Go symbols defined in other shared libraries
+#   -e	no limit on number of errors reported
+#   -embedcfg file
+#     	read go:embed configuration from file
+#   -gendwarfinl int
+#     	generate DWARF inline info records (default 2)
+#   -goversion string
+#     	required version of the runtime
+#   -h	halt on error
+#   -importcfg file
+#     	read import configuration from file
+#   -importmap definition
+#     	add definition of the form source=actual to import map
+#   -installsuffix suffix
+#     	set pkg directory suffix
+#   -j	debug runtime-initialized variables
+#   -json string
+#     	version,destination for JSON compiler/optimizer logging
+#   -l	disable inlining
+#   -lang string
+#     	release to compile for
+#   -linkobj file
+#     	write linker-specific object to file
+#   -linkshared
+#     	generate code that will be linked against Go shared libraries
+#   -live
+#     	debug liveness analysis
+#   -m	print optimization decisions
+#   -memprofile file
+#     	write memory profile to file
+#   -memprofilerate rate
+#     	set runtime.MemProfileRate to rate
+#   -mutexprofile file
+#     	write mutex profile to file
+#   -nolocalimports
+#     	reject local (relative) imports
+#   -o file
+#     	write output to file
+#   -p path
+#     	set expected package import path
+#   -pack
+#     	write to file.a instead of file.o
+#   -r	debug generated wrappers
+#   -race
+#     	enable race detector
+#   -shared
+#     	generate code that can be linked into a shared library
+#   -smallframes
+#     	reduce the size limit for stack allocated objects
+#   -spectre list
+#     	enable spectre mitigations in list (all, index, ret)
+#   -std
+#     	compiling standard library
+#   -symabis file
+#     	read symbol ABIs from file
+#   -traceprofile file
+#     	write an execution trace to file
+#   -trimpath prefix
+#     	remove prefix from recorded source file paths
+#   -v	increase debug verbosity
+#   -w	debug type checking
+#   -wb
+#     	enable write barrier (default true)
+#
+# ------------------------------------------------------------------------------
+#
+# Usage of 'go tool cover':
+# Given a coverage profile produced by 'go test':
+# 	go test -coverprofile=c.out
+#
+# Open a web browser displaying annotated source code:
+# 	go tool cover -html=c.out
+#
+# Write out an HTML file instead of launching a web browser:
+# 	go tool cover -html=c.out -o coverage.html
+#
+# Display coverage percentages to stdout for each function:
+# 	go tool cover -func=c.out
+#
+# Finally, to generate modified source code with coverage annotations
+# (what go test -cover does):
+# 	go tool cover -mode=set -var=CoverageVariableName program.go
+#
+# Flags:
+#   -V	print version and exit
+#   -func string
+#     	output coverage profile information for each function
+#   -html string
+#     	generate HTML representation of coverage profile
+#   -mode string
+#     	coverage mode: set, count, atomic
+#   -o string
+#     	file for output; default: stdout
+#   -var string
+#     	name of coverage variable to generate (default "GoCover")
+#
+#   Only one of -html, -func, or -mode may be set.
+#
+# ------------------------------------------------------------------------------
+#
+# unknown command -h
+# usage: go tool dist [command]
+# Commands are:
+#
+# banner         print installation banner
+# bootstrap      rebuild everything
+# clean          deletes all built files
+# env [-p]       print environment (-p: include $PATH)
+# install [dir]  install individual directory
+# list [-json]   list all supported platforms
+# test [-h]      run Go test(s)
+# version        print Go version
+#
+# All commands take -v flags to emit extra information.
+#
+# ------------------------------------------------------------------------------
+#
+# Usage of [go] doc:
+# 	go doc
+# 	go doc <pkg>
+# 	go doc <sym>[.<methodOrField>]
+# 	go doc [<pkg>.]<sym>[.<methodOrField>]
+# 	go doc [<pkg>.][<sym>.]<methodOrField>
+# 	go doc <pkg> <sym>[.<methodOrField>]
+# For more information run
+# 	go help doc
+#
+# Flags:
+#   -all
+#     	show all documentation for package
+#   -c	symbol matching honors case (paths not affected)
+#   -cmd
+#     	show symbols with package docs even if package is a command
+#   -short
+#     	one-line representation for each symbol
+#   -src
+#     	show source code for symbol
+#   -u	show unexported symbols as well as exported
+#
+# ------------------------------------------------------------------------------
+#
+# usage: go tool fix [-diff] [-r fixname,...] [-force fixname,...] [path ...]
+#   -diff
+#     	display diffs instead of rewriting files
+#   -force string
+#     	force these fixes to run even if the code looks updated
+#   -r string
+#     	restrict the rewrites to this comma-separated list
+#
+# Available rewrites are:
+#
+# cftype
+# 	Fixes initializers and casts of C.*Ref and JNI types
+#
+# context
+# 	Change imports of golang.org/x/net/context to context
+#
+# egl
+# 	Fixes initializers of EGLDisplay
+#
+# eglconf
+# 	Fixes initializers of EGLConfig
+#
+# gotypes
+# 	Change imports of golang.org/x/tools/go/{exact,types} to go/{constant,types}
+#
+# jni
+# 	Fixes initializers of JNI's jobject and subtypes
+#
+# netipv6zone
+# 	Adapt element key to IPAddr, UDPAddr or TCPAddr composite literals.
+#
+# 	https://codereview.appspot.com/6849045/
+#
+# printerconfig
+# 	Add element keys to Config composite literals.
 #
 # ------------------------------------------------------------------------------
 #
 # usage: link [options] main.o
-#   -B note add an ELF NT_GNU_BUILD_ID note when using ELF
-#   -E entry set entry symbol name
-#   -H type set header type
-#   -I linker use linker as ELF dynamic linker
-#   -L directory add specified directory to library path
-#   -R quantum set address rounding quantum (default -1)
-#   -T address set text segment address (default -1)
-#   -V print version and exit
-#   -X definition add string value definition of the form importpath.name=value
-#   -a no-op (deprecated)
-#   -benchmark string set to 'mem' or 'cpu' to enable phase benchmarking
-#   -benchmarkprofile base emit phase profiles to base_phase.{cpu,mem}prof
-#   -buildid id record id as Go toolchain build id
-#   -buildmode mode set build mode
-#   -c dump call graph
-#   -compressdwarf compress DWARF if possible (default true)
-#   -cpuprofile file write cpu profile to file
-#   -d disable dynamic executable
-#   -debugppc64textsize int debug PPC64 text section max
-#   -debugtramp int debug trampolines
-#   -dumpdep dump symbol dependency graph
-#   -extar string archive program for buildmode=c-archive
-#   -extld linker use linker when linking in external mode
-#   -extldflags flags pass flags to external linker
-#   -f ignore version mismatch
-#   -g disable go package data checks
-#   -h halt on error
-#   -importcfg file read import configuration from file
-#   -installsuffix suffix set package directory suffix
-#   -k symbol set field tracking symbol
-#   -libgcc string compiler support lib for internal linking; use "none" to disable
-#   -linkmode mode set link mode
-#   -linkshared link against installed Go shared libraries
-#   -memprofile file write memory profile to file
-#   -memprofilerate rate set runtime.MemProfileRate to rate
-#   -msan enable MSan interface
-#   -n dump symbol table
-#   -o file write output to file
-#   -pluginpath string full path name for plugin
-#   -r path set the ELF dynamic linker search path to dir1:dir2:...
-#   -race enable race detector
-#   -s disable symbol table
-#   -strictdups int sanity check duplicate symbol contents during object file reading (1=warn 2=err).
-#   -tmpdir directory use directory for temporary files
-#   -v print link trace
-#   -w disable DWARF generation#
+#   -B note
+#     	add an ELF NT_GNU_BUILD_ID note when using ELF
+#   -E entry
+#     	set entry symbol name
+#   -H type
+#     	set header type
+#   -I linker
+#     	use linker as ELF dynamic linker
+#   -L directory
+#     	add specified directory to library path
+#   -R quantum
+#     	set address rounding quantum (default -1)
+#   -T address
+#     	set text segment address (default -1)
+#   -V	print version and exit
+#   -X definition
+#     	add string value definition of the form importpath.name=value
+#   -a	no-op (deprecated)
+#   -aslr
+#     	enable ASLR for buildmode=c-shared on windows (default true)
+#   -benchmark string
+#     	set to 'mem' or 'cpu' to enable phase benchmarking
+#   -benchmarkprofile base
+#     	emit phase profiles to base_phase.{cpu,mem}prof
+#   -buildid id
+#     	record id as Go toolchain build id
+#   -buildmode mode
+#     	set build mode
+#   -c	dump call graph
+#   -compressdwarf
+#     	compress DWARF if possible (default true)
+#   -cpuprofile file
+#     	write cpu profile to file
+#   -d	disable dynamic executable
+#   -debugppc64textsize int
+#     	debug PPC64 text section max
+#   -debugtramp int
+#     	debug trampolines
+#   -dumpdep
+#     	dump symbol dependency graph
+#   -extar string
+#     	archive program for buildmode=c-archive
+#   -extld linker
+#     	use linker when linking in external mode
+#   -extldflags flags
+#     	pass flags to external linker
+#   -f	ignore version mismatch
+#   -g	disable go package data checks
+#   -h	halt on error
+#   -importcfg file
+#     	read import configuration from file
+#   -installsuffix suffix
+#     	set package directory suffix
+#   -k symbol
+#     	set field tracking symbol
+#   -libgcc string
+#     	compiler support lib for internal linking; use "none" to disable
+#   -linkmode mode
+#     	set link mode
+#   -linkshared
+#     	link against installed Go shared libraries
+#   -memprofile file
+#     	write memory profile to file
+#   -memprofilerate rate
+#     	set runtime.MemProfileRate to rate
+#   -msan
+#     	enable MSan interface
+#   -n	dump symbol table
+#   -o file
+#     	write output to file
+#   -pluginpath string
+#     	full path name for plugin
+#   -r path
+#     	set the ELF dynamic linker search path to dir1:dir2:...
+#   -race
+#     	enable race detector
+#   -s	disable symbol table
+#   -strictdups int
+#     	sanity check duplicate symbol contents during object file reading (1=warn 2=err).
+#   -tmpdir directory
+#     	use directory for temporary files
+#   -v	print link trace
+#   -w	disable DWARF generation
 #
 # ------------------------------------------------------------------------------
 #
@@ -4627,7 +5245,8 @@ _go "$*"
 #       sort output in the given order (default name)
 #       size orders from largest to smallest
 #   -type
-#       print symbol type after name#
+#       print symbol type after name
+#
 # ------------------------------------------------------------------------------
 #
 # usage: go tool objdump [-S] [-gnu] [-s symregexp] binary [start end]
@@ -4636,7 +5255,7 @@ _go "$*"
 #   -gnu
 #     	print GNU assembly next to Go assembly (where supported)
 #   -s string
-#     	only dump symbols matching this regexp#
+#     	only dump symbols matching this regexp
 #
 # ------------------------------------------------------------------------------
 #
@@ -4648,11 +5267,145 @@ _go "$*"
 # accepted as a synonym for c.
 #
 # For more information, run
-# 	go doc cmd/pack#
+# 	go doc cmd/pack
 #
 # ------------------------------------------------------------------------------
 #
-# usage: go tool test2json [-p pkg] [-t] [./pkg.test -test.v]#
+# usage:
+# 
+# Produce output in the specified format.
+# 
+#    pprof <format> [options] [binary] <source> ...
+# 
+# Omit the format to get an interactive shell whose commands can be used
+# to generate various views of a profile
+# 
+#    pprof [options] [binary] <source> ...
+# 
+# Omit the format and provide the "-http" flag to get an interactive web
+# interface at the specified host:port that can be used to navigate through
+# various views of a profile.
+# 
+#    pprof -http [host]:[port] [options] [binary] <source> ...
+# 
+# Details:
+#   Output formats (select at most one):
+#     -callgrind       Outputs a graph in callgrind format
+#     -comments        Output all profile comments
+#     -disasm          Output assembly listings annotated with samples
+#     -dot             Outputs a graph in DOT format
+#     -eog             Visualize graph through eog
+#     -evince          Visualize graph through evince
+#     -gif             Outputs a graph image in GIF format
+#     -gv              Visualize graph through gv
+#     -kcachegrind     Visualize report in KCachegrind
+#     -list            Output annotated source for functions matching regexp
+#     -pdf             Outputs a graph in PDF format
+#     -peek            Output callers/callees of functions matching regexp
+#     -png             Outputs a graph image in PNG format
+#     -proto           Outputs the profile in compressed protobuf format
+#     -ps              Outputs a graph in PS format
+#     -raw             Outputs a text representation of the raw profile
+#     -svg             Outputs a graph in SVG format
+#     -tags            Outputs all tags in the profile
+#     -text            Outputs top entries in text form
+#     -top             Outputs top entries in text form
+#     -topproto        Outputs top entries in compressed protobuf format
+#     -traces          Outputs all profile samples in text form
+#     -tree            Outputs a text rendering of call graph
+#     -web             Visualize graph through web browser
+#     -weblist         Display annotated source in a web browser
+# 
+#   Options:
+#     -call_tree       Create a context-sensitive call tree
+#     -compact_labels  Show minimal headers
+#     -divide_by       Ratio to divide all samples before visualization
+#     -drop_negative   Ignore negative differences
+#     -edgefraction    Hide edges below <f>*total
+#     -focus           Restricts to samples going through a node matching regexp
+#     -hide            Skips nodes matching regexp
+#     -ignore          Skips paths going through any nodes matching regexp
+#     -intel_syntax    Show assembly in Intel syntax
+#     -mean            Average sample value over first value (count)
+#     -nodecount       Max number of nodes to show
+#     -nodefraction    Hide nodes below <f>*total
+#     -noinlines       Ignore inlines.
+#     -normalize       Scales profile based on the base profile.
+#     -output          Output filename for file-based outputs
+#     -prune_from      Drops any functions below the matched frame.
+#     -relative_percentages Show percentages relative to focused subgraph
+#     -sample_index    Sample value to report (0-based index or name)
+#     -show            Only show nodes matching regexp
+#     -show_from       Drops functions above the highest matched frame.
+#     -source_path     Search path for source files
+#     -tagfocus        Restricts to samples with tags in range or matched by regexp
+#     -taghide         Skip tags matching this regexp
+#     -tagignore       Discard samples with tags in range or matched by regexp
+#     -tagshow         Only consider tags matching this regexp
+#     -trim            Honor nodefraction/edgefraction/nodecount defaults
+#     -trim_path       Path to trim from source paths before search
+#     -unit            Measurement units to display
+# 
+#   Option groups (only set one per group):
+#     granularity      
+#       -functions       Aggregate at the function level.
+#       -filefunctions   Aggregate at the function level.
+#       -files           Aggregate at the file level.
+#       -lines           Aggregate at the source code line level.
+#       -addresses       Aggregate at the address level.
+#     sort             
+#       -cum             Sort entries based on cumulative weight
+#       -flat            Sort entries based on own weight
+# 
+#   Source options:
+#     -seconds              Duration for time-based profile collection
+#     -timeout              Timeout in seconds for profile collection
+#     -buildid              Override build id for main binary
+#     -add_comment          Free-form annotation to add to the profile
+#                           Displayed on some reports or with pprof -comments
+#     -diff_base source     Source of base profile for comparison
+#     -base source          Source of base profile for profile subtraction
+#     profile.pb.gz         Profile in compressed protobuf format
+#     legacy_profile        Profile in legacy pprof format
+#     http://host/profile   URL for profile handler to retrieve
+#     -symbolize=           Controls source of symbol information
+#       none                  Do not attempt symbolization
+#       local                 Examine only local binaries
+#       fastlocal             Only get function names from local binaries
+#       remote                Do not examine local binaries
+#       force                 Force re-symbolization
+#     Binary                  Local path or build id of binary for symbolization
+#     -tls_cert             TLS client certificate file for fetching profile and symbols
+#     -tls_key              TLS private key file for fetching profile and symbols
+#     -tls_ca               TLS CA certs file for fetching profile and symbols
+# 
+#   Misc options:
+#    -http              Provide web interface at host:port.
+#                       Host is optional and 'localhost' by default.
+#                       Port is optional and a randomly available port by default.
+#    -no_browser        Skip opening a browser for the interactive web UI.
+#    -tools             Search path for object tools
+# 
+#   Legacy convenience options:
+#    -inuse_space           Same as -sample_index=inuse_space
+#    -inuse_objects         Same as -sample_index=inuse_objects
+#    -alloc_space           Same as -sample_index=alloc_space
+#    -alloc_objects         Same as -sample_index=alloc_objects
+#    -total_delay           Same as -sample_index=delay
+#    -contentions           Same as -sample_index=contentions
+#    -mean_delay            Same as -mean -sample_index=delay
+# 
+#   Environment Variables:
+#    PPROF_TMPDIR       Location for saved profiles (default $HOME/pprof)
+#    PPROF_TOOLS        Search path for object-level tools
+#    PPROF_BINARY_PATH  Search path for local binary files
+#                       default: $HOME/pprof/binaries
+#                       searches $name, $path, $buildid/$name, $path/$buildid
+#    * On Windows, %USERPROFILE% is used instead of $HOME
+#
+# ------------------------------------------------------------------------------
+#
+# usage: go tool test2json [-p pkg] [-t] [./pkg.test -test.v]
 #
 # ------------------------------------------------------------------------------
 #
@@ -4684,6 +5437,16 @@ _go "$*"
 # 'go tool trace' work on every browser, the trace viewer itself
 # (the 'view trace' page) comes from the Chrome/Chromium project
 # and is only actively tested on that browser.
+#
+#
+# ------------------------------------------------------------------------------
+#
+# vet is a tool for static analysis of Go programs.
+#
+# Usage of vet:
+# 	vet unit.cfg	# execute analysis specified by config file
+# 	vet help    	# general help
+# 	vet help name	# help on specific analyzer and its flags
 #
 # ------------------------------------------------------------------------------
 #
