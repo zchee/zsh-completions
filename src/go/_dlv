@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
 #
-# Copyright (c) 2016, Koichi Shiraishi
+# Copyright 2016, The zsh-completions Authors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,178 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# github.com/derekparker/delve/cmd/dlv
+# github.com/go-delve/delve
+#
+# -----------------------------------------------------------------------------
+
+function _dlv() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+  }
+
+  local -a commands
+  commands=(
+    'attach:Attach to running process and begin debugging.'
+    'connect:Connect to a headless debug server.'
+    'dap:[EXPERIMENTAL] Starts a TCP server communicating via Debug Adaptor Protocol (DAP).'
+    'debug:Compile and begin debugging main package in current directory, or the package specified.'
+    'exec:Execute a precompiled binary, and begin a debug session.'
+    'help:Help about any command'
+    'test:Compile test binary and begin debugging program.'
+    'trace:Compile and begin tracing program.'
+    'version:Prints version.'
+  )
+
+  # TODO(zchee): Need it?
+  case ${OSTYPE} in
+    darwin*)
+      # nothig to do
+      ;;
+
+    linux*|cygwin*|msys*)
+      commands+=('core:Examine a core dump.')
+      ;;
+  esac
+
+  local -a _backend
+  _backend=(
+    'default:Uses lldb on macOS, native everywhere else'
+    'native:Native backend'
+    'lldb:Uses lldb-server or debugserver'
+    'rr:Uses mozilla rr'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+    '--accept-multiclient[Allows a headless server to accept multiple client connections.]'
+    "--allow-non-terminal-interactive[Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr]"
+    '--api-version=[Selects API version when headless. \(default: 1\)]:api version:(1 2)'
+    "--backend=[Backend selection \(default: default\)]:backend:{_describe 'backend' _backend}"
+    '--build-flags=[Build flags, to be passed to the compiler.]:build flags'
+    '--check-go-version=[Checks that the version of Go in use is compatible with Delve. \(default: true\)]:boolean:(true false)'
+    '--headless[Run debug server only, in headless mode.]'
+    '--init=[Init file, executed by the terminal client.]:init file:_files'
+    {-l,--listen}='[Debugging server listen address. \(default: "127.0.0.1:0"\)]:listen address'
+    '--log[Enable debugging server logging.]'
+    '--log-dest=[Writes logs to the specified file or file descriptor.]:log dest'
+    '--log-output=[Comma separated list of components that should produce debug output]:log output'
+    '--only-same-user=[Only connections from the same user that started this instance of Delve are allowed to connect. \(default: true\)]:boolean:(true false)'
+    {-r,--redirect}='[Specifies redirect rules for target process]:redirect rules'
+    '--wd=[Working directory for running the program.]:working directory:_files'
+  )
+
+    # '--accept-multiclient[Allows a headless server to accept multiple client connections.]'
+    # '--api-version[Selects API version when headless. \(default: 1\)]'
+    # "--backend[Backend selection]:backend:{_describe 'backend' _backend}"
+    # '--build-flags[Build flags, to be passed to the compiler.]'
+    # '--check-go-version[Checks that the version of Go in use is compatible with Delve.]'
+    # '--headless[Run debug server only, in headless mode.]'
+    # '--init[Init file, executed by the terminal client.]:init file:_files'
+    # {-l,--listen}'[Debugging server listen address. \(default: 127.0.0.1:0\)]:listen address'
+    # '--log[Enable debugging server logging.]'
+    # '--log-dest[Writes logs to the specified file or file descriptor]:log destination:_files'
+    # "--log-output[Comma separated list of components that should produce debug output]:log output:_files"
+    # '--only-same-user[Only connections from the same user that started this instance of Delve are allowed to connect.]'
+    # '--wd[Working directory for running the program. \(default: current dir\)]:Working directory:_files'
+
+  _arguments -C \
+    $_global_flags \
+    "1: :{_describe 'dlv command' commands}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $words[1] in
+    attach)
+      _arguments \
+        '--continue[Continue the debugged process on start.]' \
+        '1:pid:_pids' \
+        '*:executable:_files' \
+        $_global_flags
+      ;;
+
+    connect)
+      _arguments \
+        '1:addr:_ipset' \
+        $_global_flags
+      ;;
+
+    core)
+      _arguments \
+        '1:executable:_files' \
+        '2:core file or minidumps:_files' \
+        $_global_flags
+      ;;
+
+    dap)
+      _arguments \
+        $_global_flags
+      ;;
+
+    debug)
+      _arguments \
+        '--continue[Continue the debugged process on start.]' \
+        '--output[Output path for the binary. \(default "./__debug_bin"\)]:output binary path:_files' \
+        '--tty[TTY to use for the target program]:target tty:_tty' \
+        '*:package:_go_packages' \
+        $_global_flags
+      ;;
+
+    exec)
+      _arguments \
+        '--continue[Continue the debugged process on start.]' \
+        '--tty[TTY to use for the target program]:target tty' \
+        '1:binary:_exec' \
+        $_global_flags
+      ;;
+
+    test)
+      _arguments \
+        '--output[Output path for the binary. \(default "./__debug_bin"\)]:output binary path:_files' \
+        '*:package:_go_packages' \
+        $_global_flags
+      ;;
+
+    trace)
+      _arguments \
+        {-e,--exec}'[Binary file to exec and trace.]:binary file:_files' \
+        '--output[Output path for the binary. \(default "debug"\)]:output binary path:_files' \
+        {-p,--pid}'[Pid to attach to.]:attach pid:_pids' \
+        {-s,--stack}'[Show stack trace with given depth.]:stack trace depth' \
+        {-t,--test}'[Trace a test binary.]:test binary:_files' \
+        '1:package:_go_packages' \
+        '2:regexp' \
+        $_global_flags
+      ;;
+
+    version)
+      _arguments $_global_flags
+      ;;
+
+    help)
+      local -a topics
+      topics=(
+        'backend:Help about the --backend flag.'
+        'log:Help about logging flags.'
+        'redirect:Help about file redirection'
+      )
+      _arguments "1: :{_describe 'command' commands -- topics}"
+      ;;
+  esac
+
+  return ret
+}
+
+_dlv "$*"
+
+# -------------------------------------------------------------------------------
 #
 # Delve is a source level debugger for Go programs.
 #
@@ -53,6 +224,7 @@
 #   attach      Attach to running process and begin debugging.
 #   connect     Connect to a headless debug server.
 #   core        Examine a core dump.
+#   dap         [EXPERIMENTAL] Starts a TCP server communicating via Debug Adaptor Protocol (DAP).
 #   debug       Compile and begin debugging main package in current directory, or the package specified.
 #   exec        Execute a precompiled binary, and begin a debug session.
 #   help        Help about any command
@@ -62,74 +234,332 @@
 #   version     Prints version.
 #
 # Flags:
-#       --accept-multiclient   Allows a headless server to accept multiple client connections. Note that the server API is not reentrant and clients will have to coordinate.
-#       --api-version int      Selects API version when headless. (default 1)
-#       --backend string       Backend selection:
-#         default         Uses lldb on macOS, native everywhere else.
-#         native          Native backend.
-#         lldb            Uses lldb-server or debugserver.
-#         rr              Uses mozilla rr (https://github.com/mozilla/rr).
-#  (default "default")
-#       --build-flags string   Build flags, to be passed to the compiler.
-#       --headless             Run debug server only, in headless mode.
-#       --init string          Init file, executed by the terminal client.
-#   -l, --listen string        Debugging server listen address. (default "localhost:0")
-#       --log                  Enable debugging server logging.
-#       --wd string            Working directory for running the program. (default ".")
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
 #
-# Use "dlv [command] --help" for more information about a command.
+# Additional help topics:
+#   dlv backend  Help about the --backend flag.
+#   dlv log      Help about logging flags.
+#   dlv redirect Help about file redirection.
 #
-# -----------------------------------------------------------------------------
-
-function _dlv() {
-  local context curcontext=$curcontext state line ret=1
-  declare -A opt_args
-
-  local -a commands
-
-  commands=(
-  'attach:Attach to running process and begin debugging.'
-  'connect:Connect to a headless debug server.'
-  'core:Examine a core dump.'
-  'debug:Compile and begin debugging main package in current directory, or the package specified.'
-  'exec:Execute a precompiled binary, and begin a debug session.'
-  'help:Help about any command'
-  "run:Deprecated command. Use 'debug' instead."
-  'test:Compile test binary and begin debugging program.'
-  'trace:Compile and begin tracing program.'
-  'version:Prints version.'
-  )
-
-  _arguments -C \
-    "1: :{_describe 'dlv command' commands}" \
-    '--accept-multiclient[Allows a headless server to accept multiple client connections.]' \
-    '--api-version[Selects API version when headless. (default 1)]:API version (int)' \
-    '--backend[Backend selection]:backend:->backend' \
-    '--build-flags[Build flags, to be passed to the compiler.]:build flags' \
-    '--headless[Run debug server only, in headless mode.]' \
-    '--init[Init file, executed by the terminal client.]:file:_files' \
-    {-l,--listen}'[Debugging server listen address. (default "localhost:0")]:listen address' \
-    '--log[Enable debugging server logging.]' \
-    '--wd[Working directory for running the program. (default ".")]' \
-    '*:: :->args' \
-    && ret=0
-
-  case $state in
-    (backend)
-      local -a _backend
-      _backend=(
-      'default:Uses lldb on macOS, native everywhere else.'
-      'native:Native backend.'
-      'lldb:Uses lldb-server or debugserver.'
-      'rr:Uses mozilla rr (https://github.com/mozilla/rr).'
-      )
-      _describe 'backend' _backend
-      ;;
-  esac
-
-  return ret
-}
-
-_dlv "$*"
-
+# Use "dlv [command] --help" for more information about a command.#
+#
+# -------------------------------------------------------------------------------
+#
+# Attach to an already running process and begin debugging it.
+#
+# This command will cause Delve to take control of an already running process, and
+# begin a new debug session.  When exiting the debug session you will have the
+# option to let the process continue or kill it.
+#
+# Usage:
+#   dlv attach pid [executable] [flags]
+#
+# Flags:
+#       --continue   Continue the debugged process on start.
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Connect to a running headless debug server.
+#
+# Usage:
+#   dlv connect addr [flags]
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Examine a core dump (only supports linux and windows core dumps).
+#
+# The core command will open the specified core file and the associated
+# executable and let you examine the state of the process when the
+# core dump was taken.
+#
+# Currently supports linux/amd64 and linux/arm64 core files and windows/amd64 minidumps.
+#
+# Usage:
+#   dlv core <executable> <core> [flags]
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# [EXPERIMENTAL] Starts a TCP server communicating via Debug Adaptor Protocol (DAP).
+#
+# The server supports debugging of a precompiled binary akin to 'dlv exec' via a launch request.
+# It does not yet support support specification of program arguments.
+# It does not yet support launch requests with 'debug' and 'test' modes that require compilation.
+# It does not yet support attach requests to debug a running process like with 'dlv attach'.
+# It does not yet support asynchronous request-response communication.
+# The server does not accept multiple client connections.
+#
+# Usage:
+#   dlv dap [flags]
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Compiles your program with optimizations disabled, starts and attaches to it.
+#
+# By default, with no arguments, Delve will compile the 'main' package in the
+# current directory, and begin to debug it. Alternatively you can specify a
+# package name and Delve will compile that package instead, and begin a new debug
+# session.
+#
+# Usage:
+#   dlv debug [package] [flags]
+#
+# Flags:
+#       --continue        Continue the debugged process on start.
+#       --output string   Output path for the binary. (default "./__debug_bin")
+#       --tty string      TTY to use for the target program
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Execute a precompiled binary and begin a debug session.
+#
+# This command will cause Delve to exec the binary and immediately attach to it to
+# begin a new debug session. Please note that if the binary was not compiled with
+# optimizations disabled, it may be difficult to properly debug it. Please
+# consider compiling debugging binaries with -gcflags="all=-N -l" on Go 1.10
+# or later, -gcflags="-N -l" on earlier versions of Go.
+#
+# Usage:
+#   dlv exec <path/to/binary> [flags]
+#
+# Flags:
+#       --continue     Continue the debugged process on start.
+#       --tty string   TTY to use for the target program
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Help provides help for any command in the application.
+#     Simply type dlv help [path to command] for full details.
+#
+# Usage:
+#   dlv help [command] [flags]
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Compiles a test binary with optimizations disabled and begins a new debug session.
+#
+# The test command allows you to begin a new debug session in the context of your
+# unit tests. By default Delve will debug the tests in the current directory.
+# Alternatively you can specify a package name, and Delve will debug the tests in
+# that package instead.
+#
+# Usage:
+#   dlv test [package] [flags]
+#
+# Flags:
+#       --output string   Output path for the binary. (default "debug.test")
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Trace program execution.
+#
+# The trace sub command will set a tracepoint on every function matching the
+# provided regular expression and output information when tracepoint is hit.  This
+# is useful if you do not want to begin an entire debug session, but merely want
+# to know what functions your process is executing.
+#
+# The output of the trace sub command is printed to stderr, so if you would like to
+# only see the output of the trace operations you can redirect stdout.
+#
+# Usage:
+#   dlv trace [package] regexp [flags]
+#
+# Flags:
+#   -e, --exec string     Binary file to exec and trace.
+#       --output string   Output path for the binary. (default "debug")
+#   -p, --pid int         Pid to attach to.
+#   -s, --stack int       Show stack trace with given depth.
+#   -t, --test            Trace a test binary.
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
+#
+# Prints version.
+#
+# Usage:
+#   dlv version [flags]
+#
+# Global Flags:
+#       --accept-multiclient               Allows a headless server to accept multiple client connections.
+#       --allow-non-terminal-interactive   Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr
+#       --api-version int                  Selects API version when headless. New clients should use v2. Can be reset via RPCServer.SetApiVersion. See Documentation/api/json-rpc/README.md. (default 1)
+#       --backend string                   Backend selection (see 'dlv help backend'). (default "default")
+#       --build-flags string               Build flags, to be passed to the compiler.
+#       --check-go-version                 Checks that the version of Go in use is compatible with Delve. (default true)
+#       --headless                         Run debug server only, in headless mode.
+#       --init string                      Init file, executed by the terminal client.
+#   -l, --listen string                    Debugging server listen address. (default "127.0.0.1:0")
+#       --log                              Enable debugging server logging.
+#       --log-dest string                  Writes logs to the specified file or file descriptor (see 'dlv help log').
+#       --log-output string                Comma separated list of components that should produce debug output (see 'dlv help log')
+#       --only-same-user                   Only connections from the same user that started this instance of Delve are allowed to connect. (default true)
+#   -r, --redirect stringArray             Specifies redirect rules for target process (see 'dlv help redirect')
+#       --wd string                        Working directory for running the program.
+#
+# -------------------------------------------------------------------------------
 # vim:ft=zsh:et:sts=2:sw=2
