@@ -53,8 +53,8 @@ function _$BIN() {
     '*:: :->args' \
     && ret=0
 
-  local opts_help help="--help"
-  opts_help=("(: -)--help[Help for $words[1]]")
+  local _global_flags flags="--help"
+  global_flags=("(: -)--help[Help for $words[1]]")
 
   case $state in
     args)
@@ -67,18 +67,20 @@ function _$BIN() {
       case $words[1] in
         subcommand1)
           _arguments \
-            $opts_help \
-            "($help)-foo[subcommand1 -foo argument]" \
-            "($help -)*:file:_files" && ret=0
+            $global_flags \
+            "($flags)-bar[subcommand2 -bar argument]" \
+            "($flags)-baz[subcommand2 -baz argument]" \
+            "($flags -q -qux)"{-q,-qux}"[subcommand2 -bar argument comment]" \
+            "($flags -)*:devices:_devices" \
+            && ret=0
           ;;
 
         subcommand2)
           _arguments \
-            $opts_help \
-            "($help)-bar[subcommand2 -bar argument]" \
-            "($help)-baz[subcommand2 -baz argument]" \
-            "($help -q -qux)"{-q,-qux}"[subcommand2 -bar argument comment]" \
-            "($help -)*:devices:_devices" && ret=0
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
           ;;
 
         help)
