@@ -8,7 +8,7 @@
 # jtool2
 #   http://newosxbook.com/tools/jtool2.tgz
 #
-# version: 2.0-Final (SFO) compiled on Feb 10 2020 04:55:32
+# version: 2.1-The Resurgence compiled on Dec 21 2020 21:09:02
 #
 # -----------------------------------------------------------------------------
 #
@@ -57,6 +57,7 @@
 #    --objc      Like old -d objc and/or classdumpZ - Mike, this is for you :-)
 #    -D          Decompile 7;7m(totally experimental - would love your feedback if you're reading this)
 #    -G          Gadget search (specify gadgets as comma delimited mnemonics)
+#    -W          Write [address] [value] - [value] is a string or 0x....
 #
 # Environment Variables:
 #    ARCH                    Select architecture slice. Set to arm64, arm64e, arm64_32, armv7, armv7k, x86_64 or (not for long) i386
@@ -130,6 +131,7 @@ function _jtool2() {
   '--objc:Like old -d objc and/or classdumpZ - Mike, this is for you :-)'
   "-D:Decompile:totally experimental \- would love your feedback if you're reading this"
   '-G:Gadget search \(specify gadgets as comma delimited mnemonics\)'
+  '-W:Write [address] [value] - [value] is a string or 0x....'
   )
 
   _describe -t otool_compatible_options 'OTool Compatible Options' otool_compatible_options
