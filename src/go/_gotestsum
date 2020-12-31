@@ -1,0 +1,461 @@
+#compdef gotestsum
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2020, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/gotestyourself/gotestsum
+#
+# -----------------------------------------------------------------------------
+
+function _gotestsum() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _go_files() {
+    _alternative '*:go file:_path_files -g "*.go(-.)"'
+  }
+
+  _go_packages() {
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+    _alternative '*: :_go_files'
+  }
+
+  function _go_test_flags() {
+    _build_flags() {
+      _arguments \
+        '-a[force rebuilding of packages that are already up-to-date]' \
+        '-n[print the commands but do not run them]' \
+        '-p[number of builds that can be run in parallel]:number' \
+        '-race[enable data race detection]' \
+        '-v[print the names of packages as they are compiled]' \
+        '-work[print temporary work directory and keep it]' \
+        '-x[print the commands]' \
+        '-asmflags=[arguments for each go tool asm invocation]: :->asmflags' \
+        '-buildmode=[build mode to use]: :->buildmode' \
+        '-compiler[name of compiler to use]:name' \
+        '-gccgoflags[arguments for gccgo]:args' \
+        '-gcflags=[arguments to pass on each go tool compile invocation]: :->gcflags' \
+        '-installsuffix[suffix to add to package directory]:suffix' \
+        '-ldflags=[arguments to pass on each go tool link invocation]: :->ldflags' \
+        '-linkshared[link against shared libraries]' \
+        '-mod=[module download mode to use]:mode:(readonly vendor mod)' \
+        '-modcacherw[leave newly-created directories in the module cache read-write instead of making them read-only.]' \
+        '-modfile=[in module aware mode, read \(and possibly write\) an alternate go.mod file instead of the one in the module root directory.]:go.mod file:_files' \
+        '-pkgdir[install and load all packages from dir]:dir' \
+        '-tags=[list of build tags to consider satisfied]:tags' \
+        '-toolexec[program to use to invoke toolchain programs]:args' \
+        '-debug-actiongraph[Undocumented, unstable debugging flags. action graph]:output filename:_files' \
+        '-debug-deprecated-importcfg[Undocumented, unstable debugging flags. deprecated import config]:config'
+
+      case $state in
+        asmflags)
+          local -a _asm_flags
+          _asm_flags=(
+            '-D[predefined symbol with optional simple value -D=identifier=value; can be set multiple times]:value'
+            '-I[include directory; can be set multiple times]:value'
+            '-S[print assembly and machine code]'
+            '-V[print version and exit]'
+            '-debug[dump instructions as they are parsed]'
+            '-dynlink[support references to Go symbols defined in other shared libraries]'
+            '-e[no limit on number of errors reported]'
+            "-gensymabis[write symbol ABI information to output file, don't assemble]"
+            '-o[output file; default foo.o for /a/b/c/foo.s as first argument]:output:_files'
+            '-p[set expected package import to path]:expected package import path'
+            '-shared[generate code that can be linked into a shared library]'
+            '-spectre[enable spectre mitigations]:mode:(all ret)'
+            '-trimpath[remove prefix from recorded source file paths]:paths'
+          )
+          _values \
+            'asmflags' \
+            ${_asm_flags[@]}
+          ;;
+
+        buildmode)
+          local -a _buildmode
+          _buildmode=(
+            'archive[Build the listed non-main packages into .a files]'
+            'c-archive[Build the listed main package, plus all packages it imports, into a C archive file]'
+            'c-shared[Build the listed main packages, plus all packages that they import, into C shared libraries]'
+            'default[Listed main packages are built into executables and listed non-main packages are built into .a files]'
+            'shared[Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option]'
+            'exe[Build the listed main packages and everything they import into executables]'
+            'pie[Build the listed main packages and everything they import into position independent executables (PIE)]'
+            'plugin[Build the listed main packages, plus all packages that they import, into a Go plugin]'
+          )
+          _values \
+            'buildmode' \
+            ${_buildmode[@]}
+          ;;
+
+        gcflags)
+          # go tool compile
+          # https://golang.org/cmd/compile/#hdr-Command_Line
+          local -a _gcflags
+          _gcflags=(
+            '-D[Set relative path for local imports.]:relative import path'
+            '-I[Search for imported packages]:import directories:_directories'
+            '-L[Show complete file path in error messages.]'
+            '-N[Disable optimizations.]'
+            '-S[Print assembly listing to standard output \(code only\).]'
+            '-SS[Print assembly listing to standard output \(code and data\).]'
+            '-V[Print compiler version and exit.]'
+            '-asmhdr[Write assembly header to file.]:output path:_files'
+            '-buildid[Record id as the build id in the export metadata.]:build id'
+            '-blockprofile[Write block profile for the compilation to file.]:output path:_files'
+            '-c[Concurrency during compilation. Set 1 for no concurrency \(default is 1\).]:num of concurrency'
+            '-complete[Assume package has no non-Go components.]'
+            '-cpuprofile[Write a CPU profile for the compilation to file.]:output path:_files'
+            '-dynlink[Allow references to Go symbols in shared libraries \(experimental\).]'
+            '-e[Remove the limit on the number of errors reported \(default limit is 10\).]:limit to num of errors'
+            '-goversion[Specify required go tool version of the runtime.]:go version'
+            '-h[Halt with a stack trace at the first error detected.]'
+            '-importcfg[Read import configuration from file.]:import configuration file:_files'
+            "-importmap[Interpret import \"old\" as import \"new\" during compilation. The option may be repeated to add multiple mappings.]:import map definition old=new"
+            '-installsuffix[set pkg directory suffix]:install suffix'
+            '-l[Disable inlining.]'
+            '-lang[Set language version to compile, as in -lang=go1.12. Default is current version.]:lang version'
+            '-largemodel[Generate code that assumes a large memory model.]'
+            '-linkobj[Write linker-specific object to file and compiler-specific object to usual output file \(as specified by -o\).]:output path:_files'
+            '-m[Print optimization decisions.]'
+            '-memprofile[Write memory profile for the compilation to file.]:output path:_files'
+            '-memprofilerate[Set runtime.MemProfileRate for the compilation to rate.]:memory profiling rate'
+            '-msan[Insert calls to C/C++ memory sanitizer.]'
+            '-mutexprofile[Write mutex profile for the compilation to file.]:output path:_files'
+            '-nolocalimports[Disallow local \(relative\) imports.]'
+            '-o[Write object to file.]:output path:_files'
+            '-p[Set expected package import path for the code being compiled, and diagnose imports that would cause a circular dependency.]:expected import path'
+            '-pack[Write a package (archive) file rather than an object file]'
+            '-race[Compile with race detector enabled.]'
+            '-s[Warn about composite literals that can be simplified.]'
+            '-shared[Generate code that can be linked into a shared library.]'
+            '-traceprofile[Write an execution trace to file.]:output path:_files'
+            '-trimpath[Remove prefix from recorded source file paths.]:trim filepath prefixs'
+            '-dwarf[Generate DWARF symbols. \(default true\)]'
+            '-dwarflocationlists[Add location lists to DWARF in optimized mode. \(default true\)]'
+            '-gendwarfinl[Generate DWARF inline info records \(default 2\).]:num of DWARF inlines'
+            '-E[Debug symbol export.]'
+            '-K[Debug missing line numbers.]'
+            '-d[Print debug information about items in list.]:items list'
+            '-live[Debug liveness analysis.]'
+            '-v[Increase debug verbosity.]'
+            '-%[Debug non-static initializers.]'
+            '-W[Debug parse tree after type checking.]'
+            '-f[Debug stack frames.]'
+            '-i[Debug line number stack.]'
+            '-j[Debug runtime-initialized variables.]'
+            '-r[Debug generated wrappers.]'
+            '-w[Debug type checking.]'
+            '-wb[enable write barrier \(default true\)]'
+            '-+[compiling runtime]'
+            '-B[disable bounds checking]'
+            '-C[disable printing of columns in error messages]'
+            '-allabis[generate ABI wrappers for all symbols \(for bootstrap\)]'
+            '-bench[append benchmark times to file]:output path:_files'
+            '-newescape[enable new escape analysis \(default true\)]'
+            '-std[compiling standard library]'
+            '-symabis[read symbol ABIs from file]:symbol ABIs file:_files'
+            '-w[debug type checking]'
+          )
+          _values \
+            'gcflags' \
+            ${_gcflags[@]}
+          ;;
+
+        ldflags)
+          local -a _ldflags
+          _ldflags=(
+            '-B[add an ELF NT_GNU_BUILD_ID note when using ELF]:note'
+            '-C[check Go calls to C code]'
+            '-D[set data segment address (default -1)]:address'
+            '-E[set entry symbol name]:entry'
+            '-H[set header type]:type'
+            '-I[use linker as ELF dynamic linker]:linker'
+            '-L[add specified directory to library path]:directory:_path_files -/'
+            '-R[set address rounding quantum (default -1)]:quantum'
+            '-T[set text segment address (default -1)]:address'
+            '-V[print version and exit]'
+            '-X[add string value definition of the form importpath.name=value]:definition'
+            '-a[disassemble output]'
+            '-buildid[record id as Go toolchain build id]:id'
+            '-buildmode[set build mode]:mode:(archive c-archive c-shared default shared exe pie)'
+            '-c[dump call graph]'
+            '-cpuprofile[write cpu profile to file]:file:_files'
+            '-d[disable dynamic executable]'
+            '-dumpdep[dump symbol dependency graph]'
+            '-extar[archive program for buildmode=c-archive]:string'
+            '-extld[use linker when linking in external mode]:linker'
+            '-extldflags[pass flags to external linker]:flags'
+            '-f[ignore version mismatch]'
+            '-g[disable go package data checks]'
+            '-h[halt on error]'
+            '-installsuffix[\[suffix\]: set package directory suffix]:suffix'
+            '-k[set field tracking symbol]:symbol'
+            '-libgcc[compiler support lib for internal linking; use "none" to disable]:string'
+            '-linkmode[set link mode (internal, external, auto)]:mode(internal external auto)'
+            '-linkshared[link against installed Go shared libraries]'
+            '-memprofile[write memory profile to file]:file:_files'
+            '-memprofilerate[set runtime.MemProfileRate to rate]:rate'
+            '-msan[enable MSan interface]'
+            '-n[dump symbol table]'
+            '-o[write output to file]:file:_files'
+            '-r[set the ELF dynamic linker search path to dir1:dir2:...]:path:_path_files'
+            '-race[enable race detector]'
+            '-s[disable symbol table]'
+            '-shared[generate shared object (implies -linkmode external)]'
+            '-tmpdir[use directory for temporary files]:directory:_path_files -/'
+            '-u[reject unsafe packages]'
+            '-v[print link trace]'
+            '-w[disable DWARF generation]'
+          )
+          _values \
+            'ldflags' \
+            ${_ldflags[@]}
+          ;;
+      esac
+    }
+
+    _test_build_flags=(
+      '-args[Pass the remainder of the command line to the test binary]'
+      '-c[Compile the test binary to pkg.test but do not run it]'
+      "-exec=[Run the test binary using 'xprog']:xprog"
+      "-json[Convert test output to JSON suitable for automated processing. See 'go doc test2json' for the encoding details]"
+      '-i[Install packages that are dependencies of the test]'
+      '-o[Compile the test binary to the named file]:binary file name:_files'
+      '-vet[Configure the invocation of "go vet" during "go test" to use the comma-separated list of vet checks]:list'
+    )
+
+    # TODO(zchee): Support for regexp keyword
+    _test_binary_flags=(
+      "-bench[Run (sub)benchmarks matching a regular expression]:regexp of Benchmark functions:(.)"
+      '-benchmem[Print memory allocation statistics for benchmarks]'
+      '-count[Run each test and benchmark n times \(default: 1\)]:count'
+      '-cover[Enable coverage analysis]'
+      '-covermode[Set the mode for coverage analysis for the packages being tested \(default: set\)]:covermode:(set count atomic)'
+      '-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages'
+      '-cpu[Specify a list of GOMAXPROCS values for which the tests or benchmarks should be executed]:cpus:(1 2 4 8 16)'
+      '-parallel=[Allow parallel execution of test functions that call t.Parallel]:number of parallel'
+      '-run[Run only those tests and examples matching the regular expression]:regexp of Tests or Examples'
+      '-short[Tell long-running tests to shorten their run time]'
+      '-timeout[If a test runs longer than arg time, panic \(default: 10m\)]:timeout'
+      '-v[output log all tests as they are run and print all text from Log and Logf]'
+    )
+
+    _test_profile_flags=(
+      '-benchtime[Run enough iterations of each benchmark to take arg time]:bench time'
+      '-blockprofile[Write a goroutine blocking profile to the specified file]:profile file path:_files'
+      '-blockprofilerate[Control the detail provided in goroutine blocking profiles by calling runtime.SetBlockProfileRate]:block profile rate'
+      '-coverprofile[Write a coverage profile to the file after all tests have passed]:output filename:_files'
+      '-cpuprofile[Write a CPU profile to the specified file before exiting]:cpu profile file path:_files'
+      '-memprofile[Write a memory profile to the file after all tests have passed]:memory profile file:_files'
+      '-memprofilerate[Enable more precise memory profiles by setting runtime.MemProfileRate]:memory profile rate'
+      '-mutexprofile[Enable more precise \(and expensive\) memory profiles]:mutex profile file:_files'
+      '-mutexprofilefraction[Sample 1 in n stack traces of goroutines holding a contended mutex]:mutex fraction'
+      '-outputdir[Place output files from profiling in the specified directory]:output directory:_path_files -/'
+      '-trace[Write an execution trace to the specified file before exiting]:output trace file path:_files'
+    )
+
+    _arguments \
+      ${_test_build_flags[@]} \
+      ${_test_binary_flags[@]} \
+      ${_test_profile_flags[@]} \
+      '*: :_go_packages'
+
+    _alternative ':build flags:_build_flags'
+  }
+
+  _arguments -C \
+    "--debug[enabled debug logging]" \
+    {-f,--format}="[print format of test input (default \"standard-verbose\")]: :->formats" \
+    "--hide-summary[hide sections of the summary (default none)]:hide summary:(skipped failed errors output)" \
+    "--jsonfile[write all TestEvents to file]:output json file:_files" \
+    "--junitfile[write a JUnit XML file]:JUnit XML file:_files" \
+    "--junitfile-testcase-classname[format the testcase classname field (default full)]:testcase classname field format:(full relative short)" \
+    "--junitfile-testsuite-name[format the testsuite name field (default full)]:testsuite name field format:(full relative short)" \
+    "--no-color[disable color output (default true)]" \
+    "--packages[space separated list of package to test]:packages" \
+    "--post-run-command[command to run after the tests have completed]:command" \
+    "--raw-command[don't prepend 'go test -json' to the 'go test' command]" \
+    "--rerun-fails[rerun failed tests until they all pass, or attempts exceeds maximum. Defaults to max 2 reruns when enabled.]:max of rerun failed tests" \
+    "--rerun-fails-max-failures[do not rerun any tests if the initial run has more than this number of failures (default 10)]:max failures" \
+    "--rerun-fails-report[write a report to the file, of the tests that were rerun]:report file:_files" \
+    "--version[show version and exit]" \
+    "--watch[watch go files, and run tests when a file is modified]" \
+    "--[go test flags]:flags:_go_test_flags" \
+    '*:: :->args' \
+    && ret=0
+
+  local opts_help help="--help"
+  opts_help=("(: -)--help[Help for $words[1]]")
+
+  case $state in
+    formats)
+      local -a formats
+      formats=(
+        'dots:print a character for each test'
+        'dots-v2:experimental dots format, one package per line'
+        'pkgname:print a line for each package'
+        'pkgname-and-test-fails:print a line for each package and failed test output'
+        'testname:print a line for each test and package'
+        'standard-quiet:standard go test format'
+        'standard-verbose:standard go test -v format'
+      )
+      _arguments \
+        "1: :{_describe 'format' formats}" \
+    ;;
+
+    # args)
+    #   case $words[1] in
+    #     tool)
+    #       local -a tool_commands
+    #       tool_commands=(
+    #         'slowest:Prints the names and elapsed time of slow tests.'
+    #       )
+    #       _arguments \
+    #         "1: :{_describe 'tool commands' tool_commands}" \
+    #       && ret=0
+    # 
+    #       case $words[1] in
+    #         slowest)
+    #           _arguments \
+    #             "--debug[enable debug logging.]" \
+    #             "--jsonfile[path to test2json output, defaults to stdin]:test2json output:_files" \
+    #             "--skip-stmt[add this go statement to slow tests, instead of printing the list of slow tests]:skip statement" \
+    #             "--threshold[test cases with elapsed time greater than threshold are slow tests (default 100ms)]:threshold" \
+    #           && ret=0
+    #           ;;
+    # 
+    #       esac
+    #       ;;
+    #   esac
+    #   ;;
+  esac
+
+  return ret
+}
+
+_gotestsum "$*"
+
+# -----------------------------------------------------------------------------
+#
+#
+# Usage:
+#     gotestsum [flags] [--] [go test flags]
+#     gotestsum [command]
+# 
+# Flags:
+#       --debug                                       enabled debug logging
+#   -f, --format string                               print format of test input (default "standard-verbose")
+#       --hide-summary summary                        hide sections of the summary: skipped,failed,errors,output (default none)
+#       --jsonfile string                             write all TestEvents to file
+#       --junitfile string                            write a JUnit XML file
+#       --junitfile-testcase-classname field-format   format the testcase classname field as: full, relative, short (default full)
+#       --junitfile-testsuite-name field-format       format the testsuite name field as: full, relative, short (default full)
+#       --no-color                                    disable color output (default true)
+#       --packages list                               space separated list of package to test
+#       --post-run-command command                    command to run after the tests have completed
+#       --raw-command                                 don't prepend 'go test -json' to the 'go test' command
+#       --rerun-fails int[=2]                         rerun failed tests until they all pass, or attempts exceeds maximum. Defaults to max 2 reruns when enabled.
+#       --rerun-fails-max-failures int                do not rerun any tests if the initial run has more than this number of failures (default 10)
+#       --rerun-fails-report string                   write a report to the file, of the tests that were rerun
+#       --version                                     show version and exit
+#       --watch                                       watch go files, and run tests when a file is modified
+# 
+# Formats:
+#     dots                    print a character for each test
+#     dots-v2                 experimental dots format, one package per line
+#     pkgname                 print a line for each package
+#     pkgname-and-test-fails  print a line for each package and failed test output
+#     testname                print a line for each test and package
+#     standard-quiet          standard go test format
+#     standard-verbose        standard go test -v format
+# 
+# Commands:
+#     tool                    tools for working with test2json output
+#
+# -----------------------------------------------------------------------------
+#
+# Usage:
+#     gotestsum tool slowest [flags]
+# 
+# Read a json file and print or update tests which are slower than threshold.
+# The json file may be created with 'gotestsum --jsonfile' or 'go test -json'.
+# If a TestCase appears more than once in the json file, it will only appear once
+# in the output, and the median value of all the elapsed times will be used.
+# 
+# By default this command will print the list of tests slower than threshold to stdout.
+# The list will be sorted from slowest to fastest.
+# 
+# If --skip-stmt is set, instead of printing the list to stdout, the AST for the
+# Go source code in the working directory tree will be modified. The value of
+# --skip-stmt will be added to Go test files as the first statement in all the test
+# functions which are slower than threshold.
+# 
+# The --skip-stmt flag may be set to the name of a predefined statement, or to
+# Go source code which will be parsed as a go/ast.Stmt. Currently there is only one
+# predefined statement, --skip-stmt=testing.Short, which uses this Go statement:
+# 
+#     if testing.Short() {
+#         t.Skip("too slow for testing.Short")
+#     }
+# 
+# 
+# Alternatively, a custom --skip-stmt may be provided as a string:
+# 
+#     skip_stmt='
+#         if os.Getenv("TEST_FAST") {
+#             t.Skip("too slow for TEST_FAST")
+#         }
+#     '
+#     go test -json -short ./... | gotestsum tool slowest --skip-stmt "$skip_stmt"
+# 
+# Note that this tool does not add imports, so using a custom statement may require
+# you to add imports to the file.
+# 
+# Go build flags, such as build tags, may be set using the GOFLAGS environment
+# variable, following the same rules as the go toolchain. See
+# https://golang.org/cmd/go/#hdr-Environment_variables.
+# 
+# Flags:
+#       --debug                enable debug logging.
+#       --jsonfile string      path to test2json output, defaults to stdin
+#       --skip-stmt string     add this go statement to slow tests, instead of printing the list of slow tests
+#       --threshold duration   test cases with elapsed time greater than threshold are slow tests (default 100ms)
+#
+# -----------------------------------------------------------------------------
+ 
+# vim:ft=zsh:et:sts=2:sw=2
