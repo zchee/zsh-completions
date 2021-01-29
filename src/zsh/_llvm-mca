@@ -30,6 +30,64 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
+
+function _llvm-mca() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a _llvm_generic_options
+  _llvm_generic_options=(
+    {-h,--help}"[Display available options]"
+    "--help-hidden[Display all available options]"
+    "--help-list[Display list of available options]"
+    "--help-list-hidden[Display list of all available options]"
+    "--print-all-options[Print all option values after command line parsing]"
+    "--print-options[Print non-default options after command line parsing]"
+    "--version[Display the version of this program]"
+  )
+
+  _arguments -C \
+    "--decoder-throughput=[Maximum throughput from the decoders (instructions per cycle)]:maximum throughput" \
+    "--dispatch=[Override the processor dispatch width]:num of process" \
+    "--instruction-tables[Print instruction tables]" \
+    "--iterations=[Number of iterations to run]:num of iterations" \
+    "--json[Print the output in json format]" \
+    "--lqueue=[Size of the load queue]:load queue size" \
+    "--march=[Target architecture. See -version for available targets]:arch:(x86 x86-64)" \
+    "--mattr=[Additional target features.]:additional target" \
+    "--mcpu=[Target a specific cpu type (-mcpu=help for details)]:target cpu type" \
+    "--micro-op-queue-size=[Number of entries in the micro-op queue]:num of queue" \
+    "--mtriple=[Target triple. See -version for available targets]:target triple" \
+    "--noalias[If set, assume that loads and stores do not alias]" \
+    "-o=[Output filename]:output:_files" \
+    "--output-asm-variant=[Syntax variant to use for output printing]" \
+    "--print-imm-hex[Prefer hex format when printing immediate values]" \
+    "--register-file-size=[Maximum number of physical registers which can be used for register mappings]:register-file-size" \
+    "--squeue=[Size of the store queue]:store queue size" \
+    "--all-stats[Print all hardware statistics]" \
+    "--all-views[Print all views including hardware statistics]" \
+    "--bottleneck-analysis[Enable bottleneck analysis (disabled by default)]" \
+    "--dispatch-stats[Print dispatch statistics]" \
+    "--instruction-info[Print the instruction info view (enabled by default)]" \
+    "--register-file-stats[Print register file statistics]" \
+    "--resource-pressure[Print the resource pressure view (enabled by default)]" \
+    "--retire-stats[Print retire control unit statistics]" \
+    "--scheduler-stats[Print scheduler statistics]" \
+    "--show-encoding[Print encoding information in the instruction info view]" \
+    "--summary-view[Print summary view (enabled by default)]" \
+    "--timeline[Print the timeline view]" \
+    "--timeline-max-cycles=[Maximum number of cycles in the timeline view. Defaults to 80 cycles]:num of max timeline view" \
+    "--timeline-max-iterations=[Maximum number of iterations to print in timeline view]:num of max print in timeline view" \
+    $_llvm_generic_options \
+    "*:input file:_files" \
+    && ret=0
+
+  return ret
+}
+
+_llvm-mca "$*"
+
+# -----------------------------------------------------------------------------
 #
 # OVERVIEW: llvm machine code performance analyzer.
 #
@@ -94,61 +152,5 @@
 #   --timeline-max-iterations=<uint> - Maximum number of iterations to print in timeline view
 #
 # -----------------------------------------------------------------------------
-
-function _llvm-mca() {
-  local context curcontext=$curcontext state line expl ret=1
-  declare -A opt_args
-
-  local -a _llvm_generic_options
-  _llvm_generic_options=(
-    {-h,--help}'[Display available options]'
-    '--help-hidden[Display all available options]'
-    '--help-list[Display list of available options]'
-    '--help-list-hidden[Display list of all available options]'
-    '--print-all-options[Print all option values after command line parsing]'
-    '--print-options[Print non-default options after command line parsing]'
-    '--version[Display the version of this program]'
-  )
-
-  _arguments -C \
-    '--decoder-throughput=[Maximum throughput from the decoders \(instructions per cycle\)]:maximum throughput' \
-    '--dispatch=[Override the processor dispatch width]:num of process' \
-    '--instruction-tables[Print instruction tables]' \
-    '--iterations=[Number of iterations to run]:num of iterations' \
-    '--json[Print the output in json format]' \
-    '--lqueue=[Size of the load queue]:load queue size' \
-    '--march=[Target architecture. See -version for available targets]:arch:(x86 x86-64)' \
-    '--mattr=[Additional target features.]:additional target' \
-    '--mcpu=[Target a specific cpu type \(-mcpu=help for details\)]:target cpu type' \
-    '--micro-op-queue-size=[Number of entries in the micro-op queue]:num of queue' \
-    '--mtriple=[Target triple. See -version for available targets]:target triple' \
-    '--noalias[If set, assume that loads and stores do not alias]' \
-    '-o=[Output filename]:output:_files' \
-    '--output-asm-variant=[Syntax variant to use for output printing]' \
-    '--print-imm-hex[Prefer hex format when printing immediate values]' \
-    '--register-file-size=[Maximum number of physical registers which can be used for register mappings]:register-file-size' \
-    '--squeue=[Size of the store queue]:store queue size' \
-    '--all-stats[Print all hardware statistics]' \
-    '--all-views[Print all views including hardware statistics]' \
-    '--bottleneck-analysis[Enable bottleneck analysis (disabled by default)]' \
-    '--dispatch-stats[Print dispatch statistics]' \
-    '--instruction-info[Print the instruction info view (enabled by default)]' \
-    '--register-file-stats[Print register file statistics]' \
-    '--resource-pressure[Print the resource pressure view (enabled by default)]' \
-    '--retire-stats[Print retire control unit statistics]' \
-    '--scheduler-stats[Print scheduler statistics]' \
-    '--show-encoding[Print encoding information in the instruction info view]' \
-    '--summary-view[Print summary view \(enabled by default\)]' \
-    '--timeline[Print the timeline view]' \
-    '--timeline-max-cycles=[Maximum number of cycles in the timeline view. Defaults to 80 cycles]:num of max timeline view' \
-    '--timeline-max-iterations=[Maximum number of iterations to print in timeline view]:num of max print in timeline view' \
-    $_llvm_generic_options \
-    '*:input file:_files' \
-    && ret=0
-
-  return ret
-}
-
-_llvm-mca "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
