@@ -43,7 +43,7 @@ function _golines() {
 
   _arguments -C \
     "--help[Show context-sensitive help (also try --help-long and --help-man).]" \
-    "--base-formatter=[Base formatter to use]" \
+    "--base-formatter=[Base formatter to use]:formatter:(goimports gofmt)" \
     "--chain-split-dots[Split chained methods on the dots as opposed to the arguments]" \
     {-d,--debug}"[Show debug output"] \
     "--dot-file=[Path to dot representation of AST graph]:dot file:_files" \
