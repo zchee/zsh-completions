@@ -228,6 +228,11 @@ function _spool() {
   )
 
   _arguments -C \
+    '--help[Show context-sensitive help.]' \
+    {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+    {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+    {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+    {-s,--schema}='[Set schema file path.]:schema:_files' \
     "1: :{_describe 'spool commands' commands}" \
     '*:: :->args' \
     && ret=0
@@ -236,19 +241,19 @@ function _spool() {
     setup)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files'
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files'
       ;;
 
     create)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files' \
         '--db-name-prefix=[Set new database name prefix.]:DB-NAME-PREFIX' \
         '--num=[Set the number of new databases.]:number of databases'
       ;;
@@ -256,51 +261,51 @@ function _spool() {
     get)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files'
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files'
       ;;
 
     get-or-create)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files' \
         '--db-name-prefix=[Set new database name prefix.]:DB-NAME-PREFIX'
       ;;
 
     list)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files' \
         '--all[Print databases. \(without checksum filtering\)]'
       ;;
 
     put)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files' \
         '*:database name'
       ;;
 
     clean)
       _arguments \
         '--help[Show context-sensitive help.]' \
-        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:PROJECT' \
-        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:INSTANCE' \
-        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:DATABASE' \
-        {-s,--schema}='[Set schema file path.]:SCHEMA:_files' \
-        '--all[Drop all idle databases. (without checksum filtering)' \
-        '--ignore-used-within-days=[Ignore databases which used within n days.]:IGNORE-USED-WITHIN-DAYS' \
+        {-p,--project}'=[Set GCP project ID. \(use $SPANNER_PROJECT_ID or $GOOGLE_CLOUD_PROJECT as default value\)]:project' \
+        {-i,--instance}'=[Set Cloud Spanner instance name. \(use $SPANNER_INSTANCE_ID as default value\)]:instance' \
+        {-d,--database}='[Set Cloud Spanner database name. \(use $SPOOL_SPANNER_DATABASE_ID as default value\)]:database' \
+        {-s,--schema}='[Set schema file path.]:schema:_files' \
+        '--all[Drop all idle databases. \(without checksum filtering\)]' \
+        '--ignore-used-within-days=[Ignore databases which used within n days.]:ignore used within days' \
         '--force[Drop all databases. \(include busy databases\)]'
       ;;
 
