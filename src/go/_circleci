@@ -108,21 +108,25 @@ function _circleci() {
 
   local -a commands
   commands=(
+    'admin:Administrative operations for a CircleCI Server installation.'
     'build:Run a job in a container on the local machine'
     'config:Operate on build config files'
-    'context:Provide a mechanism for securing and sharing environment variables across projects.'
-    'follow:Attempt to follow the project for the current git repository.'
+    'context:Contexts provide a mechanism for securing and sharing environment variables across projects.'
     'diagnostic:Check the status of your CircleCI CLI.'
+    'follow:Attempt to follow the project for the current git repository.'
     'help:Help about any command'
     'local:Debug jobs on the local machine'
     'namespace:Operate on namespaces'
+    'open:Open the current project in the browser.'
     'orb:Operate on orbs'
     'query:Query the CircleCI GraphQL API.'
     'runner:Operate on runners'
     'setup:Setup the CLI with your credentials'
     'step:Execute steps'
+    'switch'
     'tests:Collect and split tests so they may be run in parallel.'
-    'update:Update the tool'
+    'update:Update the tool to the latest version'
+    'usage:Generate usage documentation in markdown for the CLI.'
     'version:Display version information'
   )
 
@@ -147,6 +151,53 @@ function _circleci() {
     args)
 
       case $words[1] in
+        admin)
+          local -a admin_cmds
+          admin_cmds=(
+            "delete-namespace-alias:Delete a namespace alias"
+            "import-orb:Import an orb version from circleci.com into a CircleCI Server installation"
+            "rename-namespace:Rename a namespace"
+          )
+
+          _arguments \
+            $_global_flags \
+            {-h,--help}"[help for $words[1]]" \
+            "1: :{_describe 'admin command' admin_cmds}" \
+            '*:: :->args' \
+            && ret=0
+
+          case $state in
+            args)
+              case $words[1] in
+                (delete-namespace-alias)
+                  _arguments \
+                    $_global_flags \
+                    {-h,--help}"[help for $words[1]]" \
+                    "--no-prompt[Disable prompt to bypass interactive UI.]" \
+                    '*:name:'
+                  ;;
+
+                (import-ord)
+                  _arguments \
+                    $_global_flags \
+                    {-h,--help}"[help for $words[1]]" \
+                    "--no-prompt[Disable prompt to bypass interactive UI.]" \
+                    '*:<namespace>[/<orb>[@<version>]]'
+                  ;;
+
+                (rename-namespace)
+                  _arguments \
+                    $_global_flags \
+                    {-h,--help}"[help for $words[1]]" \
+                    "--no-prompt[Disable prompt to bypass interactive UI.]" \
+                    '1:old name' \
+                    '2:new name'
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
         build)
           _arguments \
             $_global_flags \
@@ -664,6 +715,7 @@ function _circleci() {
               _arguments \
                 $_global_flags \
                 {-h,--help}"[help for $words[1]]" \
+                "*:re2 regexp PATTERN" \
                 && ret=0
               ;;
 
@@ -671,12 +723,12 @@ function _circleci() {
               _arguments \
                 $_global_flags \
                 {-h,--help}"[help for $words[1]]" \
-                "--index[index of node]:index size" \
+                "--index[index of node.]:index size" \
                 "--show-counts[print test file or test class counts to stderr (default false)]" \
-                "--split-by[how to weight the split, allowed values (default \"name\")]:split type:(name filesize timings)" \
-                "--timings-file[JSON file containing historical timing data]:json file:_files" \
-                "--timings-type[split using historical timings data (default \"filename\")]:timings type:(classname filename)" \
-                "--total[number of nodes (default 1)]:node size" \
+                "--split-by[how to weight the split. (default \"name\")]:split type:(name filesize timings)" \
+                "--timings-file[JSON file containing historical timing data.]:json file:_files" \
+                "--timings-type[lookup historical timing data (default \"autodetect\")]:timing type:(classname filename testname autodetect)" \
+                "--total[number of nodes. (default 1)]:node size" \
                 && ret=0
               ;;
           esac
@@ -751,10 +803,18 @@ _circleci "$*"
 
 # -----------------------------------------------------------------------------
 #
+# Use CircleCI from the command line.
+#
+# This project is the seed for CircleCI's new command-line application.
+#
+# For more help, see the documentation here: https://circleci.com/docs/2.0/local-cli/
+#
+#
 # Usage:
 #   circleci [command]
 #
 # Available Commands:
+#   admin       Administrative operations for a CircleCI Server installation.
 #   config      Operate on build config files
 #   context     Contexts provide a mechanism for securing and sharing environment variables across projects. The environment variables are defined as name/value pairs and are injected at runtime.
 #   diagnostic  Check the status of your CircleCI CLI.
@@ -763,19 +823,116 @@ _circleci "$*"
 #   local       Debug jobs on the local machine
 #   namespace   Operate on namespaces
 #   open        Open the current project in the browser.
-#   runner      Operate on runners
 #   orb         Operate on orbs
+#   query       Query the CircleCI GraphQL API.
+#   runner      Operate on runners
 #   setup       Setup the CLI with your credentials
+#   step        Execute steps
+#   switch
+#   tests       Collect and split tests so they may be run in parallel.
 #   update      Update the tool to the latest version
+#   usage       Generate usage documentation in markdown for the CLI.
 #   version     Display version information
 #
 # Flags:
+#       --debug               Enable debug logging.
+#       --endpoint string     URI to your CircleCI GraphQL API endpoint (default "graphql-unstable")
+#       --github-api string   Change the default endpoint to GitHub API for retrieving updates (default "https://api.github.com/")
 #   -h, --help                help for circleci
 #       --host string         URL to your CircleCI host, also CIRCLECI_CLI_HOST (default "https://circleci.com")
 #       --skip-update-check   Skip the check for updates check run before every command. (default true)
 #       --token string        your token for using CircleCI, also CIRCLECI_CLI_TOKEN
 # Use "circleci [command] --help" for more information about a command.
 #
+# -----------------------------------------------------------------------------
+#
+# Administrative operations for a CircleCI Server installation.
+#
+#
+# Usage:
+#   circleci admin [command]
+#
+# Available Commands:
+#   delete-namespace-alias Delete a namespace alias
+#   import-orb             Import an orb version from circleci.com into a CircleCI Server installation
+#   rename-namespace       Rename a namespace
+#
+# Flags:
+#   -h, --help   help for admin
+#
+# Global Flags:
+#       --host string         URL to your CircleCI host, also CIRCLECI_CLI_HOST (default "https://circleci.com")
+#       --skip-update-check   Skip the check for updates check run before every command. (default true)
+#       --token string        your token for using CircleCI, also CIRCLECI_CLI_TOKEN
+# Use "circleci admin [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Delete a namespace alias.
+#
+# A namespace can have multiple aliases (names). This command deletes an alias left behind by a rename. The most recent alias cannot be deleted.
+#
+# Example:
+# - namespace A is renamed to B
+# - alias B is created, coexisting with alias A
+# - after migrating config accordingly, we can delete the A alias.
+#
+#
+# Usage:
+#   circleci admin delete-namespace-alias <name> [flags]
+#
+# Args:
+#   <name>      The name of the alias to delete
+#
+#
+# Flags:
+#   -h, --help        help for delete-namespace-alias
+#       --no-prompt   Disable prompt to bypass interactive UI.
+#
+# Global Flags:
+#       --host string         URL to your CircleCI host, also CIRCLECI_CLI_HOST (default "https://circleci.com")
+#       --skip-update-check   Skip the check for updates check run before every command. (default true)
+#       --token string        your token for using CircleCI, also CIRCLECI_CLI_TOKEN
+#
+# -----------------------------------------------------------------------------
+#
+# Import an orb version from circleci.com into a CircleCI Server installation
+#
+#
+# Usage:
+#   circleci admin import-orb <namespace>[/<orb>[@<version>]] [flags]
+#
+# Flags:
+#   -h, --help        help for import-orb
+#       --no-prompt   Disable prompt to bypass interactive UI.
+#
+# Global Flags:
+#       --host string         URL to your CircleCI host, also CIRCLECI_CLI_HOST (default "https://circleci.com")
+#       --skip-update-check   Skip the check for updates check run before every command. (default true)
+#       --token string        your token for using CircleCI, also CIRCLECI_CLI_TOKEN
+#
+# -----------------------------------------------------------------------------
+#
+# Rename a namespace
+#
+#
+# Usage:
+#   circleci admin rename-namespace <old-name> <new-name> [flags]
+#
+# Args:
+#   <old-name>  The current name of the namespace
+#   <new-name>  The new name you want to give the namespace
+#
+#
+# Flags:
+#   -h, --help        help for rename-namespace
+#       --no-prompt   Disable prompt to bypass interactive UI.
+#
+# Global Flags:
+#       --host string         URL to your CircleCI host, also CIRCLECI_CLI_HOST (default "https://circleci.com")
+#       --skip-update-check   Skip the check for updates check run before every command. (default true)
+#       --token string        your token for using CircleCI, also CIRCLECI_CLI_TOKEN
+# #
 # -----------------------------------------------------------------------------
 #
 # Operate on build config files
@@ -1584,6 +1741,68 @@ _circleci "$*"
 #       --host string    URL to your CircleCI host (default "https://circleci.com")
 #       --token string   your token for using CircleCI
 #       --verbose        Enable verbose logging.
+#
+# -----------------------------------------------------------------------------
+#
+# Collect and split tests so they may be run in parallel.
+#
+# Usage:
+#   circleci tests [command]
+#
+# Available Commands:
+#   glob        Print files matching the glob pattern.
+#   split       Group tests into independent buckets so they can be run in parallel.
+#
+# Flags:
+#   -h, --help   help for tests
+#
+# Global Flags:
+#       --verbose   enable verbose logging output
+#
+# Use "circleci tests [command] --help" for more information about a command.
+#
+# -----------------------------------------------------------------------------
+#
+# Group tests into independent buckets so they can be run in parallel.
+#
+# FILENAME is the path to a list of values, one per line, which match the
+# --timings-type flag (filenames, classnames, or testnames) . If FILENAME is omitted
+# the values will be read from stdin.
+#
+# Usage:
+#   circleci tests split [flags] [FILENAME]
+#
+# Flags:
+#   -h, --help                  help for split
+#       --index uint            index of node.
+#       --show-counts           print test file or test class counts to stderr (default false).
+#       --split-by string       how to weight the split, allowed values are "name", "filesize", and "timings". (default "name")
+#       --timings-file string   JSON file containing historical timing data.
+#       --timings-type string   lookup historical timing data by: "classname", "filename", "testname" or "autodetect" (automatically choose classname or filename). (default "autodetect")
+#       --total uint            number of nodes. (default 1)
+#
+# Global Flags:
+#       --verbose   enable verbose logging output
+#
+# -----------------------------------------------------------------------------
+#
+# Print a list of files, one per line, which match the glob pattern.
+#
+# Pattern supports the following symbols:
+#
+# *      matches any sequence of non-path-separators
+# **     matches any sequence of characters, including path separators.
+# ?      matches any single non-path-separator character
+# [...]  matches any character in the set. May use '-' for a range.
+#
+# Usage:
+#   circleci tests glob [flags] PATTERN
+#
+# Flags:
+#   -h, --help   help for glob
+#
+# Global Flags:
+#       --verbose   enable verbose logging output
 #
 # -----------------------------------------------------------------------------
 #
