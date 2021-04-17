@@ -1,0 +1,101 @@
+#compdef golines
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2021, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/segmentio/golines
+#
+# -----------------------------------------------------------------------------
+
+function _golines() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    "--help[Show context-sensitive help (also try --help-long and --help-man).]" \
+    "--base-formatter=[Base formatter to use]" \
+    "--chain-split-dots[Split chained methods on the dots as opposed to the arguments]" \
+    {-d,--debug}"[Show debug output"] \
+    "--dot-file=[Path to dot representation of AST graph]:dot file:_files" \
+    "--dry-run[Show diffs without writing anything]" \
+    "--ignore-generated[Ignore generated go files]" \
+    "--ignored-dirs=[Directories to ignore]:dirs:_directories" \
+    "--keep-annotations[Keep shortening annotations in final output]" \
+    {-l,--list-files}"[List files that would be reformatted by this tool]" \
+    {-m,--max-len=}"[Target maximum line length]:length" \
+    "--profile=[Path to profile output]:profile out:_files" \
+    "--reformat-tags[Reformat struct tags]" \
+    "--shorten-comments[Shorten single-line comments]" \
+    {-t,--tab-len=}"[Length of a tab]:tab length" \
+    "--version[Print out version and exit]" \
+    {-w,--write-output}"[Write output to source instead of stdout]" \
+    '*:paths:_files' \
+    && ret=0
+
+  return ret
+}
+
+_golines "$*"
+
+# -----------------------------------------------------------------------------
+#
+# usage: golines [<flags>] [<paths>...]
+# 
+# Flags:
+#       --help               Show context-sensitive help (also try --help-long and
+#                            --help-man).
+#       --base-formatter=""  Base formatter to use
+#       --chain-split-dots   Split chained methods on the dots as opposed to the
+#                            arguments
+#   -d, --debug              Show debug output
+#       --dot-file=""        Path to dot representation of AST graph
+#       --dry-run            Show diffs without writing anything
+#       --ignore-generated   Ignore generated go files
+#       --ignored-dirs=vendor... ...  
+#                            Directories to ignore
+#       --keep-annotations   Keep shortening annotations in final output
+#   -l, --list-files         List files that would be reformatted by this tool
+#   -m, --max-len=100        Target maximum line length
+#       --profile=""         Path to profile output
+#       --reformat-tags      Reformat struct tags
+#       --shorten-comments   Shorten single-line comments
+#   -t, --tab-len=4          Length of a tab
+#       --version            Print out version and exit
+#   -w, --write-output       Write output to source instead of stdout
+# 
+# Args:
+#   [<paths>]  Paths to format
+#
+# -----------------------------------------------------------------------------
+ 
+# vim:ft=zsh:et:sts=2:sw=2
