@@ -1065,7 +1065,7 @@ _go "$*"
 #  $ line="$(printf '%s' $(printf '-%.0s' {1..78}))"; go help documentation | sed 's|^//|# |g' | awk '{if(NR>7)print}' | head -n -3 | sed -e '1h;2,$H;$!d;g' -re "s/(# \\n# )\\n/\1$line\\n#\\n/g" | pbcopy
 #
 # generate tools doc comment:
-#  $ touch tmp.txt; for t in $(go tool | grep -v 'compile[1234]' | tr '\n' ' '); do printf '#\n# %s\n#\n' $(printf '-%.0s' {1..78})>>tmp.txt && ( go tool $t -h 2>&1 | sed 's|^|# |g'>>tmp.txt ); done && printf '#\n#\n# %s\n' $(printf '-%.0s' {1..78})>>tmp.txt; cat tmp.txt | pbcopy
+#  $ touch tmp.txt; for t in $(go tool | grep -v 'compile[1234]' | tr '\n' ' '); do printf '#\n# %s\n#\n' $(printf '-%.0s' {1..78})>>tmp.txt && ( go tool $t -h 2>&1 | sed 's|^|# |g'>>tmp.txt ); done && printf '#\n#\n# %s\n' $(printf '-%.0s' {1..78})>>tmp.txt; cat tmp.txt | pbcopy && rm -f tmp.txt
 #
 # ------------------------------------------------------------------------------
 #
