@@ -66,6 +66,7 @@ _go() {
     'get:add dependencies to current module and install them'
     'install:compile and install packages and dependencies'
     'list:list packages or modules'
+    'mod:module maintenance'
     'run:compile and run Go program'
     'test:test packages'
     'tool:run specified go tool'
@@ -73,13 +74,6 @@ _go() {
     'vet:report likely mistakes in packages'
     'help:more information about a command'
   )
-
-  local module_enabled=false
-  # enable go mod command ($GO111MODULE)
-  if [[ -n $GO111MODULE ]] && [[ $GO111MODULE != 'off' ]]; then
-    commands+='mod:module maintenance'
-    module_enabled=true
-  fi
 
   _go_files() {
     _alternative '*:go file:_path_files -g "*.go(-.)"'
@@ -581,7 +575,8 @@ _go() {
                 _arguments \
                   '-v[print information about removed modules to standard error.]' \
                   '-e[attempt to proceed despite errors encountered while loading packages.]' \
-                  "-go=[update the 'go' directive in the go.mod file to the given version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17)"
+                  "-go=[update the 'go' directive in the go.mod file to the given version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17)" \
+                  "-compat=[preserves any additional checksums needed for the 'go' command from the indicated major Go release to successfully]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17)"
                 ;;
 
               vendor)
@@ -1071,6 +1066,10 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
+# go version devel go1.17-8b462d7567 Tue May 25 13:18:26 2021 +0000 X:staticlockranking darwin/amd64
+#
+# ------------------------------------------------------------------------------
+#
 #  Go is a tool for managing Go source code.
 #
 #  Usage:
@@ -1242,8 +1241,8 @@ _go "$*"
 #  		a build will run as if the disk file path exists with the contents
 #  		given by the backing file paths, or as if the disk file path does not
 #  		exist if its backing file path is empty. Support for the -overlay flag
-#  		has some limitations:importantly, cgo files included from outside the
-#  		include path must be  in the same directory as the Go package they are
+#  		has some limitations: importantly, cgo files included from outside the
+#  		include path must be in the same directory as the Go package they are
 #  		included from, and overlays will not appear when binaries and tests are
 #  		run through go run and go test respectively.
 #  	-pkgdir dir
@@ -2303,7 +2302,7 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go mod tidy [-e] [-v] [-go=version]
+#  	go mod tidy [-e] [-v] [-go=version] [-compat=version]
 #
 #  Tidy makes sure go.mod matches the source code in the module.
 #  It adds any missing modules necessary to build the current module's
@@ -2322,6 +2321,14 @@ _go "$*"
 #  are retained as explicit requirements in the go.mod file.
 #  (Go versions 1.17 and higher retain more requirements in order to
 #  support lazy module loading.)
+#
+#  The -compat flag preserves any additional checksums needed for the
+#  'go' command from the indicated major Go release to successfully load
+#  the module graph, and causes tidy to error out if that version of the
+#  'go' command would load any imported package from a different module
+#  version. By default, tidy acts as if the -compat flag were set to the
+#  version prior to the one indicated by the 'go' directive in the go.mod
+#  file.
 #
 #  See https://golang.org/ref/mod#go-mod-tidy for more about 'go mod tidy'.
 #
@@ -4175,8 +4182,6 @@ _go "$*"
 #   -S	print assembly listing
 #   -V	print version and exit
 #   -W	debug parse tree after type checking
-#   -abiwraplimit int
-#     	emit at most N ABI wrappers (for debugging)
 #   -asmhdr file
 #     	write assembly header to file
 #   -bench file
@@ -4419,8 +4424,8 @@ _go "$*"
 #   -cpuprofile file
 #     	write cpu profile to file
 #   -d	disable dynamic executable
-#   -debugppc64textsize int
-#     	debug PPC64 text section max
+#   -debugtextsize int
+#     	debug text section max size
 #   -debugtramp int
 #     	debug trampolines
 #   -dumpdep
@@ -4683,7 +4688,6 @@ _go "$*"
 # 	vet unit.cfg	# execute analysis specified by config file
 # 	vet help    	# general help, including listing analyzers and flags
 # 	vet help name	# help on specific analyzer and its flags
-#
 #
 # ------------------------------------------------------------------------------
 #
