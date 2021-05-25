@@ -4474,22 +4474,22 @@ _go "$*"
 # ------------------------------------------------------------------------------
 #
 # usage:
-# 
+#
 # Produce output in the specified format.
-# 
+#
 #    pprof <format> [options] [binary] <source> ...
-# 
+#
 # Omit the format to get an interactive shell whose commands can be used
 # to generate various views of a profile
-# 
+#
 #    pprof [options] [binary] <source> ...
-# 
+#
 # Omit the format and provide the "-http" flag to get an interactive web
 # interface at the specified host:port that can be used to navigate through
 # various views of a profile.
-# 
+#
 #    pprof -http [host]:[port] [options] [binary] <source> ...
-# 
+#
 # Details:
 #   Output formats (select at most one):
 #     -callgrind       Outputs a graph in callgrind format
@@ -4517,7 +4517,7 @@ _go "$*"
 #     -tree            Outputs a text rendering of call graph
 #     -web             Visualize graph through web browser
 #     -weblist         Display annotated source in a web browser
-# 
+#
 #   Options:
 #     -call_tree       Create a context-sensitive call tree
 #     -compact_labels  Show minimal headers
@@ -4547,18 +4547,18 @@ _go "$*"
 #     -trim            Honor nodefraction/edgefraction/nodecount defaults
 #     -trim_path       Path to trim from source paths before search
 #     -unit            Measurement units to display
-# 
+#
 #   Option groups (only set one per group):
-#     granularity      
+#     granularity
 #       -functions       Aggregate at the function level.
 #       -filefunctions   Aggregate at the function level.
 #       -files           Aggregate at the file level.
 #       -lines           Aggregate at the source code line level.
 #       -addresses       Aggregate at the address level.
-#     sort             
+#     sort
 #       -cum             Sort entries based on cumulative weight
 #       -flat            Sort entries based on own weight
-# 
+#
 #   Source options:
 #     -seconds              Duration for time-based profile collection
 #     -timeout              Timeout in seconds for profile collection
@@ -4580,14 +4580,14 @@ _go "$*"
 #     -tls_cert             TLS client certificate file for fetching profile and symbols
 #     -tls_key              TLS private key file for fetching profile and symbols
 #     -tls_ca               TLS CA certs file for fetching profile and symbols
-# 
+#
 #   Misc options:
 #    -http              Provide web interface at host:port.
 #                       Host is optional and 'localhost' by default.
 #                       Port is optional and a randomly available port by default.
 #    -no_browser        Skip opening a browser for the interactive web UI.
 #    -tools             Search path for object tools
-# 
+#
 #   Legacy convenience options:
 #    -inuse_space           Same as -sample_index=inuse_space
 #    -inuse_objects         Same as -sample_index=inuse_objects
@@ -4596,7 +4596,7 @@ _go "$*"
 #    -total_delay           Same as -sample_index=delay
 #    -contentions           Same as -sample_index=contentions
 #    -mean_delay            Same as -mean -sample_index=delay
-# 
+#
 #   Environment Variables:
 #    PPROF_TMPDIR       Location for saved profiles (default $HOME/pprof)
 #    PPROF_TOOLS        Search path for object-level tools
