@@ -1,0 +1,185 @@
+#compdef llvm-elfabi
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2021, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/llvm/llvm-project/llvm/tools/llvm-ifs@af000197c421
+#
+# -----------------------------------------------------------------------------
+
+function _llvm-elfabi() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local generic_options
+  generic_options=(
+    "--color[Use colors in output (default=autodetect)]"
+    "-h[Alias for --help]"
+    "--help[Display available options (--help-hidden for more)]"
+    "--help-hidden[Display all available options]"
+    "--help-list[Display list of available options (--help-list-hidden for more)]"
+    "--help-list-hidden[Display list of all available options]"
+    "--print-all-options[Print all option values after command line parsing]"
+    "--print-options[Print non-default options after command line parsing]"
+    "--version[Display the version of this program]"
+  )
+
+  _arguments -C \
+    $generic_options \
+    "--tbe[Force input file format. Read \`input\` as text-based ELF stub]" \
+    "--elf[Force input file format. Read \`input\` as ELF binary]" \
+    "--emit-tbe=[Emit a text-based ELF stub (.tbe) from the input file]:path:_files" \
+    "--force-opaque-pointers[Force all pointers to be opaque pointers]" \
+    "--output-target=[Create a binary stub for the specified target]:value:(elf32-little elf32-big elf64-little elf64-big)" \
+    "--soname=[Manually set the DT_SONAME entry of any emitted files]:name" \
+    "--write-if-changed[Write the output file only if it is new or has changed.]" \
+    '1:input:_files' \
+    '2:output:_files' \
+    && ret=0
+
+  return ret
+}
+
+_llvm-elfabi "$*"
+
+# -----------------------------------------------------------------------------
+#
+# USAGE: llvm-elfabi [options] input output
+# 
+# OPTIONS:
+# 
+# Color Options:
+# 
+#   --color                 - Use colors in output (default=autodetect)
+# 
+# General options:
+# 
+#   Force input file format:
+#       --tbe                  - Read `input` as text-based ELF stub
+#       --elf                  - Read `input` as ELF binary
+#   --emit-tbe=<path>       - Emit a text-based ELF stub (.tbe) from the input file
+#   --force-opaque-pointers - Force all pointers to be opaque pointers
+#   --output-target=<value> - Create a binary stub for the specified target
+#     =elf32-little         -   32-bit little-endian ELF stub
+#     =elf32-big            -   32-bit big-endian ELF stub
+#     =elf64-little         -   64-bit little-endian ELF stub
+#     =elf64-big            -   64-bit big-endian ELF stub
+#   --soname=<name>         - Manually set the DT_SONAME entry of any emitted files
+#   --write-if-changed      - Write the output file only if it is new or has changed.
+# 
+# Generic Options:
+# 
+#   --help                  - Display available options (--help-hidden for more)
+#   --help-list             - Display list of available options (--help-list-hidden for more)
+#   --version               - Display the version of this program
+# 
+# -----------------------------------------------------------------------------
+#
+# USAGE: llvm-elfabi [options] input output
+# 
+# OPTIONS:
+# 
+# Color Options:
+# 
+#   --color                                         - Use colors in output (default=autodetect)
+# 
+# General options:
+# 
+#   --as-secure-log-file-name=<value>               - As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
+#   --asm-macro-max-nesting-depth=<uint>            - The maximum nesting depth allowed for assembly macros.
+#   --crash-diagnostics-dir=<directory>             - Directory for crash diagnostic files.
+#   --debug-pass=<value>                            - Print legacy PassManager debugging information
+#     =Disabled                                     -   disable debug output
+#     =Arguments                                    -   print pass arguments to pass to 'opt'
+#     =Structure                                    -   print pass structure before run()
+#     =Executions                                   -   print pass name before it is executed
+#     =Details                                      -   print pass details when it is executed
+#   --disable-ondemand-mds-loading                  - Force disable the lazy-loading on-demand of metadata when loading bitcode for importing.
+#   --disable-symbolication                         - Disable symbolizing crash backtraces.
+#   Force input file format:
+#       --tbe                                          - Read `input` as text-based ELF stub
+#       --elf                                          - Read `input` as ELF binary
+#   --emit-tbe=<path>                               - Emit a text-based ELF stub (.tbe) from the input file
+#   --enable-fs-discriminator                       - Enable adding flow sensitive discriminators
+#   --filter-print-funcs=<function names>           - Only print IR for functions whose name match this for all print-[before|after][-all] options
+#   --force-opaque-pointers                         - Force all pointers to be opaque pointers
+#   --import-constants-with-refs                    - Import constant global variables with references
+#   --import-full-type-definitions                  - Import full type definitions for ThinLTO.
+#   --info-output-file=<filename>                   - File to append -stats and -timer output to
+#   --non-global-value-max-name-size=<uint>         - Maximum size for the name of non-global values.
+#   --opt-bisect-limit=<int>                        - Maximum optimization to perform
+#   --output-target=<value>                         - Create a binary stub for the specified target
+#     =elf32-little                                 -   32-bit little-endian ELF stub
+#     =elf32-big                                    -   32-bit big-endian ELF stub
+#     =elf64-little                                 -   64-bit little-endian ELF stub
+#     =elf64-big                                    -   64-bit big-endian ELF stub
+#   --pass-remarks=<pattern>                        - Enable optimization remarks from passes whose name match the given regular expression
+#   --pass-remarks-analysis=<pattern>               - Enable optimization analysis remarks from passes whose name match the given regular expression
+#   --pass-remarks-missed=<pattern>                 - Enable missed optimization remarks from passes whose name match the given regular expression
+#   --print-after=<string>                          - Print IR after specified passes
+#   --print-after-all                               - Print IR after each pass
+#   --print-before=<string>                         - Print IR before specified passes
+#   --print-before-all                              - Print IR before each pass
+#   --print-module-scope                            - When printing IR for print-[before|after]{-all} always print a module IR
+#   --print-summary-global-ids                      - Print the global id for each value when reading the module summary
+#   --propagate-attrs                               - Propagate attributes in index
+#   --remarks-section                               - Emit a section containing remark diagnostics metadata. By default, this is enabled for the following formats: yaml-strtab, bitstream.
+#   --rng-seed=<seed>                               - Seed for the random number generator
+#   --soname=<name>                                 - Manually set the DT_SONAME entry of any emitted files
+#   --sort-timers                                   - In the report, sort the timers in each group in wall clock time order
+#   --stats                                         - Enable statistics output from program (available with Asserts)
+#   --stats-json                                    - Display statistics as json data
+#   --time-passes                                   - Time each pass, printing elapsed time for each on exit
+#   --time-passes-per-run                           - Time each pass run, printing elapsed time for each run on exit
+#   --track-memory                                  - Enable -time-passes memory tracking (this may be slow)
+#   --treat-scalable-fixed-error-as-warning         - Treat issues where a fixed-width property is requested from a scalable type as a warning, instead of an error.
+#   --use-dbg-addr                                  - Use llvm.dbg.addr for all local variables
+#   --use-dereferenceable-at-point-semantics=<uint> - Deref attributes and metadata infer facts at definition only
+#   --verify-dom-info                               - Verify dominator info (time consuming)
+#   --verify-noalias-scope-decl-dom                 - Ensure that llvm.experimental.noalias.scope.decl for identical scopes are not dominating
+#   --write-if-changed                              - Write the output file only if it is new or has changed.
+# 
+# Generic Options:
+# 
+#   -h                                              - Alias for --help
+#   --help                                          - Display available options (--help-hidden for more)
+#   --help-hidden                                   - Display all available options
+#   --help-list                                     - Display list of available options (--help-list-hidden for more)
+#   --help-list-hidden                              - Display list of all available options
+#   --print-all-options                             - Print all option values after command line parsing
+#   --print-options                                 - Print non-default options after command line parsing
+#   --version                                       - Display the version of this program
+#
+# -----------------------------------------------------------------------------
+ 
+# vim:ft=zsh:et:sts=2:sw=2
