@@ -2,7 +2,7 @@
 
 # -----------------------------------------------------------------------------
 #
-# Copyright 2020, The zsh-completions Authors.
+# Copyright 2021, The zsh-completions Authors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,16 +41,16 @@ function _$BIN() {
   local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
-  local -a commands
-  commands=(
-    'subcommand1:description1'
-    'subcommand2:description2'
-    'subcommand3:description3'
+  local -a _cmds
+  _cmds=(
+    "subcommand1:description1"
+    "subcommand2:description2"
+    "subcommand3:description3"
   )
 
   _arguments -C \
     "1: :{_describe '$BIN commands' commands}" \
-    '*:: :->args' \
+    "*:: :->args" \
     && ret=0
 
   local _global_flags flags="--help"
@@ -59,10 +59,10 @@ function _$BIN() {
   case $state in
     args)
       if (( CURRENT == 2 )); then
-        _arguments '*:after the (( CURRENT == 2 )) comment:'
+        _arguments "*:after the (( CURRENT == 2 )) comment:"
         return
       fi
-      _arguments '*:before the (( CURRENT == 2 )) comment:_files'
+      _arguments "*:before the (( CURRENT == 2 )) comment:_files"
 
       case $words[1] in
         subcommand1)
@@ -86,26 +86,26 @@ function _$BIN() {
         help)
           local -a topics
           topics=(
-            'buildconstraint:build constraints'
-            'buildmode:build modes'
-            'c:calling between Go and C'
-            'cache:build and test caching'
-            'environment:environment variables'
-            'filetype:file types'
-            'go.mod:the go.mod file'
-            'gopath:GOPATH environment variable'
-            'gopath-get:legacy GOPATH go get'
-            'goproxy:module proxy protocol'
-            'importpath:import path syntax'
-            'modules:modules, module versions, and more'
-            'module-get:module-aware go get'
-            'module-auth:module authentication using go.sum'
-            'module-private:module configuration for non-public modules'
-            'packages:package lists and patterns'
-            'testflag:testing flags'
-            'testfunc:testing functions'
+            "buildconstraint:build constraints"
+            "buildmode:build modes"
+            "c:calling between Go and C"
+            "cache:build and test caching"
+            "environment:environment variables"
+            "filetype:file types"
+            "go.mod:the go.mod file"
+            "gopath:GOPATH environment variable"
+            "gopath-get:legacy GOPATH go get"
+            "goproxy:module proxy protocol"
+            "importpath:import path syntax"
+            "modules:modules, module versions, and more"
+            "module-get:module-aware go get"
+            "module-auth:module authentication using go.sum"
+            "module-private:module configuration for non-public modules"
+            "packages:package lists and patterns"
+            "testflag:testing flags"
+            "testfunc:testing functions"
           )
-          _arguments "1: :{_describe 'command' commands -- topics}"
+          _arguments "1: :{_describe 'command' _cmds -- topics}"
           ;;
 
       esac
