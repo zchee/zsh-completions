@@ -89,27 +89,40 @@
 #    --encrypt, -e                            encrypt a file and output the result to stdout
 #    --rotate, -r                             generate a new data encryption key and reencrypt all values with the new key
 #    --kms value, -k value                    comma separated list of KMS ARNs [$SOPS_KMS_ARN]
+#    --aws-profile value                      The AWS profile to use for requests to AWS
 #    --gcp-kms value                          comma separated list of GCP KMS resource IDs [$SOPS_GCP_KMS_IDS]
+#    --azure-kv value                         comma separated list of Azure Key Vault URLs [$SOPS_AZURE_KEYVAULT_URLS]
+#    --hc-vault-transit value                 comma separated list of vault's key URI (e.g. 'https://vault.example.org:8200/v1/transit/keys/dev') [$SOPS_VAULT_URIS]
 #    --pgp value, -p value                    comma separated list of PGP fingerprints [$SOPS_PGP_FP]
+#    --age value, -a value                    comma separated list of age recipients [$SOPS_AGE_RECIPIENTS]
 #    --in-place, -i                           write output back to the same file instead of stdout
 #    --extract value                          extract a specific key or branch from the input document. Decrypt mode only. Example: --extract '["somekey"][0]'
-#    --input-type value                       currently json, yaml and binary are supported. If not set, sops will use the file's extension to determine the type
-#    --output-type value                      currently json, yaml and binary are supported. If not set, sops will use the input file's extension to determine the output format
+#    --input-type value                       currently json, yaml, dotenv and binary are supported. If not set, sops will use the file's extension to determine the type
+#    --output-type value                      currently json, yaml, dotenv and binary are supported. If not set, sops will use the input file's extension to determine the output format
 #    --show-master-keys, -s                   display master encryption keys in the file during editing
 #    --add-gcp-kms value                      add the provided comma-separated list of GCP KMS key resource IDs to the list of master keys on the given file
 #    --rm-gcp-kms value                       remove the provided comma-separated list of GCP KMS key resource IDs from the list of master keys on the given file
+#    --add-azure-kv value                     add the provided comma-separated list of Azure Key Vault key URLs to the list of master keys on the given file
+#    --rm-azure-kv value                      remove the provided comma-separated list of Azure Key Vault key URLs from the list of master keys on the given file
 #    --add-kms value                          add the provided comma-separated list of KMS ARNs to the list of master keys on the given file
 #    --rm-kms value                           remove the provided comma-separated list of KMS ARNs from the list of master keys on the given file
+#    --add-hc-vault-transit value             add the provided comma-separated list of Vault's URI key to the list of master keys on the given file ( eg. https://vault.example.org:8200/v1/transit/keys/dev)
+#    --rm-hc-vault-transit value              remove the provided comma-separated list of Vault's URI key from the list of master keys on the given file ( eg. https://vault.example.org:8200/v1/transit/keys/dev)
+#    --add-age value                          add the provided comma-separated list of age recipients fingerprints to the list of master keys on the given file
+#    --rm-age value                           remove the provided comma-separated list of age recipients from the list of master keys on the given file
 #    --add-pgp value                          add the provided comma-separated list of PGP fingerprints to the list of master keys on the given file
 #    --rm-pgp value                           remove the provided comma-separated list of PGP fingerprints from the list of master keys on the given file
 #    --ignore-mac                             ignore Message Authentication Code during decryption
 #    --unencrypted-suffix value               override the unencrypted key suffix.
 #    --encrypted-suffix value                 override the encrypted key suffix. When empty, all keys will be encrypted, unless otherwise marked with unencrypted-suffix.
+#    --unencrypted-regex value                set the unencrypted key suffix. When specified, only keys matching the regex will be left unencrypted.
+#    --encrypted-regex value                  set the encrypted key suffix. When specified, only keys matching the regex will be encrypted.
 #    --config value                           path to sops' config file. If set, sops will not search for the config file recursively.
 #    --encryption-context value               comma separated list of KMS encryption context key:value pairs
-#    --set value                              set a specific key or branch in the input JSON or YAML document. value must be a json encoded string. (edit mode only). eg. --set '["somekey"][0] {"somevalue":true}'
+#    --set value                              set a specific key or branch in the input document. value must be a json encoded string. (edit mode only). eg. --set '["somekey"][0] {"somevalue":true}'
 #    --shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)
 #    --verbose                                Enable verbose logging output
+#    --output value                           Save the output after encryption or decryption to the file specified
 #    --enable-local-keyservice                use local key service
 #    --keyservice value                       Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000
 #    --help, -h                               show help
@@ -177,7 +190,7 @@
 #    --shamir-secret-sharing-threshold value  the number of master keys required to retrieve the data key with shamir (default: 0)
 #    --enable-local-keyservice                use local key service
 #    --keyservice value                       Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000
-#   
+#
 # -----------------------------------------------------------------------------
 #
 # NAME:
@@ -219,8 +232,12 @@ function _sops() {
   {--encrypt,-e}'[encrypt a file and output the result to stdout]' \
   {--rotate,-r}'[generate a new data encryption key and reencrypt all values with the new key]' \
   {--kms,-k}'[comma separated list of KMS ARNs \[$SOPS_KMS_ARN\]]' \
+  '--aws-profile[The AWS profile to use for requests to AWS]' \
   '--gcp-kms[comma separated list of GCP KMS resource IDs \[$SOPS_GCP_KMS_IDS\]]' \
+  "--hc-vault-transit[comma separated list of vault's key URI (e.g. 'https://vault.example.org:8200/v1/transit/keys/dev') \[\$SOPS_VAULT_URIS\]]" \
+  '--azure-kv[comma separated list of Azure Key Vault URLs \[$SOPS_AZURE_KEYVAULT_URLS\]]' \
   {--pgp,-p}'[comma separated list of PGP fingerprints \[$SOPS_PGP_FP\]]' \
+  {--age,-a}'[comma separated list of age recipients \[$SOPS_AGE_RECIPIENTS\]]' \
   {--in-place,-i}'[write output back to the same file instead of stdout]' \
   '--extract[extract a specific key or branch from the input document. Decrypt mode only.]' \
   "--input-type[currently json, yaml and binary are supported. If not set, sops will use the file's extension to determine the type]" \
@@ -228,18 +245,29 @@ function _sops() {
   {--show-master-keys,-s}'[display master encryption keys in the file during editing]' \
   '--add-gcp-kms[add the provided comma-separated list of GCP KMS key resource IDs to the list of master keys on the given file]' \
   '--rm-gcp-kms[remove the provided comma-separated list of GCP KMS key resource IDs from the list of master keys on the given file]' \
+  '--add-azure-kv[add the provided comma-separated list of Azure Key Vault key URLs to the list of master keys on the given file]' \
+  '--rm-azure-kv[remove the provided comma-separated list of Azure Key Vault key URLs from the list of master keys on the given file]' \
   '--add-kms[add the provided comma-separated list of KMS ARNs to the list of master keys on the given file]' \
   '--rm-kms[remove the provided comma-separated list of KMS ARNs from the list of master keys on the given file]' \
+  "--add-hc-vault-transit[add the provided comma-separated list of Vault's URI key to the list of master keys on the given file ( eg. https://vault.example.org:8200/v1/transit/keys/dev)]" \
+  "--rm-hc-vault-transit[remove the provided comma-separated list of Vault's URI key from the list of master keys on the given file ( eg. https://vault.example.org:8200/v1/transit/keys/dev)]" \
+  '--add-age[add the provided comma-separated list of age recipients fingerprints to the list of master keys on the given file]' \
+  '--rm-age[remove the provided comma-separated list of age recipients from the list of master keys on the given file]' \
   '--add-pgp[add the provided comma-separated list of PGP fingerprints to the list of master keys on the given file]' \
   '--rm-pgp[remove the provided comma-separated list of PGP fingerprints from the list of master keys on the given file]' \
+  '--add-age[add the provided comma-separated list of age recipients fingerprints to the list of master keys on the given file]' \
+  '--rm-age[remove the provided comma-separated list of age recipients from the list of master keys on the given file]' \
   '--ignore-mac[ignore Message Authentication Code during decryption]' \
   '--unencrypted-suffix[override the unencrypted key suffix.]' \
   '--encrypted-suffix[override the encrypted key suffix. When empty, all keys will be encrypted, unless otherwise marked with unencrypted-suffix.]' \
+  '--unencrypted-regex[set the unencrypted key suffix. When specified, only keys matching the regex will be left unencrypted.]' \
+  '--encrypted-regex[set the encrypted key suffix. When specified, only keys matching the regex will be encrypted.]' \
   '--config[path to sops config file. If set, sops will not search for the config file recursively.]' \
   '--encryption-context[comma separated list of KMS encryption context key:value pairs]' \
-  '--set[set a specific key or branch in the input JSON or YAML document. value must be a json encoded string.]' \
+  "--set[set a specific key or branch in the input document. value must be a json encoded string. (edit mode only). eg. --set '\[\"somekey\"\]\[0\] {\"somevalue\":true}']" \
   '--shamir-secret-sharing-threshold[the number of master keys required to retrieve the data key with shamir (default: 0)]' \
   '--verbose[Enable verbose logging output]' \
+  '--output[Save the output after encryption or decryption to the file specified]' \
   '--enable-local-keyservice[use local key service]' \
   '--keyservice[Specify the key services to use in addition to the local one. Can be specified more than once. Syntax: protocol://address. Example: tcp://myserver.com:5000]' \
   {--help,-h}'[show help]' \
