@@ -1,0 +1,356 @@
+#compdef xo
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2021, The zsh-completions Authors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/xo/xo
+#
+# -----------------------------------------------------------------------------
+
+function _xo() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a _cmds
+  _cmds=(
+    "help:show command help"
+    "query:Generate code for a database custom query from a template."
+    "schema:Generate code for a database schema from a template."
+    "dump:Dump internal templates to path."
+  )
+
+  _arguments -C \
+    "1: :{_describe 'xo commands' _cmds}" \
+    "*:: :->args" \
+    && ret=0
+
+  local _global_flags flags="--help -v --verbose --version"
+  _global_flags=(
+    "(: -)--help[Help for $words[1]]"
+    "(-v --verbose)"{-v,--verbose}"[enable verbose output]"
+    "--version[display version and exit]"
+  )
+
+  case $words[1] in
+    query)
+      _arguments \
+        ${_global_flags[@]} \
+        "($flags -s --schema)"{-s,--schema}="[database schema name]:schema name" \
+        "($flags -t --template)"{-t,--template}="[template type (createdb, dot, go, json, yaml; default: go)]:template type:(createdb dot go json yaml)" \
+        "($flags -f --suffix)"{-f,--suffix}="[file extension suffix for generated files (otherwise set by template type)]:file suffix" \
+        "($flags -o --out)"{-o,--out=models}"[out path (default: models)]:out path:_files" \
+        "($flags -a --append)"{-a,--append}"[enable append mode]" \
+        "($flags -S --single)"{-S,--single}="[enable single file output]:output file:_files" \
+        "($flags -D --debug)"{-D,--debug}"[debug generated code (writes generated code to disk without post processing)]" \
+        "($flags -Q --query)"{-Q,--query}="[custom database query (uses stdin if not provided)]:query" \
+        "($flags -T --type)"{-T,--type}="[type name]:type name" \
+        "($flags)--type-comment=[type comment]:type comment" \
+        "($flags -F --func)"{-F,--func}="[func name]:func name" \
+        "($flags)--func-comment=[func comment]:func comment" \
+        "($flags -M --trim)"{-M,--trim}"[enable trimming whitespace]" \
+        "($flags -B --strip)"{-B,--strip}"[enable stripping type casts]" \
+        "($flags -1 --one)"{-1,--one}"[enable returning single (only one) result]" \
+        "($flags -l --flat)"{-l,--flat}"[enable returning unstructured values]" \
+        "($flags -X --exec)"{-X,--exec}"[enable exec (no introspection performed)]" \
+        "($flags -I --interpolate)"{-I,--interpolate}"[enable interpolation of embedded params]" \
+        "($flags -L --delimiter)"{-L,--delimiter}="[delimiter used for embedded params (default: %%)]:delimiter" \
+        "($flags -Z --fields)"{-Z,--fields}="[override field names for results]:fields" \
+        "($flags -U --allow-nulls)"{-U,--allow-nulls}"[allow result fields with NULL values]" \
+        "($flags -d --src)"{-d,--src}="[template source directory]:template source directory:_files" \
+        "($flags -2 --go-not-first)"{-2,--go-not-first}"[disable package comment (ie, not first generated file)]" \
+        "($flags)--go-int32=[int32 type (default: int)]:int32 type:(int32 int)" \
+        "($flags)--go-uint32=[uint32 type (default: uint)]:uint32 type:(uint32 uint)" \
+        "($flags)--go-pkg=[package name]:package name" \
+        "($flags)--go-tag=[build tags]:build tags" \
+        "($flags)--go-import=[package imports]:packages" \
+        "($flags)--go-uuid=[uuid type package]:packages" \
+        "($flags)--go-custom=[package name for custom types]:custom types package" \
+        "($flags)--go-conflict=[name conflict suffix (default: Val)]:conflict suffix" \
+        "($flags)--go-initialism=[add initialism (i.e ID, API, URI)]:initialism name" \
+        "($flags)--go-esc=none=[escape fields (none, schema, table, column, all; default: none)]:escape fields:(none schema table column all)" \
+        "($flags -g --go-field-tag)"{-g,--go-field-tag}="[field tag]:field tag" \
+        "($flags)--go-context=[context mode (disable, both, only; default: only)]:context mode:(disable both only)" \
+        "($flags)--go-inject=[insert code into generated file headers]:inject code" \
+        "($flags)--go-inject-file=[insert code into generated file headers from a file]:inject-file:_files" \
+        "($flags)--go-legacy[enables legacy v1 template funcs]" \
+        "($flags)--go-enum-table-prefix[enables table name prefix to enums]" \
+        "($flags)--json-indent=[indent spacing]:indent spacing" \
+        "($flags)--json-ugly[disable indentation]" \
+        "($flags -)*:dst:_files" \
+        && ret=0
+      ;;
+
+    schema)
+      _arguments \
+        ${_global_flags[@]} \
+        "($flags -s --schema)"{-s,--schema}="[database schema name]:schema name" \
+        "($flags -t --template)"{-t,--template}="[template type (createdb, dot, go, json, yaml; default: go)]:template type:(createdb dot go json yaml)" \
+        "($flags -f --suffix)"{-f,--suffix}="[file extension suffix for generated files (otherwise set by template type)]:file suffix" \
+        "($flags -o --out)"{-o,--out=models}"[out path (default: models)]:out path:_files" \
+        "($flags -a --append)"{-a,--append}"[enable append mode]" \
+        "($flags -S --single)"{-S,--single}="[enable single file output]:output file:_files" \
+        "($flags -D --debug)"{-D,--debug}"[debug generated code (writes generated code to disk without post processing)]" \
+        "($flags -k --fk-mode)"{-k,--fk-mode}="[foreign key resolution mode (smart, parent, field, key; default: smart)]:foreign key mode:(smart parent field key)" \
+        "($flags -i --include)"{-i,--include}="[include types (<type>)]:include types" \
+        "($flags -e --exclude)"{-e,--exclude}="[exclude types/fields (<type>$\[.<field>\])]:exclude types/fields" \
+        "($flags -j --use)"{-j,--use-index-names}"[use index names as defined in schema for generated code]" \
+        "($flags -d --src)"{-d,--src}="[template source directory]:template source directory:_files" \
+        "($flags)--createdb-fmt=[fmt command (default: )]" \
+        "($flags)--createdb-fmt-opts=[fmt options (default: )]" \
+        "($flags)--createdb-constraint[enable constraint name in output (postgres, mysql, sqlite3)]:constraint name:(postgres, mysql, sqlite3)" \
+        "($flags)--createdb-escape=none[escape mode (none, types, all; default: none)]:escape mode:(none, types, all)" \
+        "($flags)--createdb-engine=[mysql table engine (default: InnoDB)]:mysql table engine" \
+        "($flags)--createdb-trim-comment[trim leading comment from views and procs (--no-createdb-trim-comment)]" \
+        "($flags)--dot-defaults=""[default statements (default: node \[shape=none, margin=0\])]:default statements" \
+        "($flags)--dot-bold[bold header row]" \
+        "($flags)--dot-color=""[header color (default: lightblue)]:header color" \
+        "($flags)--dot-row=""[row value template (default: {{ .Name }}: {{ .Type.Type }})]:row value template" \
+        "($flags)--dot-direction[enable edge directions]" \
+        "($flags -2 --go-not-first)"{-2,--go-not-first}"[disable package comment (ie, not first generated file)]" \
+        "($flags)--go-int32=[int32 type (default: int)]:int32 type:(int32 int)" \
+        "($flags)--go-uint32=[uint32 type (default: uint)]:uint32 type:(uint32 uint)" \
+        "($flags)--go-pkg=[package name]:package name" \
+        "($flags)--go-tag=[build tags]:build tags" \
+        "($flags)--go-import=[package imports]:packages" \
+        "($flags)--go-uuid=[uuid type package]:packages" \
+        "($flags)--go-custom=[package name for custom types]:custom types package" \
+        "($flags)--go-conflict=[name conflict suffix (default: Val)]:conflict suffix" \
+        "($flags)--go-initialism=[add initialism (i.e ID, API, URI)]:initialism name" \
+        "($flags)--go-esc=none=[escape fields (none, schema, table, column, all; default: none)]:escape fields:(none schema table column all)" \
+        "($flags -g --go-field-tag)"{-g,--go-field-tag}="[field tag]:field tag" \
+        "($flags)--go-context=[context mode (disable, both, only; default: only)]:context mode:(disable both only)" \
+        "($flags)--go-inject=[insert code into generated file headers]:inject code" \
+        "($flags)--go-inject-file=[insert code into generated file headers from a file]:inject-file:_files" \
+        "($flags)--go-legacy[enables legacy v1 template funcs]" \
+        "($flags)--go-enum-table-prefix[enables table name prefix to enums]" \
+        "($flags)--json-indent=[indent spacing]:indent spacing" \
+        "($flags)--json-ugly[disable indentation]" \
+        "($flags)--postgres-oids[enable postgres OIDs]" \
+        "($flags -)*:dst:_files" \
+        && ret=0
+      ;;
+
+    dump)
+      _arguments \
+        ${_global_flags[@]} \
+        "($flags -f --suffix)"{-f,--suffix}="[file extension suffix for generated files (otherwise set by template type)]:file suffix" \
+        "($flags -t --template)"{-t,--template}="[template type (createdb, dot, go, json, yaml; default: go)]:template type:(createdb dot go json yaml)" \
+        "($flags -)*:out:_files" \
+        && ret=0
+      ;;
+
+    help)
+      _arguments "1: :{_describe 'command' _cmds}"
+      ;;
+
+  esac
+
+  return ret
+}
+
+_xo "$*"
+
+# -----------------------------------------------------------------------------
+#
+# usage: xo [<flags>] <command> [<args> ...]
+# 
+# Flags:
+#       --help     Show context-sensitive help (also try --help-long and
+#                  --help-man).
+#   -v, --verbose  enable verbose output
+#       --version  display version and exit
+# 
+# Commands:
+#   help [<command>...]
+#   query [<flags>] <DSN>
+#   schema [<flags>] <DSN>
+#   dump [<flags>] <out>
+#
+# -----------------------------------------------------------------------------
+#
+# usage: xo query [<flags>] <DSN>
+# 
+# Generate code for a database custom query from a template.
+# 
+# Flags:
+#       --help                     Show context-sensitive help (also try
+#                                  --help-long and --help-man).
+#   -v, --verbose                  enable verbose output
+#       --version                  display version and exit
+#   -s, --schema=<name>            database schema name
+#   -t, --template=go              template type (createdb, dot, go, json, yaml;
+#                                  default: go)
+#   -f, --suffix=<ext>             file extension suffix for generated files
+#                                  (otherwise set by template type)
+#   -o, --out=models               out path (default: models)
+#   -a, --append                   enable append mode
+#   -S, --single=<file>            enable single file output
+#   -D, --debug                    debug generated code (writes generated code to
+#                                  disk without post processing)
+#   -Q, --query=""                 custom database query (uses stdin if not
+#                                  provided)
+#   -T, --type=<name>              type name
+#       --type-comment=""          type comment
+#   -F, --func=<name>              func name
+#       --func-comment=""          func comment
+#   -M, --trim                     enable trimming whitespace
+#   -B, --strip                    enable stripping type casts
+#   -1, --one                      enable returning single (only one) result
+#   -l, --flat                     enable returning unstructured values
+#   -X, --exec                     enable exec (no introspection performed)
+#   -I, --interpolate              enable interpolation of embedded params
+#   -L, --delimiter=%%             delimiter used for embedded params (default:
+#                                  %%)
+#   -Z, --fields=<field>           override field names for results
+#   -U, --allow-nulls              allow result fields with NULL values
+#   -d, --src=<path>               template source directory
+#   -2, --go-not-first             disable package comment (ie, not first
+#                                  generated file)
+#       --go-int32=int             int32 type (default: int)
+#       --go-uint32=uint           uint32 type (default: uint)
+#       --go-pkg=<name>            package name
+#       --go-tag="" ...            build tags
+#       --go-import="" ...         package imports
+#       --go-uuid=<pkg>            uuid type package
+#       --go-custom=<name>         package name for custom types
+#       --go-conflict=Val          name conflict suffix (default: Val)
+#       --go-initialism=<val> ...  add initialism (i.e ID, API, URI)
+#       --go-esc=none ...          escape fields (none, schema, table, column,
+#                                  all; default: none)
+#   -g, --go-field-tag=<tag>       field tag
+#       --go-context=only          context mode (disable, both, only; default:
+#                                  only)
+#       --go-inject=""             insert code into generated file headers
+#       --go-inject-file=<file>    insert code into generated file headers from a
+#                                  file
+#       --go-legacy                enables legacy v1 template funcs
+#       --go-enum-table-prefix     enables table name prefix to enums
+#       --json-indent="  "         indent spacing
+#       --json-ugly                disable indentation
+# 
+# Args:
+#   <DSN>  data source name
+#
+# -----------------------------------------------------------------------------
+#
+# usage: xo schema [<flags>] <DSN>
+# 
+# Generate code for a database schema from a template.
+# 
+# Flags:
+#       --help                     Show context-sensitive help (also try
+#                                  --help-long and --help-man).
+#   -v, --verbose                  enable verbose output
+#       --version                  display version and exit
+#   -s, --schema=<name>            database schema name
+#   -t, --template=go              template type (createdb, dot, go, json, yaml;
+#                                  default: go)
+#   -f, --suffix=<ext>             file extension suffix for generated files
+#                                  (otherwise set by template type)
+#   -o, --out=models               out path (default: models)
+#   -a, --append                   enable append mode
+#   -S, --single=<file>            enable single file output
+#   -D, --debug                    debug generated code (writes generated code to
+#                                  disk without post processing)
+#   -k, --fk-mode=smart            foreign key resolution mode (smart, parent,
+#                                  field, key; default: smart)
+#   -i, --include=<glob> ...       include types (<type>)
+#   -e, --exclude=<glob> ...       exclude types/fields (<type>[.<field>])
+#   -j, --use-index-names          use index names as defined in schema for
+#                                  generated code
+#   -d, --src=<path>               template source directory
+#       --createdb-fmt=<path>      fmt command (default: )
+#       --createdb-fmt-opts=<opts> ...  
+#                                  fmt options (default: )
+#       --createdb-constraint      enable constraint name in output (postgres,
+#                                  mysql, sqlite3)
+#       --createdb-escape=none     escape mode (none, types, all; default: none)
+#       --createdb-engine=""       mysql table engine (default: InnoDB)
+#       --createdb-trim-comment    trim leading comment from views and procs
+#                                  (--no-createdb-trim-comment)
+#       --dot-defaults="" ...      default statements (default: node [shape=none,
+#                                  margin=0])
+#       --dot-bold                 bold header row
+#       --dot-color=""             header color (default: lightblue)
+#       --dot-row=""               row value template (default: {{ .Name }}: {{
+#                                  .Type.Type }})
+#       --dot-direction            enable edge directions
+#   -2, --go-not-first             disable package comment (ie, not first
+#                                  generated file)
+#       --go-int32=int             int32 type (default: int)
+#       --go-uint32=uint           uint32 type (default: uint)
+#       --go-pkg=<name>            package name
+#       --go-tag="" ...            build tags
+#       --go-import="" ...         package imports
+#       --go-uuid=<pkg>            uuid type package
+#       --go-custom=<name>         package name for custom types
+#       --go-conflict=Val          name conflict suffix (default: Val)
+#       --go-initialism=<val> ...  add initialism (i.e ID, API, URI)
+#       --go-esc=none ...          escape fields (none, schema, table, column,
+#                                  all; default: none)
+#   -g, --go-field-tag=<tag>       field tag
+#       --go-context=only          context mode (disable, both, only; default:
+#                                  only)
+#       --go-inject=""             insert code into generated file headers
+#       --go-inject-file=<file>    insert code into generated file headers from a
+#                                  file
+#       --go-legacy                enables legacy v1 template funcs
+#       --go-enum-table-prefix     enables table name prefix to enums
+#       --json-indent="  "         indent spacing
+#       --json-ugly                disable indentation
+#       --postgres-oids            enable postgres OIDs
+# 
+# Args:
+#   <DSN>  data source name
+#
+# -----------------------------------------------------------------------------
+#
+# usage: xo dump [<flags>] <out>
+# 
+# Dump internal templates to path.
+# 
+# Flags:
+#       --help          Show context-sensitive help (also try --help-long and
+#                       --help-man).
+#   -v, --verbose       enable verbose output
+#       --version       display version and exit
+#   -t, --template=go   template type (createdb, dot, go, json, yaml; default: go)
+#   -f, --suffix=<ext>  file extension suffix for generated files (otherwise set
+#                       by template type)
+# 
+# Args:
+#   <out>  out path
+#
+# -----------------------------------------------------------------------------
+ 
+# vim:ft=zsh:et:sts=2:sw=2
