@@ -35,6 +35,161 @@
 #
 # github.com/golangci/golangci-lint
 #
+# -------------------------------------------------------------------------------
+
+function _golangci-lint() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'cache:Cache control and information'
+    'completion:Output completion script'
+    'config:Config'
+    'help:Help'
+    'linters:List current linters configuration'
+    'run:Run linters'
+    'version:Version'
+  )
+
+  local -a _global_flags
+  _global_flags=(
+    '--color=[Use color when printing \(default "auto"\)]:color mode:(always auto never)'
+    {-j,--concurrency}='[Concurrency \(default NumCPU\)]:num of concurrency'
+    '--cpu-profile-path=[Path to CPU profile output file]:cpu profile filepath:_files'
+    '--mem-profile-path=[Path to memory profile output file]:memory profile filepath:_files'
+    '--trace-path=[Path to trace output file]:trace profile filepath:_files'
+    {-v,--verbose}'[verbose output]'
+    '--version[Print version]'
+    {-h,--help}'[Show help]'
+  )
+
+  local -a _all_flags
+  _all_flags=(
+    '--out-format=[Format of output \(default "colored-line-number"\)]:output format:(colored-line-number line-number json tab checkstyle code-climate junit-xml)'
+    '--print-issued-lines[Print lines of code with issue \(default true\)]'
+    '--print-linter-name [Print linter name in issue line \(default true\)]'
+    '--uniq-by-line[Make issues output unique by line \(default true\)]'
+    '--modules-download-mode=[Modules download mode. If not empty, passed as -mod=<mode> to go tools]:module download mode:(vendor mod readonly)'
+    '--issues-exit-code=[Exit code when issues were found \(default 1\)]:exit code'
+    '--build-tags=[Build tags]:build tags'
+    '--timeout=[Timeout for total work \(default 1m0s\)]:deadline duration'
+    '--tests[Analyze tests \(default true\)]'
+    '--print-resources-usage[Print avg and max memory usage of golangci-lint and total time]'
+    {-c,--config}='[Read config from file path PATH]:config path:_files'
+    "--no-config[Don't read config]"
+    '--skip-dirs=[Regexps of directories to skip]:skip dir regexp:_directories'
+    '--skip-dirs-use-default[Use or not use default excluded directories]'
+    '--skip-files=[Regexps of files to skip]:skip file name regexp:_files'
+    {-E,--enable}'=[Enable specific linter]:enable linters'
+    {-D,--disable}'=[Disable specific linter]:enable linters'
+    '--disable-all[Disable all linters]'
+    {-p,--presets}'[Enable presets \(bugs|complexity|format|performance|style|unused\) of linters.]'
+    '--fast[Run only fast linters from enabled linters set]'
+    {-e,--exclude}'=[Exclude issue by regexp]:exclude regexp pattern'
+    '--exclude-use-default[Use or not use default excludes]'
+    '--max-issues-per-linter=[Maximum issues count per one linter. Set to 0 to disable \(default 50\)]:max issues count'
+    '--max-same-issues=[Maximum count of issues with the same text. Set to 0 to disable \(default 3\)]:max count of same issues text'
+    {-n,--new}'[Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.]'
+    '--new-from-rev=[Show only new issues created after git revision REV]:git revision'
+    '--new-from-patch=[Show only new issues created in git patch with file path PATH]:git patch file path:_files'
+    '--fix[Fix found issues]'
+    $_global_flags[@]
+  )
+
+  _arguments -C \
+    "1: :{_describe 'golangci-lint commands' commands}" \
+    '*:: :->args' \
+    $_global_flags[@] \
+    && ret=0
+
+  case $words[1] in
+    cache)
+      local -a cache_commands
+      cache_commands=(
+        'clean:Clean cache'
+        'status:Show cache status'
+      )
+
+      _arguments \
+        "1: :{_describe 'cache commands' cache_commands}" \
+        '*:: :->args' \
+        $_global_flags[@]
+
+      case $words[1] in
+        clean|status)
+          _arguments $_global_flags[@]
+          ;;
+      esac
+      ;;
+
+    config)
+      local -a config_commands
+      config_commands=(
+        'path:Print used config path'
+      )
+
+      _arguments \
+        "1: :{_describe 'config commands' config_commands}" \
+        '*:: :->args' \
+        $_global_flags[@]
+
+      case $words[1] in
+        path)
+          _arguments $_all_flags[@]
+          ;;
+      esac
+      ;;
+
+    completion)
+      local -a completion_commands
+      completion_commands=(
+        'bash:Output bash completion script'
+        'zsh:Output zsh completion script'
+      )
+
+      _arguments \
+        "1: :{_describe 'completion commands' completion_commands}" \
+        $_global_flags[@]
+      ;;
+
+    help)
+      local -a help_commands
+      help_commands=(
+        'linters:Help about linters'
+      )
+
+      _arguments \
+        "1: :{_describe 'help command' help_commands}" \
+        '*:: :->args'
+
+      case $words[1] in
+        linters)
+          _arguments $_all_flags[@]
+          ;;
+      esac
+      ;;
+
+    linters)
+      _arguments $_all_flags[@]
+      ;;
+
+    run)
+      _arguments \
+        '1:files or packages:_files' \
+        $_all_flags[@]
+      ;;
+
+    version)
+      _arguments $_global_flags[@]
+      ;;
+  esac
+
+  return ret
+}
+
+_golangci-lint "$*"
+
 # -----------------------------------------------------------------------------
 #
 # Smart, fast linters runner. Run it in cloud for every GitHub pull request on https://golangci.com
@@ -484,138 +639,5 @@
 #       --version                   Print version
 #
 # -------------------------------------------------------------------------------
-
-function _golangci-lint() {
-  local context curcontext=$curcontext state line expl ret=1
-  declare -A opt_args
-
-  local -a commands
-  commands=(
-    'cache:Cache control and information'
-    'completion:Output completion script'
-    'config:Config'
-    'help:Help'
-    'linters:List current linters configuration'
-    'run:Run linters'
-    'version:Version'
-  )
-
-  local -a _global_flags
-  _global_flags=(
-    '--color=[Use color when printing \(default "auto"\)]:color mode:(always auto never)'
-    {-j,--concurrency}='[Concurrency \(default NumCPU\)]:num of concurrency'
-    '--cpu-profile-path=[Path to CPU profile output file]:cpu profile filepath:_files'
-    '--mem-profile-path=[Path to memory profile output file]:memory profile filepath:_files'
-    '--trace-path=[Path to trace output file]:trace profile filepath:_files'
-    {-v,--verbose}'[verbose output]'
-    '--version[Print version]'
-    {-h,--help}'[Show help]'
-  )
-
-  local -a _all_flags
-  _all_flags=(
-    '--out-format=[Format of output \(default "colored-line-number"\)]:output format:(colored-line-number line-number json tab checkstyle code-climate junit-xml)'
-    '--print-issued-lines[Print lines of code with issue \(default true\)]'
-    '--print-linter-name [Print linter name in issue line \(default true\)]'
-    '--uniq-by-line[Make issues output unique by line \(default true\)]'
-    '--modules-download-mode=[Modules download mode. If not empty, passed as -mod=<mode> to go tools]:module download mode:(vendor mod readonly)'
-    '--issues-exit-code=[Exit code when issues were found \(default 1\)]:exit code'
-    '--build-tags=[Build tags]:build tags'
-    '--timeout=[Timeout for total work \(default 1m0s\)]:deadline duration'
-    '--tests[Analyze tests \(default true\)]'
-    '--print-resources-usage[Print avg and max memory usage of golangci-lint and total time]'
-    {-c,--config}='[Read config from file path PATH]:config path:_files'
-    "--no-config[Don't read config]"
-    '--skip-dirs=[Regexps of directories to skip]:skip dir regexp:_directories'
-    '--skip-dirs-use-default[Use or not use default excluded directories]'
-    '--skip-files=[Regexps of files to skip]:skip file name regexp:_files'
-    {-E,--enable}'=[Enable specific linter]:enable linters'
-    {-D,--disable}'=[Disable specific linter]:enable linters'
-    '--disable-all[Disable all linters]'
-    {-p,--presets}'[Enable presets \(bugs|complexity|format|performance|style|unused\) of linters.]'
-    '--fast[Run only fast linters from enabled linters set]'
-    {-e,--exclude}'=[Exclude issue by regexp]:exclude regexp pattern'
-    '--exclude-use-default[Use or not use default excludes]'
-    '--max-issues-per-linter=[Maximum issues count per one linter. Set to 0 to disable \(default 50\)]:max issues count'
-    '--max-same-issues=[Maximum count of issues with the same text. Set to 0 to disable \(default 3\)]:max count of same issues text'
-    {-n,--new}'[Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.]'
-    '--new-from-rev=[Show only new issues created after git revision REV]:git revision'
-    '--new-from-patch=[Show only new issues created in git patch with file path PATH]:git patch file path:_files'
-    '--fix[Fix found issues]'
-    $_global_flags[@]
-  )
-
-  _arguments -C \
-    "1: :{_describe 'golangci-lint commands' commands}" \
-    '*:: :->args' \
-    && ret=0
-
-  case $words[1] in
-    config)
-      local -a config_commands
-      config_commands=(
-      'path:Print used config path'
-      )
-
-      _arguments \
-        "1: :{_describe 'config commands' config_commands}" \
-        '*:: :->args'
-        $_global_flags[@]
-
-      case $words[1] in
-        path)
-          _arguments $_all_flags[@]
-          ;;
-      esac
-      ;;
-
-    completion)
-      local -a completion_commands
-      completion_commands=(
-        'bash:Output bash completion script'
-        'zsh:Output zsh completion script'
-      )
-
-      _arguments \
-        "1: :{_describe 'completion commands' completion_commands}" \
-        $_global_flags[@]
-      ;;
-
-    help)
-      local -a help_commands
-      help_commands=(
-        'linters:Help about linters'
-      )
-
-      _arguments \
-        "1: :{_describe 'help command' help_commands}" \
-        '*:: :->args'
-
-      case $words[1] in
-        linters)
-          _arguments $_all_flags[@]
-          ;;
-      esac
-      ;;
-
-    linters)
-      _arguments $_all_flags[@]
-      ;;
-
-    run)
-      _arguments \
-        '1:files or packages:_files' \
-        $_all_flags[@]
-      ;;
-
-    version)
-      _arguments $_global_flags[@]
-      ;;
-  esac
-
-  return ret
-}
-
-_golangci-lint "$*"
 
 # vim:ft=zsh:et:sts=2:sw=2
