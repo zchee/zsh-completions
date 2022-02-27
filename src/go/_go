@@ -102,55 +102,55 @@ _go() {
 
   _build_flags() {
     _arguments \
-      '-a[force rebuilding of packages that are already up-to-date]' \
-      '-n[print the commands but do not run them]' \
-      '-p[number of builds that can be run in parallel]:number' \
-      '-race[enable data race detection]' \
-      '-msan[Insert calls to C/C++ memory sanitizer.]'
-      '-asan[enable interoperation with address sanitizer.]'
-      '-v[print the names of packages as they are compiled]' \
-      '-work[print temporary work directory and keep it]' \
-      '-x[print the commands]' \
-      '-asmflags=[arguments for each go tool asm invocation]: :->asmflags' \
-      '-buildinfo=[Whether to stamp binaries with build flags.]' \
-      '-buildmode=[build mode to use]: :->buildmode' \
-      '-buildvcs=[Whether to stamp binaries with version control information.]' \
-      '-compiler[name of compiler to use]:name' \
-      '-gccgoflags[arguments for gccgo]:args' \
-      '-gcflags=[arguments to pass on each go tool compile invocation]: :->gcflags' \
-      '-installsuffix[suffix to add to package directory]:suffix' \
-      '-ldflags=[arguments to pass on each go tool link invocation]: :->ldflags' \
-      '-linkshared[link against shared libraries]' \
-      '-mod=[module download mode to use]:mode:(readonly vendor mod)' \
-   	  '-modcacherw[leave newly-created directories in the module cache read-write instead of making them read-only.]' \
-   	  '-modfile=[in module aware mode, read \(and possibly write\) an alternate go.mod file instead of the one in the module root directory.]:go.mod file:_files' \
-   	  '-workfile=[in module aware mode, use the given go.work file as a workspace file.]' \
-   	  '-overlay=[in module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory.]:overlay json file:_files' \
-      '-pkgdir[install and load all packages from dir]:dir' \
-      '-tags=[list of build tags to consider satisfied]:tags' \
-      '-toolexec[program to use to invoke toolchain programs]:args' \
-      '-debug-actiongraph[Undocumented, unstable debugging flags. action graph]:output filename:_files' \
-      '-debug-deprecated-importcfg[Undocumented, unstable debugging flags. deprecated import config]:config'
+      "-a[force rebuilding of packages that are already up-to-date]" \
+      "-n[print the commands but do not run them]" \
+      "-p[number of builds that can be run in parallel]:number" \
+      "-race[enable data race detection]" \
+      "-msan[Insert calls to C/C++ memory sanitizer.]" \
+      "-asan[enable interoperation with address sanitizer.]" \
+      "-v[print the names of packages as they are compiled]" \
+      "-work[print temporary work directory and keep it]" \
+      "-x[print the commands]" \
+      "-asmflags=[arguments for each go tool asm invocation]: :->asmflags" \
+      "-buildinfo=[Whether to stamp binaries with build flags.]" \
+      "-buildmode=[build mode to use]: :->buildmode" \
+      "-buildvcs=[Whether to stamp binaries with version control information.]" \
+      "-compiler[name of compiler to use]:name" \
+      "-gccgoflags[arguments for gccgo]:args" \
+      "-gcflags=[arguments to pass on each go tool compile invocation]: :->gcflags" \
+      "-installsuffix[suffix to add to package directory]:suffix" \
+      "-ldflags=[arguments to pass on each go tool link invocation]: :->ldflags" \
+      "-linkshared[link against shared libraries]" \
+      "-mod=[module download mode to use]:mode:(readonly vendor mod)" \
+   	  "-modcacherw[leave newly-created directories in the module cache read-write instead of making them read-only.]" \
+   	  "-modfile=[in module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory.]:go.mod file:_files" \
+   	  "-workfile=[in module aware mode, use the given go.work file as a workspace file.]" \
+   	  "-overlay=[read a JSON config file that provides an overlay for build operations.]:overlay json file:_files" \
+      "-pkgdir[install and load all packages from dir]:dir" \
+      "-tags=[list of build tags to consider satisfied]:tags" \
+      "-toolexec[program to use to invoke toolchain programs]:args"
 
     case $state in
       asmflags)
         local -a _asm_flags
         _asm_flags=(
-          '-D[predefined symbol with optional simple value -D=identifier=value; can be set multiple times]:value'
-          '-I[include directory; can be set multiple times]:value'
-          '-S[print assembly and machine code]'
-          '-V[print version and exit]'
-          '-debug[dump instructions as they are parsed]'
-          '-dynlink[support references to Go symbols defined in other shared libraries]'
-          '-linkshared[generate code that will be linked against Go shared libraries]'
-          '-e[no limit on number of errors reported]'
+          "-D[predefined symbol with optional simple value -D=identifier=value; can be set multiple times]:value"
+          "-I[include directory; can be set multiple times]:value"
+          "-S[print assembly and machine code]"
+          "-V[print version and exit]"
+          "-compiling-runtime[source to be compiled is part of the Go runtime]"
+          "-d[enable debugging settings; try -d help]:value]"
+          "-debug[dump instructions as they are parsed]"
+          "-dynlink[support references to Go symbols defined in other shared libraries]"
+          "-e[no limit on number of errors reported]"
           "-gensymabis[write symbol ABI information to output file, don't assemble]"
-          '-o[output file; default foo.o for /a/b/c/foo.s as first argument]:output:_files'
-          '-p[set expected package import to path]:expected package import path'
-          '-shared[generate code that can be linked into a shared library]'
-          '-spectre[enable spectre mitigations]:mode:(all ret)'
-          '-trimpath[remove prefix from recorded source file paths]:paths'
-          '-v[print debug output]'
+          "-linkshared[generate code that will be linked against Go shared libraries]"
+          "-o[output file; default foo.o for /a/b/c/foo.s as first argument]:output:_files"
+          "-p[[set expected package import to path]:expected package import path'"
+          "-shared[generate code that can be linked into a shared library]"
+          "-spectre[enable spectre mitigations]:mode:(all ret)"
+          "-trimpath[remove prefix from recorded source file paths]:paths"
+          "-v[print debug output]"
         )
         _values \
           'asmflags' \
@@ -160,14 +160,14 @@ _go() {
       buildmode)
         local -a _buildmode
         _buildmode=(
-          'archive[Build the listed non-main packages into .a files]'
-          'c-archive[Build the listed main package, plus all packages it imports, into a C archive file]'
-          'c-shared[Build the listed main packages, plus all packages that they import, into C shared libraries]'
-          'default[Listed main packages are built into executables and listed non-main packages are built into .a files]'
-          'shared[Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option]'
-          'exe[Build the listed main packages and everything they import into executables]'
-          'pie[Build the listed main packages and everything they import into position independent executables (PIE)]'
-          'plugin[Build the listed main packages, plus all packages that they import, into a Go plugin]'
+          "archive[Build the listed non-main packages into .a files]"
+          "c-archive[Build the listed main package, plus all packages it imports, into a C archive file]"
+          "c-shared[Build the listed main packages, plus all packages that they import, into C shared libraries]"
+          "default[Listed main packages are built into executables and listed non-main packages are built into .a files]"
+          "shared[Combine all the listed non-main packages into a single shared library that will be used when building with the -linkshared option]"
+          "exe[Build the listed main packages and everything they import into executables]"
+          "pie[Build the listed main packages and everything they import into position independent executables (PIE)]"
+          "plugin[Build the listed main packages, plus all packages that they import, into a Go plugin]"
         )
         _values \
           'buildmode' \
@@ -179,74 +179,74 @@ _go() {
         # https://golang.org/cmd/compile/#hdr-Command_Line
         local -a _gcflags
         _gcflags=(
-          '-D[Set relative path for local imports.]:relative import path'
-          '-G[accept generic code]'
-          '-I[Search for imported packages]:import directories:_directories'
-          '-L[Show complete file path in error messages.]'
-          '-N[Disable optimizations.]'
-          '-S[Print assembly listing to standard output \(code only\).]'
-          '-SS[Print assembly listing to standard output \(code and data\).]'
-          '-V[Print compiler version and exit.]'
-          '-abiwraplimit[emit at most N ABI wrappers \(for debugging\)]:abiwraplimit'
-          '-asmhdr[Write assembly header to file.]:output path:_files'
-          '-buildid[Record id as the build id in the export metadata.]:build id'
-          '-blockprofile[Write block profile for the compilation to file.]:output path:_files'
-          '-c[Concurrency during compilation. Set 1 for no concurrency \(default is 1\).]:num of concurrency'
-          '-clobberdead[clobber dead stack slots \(for debugging\)]'
-          '-clobberdeadreg[clobber dead registers \(for debugging\)]'
-          '-complete[Assume package has no non-Go components.]'
-          '-cpuprofile[Write a CPU profile for the compilation to file.]:output path:_files'
-          '-dynlink[Allow references to Go symbols in shared libraries \(experimental\).]'
-          '-e[Remove the limit on the number of errors reported \(default limit is 10\).]:limit to num of errors'
-          '-goversion[Specify required go tool version of the runtime.]:go version'
-          '-h[Halt with a stack trace at the first error detected.]'
-          '-importcfg[Read import configuration from file.]:import configuration file:_files'
+          "-D[Set relative path for local imports.]:relative import path"
+          "-G[accept generic code]"
+          "-I[Search for imported packages]:import directories:_directories"
+          "-L[Show complete file path in error messages.]"
+          "-N[Disable optimizations.]"
+          "-S[Print assembly listing to standard output (code only).]"
+          "-SS[Print assembly listing to standard output (code and data).]"
+          "-V[Print compiler version and exit.]"
+          "-abiwraplimit[emit at most N ABI wrappers (for debugging)]:abiwraplimit"
+          "-asmhdr[Write assembly header to file.]:output path:_files"
+          "-buildid[Record id as the build id in the export metadata.]:build id"
+          "-blockprofile[Write block profile for the compilation to file.]:output path:_files"
+          "-c[Concurrency during compilation. Set 1 for no concurrency (default is 1).]:num of concurrency"
+          "-clobberdead[clobber dead stack slots (for debugging)]"
+          "-clobberdeadreg[clobber dead registers (for debugging)]"
+          "-complete[Assume package has no non-Go components.]"
+          "-cpuprofile[Write a CPU profile for the compilation to file.]:output path:_files"
+          "-dynlink[Allow references to Go symbols in shared libraries (experimental).]"
+          "-e[Remove the limit on the number of errors reported (default limit is 10).]:limit to num of errors"
+          "-goversion[Specify required go tool version of the runtime.]:go version"
+          "-h[Halt with a stack trace at the first error detected.]"
+          "-importcfg[Read import configuration from file.]:import configuration file:_files"
           "-importmap[Interpret import \"old\" as import \"new\" during compilation. The option may be repeated to add multiple mappings.]:import map definition old=new"
-          '-installsuffix[set pkg directory suffix]:install suffix'
-          '-l[Disable inlining.]'
-          '-lang[Set language version to compile, as in -lang=go1.12. Default is current version.]:lang version'
-          '-largemodel[Generate code that assumes a large memory model.]'
-          '-linkobj[Write linker-specific object to file and compiler-specific object to usual output file \(as specified by -o\).]:output path:_files'
-          '-m[Print optimization decisions.]'
-          '-memprofile[Write memory profile for the compilation to file.]:output path:_files'
-          '-memprofilerate[Set runtime.MemProfileRate for the compilation to rate.]:memory profiling rate'
-          '-mutexprofile[Write mutex profile for the compilation to file.]:output path:_files'
-          '-nolocalimports[Disallow local \(relative\) imports.]'
-          '-o[Write object to file.]:output path:_files'
-          '-p[Set expected package import path for the code being compiled, and diagnose imports that would cause a circular dependency.]:expected import path'
-          '-pack[Write a package (archive) file rather than an object file]'
-          '-race[Compile with race detector enabled.]'
-          '-s[Warn about composite literals that can be simplified.]'
-          '-shared[Generate code that can be linked into a shared library.]'
-          '-t[enable tracing for debugging the compiler]'
-          '-traceprofile[Write an execution trace to file.]:output path:_files'
-          '-trimpath[Remove prefix from recorded source file paths.]:trim filepath prefixs'
-          '-dwarf[Generate DWARF symbols. \(default true\)]'
-          '-dwarflocationlists[Add location lists to DWARF in optimized mode. \(default true\)]'
-          '-gendwarfinl[Generate DWARF inline info records \(default 2\).]:num of DWARF inlines'
-          '-E[Debug symbol export.]'
-          '-K[Debug missing line numbers.]'
-          '-d[enable debugging settings; try -d help]:items list'
-          '-live[Debug liveness analysis.]'
-          '-v[Increase debug verbosity.]'
-          '-%[Debug non-static initializers.]'
-          '-W[Debug parse tree after type checking.]'
-          '-f[Debug stack frames.]'
-          '-i[Debug line number stack.]'
-          '-j[Debug runtime-initialized variables.]'
-          '-json=[version,file for JSON compiler/optimizer detail output]output:_files'
-          '-r[Debug generated wrappers.]'
-          '-w[Debug type checking.]'
-          '-wb[enable write barrier \(default true\)]'
-          '-+[compiling runtime]'
-          '-B[disable bounds checking]'
-          '-C[disable printing of columns in error messages]'
-          '-allabis[generate ABI wrappers for all symbols \(for bootstrap\)]'
-          '-bench[append benchmark times to file]:output path:_files'
-          '-newescape[enable new escape analysis \(default true\)]'
-          '-std[compiling standard library]'
-          '-symabis[read symbol ABIs from file]:symbol ABIs file:_files'
-          '-w[debug type checking]'
+          "-installsuffix[set pkg directory suffix]:install suffix"
+          "-l[Disable inlining.]"
+          "-lang[Set language version to compile, as in -lang=go1.12. Default is current version.]:lang version"
+          "-largemodel[Generate code that assumes a large memory model.]"
+          "-linkobj[Write linker-specific object to file and compiler-specific object to usual output file (as specified by -o).]:output path:_files"
+          "-m[Print optimization decisions.]"
+          "-memprofile[Write memory profile for the compilation to file.]:output path:_files"
+          "-memprofilerate[Set runtime.MemProfileRate for the compilation to rate.]:memory profiling rate"
+          "-mutexprofile[Write mutex profile for the compilation to file.]:output path:_files"
+          "-nolocalimports[Disallow local (relative) imports.]"
+          "-o[Write object to file.]:output path:_files"
+          "-p[Set expected package import path for the code being compiled, and diagnose imports that would cause a circular dependency.]:expected import path"
+          "-pack[Write a package (archive) file rather than an object file]"
+          "-race[Compile with race detector enabled.]"
+          "-s[Warn about composite literals that can be simplified.]"
+          "-shared[Generate code that can be linked into a shared library.]"
+          "-t[enable tracing for debugging the compiler]"
+          "-traceprofile[Write an execution trace to file.]:output path:_files"
+          "-trimpath[Remove prefix from recorded source file paths.]:trim filepath prefixs"
+          "-dwarf[Generate DWARF symbols. (default true)]"
+          "-dwarflocationlists[Add location lists to DWARF in optimized mode. (default true)]"
+          "-gendwarfinl[Generate DWARF inline info records (default 2).]:num of DWARF inlines"
+          "-E[Debug symbol export.]"
+          "-K[Debug missing line numbers.]"
+          "-d[enable debugging settings; try -d help]:items list"
+          "-live[Debug liveness analysis.]"
+          "-v[Increase debug verbosity.]"
+          "-%[Debug non-static initializers.]"
+          "-W[Debug parse tree after type checking.]"
+          "-f[Debug stack frames.]"
+          "-i[Debug line number stack.]"
+          "-j[Debug runtime-initialized variables.]"
+          "-json=[version,file for JSON compiler/optimizer detail output]:output:_files"
+          "-r[Debug generated wrappers.]"
+          "-w[Debug type checking.]"
+          "-wb[enable write barrier (default true)]"
+          "-+[compiling runtime]"
+          "-B[disable bounds checking]"
+          "-C[disable printing of columns in error messages]"
+          "-allabis[generate ABI wrappers for all symbols (for bootstrap)]"
+          "-bench[append benchmark times to file]:output path:_files"
+          "-newescape[enable new escape analysis (default true)]"
+          "-std[compiling standard library]"
+          "-symabis[read symbol ABIs from file]:symbol ABIs file:_files"
+          "-w[debug type checking]"
         )
         _values \
           'gcflags' \
@@ -256,48 +256,53 @@ _go() {
       ldflags)
         local -a _ldflags
         _ldflags=(
-          '-B[add an ELF NT_GNU_BUILD_ID note when using ELF]:note'
-          '-C[check Go calls to C code]'
-          '-D[set data segment address (default -1)]:address'
-          '-E[set entry symbol name]:entry'
-          '-H[set header type]:type'
-          '-I[use linker as ELF dynamic linker]:linker'
-          '-L[add specified directory to library path]:directory:_path_files -/'
-          '-R[set address rounding quantum (default -1)]:quantum'
-          '-T[set text segment address (default -1)]:address'
-          '-V[print version and exit]'
-          '-X[add string value definition of the form importpath.name=value]:definition'
-          '-a[disassemble output]'
-          '-buildid[record id as Go toolchain build id]:id'
-          '-buildmode[set build mode]:mode:(archive c-archive c-shared default shared exe pie)'
-          '-c[dump call graph]'
-          '-cpuprofile[write cpu profile to file]:file:_files'
-          '-d[disable dynamic executable]'
-          '-dumpdep[dump symbol dependency graph]'
-          '-extar[archive program for buildmode=c-archive]:string'
-          '-extld[use linker when linking in external mode]:linker'
-          '-extldflags[pass flags to external linker]:flags'
-          '-f[ignore version mismatch]'
-          '-g[disable go package data checks]'
-          '-h[halt on error]'
-          '-installsuffix[\[suffix\]: set package directory suffix]:suffix'
-          '-k[set field tracking symbol]:symbol'
-          '-libgcc[compiler support lib for internal linking; use "none" to disable]:string'
-          '-linkmode[set link mode (internal, external, auto)]:mode(internal external auto)'
-          '-linkshared[link against installed Go shared libraries]'
-          '-memprofile[write memory profile to file]:file:_files'
-          '-memprofilerate[set runtime.MemProfileRate to rate]:rate'
-          '-msan[enable MSan interface]'
-          '-n[dump symbol table]'
-          '-o[write output to file]:file:_files'
-          '-r[set the ELF dynamic linker search path to dir1:dir2:...]:path:_path_files'
-          '-race[enable race detector]'
-          '-s[disable symbol table]'
-          '-shared[generate shared object (implies -linkmode external)]'
-          '-tmpdir[use directory for temporary files]:directory:_path_files -/'
-          '-u[reject unsafe packages]'
-          '-v[print link trace]'
-          '-w[disable DWARF generation]'
+          "-B[add an ELF NT_GNU_BUILD_ID note when using ELF]:note"
+          "-E[set entry symbol name]:entry"
+          "-H[set header type]:type"
+          "-I[use linker as ELF dynamic linker]:linker"
+          "-L[add specified directory to library path]:directory:_path_files -/"
+          "-R[set address rounding quantum (default -1)]:quantum"
+          "-T[set text segment address (default -1)]:address"
+          "-V[print version and exit]"
+          "-X[add string value definition of the form importpath.name=value]:definition"
+          "-asan[enable ASan interface]"
+          "-aslr[enable ASLR for buildmode=c-shared on windows (default true)]"
+          "-benchmark[set to 'mem' or 'cpu' to enable phase benchmarking]:mode:(mem cpu)"
+          "-benchmarkprofile[emit phase profiles to base_phase.]:base"
+          "-buildid[record id as Go toolchain build id]:id"
+          "-buildmode[set build mode]:mode:(archive c-archive c-shared default shared exe pie)"
+          "-c[dump call graph]"
+          "-compressdwarf[compress DWARF if possible (default true)]"
+          "-cpuprofile[write cpu profile to file]:file:_files"
+          "-d[disable dynamic executable]"
+          "-debugtextsize[debug text section max size]:size"
+          "-debugtramp[debug trampolines]:trampolines"
+          "-dumpdep[dump symbol dependency graph]"
+          "-extar[archive program for buildmode=c-archive]:string"
+          "-extld[use linker when linking in external mode]:linker"
+          "-extldflags[pass flags to external linker]:flags"
+          "-f[ignore version mismatch]"
+          "-g[disable go package data checks]"
+          "-h[halt on error]"
+          "-importcfg[read import configuration from file]:file:_files"
+          "-installsuffix[\[suffix\]: set package directory suffix]:suffix"
+          "-k[set field tracking symbol]:symbol"
+          "-libgcc[compiler support lib for internal linking; use \"none\" to disable]:string"
+          "-linkmode[set link mode]:mode(internal external auto)"
+          "-linkshared[link against installed Go shared libraries]"
+          "-memprofile[write memory profile to file]:file:_files"
+          "-memprofilerate[set runtime.MemProfileRate to rate]:rate"
+          "-msan[enable MSan interface]"
+          "-n[dump symbol table]"
+          "-o[write output to file]:file:_files"
+          "-pluginpath[full path name for plugin]:path:_files"
+          "-r[set the ELF dynamic linker search path to dir1:dir2:...]:path:_path_files"
+          "-race[enable race detector]"
+          "-s[disable symbol table]"
+          "-strictdups[sanity check duplicate symbol contents during object file reading (1=warn 2=err).]"
+          "-tmpdir[use directory for temporary files]:directory:_path_files -/"
+          "-v[print link trace]"
+          "-w[disable DWARF generation]"
         )
         _values \
           'ldflags' \
@@ -326,49 +331,52 @@ _go() {
       '-verify[checks that the dependencies of the current module, which are stored in a local downloaded source cache, have not been modified since being downloaded.]'
   }
 
-  _test_build_flags=(
-    '-args[Pass the remainder of the command line to the test binary]'
-    '-c[Compile the test binary to pkg.test but do not run it]'
-    "-exec=[Run the test binary using 'xprog']:xprog"
-    "-json[Convert test output to JSON suitable for automated processing. See 'go doc test2json' for the encoding details]"
-    '-i[Install packages that are dependencies of the test]'
-    '-o[Compile the test binary to the named file]:binary file name:_files'
-    '-vet[Configure the invocation of "go vet" during "go test" to use the comma-separated list of vet checks]:list'
-  )
-
   # TODO(zchee): Support for regexp keyword
-  _test_binary_flags=(
-    "-bench[Run (sub)benchmarks matching a regular expression]:regexp of Benchmark functions:(.)"
-   	"-benchtime[Run enough iterations of each benchmark to take t, specified as a time.Duration]"
-    '-count[Run each test and benchmark n times \(default: 1\)]:count'
-    '-cover[Enable coverage analysis]'
-    '-covermode[Set the mode for coverage analysis for the packages being tested \(default: set\)]:covermode:(set count atomic)'
-    '-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages'
-    '-cpu[Specify a list of GOMAXPROCS values for which the tests or benchmarks should be executed]:cpus:(1 2 4 8 16)'
-   	"-failfast[Do not start new tests after the first test failure.]"
-   	"-list[List tests, benchmarks, or examples matching the regular expression. No tests, benchmarks or examples will be run.]:regexp"
-    '-parallel=[Allow parallel execution of test functions that call t.Parallel]:number of parallel'
-    '-run[Run only those tests and examples matching the regular expression]:regexp of Tests or Examples'
-    '-short[Tell long-running tests to shorten their run time]'
-    '-shuffle=[Randomize the execution order of tests and benchmarks.]:shuffle value:(off on N)'
-    '-timeout[If a test runs longer than arg time, panic \(default: 10m\)]:timeout'
-    '-v[output log all tests as they are run and print all text from Log and Logf]'
-   	"-vet[Configure the invocation of \"go vet\" during \"go test\" to use the comma-separated list of vet checks.]:list"
-  )
+  _test_binary_flags() {
+    local -a _test_flags
+    _test_flags=(
+      "-bench[Run \(sub\)benchmarks matching a regular expression]:regexp of Benchmark functions:(.)"
+      "-benchtime[Run enough iterations of each benchmark to take t, specified as a time.Duration]"
+      "-count[Run each test and benchmark n times (default: 1)]:count"
+      "-cover[Enable coverage analysis]"
+      "-covermode[Set the mode for coverage analysis for the packages being tested (default: set)]:covermode:(set count atomic)"
+      "-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages"
+      "-cpu[Specify a list of GOMAXPROCS values for which the tests or benchmarks should be executed]:cpus:(1 2 4 8 16)"
+      "-failfast[Do not start new tests after the first test failure.]"
+      "-fuzz[Run the fuzz test matching the regular expression.]:regexp"
+      "-fuzzminimizetime[Run enough iterations of the fuzz target during each minimization attempt to take t, as specified as a time.Duration. The default is 60s.]:duration"
+      "-fuzztime[Run enough iterations of the fuzz target during fuzzing to take t, specified as a time.Duration]:duration"
+      "-json[Convert test output to JSON suitable for automated processing. See 'go doc test2json' for the encoding details]"
+      "-list[List tests, benchmarks, or examples matching the regular expression. No tests, benchmarks or examples will be run.]:regexp"
+      "-parallel[Allow parallel execution of test functions that call t.Parallel]:number of parallel"
+      "-run[Run only those tests and examples matching the regular expression]:regexp of Tests or Examples"
+      "-short[Tell long-running tests to shorten their run time]"
+      "-shuffle[Randomize the execution order of tests and benchmarks.]:shuffle value:(off on N)"
+      "-timeout[If a test runs longer than arg time, panic \(default: 10m\)]:timeout"
+      "-v[output log all tests as they are run and print all text from Log and Logf]"
+      "-vet[Configure the invocation of \"go vet\" during \"go test\" to use the comma-separated list of vet checks.]:list"
+      "-args[Pass the remainder of the command line to the test binary]"
+      "-c[Compile the test binary to pkg.test but do not run it]"
+      "-exec=[Run the test binary using 'xprog']:xprog"
+      "-i[Install packages that are dependencies of the test]"
+      "-o[Compile the test binary to the named file]:binary file name:_files"
 
-  _test_profile_flags=(
-    '-benchtime[Run enough iterations of each benchmark to take arg time]:bench time'
-    '-blockprofile[Write a goroutine blocking profile to the specified file]:profile file path:_files'
-    '-blockprofilerate[Control the detail provided in goroutine blocking profiles by calling runtime.SetBlockProfileRate]:block profile rate'
-    '-coverprofile[Write a coverage profile to the file after all tests have passed]:output filename:_files'
-    '-cpuprofile[Write a CPU profile to the specified file before exiting]:cpu profile file path:_files'
-    '-memprofile[Write a memory profile to the file after all tests have passed]:memory profile file:_files'
-    '-memprofilerate[Enable more precise memory profiles by setting runtime.MemProfileRate]:memory profile rate'
-    '-mutexprofile[Enable more precise \(and expensive\) memory profiles]:mutex profile file:_files'
-    '-mutexprofilefraction[Sample 1 in n stack traces of goroutines holding a contended mutex]:mutex fraction'
-    '-outputdir[Place output files from profiling in the specified directory]:output directory:_path_files -/'
-    '-trace[Write an execution trace to the specified file before exiting]:output trace file path:_files'
-  )
+      "-benchmem[Print memory allocation statistics for benchmarks.]"
+      "-blockprofile[Write a goroutine blocking profile to the specified file]:profile file path:_files"
+      "-blockprofilerate[Control the detail provided in goroutine blocking profiles by calling runtime.SetBlockProfileRate]:block profile rate"
+      "-coverprofile[Write a coverage profile to the file after all tests have passed]:output filename:_files"
+      "-cpuprofile[Write a CPU profile to the specified file before exiting]:cpu profile file path:_files"
+      "-memprofile[Write a memory profile to the file after all tests have passed]:memory profile file:_files"
+      "-memprofilerate[Enable more precise memory profiles by setting runtime.MemProfileRate]:memory profile rate"
+      "-mutexprofile[Enable more precise \(and expensive\) memory profiles]:mutex profile file:_files"
+      "-mutexprofilefraction[Sample 1 in n stack traces of goroutines holding a contended mutex]:mutex fraction"
+      "-outputdir[Place output files from profiling in the specified directory]:output directory:_path_files -/"
+      "-trace[Write an execution trace to the specified file before exiting]:output trace file path:_files"
+    )
+    _values \
+      'test flags' \
+      ${_test_flags[@]}
+  }
 
   _arguments \
     "1: :{_describe 'command' commands}" \
@@ -670,12 +678,10 @@ _go() {
 
         test)
           _arguments \
-            ${_test_build_flags[@]} \
-            ${_test_binary_flags[@]} \
-            ${_test_profile_flags[@]} \
             '*: :_go_packages'
 
-          _alternative ':build flags:_build_flags'
+          _alternative ":test flags:_test_binary_flags"
+          _alternative ":build flags:_build_flags"
           ;;
 
         tool)
@@ -833,8 +839,6 @@ _go() {
                     '*:file:_path_files -g "*.go"'
                   ;;
 
-                #----------------------------
-
                 doc)
                   _arguments \
                     '-c[respect case when matching symbols]' \
@@ -891,6 +895,15 @@ _go() {
                     '-u[reject unsafe packages]' \
                     '-v[print link trace]' \
                     '-w[disable DWARF generation]' \
+                    '*:files:_files'
+                  ;;
+
+                nm)
+                  _arguments \
+                    "-n[an alias for -sort address (numeric), for compatibility with other nm commands]]" \
+                    "-size[print symbol size in decimal between address and type]]" \
+                    "-sort[sort output in the given order (default name)]:sort order:(address name none size)]" \
+                    "-type[print symbol type after name]]" \
                     '*:files:_files'
                   ;;
 
@@ -1072,13 +1085,41 @@ _go() {
 
         vet)
           _values \
-            'vet flags' \
-            '-n[print commands that would be executed]' \
-            '-x[prints commands as they are executed]' \
-            '-vettool[path to vet tool binary]:binary:_files' \
-            '*:packages:_go_packages'
+            "vet flags" \
+            "-n[print commands that would be executed]" \
+            "-x[prints commands as they are executed]" \
+            "-vettool[path to vet tool binary]:binary:_files" \
+            "-V[print version and exit]" \
+            "-asmdecl[enable asmdecl analysis]" \
+            "-assign[enable assign analysis]" \
+            "-atomic[enable atomic analysis]" \
+            "-bools[enable bools analysis]" \
+            "-buildtag[enable buildtag analysis]" \
+            "-c[display offending line with this many lines of context (default -1)]:display offending line" \
+            "-cgocall[enable cgocall analysis]" \
+            "-composites[enable composites analysis]" \
+            "-copylocks[enable copylocks analysis]" \
+            "-errorsas[enable errorsas analysis]" \
+            "-flags[print analyzer flags in JSON]" \
+            "-framepointer[enable framepointer analysis]" \
+            "-httpresponse[enable httpresponse analysis]" \
+            "-ifaceassert[enable ifaceassert analysis]" \
+            "-json[emit JSON output]" \
+            "-loopclosure[enable loopclosure analysis]" \
+            "-lostcancel[enable lostcancel analysis]" \
+            "-nilfunc[enable nilfunc analysis]" \
+            "-printf[enable printf analysis]" \
+            "-shift[enable shift analysis]" \
+            "-sigchanyzer[enable sigchanyzer analysis]" \
+            "-testinggoroutine[enable testinggoroutine analysis]" \
+            "-tests[enable tests analysis]" \
+            "-unmarshal[enable unmarshal analysis]" \
+            "-unreachable[enable unreachable analysis]" \
+            "-unsafeptr[enable unsafeptr analysis]" \
+            "-unusedresult[enable unusedresult analysis]"
 
           _alternative ':build flags:_build_flags'
+          _alternative ':packages:_go_packages'
           ;;
 
         help)
@@ -1495,9 +1536,8 @@ _go "$*"
 #  path. The go tool's usual package mechanism does not apply: package path
 #  elements like . and ... are not implemented by go doc.
 #
-#  When run with two arguments, the first must be a full package path (not just a
-#  suffix), and the second is a symbol, or symbol with method or struct field.
-#  This is similar to the syntax accepted by godoc:
+#  When run with two arguments, the first is a package path (full path or suffix),
+#  and the second is a symbol, or symbol with method or struct field:
 #
 #  	go doc <pkg> <sym>[.<methodOrField>]
 #
@@ -2516,21 +2556,53 @@ _go "$*"
 #
 #  Go workspace provides access to operations on workspaces.
 #
-#  Note that support for workspaces is built into many other commands,
-#  not just 'go work'.
+#  Note that support for workspaces is built into many other commands, not
+#  just 'go work'.
 #
-#  See 'go help modules' for information about Go's module system of
-#  which workspaces are a part.
+#  See 'go help modules' for information about Go's module system of which
+#  workspaces are a part.
 #
 #  A workspace is specified by a go.work file that specifies a set of
-#  module directories with the "use" directive. These modules are used
-#  as root modules by the go command for builds and related operations.
-#  A workspace that does not specify modules to be used cannot be used
-#  to do builds from local modules.
+#  module directories with the "use" directive. These modules are used as
+#  root modules by the go command for builds and related operations.  A
+#  workspace that does not specify modules to be used cannot be used to do
+#  builds from local modules.
 #
-#  To determine whether the go command is operating in workspace mode,
-#  use the "go env GOWORK" command. This will specify the workspace
-#  file being used.
+#  go.work files are line-oriented. Each line holds a single directive,
+#  made up of a keyword followed by aruments. For example:
+#
+#  	go 1.18
+#
+#  	use ../foo/bar
+#  	use ./baz
+#
+#  	replace example.com/foo v1.2.3 => example.com/bar v1.4.5
+#
+#  The leading keyword can be factored out of adjacent lines to create a block,
+#  like in Go imports.
+#
+#  	use (
+#  	  ../foo/bar
+#  	  ./baz
+#  	)
+#
+#  The use directive specifies a module to be included in the workspace's
+#  set of main modules. The argument to the use directive is the directory
+#  containing the module's go.mod file.
+#
+#  The go directive specifies the version of Go the file was written at. It
+#  is possible there may be future changes in the semantics of workspaces
+#  that could be controlled by this version, but for now the version
+#  specified has no effect.
+#
+#  The replace directive has the same syntax as the replace directive in a
+#  go.mod file and takes precedence over replaces in go.mod files.  It is
+#  primarily intended to override conflicting replaces in different workspace
+#  modules.
+#
+#  To determine whether the go command is operating in workspace mode, use
+#  the "go env GOWORK" command. This will specify the workspace file being
+#  used.
 #
 #  Usage:
 #
@@ -2551,10 +2623,10 @@ _go "$*"
 #
 #  	go work edit [editing flags] [go.work]
 #
-#  Editwork provides a command-line interface for editing go.work,
+#  Edit provides a command-line interface for editing go.work,
 #  for use primarily by tools or scripts. It only reads go.work;
 #  it does not look up information about the modules involved.
-#  If no file is specified, editwork looks for a go.work file in the current
+#  If no file is specified, Edit looks for a go.work file in the current
 #  directory and its parent directories
 #
 #  The editing flags specify a sequence of editing operations.
@@ -2562,7 +2634,7 @@ _go "$*"
 #  The -fmt flag reformats the go.work file without making other changes.
 #  This reformatting is also implied by any other modifications that use or
 #  rewrite the go.mod file. The only time this flag is needed is if no other
-#  flags are specified, as in 'go mod editwork -fmt'.
+#  flags are specified, as in 'go work edit -fmt'.
 #
 #  The -use=path and -dropuse=path flags
 #  add and drop a use directive from the go.work file's set of module directories.
@@ -2623,15 +2695,16 @@ _go "$*"
 #
 #  	go work init [moddirs]
 #
-#  go mod initwork initializes and writes a new go.work file in the current
-#  directory, in effect creating a new workspace at the current directory.
+#  Init initializes and writes a new go.work file in the
+#  current directory, in effect creating a new workspace at the current
+#  directory.
 #
-#  go mod initwork optionally accepts paths to the workspace modules as arguments.
-#  If the argument is omitted, an empty workspace with no modules will be created.
+#  go work init optionally accepts paths to the workspace modules as
+#  arguments. If the argument is omitted, an empty workspace with no
+#  modules will be created.
 #
-#  See the workspaces design proposal at
-#  https://go.googlesource.com/proposal/+/master/design/45713-workspace.md for
-#  more information.
+#  Each argument path is added to a use directive in the go.work file. The
+#  current go version will also be listed in the go.work file.
 #
 # ------------------------------------------------------------------------------
 #
@@ -2639,9 +2712,23 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go work sync [moddirs]
+#  	go work sync
 #
-#  go work sync
+#  Sync syncs the workspace's build list back to the
+#  workspace's modules
+#
+#  The workspace's build list is the set of versions of all the
+#  (transitive) dependency modules used to do builds in the workspace. go
+#  work sync generates that build list using the Minimal Version Selection
+#  algorithm, and then syncs those versions back to each of modules
+#  specified in the workspace (with use directives).
+#
+#  The syncing is done by sequentially upgrading each of the dependency
+#  modules specified in a workspace module to the version in the build list
+#  if the dependency module's version is not already the same as the build
+#  list's version. Note that Minimal Version Selection guarantees that the
+#  build list's version of each module is always the same or higher than
+#  that in each workspace module.
 #
 # ------------------------------------------------------------------------------
 #
@@ -2651,10 +2738,17 @@ _go "$*"
 #
 #  	go work use [-r] [moddirs]
 #
-#  Use provides a command-line interface for adding directories,
-#  optionally recursively, to a go.work file.
+#  Use provides a command-line interface for adding
+#  directories, optionally recursively, to a go.work file.
 #
-#  The -r flag searches recursively for modules in the argument directories.
+#  A use directive will be added to the go.work file for each argument
+#  directory listed on the command line go.work file, if it exists on disk,
+#  or removed from the go.work file if it does not exist on disk.
+#
+#  The -r flag searches recursively for modules in the argument
+#  directories, and the use command operates as if each of the directories
+#  were specified as arguments: namely, use directives will be added for
+#  directories that exist, and removed for directories that do not exist.
 #
 # ------------------------------------------------------------------------------
 #
@@ -4030,11 +4124,19 @@ _go "$*"
 #  	    section of the testing package documentation for details.
 #
 #  	-fuzztime t
-#  	    Run enough iterations of the fuzz test to take t, specified as a
-#  	    time.Duration (for example, -fuzztime 1h30s). The default is to run
-#  	    forever.
-#  	    The special syntax Nx means to run the fuzz test N times
-#  	    (for example, -fuzztime 100x).
+#  	    Run enough iterations of the fuzz target during fuzzing to take t,
+#  	    specified as a time.Duration (for example, -fuzztime 1h30s).
+#  		The default is to run forever.
+#  	    The special syntax Nx means to run the fuzz target N times
+#  	    (for example, -fuzztime 1000x).
+#
+#  	-fuzzminimizetime t
+#  	    Run enough iterations of the fuzz target during each minimization
+#  	    attempt to take t, as specified as a time.Duration (for example,
+#  	    -fuzzminimizetime 30s).
+#  		The default is 60s.
+#  	    The special syntax Nx means to run the fuzz target N times
+#  	    (for example, -fuzzminimizetime 100x).
 #
 #  	-json
 #  	    Log verbose output and test results in JSON. This presents the
@@ -4615,7 +4717,6 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# unknown command -h
 # usage: go tool dist [command]
 # Commands are:
 #
@@ -4812,8 +4913,6 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# pack: not enough arguments
-#
 # Usage: pack op file.a [name....]
 # Where op is one of cprtx optionally followed by v for verbose output.
 # For compatibility with old Go build environments the op string grc is
@@ -5001,6 +5100,9 @@ _go "$*"
 # 	vet unit.cfg	# execute analysis specified by config file
 # 	vet help    	# general help, including listing analyzers and flags
 # 	vet help name	# help on specific analyzer and its flags
+#
+#
+# ------------------------------------------------------------------------------
 #
 # ------------------------------------------------------------------------------
 #
