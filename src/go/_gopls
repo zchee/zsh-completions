@@ -1,0 +1,223 @@
+#compdef gopls
+
+# -----------------------------------------------------------------------------
+# The BSD-3-Clause License
+#
+# Copyright (c) 2018, Koichi Shiraishi
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#
+# github.com/golang/tools/gopls
+#
+# https://github.com/golang/tools/tree/acbc0e3ba117/internal/lsp
+#
+# -----------------------------------------------------------------------------
+
+function _gopls() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a main_commands feature_commands
+  main_commands=(
+    'serve[run a server for Go code using the Language Server Protocol]'
+    'version[print the gopls version information]'
+    'bug[report a bug in gopls]'
+  )
+  feature_commands=(
+    'check[show diagnostic results for the specified file]'
+    "folding_ranges[display selected file's folding ranges]"
+    'format[format the code according to the go standard]'
+    "highlight[display selected identifier's highlights]"
+    "implementation[display selected identifier's implementation]"
+    'imports[updates import statements]'
+    'links[list links in a file]'
+    'query[answer queries about go source code]'
+    "references[display selected identifier's references]"
+    'rename[rename selected identifier]'
+    "signature[display selected identifier's signature]"
+    'fix[apply suggested fixes]'
+    "symbols[display selected file's symbols]"
+  )
+
+  function _commands() {
+    _alternative ': :{_values "gopls commands" $main_commands $feature_commands}'
+  }
+
+    # '-remote[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address:_hosts' \
+  _arguments -C \
+    '-debug=[serve debug information on the supplied address]:debug server address:_hosts' \
+    '-listen=[address on which to listen for remote connections]:listen address:_hosts' \
+    '-listen.timeout=[when used with -listen, shut down the server when there are no connected clients for this duration]:timeout (duration)' \
+    '-logfile=[filename to log to. if value is "auto", then logging to a default output file is enabled]:log file:_files' \
+    '-mode[no effect]' \
+    '-ocagent=[the address of the ocagent, or off \(default "off"\)]:ocagent adderss:_hosts' \
+    '-port=[port on which to run gopls for debugging purposes]:gopls run port:_port' \
+    '-profile.cpu=[write CPU profile to this file]:CPU profile output:_files' \
+    '-profile.mem=[write memory profile to this file]:Memory profile output:_files' \
+    '-profile.trace=[write trace log to this file]:Trace profile output:_files' \
+    '-remote=[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address' \
+    '-remote.debug=[when used with -remote=auto, the -debug value used to start the daemon]:debug server address:_hosts' \
+    '-remote.listen.timeout=[when used with -remote=auto, the -listen.timeout value used to start the daemon \(default 1m0s\)]:timeout (duration)' \
+    '-remote.logfile=[when used with -remote=auto, the -logfile value used to start the daemon]:log file:_files' \
+    '-rpc.trace[print the full rpc trace in lsp inspector format]' \
+    '-v[verbose output]' \
+    '-vv[very verbose output#]' \
+    "1: :_commands" \
+    '*:: :->args' \
+    && ret=0
+  
+  # case $words[1] in
+  #   serve)
+  #     ;;
+  #
+  #   version)
+  #     ;;
+  #
+  #   bug)
+  #     ;;
+  #
+  #   check)
+  #     ;;
+  #
+  #   folding_ranges)
+  #     ;;
+  #
+  #   format)
+  #     ;;
+  #
+  #   highlight)
+  #     ;;
+  #
+  #   implementation)
+  #     ;;
+  #
+  #   imports)
+  #     ;;
+  #
+  #   links)
+  #     ;;
+  #
+  #   query)
+  #     ;;
+  #
+  #   references)
+  #     ;;
+  #
+  #   rename)
+  #     ;;
+  #
+  #   signature)
+  #     ;;
+  #
+  #   fix)
+  #     ;;
+  #
+  #   symbols)
+  #     ;;
+  # esac
+
+  return ret
+}
+
+_gopls "$*"
+
+# -----------------------------------------------------------------------------
+#
+# The Go Language source tools.
+#
+# Usage: gopls [flags] <command> [command-flags] [command-args]
+#
+# gopls is a Go language server. It is typically used with an editor to provide
+# language features. When no command is specified, gopls will default to the 'serve'
+# command. The language features can also be accessed via the gopls command-line interface.
+#
+# Available commands are:
+#
+# main:
+#   serve : run a server for Go code using the Language Server Protocol
+#   version : print the gopls version information
+#   bug : report a bug in gopls
+#   settings-json : print json describing gopls settings
+#
+# features:
+#   call_hierarchy : display selected identifier's call hierarchy
+#   check : show diagnostic results for the specified file
+#   definition : show declaration of selected identifier
+#   folding_ranges : display selected file's folding ranges
+#   format : format the code according to the go standard
+#   highlight : display selected identifier's highlights
+#   implementation : display selected identifier's implementation
+#   imports : updates import statements
+#   inspect : inspect server state (daemon mode only)
+#   links : list links in a file
+#   prepare_rename : test validity of a rename operation at location
+#   references : display selected identifier's references
+#   rename : rename selected identifier
+#   signature : display selected identifier's signature
+#   fix : apply suggested fixes
+#   symbols : display selected file's symbols
+#   workspace_symbol : search symbols in workspace
+#
+# gopls flags are:
+#   -debug string
+#     	serve debug information on the supplied address
+#   -listen string
+#     	address on which to listen for remote connections. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. Otherwise, TCP is used.
+#   -listen.timeout duration
+#     	when used with -listen, shut down the server when there are no connected clients for this duration
+#   -logfile string
+#     	filename to log to. if value is "auto", then logging to a default output file is enabled
+#   -mode string
+#     	no effect
+#   -ocagent string
+#     	the address of the ocagent (e.g. http://localhost:55678), or off (default "off")
+#   -port int
+#     	port on which to run gopls for debugging purposes
+#   -profile.cpu string
+#     	write CPU profile to this file
+#   -profile.mem string
+#     	write memory profile to this file
+#   -profile.trace string
+#     	write trace log to this file
+#   -remote string
+#     	forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. If 'auto', or prefixed by 'auto;', the remote address is automatically resolved based on the executing environment.
+#   -remote.debug string
+#     	when used with -remote=auto, the -debug value used to start the daemon
+#   -remote.listen.timeout duration
+#     	when used with -remote=auto, the -listen.timeout value used to start the daemon (default 1m0s)
+#   -remote.logfile string
+#     	when used with -remote=auto, the -logfile value used to start the daemon
+#   -rpc.trace
+#     	print the full rpc trace in lsp inspector format
+#   -v	verbose output
+#   -vv
+#     	very verbose output#
+#
+# -----------------------------------------------------------------------------
+# vim:ft=zsh:et:sts=2:sw=2
