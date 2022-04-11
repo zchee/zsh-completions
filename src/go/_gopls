@@ -35,7 +35,7 @@
 #
 # github.com/golang/tools/gopls
 #
-# https://github.com/golang/tools/tree/acbc0e3ba117/internal/lsp
+# https://github.com/golang/tools/tree/fe932b4680bd/internal/lsp
 #
 # -----------------------------------------------------------------------------
 
@@ -45,24 +45,34 @@ function _gopls() {
 
   local -a main_commands feature_commands
   main_commands=(
-    'serve[run a server for Go code using the Language Server Protocol]'
-    'version[print the gopls version information]'
-    'bug[report a bug in gopls]'
+    "serve[run a server for Go code using the Language Server Protocol]"
+    "version[print the gopls version information]"
+    "bug[report a bug in gopls]"
+    "api-json[print json describing gopls API]"
   )
+
   feature_commands=(
-    'check[show diagnostic results for the specified file]'
+    "call_hierarchy[display selected identifier's call hierarchy]"
+    "check[show diagnostic results for the specified file]"
+    "definition[show declaration of selected identifier]"
     "folding_ranges[display selected file's folding ranges]"
-    'format[format the code according to the go standard]'
+    "format[format the code according to the go standard]"
     "highlight[display selected identifier's highlights]"
     "implementation[display selected identifier's implementation]"
-    'imports[updates import statements]'
-    'links[list links in a file]'
-    'query[answer queries about go source code]'
+    "imports[updates import statements]"
+    "remote[interact with the gopls daemon]"
+    "inspect[interact with the gopls daemon (deprecated: use 'remote')]"
+    "links[list links in a file]"
+    "prepare_rename[test validity of a rename operation at location]"
     "references[display selected identifier's references]"
-    'rename[rename selected identifier]'
+    "rename[rename selected identifier]"
+    "semtok[show semantic tokens for the specified file]"
     "signature[display selected identifier's signature]"
-    'fix[apply suggested fixes]'
+    "fix[apply suggested fixes]"
     "symbols[display selected file's symbols]"
+    "workspace[manage the gopls workspace (experimental: under development)]"
+    "workspace_symbol[search symbols in workspace]"
+    "vulncheck[run experimental vulncheck analysis (experimental: under development)]"
   )
 
   function _commands() {
@@ -71,27 +81,26 @@ function _gopls() {
 
     # '-remote[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address:_hosts' \
   _arguments -C \
-    '-debug=[serve debug information on the supplied address]:debug server address:_hosts' \
-    '-listen=[address on which to listen for remote connections]:listen address:_hosts' \
-    '-listen.timeout=[when used with -listen, shut down the server when there are no connected clients for this duration]:timeout (duration)' \
-    '-logfile=[filename to log to. if value is "auto", then logging to a default output file is enabled]:log file:_files' \
-    '-mode[no effect]' \
-    '-ocagent=[the address of the ocagent, or off \(default "off"\)]:ocagent adderss:_hosts' \
-    '-port=[port on which to run gopls for debugging purposes]:gopls run port:_port' \
-    '-profile.cpu=[write CPU profile to this file]:CPU profile output:_files' \
-    '-profile.mem=[write memory profile to this file]:Memory profile output:_files' \
-    '-profile.trace=[write trace log to this file]:Trace profile output:_files' \
-    '-remote=[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address' \
-    '-remote.debug=[when used with -remote=auto, the -debug value used to start the daemon]:debug server address:_hosts' \
-    '-remote.listen.timeout=[when used with -remote=auto, the -listen.timeout value used to start the daemon \(default 1m0s\)]:timeout (duration)' \
-    '-remote.logfile=[when used with -remote=auto, the -logfile value used to start the daemon]:log file:_files' \
-    '-rpc.trace[print the full rpc trace in lsp inspector format]' \
-    '-v[verbose output]' \
-    '-vv[very verbose output#]' \
+    "-debug=[serve debug information on the supplied address]:debug server address:_hosts" \
+    "-listen=[address on which to listen for remote connections. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. Otherwise, TCP is used.]:listen address:_hosts" \
+    "-listen.timeout=[when used with -listen, shut down the server when there are no connected clients for this duration]:timeout (duration)" \
+    "-logfile=[filename to log to. if value is \"auto\", then logging to a default output file is enabled]:log file:_files" \
+    "-ocagent=[the address of the ocagent (e.g. http://localhost:55678), or off (default \"off\")]:ocagent adderss:_hosts" \
+    "-port=[port on which to run gopls for debugging purposes]:gopls run port:_port" \
+    "-profile.cpu=[write CPU profile to this file]:CPU profile output:_files" \
+    "-profile.mem=[write memory profile to this file]:Memory profile output:_files" \
+    "-profile.trace=[write trace log to this file]:Trace profile output:_files" \
+    "-remote=string[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address" \
+    "-remote.debug=string[when used with -remote=auto, the -debug value used to start the daemon]:debug server address:_hosts" \
+    "-remote.listen.timeout=duration[when used with -remote=auto, the -listen.timeout value used to start the daemon (default 1m0s)]:timeout (duration)" \
+    "-remote.logfile=string[when used with -remote=auto, the -logfile value used to start the daemon]:log file:_files" \
+    "-rpc.trace[print the full rpc trace in lsp inspector format]" \
+    {-v,-verbose}"[verbose output]" \
+    {-vv,-veryverbose}"[very verbose output]" \
     "1: :_commands" \
     '*:: :->args' \
     && ret=0
-  
+
   # case $words[1] in
   #   serve)
   #     ;;
@@ -149,75 +158,82 @@ _gopls "$*"
 
 # -----------------------------------------------------------------------------
 #
-# The Go Language source tools.
+# gopls is a Go language server.
 #
-# Usage: gopls [flags] <command> [command-flags] [command-args]
+# It is typically used with an editor to provide language features. When no
+# command is specified, gopls will default to the 'serve' command. The language
+# features can also be accessed via the gopls command-line interface.
 #
-# gopls is a Go language server. It is typically used with an editor to provide
-# language features. When no command is specified, gopls will default to the 'serve'
-# command. The language features can also be accessed via the gopls command-line interface.
+# Usage:
+#   gopls help [<subject>]
 #
-# Available commands are:
+# Command:
 #
-# main:
-#   serve : run a server for Go code using the Language Server Protocol
-#   version : print the gopls version information
-#   bug : report a bug in gopls
-#   settings-json : print json describing gopls settings
+# Main
+#   serve             run a server for Go code using the Language Server Protocol
+#   version           print the gopls version information
+#   bug               report a bug in gopls
+#   api-json          print json describing gopls API
+#   licenses          print licenses of included software
 #
-# features:
-#   call_hierarchy : display selected identifier's call hierarchy
-#   check : show diagnostic results for the specified file
-#   definition : show declaration of selected identifier
-#   folding_ranges : display selected file's folding ranges
-#   format : format the code according to the go standard
-#   highlight : display selected identifier's highlights
-#   implementation : display selected identifier's implementation
-#   imports : updates import statements
-#   inspect : inspect server state (daemon mode only)
-#   links : list links in a file
-#   prepare_rename : test validity of a rename operation at location
-#   references : display selected identifier's references
-#   rename : rename selected identifier
-#   signature : display selected identifier's signature
-#   fix : apply suggested fixes
-#   symbols : display selected file's symbols
-#   workspace_symbol : search symbols in workspace
+# Features
+#   call_hierarchy    display selected identifier's call hierarchy
+#   check             show diagnostic results for the specified file
+#   definition        show declaration of selected identifier
+#   folding_ranges    display selected file's folding ranges
+#   format            format the code according to the go standard
+#   highlight         display selected identifier's highlights
+#   implementation    display selected identifier's implementation
+#   imports           updates import statements
+#   remote            interact with the gopls daemon
+#   inspect           interact with the gopls daemon (deprecated: use 'remote')
+#   links             list links in a file
+#   prepare_rename    test validity of a rename operation at location
+#   references        display selected identifier's references
+#   rename            rename selected identifier
+#   semtok            show semantic tokens for the specified file
+#   signature         display selected identifier's signature
+#   fix               apply suggested fixes
+#   symbols           display selected file's symbols
+#   workspace         manage the gopls workspace (experimental: under development)
+#   workspace_symbol  search symbols in workspace
+#   vulncheck         run experimental vulncheck analysis (experimental: under development)
 #
-# gopls flags are:
-#   -debug string
+# flags:
+#   -debug=string
 #     	serve debug information on the supplied address
-#   -listen string
+#   -listen=string
 #     	address on which to listen for remote connections. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. Otherwise, TCP is used.
-#   -listen.timeout duration
+#   -listen.timeout=duration
 #     	when used with -listen, shut down the server when there are no connected clients for this duration
-#   -logfile string
+#   -logfile=string
 #     	filename to log to. if value is "auto", then logging to a default output file is enabled
-#   -mode string
+#   -mode=string
 #     	no effect
-#   -ocagent string
+#   -ocagent=string
 #     	the address of the ocagent (e.g. http://localhost:55678), or off (default "off")
-#   -port int
+#   -port=int
 #     	port on which to run gopls for debugging purposes
-#   -profile.cpu string
+#   -profile.cpu=string
 #     	write CPU profile to this file
-#   -profile.mem string
+#   -profile.mem=string
 #     	write memory profile to this file
-#   -profile.trace string
+#   -profile.trace=string
 #     	write trace log to this file
-#   -remote string
+#   -remote=string
 #     	forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. If 'auto', or prefixed by 'auto;', the remote address is automatically resolved based on the executing environment.
-#   -remote.debug string
+#   -remote.debug=string
 #     	when used with -remote=auto, the -debug value used to start the daemon
-#   -remote.listen.timeout duration
+#   -remote.listen.timeout=duration
 #     	when used with -remote=auto, the -listen.timeout value used to start the daemon (default 1m0s)
-#   -remote.logfile string
+#   -remote.logfile=string
 #     	when used with -remote=auto, the -logfile value used to start the daemon
 #   -rpc.trace
 #     	print the full rpc trace in lsp inspector format
-#   -v	verbose output
-#   -vv
-#     	very verbose output#
+#   -v,-verbose
+#     	verbose output
+#   -vv,-veryverbose
+#     	very verbose output
 #
 # -----------------------------------------------------------------------------
 # vim:ft=zsh:et:sts=2:sw=2
