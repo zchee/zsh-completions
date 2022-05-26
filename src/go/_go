@@ -114,7 +114,7 @@ _go() {
       "-asmflags=[arguments for each go tool asm invocation]: :->asmflags" \
       "-buildinfo=[Whether to stamp binaries with build flags.]" \
       "-buildmode=[build mode to use]: :->buildmode" \
-      "-buildvcs=[Whether to stamp binaries with version control information.]" \
+      "-buildvcs=[Whether to stamp binaries with version control information.]:whether the use buildvcs:(auto true false)" \
       "-compiler[name of compiler to use]:name" \
       "-gccgoflags[arguments for gccgo]:args" \
       "-gcflags=[arguments to pass on each go tool compile invocation]: :->gcflags" \
@@ -275,7 +275,8 @@ _go() {
           "-compressdwarf[compress DWARF if possible (default true)]"
           "-cpuprofile[write cpu profile to file]:file:_files"
           "-d[disable dynamic executable]"
-          "-debugtextsize[debug text section max size]:size"
+          "-debugnosplit[dump nosplit call graph]"
+          "-debugtextsize=[debug text section max size]:size"
           "-debugtramp[debug trampolines]:trampolines"
           "-dumpdep[dump symbol dependency graph]"
           "-extar[archive program for buildmode=c-archive]:string"
@@ -724,10 +725,11 @@ _go() {
                 api)
                   _arguments \
                     "-allow_new[allow API additions (default true)]" \
+                    "-approval[require approvals in comma-separated list of files]:file:_files" \
                     "-c[optional comma-separated filename(s) to check API against]:string" \
                     "-contexts[optional comma-separated list of <goos>-<goarch>[-cgo] to override default contexts]:string" \
                     "-except[optional filename of packages that are allowed to change without triggering a failure in the tool]:string" \
-                    "-next[optional filename of tentative upcoming API features for the next release]:string" \
+                    "-next[comma-separated list of files for upcoming API features for the next release. These files can be lazily maintained.]:file:_files" \
                     "-v[verbose debugging]"
                   ;;
 
@@ -1165,7 +1167,7 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# go version devel go1.18-a064a4f29a Sat Feb 26 01:16:03 2022 +0000 X:staticlockranking,unified darwin/amd64
+# go version devel go1.19-62b38000ab Thu May 26 02:23:09 2022 +0000 X:staticlockranking,unified,heapminimum512kib darwin/amd64
 #
 # ------------------------------------------------------------------------------
 #
@@ -1291,6 +1293,8 @@ _go "$*"
 #  	-asan
 #  		enable interoperation with address sanitizer.
 #  		Supported only on linux/arm64, linux/amd64.
+#  		Supported only on linux/amd64 or linux/arm64 and only with GCC 7 and higher
+#  		or Clang/LLVM 9 and higher.
 #  	-v
 #  		print the names of packages as they are compiled.
 #  	-work
@@ -1304,11 +1308,13 @@ _go "$*"
 #  	-buildmode mode
 #  		build mode to use. See 'go help buildmode' for more.
 #  	-buildvcs
-#  		Whether to stamp binaries with version control information. By default,
-#  		version control information is stamped into a binary if the main package
-#  		and the main module containing it are in the repository containing the
-#  		current directory (if there is a repository). Use -buildvcs=false to
-#  		omit version control information.
+#  		Whether to stamp binaries with version control information
+#  		("true", "false", or "auto"). By default ("auto"), version control
+#  		information is stamped into a binary if the main package, the main module
+#  		containing it, and the current directory are all in the same repository.
+#  		Use -buildvcs=false to always omit version control information, or
+#  		-buildvcs=true to error out if version control information is available but
+#  		cannot be included due to a missing tool or ambiguous directory structure.
 #  	-compiler name
 #  		name of compiler to use, as in runtime.Compiler (gccgo or gc).
 #  	-gccgoflags '[pattern=]arg list'
@@ -1720,6 +1726,9 @@ _go "$*"
 #  		The line number of the directive in the source file.
 #  	$GOPACKAGE
 #  		The name of the package of the file containing the directive.
+#  	$GOROOT
+#  		The GOROOT directory for the 'go' command that invoked the
+#  		generator, containing the Go toolchain and standard library.
 #  	$DOLLAR
 #  		A dollar sign.
 #
@@ -2044,7 +2053,10 @@ _go "$*"
 #  for the go/build package's Context type.
 #
 #  The -json flag causes the package data to be printed in JSON format
-#  instead of using the template format.
+#  instead of using the template format. The JSON flag can optionally be
+#  provided with a set of comma-separated required field names to be output.
+#  If so, those required fields will always appear in JSON output, but
+#  others may be omitted to save work in computing the JSON struct.
 #
 #  The -compiled flag causes list to set CompiledGoFiles to the Go source
 #  files presented to the compiler. Typically this means that it repeats
@@ -2069,7 +2081,8 @@ _go "$*"
 #  (zeroed).
 #
 #  The -export flag causes list to set the Export field to the name of a
-#  file containing up-to-date export information for the given package.
+#  file containing up-to-date export information for the given package,
+#  and the BuildID field to the build ID of the compiled package.
 #
 #  The -find flag causes list to identify the named packages but not
 #  resolve their dependencies: the Imports and Deps lists will be empty.
@@ -2540,13 +2553,19 @@ _go "$*"
 #
 #  Workspace maintenance
 #
-#  Go workspace provides access to operations on workspaces.
+#  Work provides access to operations on workspaces.
 #
 #  Note that support for workspaces is built into many other commands, not
 #  just 'go work'.
 #
 #  See 'go help modules' for information about Go's module system of which
 #  workspaces are a part.
+#
+#  See https://go.dev/ref/mod#workspaces for an in-depth reference on
+#  workspaces.
+#
+#  See https://go.dev/doc/tutorial/workspaces for an introductory
+#  tutorial on workspaces.
 #
 #  A workspace is specified by a go.work file that specifies a set of
 #  module directories with the "use" directive. These modules are used as
@@ -2669,9 +2688,8 @@ _go "$*"
 #  		Version string
 #  	}
 #
-#  See the workspaces design proposal at
-#  https://go.googlesource.com/proposal/+/master/design/45713-workspace.md for
-#  more information.
+#  See the workspaces reference at https://go.dev/ref/mod#workspaces
+#  for more information.
 #
 # ------------------------------------------------------------------------------
 #
@@ -2691,6 +2709,9 @@ _go "$*"
 #
 #  Each argument path is added to a use directive in the go.work file. The
 #  current go version will also be listed in the go.work file.
+#
+#  See the workspaces reference at https://go.dev/ref/mod#workspaces
+#  for more information.
 #
 # ------------------------------------------------------------------------------
 #
@@ -2716,13 +2737,16 @@ _go "$*"
 #  build list's version of each module is always the same or higher than
 #  that in each workspace module.
 #
+#  See the workspaces reference at https://go.dev/ref/mod#workspaces
+#  for more information.
+#
 # ------------------------------------------------------------------------------
 #
 #  Add modules to workspace file
 #
 #  Usage:
 #
-#  	go work use [-r] [moddirs]
+#  	go work use [-r] moddirs
 #
 #  Use provides a command-line interface for adding
 #  directories, optionally recursively, to a go.work file.
@@ -2735,6 +2759,9 @@ _go "$*"
 #  directories, and the use command operates as if each of the directories
 #  were specified as arguments: namely, use directives will be added for
 #  directories that exist, and removed for directories that do not exist.
+#
+#  See the workspaces reference at https://go.dev/ref/mod#workspaces
+#  for more information.
 #
 # ------------------------------------------------------------------------------
 #
@@ -2769,6 +2796,10 @@ _go "$*"
 #  for example 'go_js_wasm_exec a.out arguments...'. This allows execution of
 #  cross-compiled programs when a simulator or other execution method is
 #  available.
+#
+#  By default, 'go run' compiles the binary without generating the information
+#  used by debuggers, to reduce build time. To include debugger information in
+#  the binary, use 'go build'.
 #
 #  The exit status of Run is not the exit status of the compiled binary.
 #
@@ -3016,6 +3047,7 @@ _go "$*"
 #  	  GOOS environment variable.
 #  	- the target architecture, as spelled by runtime.GOARCH, set with the
 #  	  GOARCH environment variable.
+#  	- "unix", if GOOS is a Unix or Unix-like system.
 #  	- the compiler being used, either "gc" or "gccgo"
 #  	- "cgo", if the cgo command is supported (see CGO_ENABLED in
 #  	  'go help environment').
@@ -4472,14 +4504,16 @@ _go "$*"
 # Usage of /usr/local/go/pkg/tool/darwin_amd64/api:
 #   -allow_new
 #     	allow API additions (default true)
+#   -approval files
+#     	require approvals in comma-separated list of files
 #   -c string
 #     	optional comma-separated filename(s) to check API against
 #   -contexts string
 #     	optional comma-separated list of <goos>-<goarch>[-cgo] to override default contexts.
 #   -except string
 #     	optional filename of packages that are allowed to change without triggering a failure in the tool
-#   -next string
-#     	optional filename of tentative upcoming API features for the next release. This file can be lazily maintained. It only affects the delta warnings from the -c file printed on success.
+#   -next files
+#     	comma-separated list of files for upcoming API features for the next release. These files can be lazily maintained. They only affects the delta warnings from the -c file printed on success.
 #   -v	verbose debugging
 #
 # ------------------------------------------------------------------------------
@@ -4508,7 +4542,7 @@ _go "$*"
 #   -o string
 #     	output file; default foo.o for /a/b/c/foo.s as first argument
 #   -p string
-#     	set expected package import to path
+#     	set expected package import to path (default "<unlinkable>")
 #   -shared
 #     	generate code that can be linked into a shared library
 #   -spectre list
@@ -4572,11 +4606,10 @@ _go "$*"
 #   -D path
 #     	set relative path for local imports
 #   -E	debug symbol export
-#   -G	accept generic code (default 3)
 #   -I directory
 #     	add directory to import search path
 #   -K	debug missing line numbers
-#   -L	show full file names in error messages
+#   -L	also show actual source file names in error messages for positions affected by //line directives
 #   -N	disable optimizations
 #   -S	print assembly listing
 #   -V	print version and exit
@@ -4833,6 +4866,8 @@ _go "$*"
 #   -cpuprofile file
 #     	write cpu profile to file
 #   -d	disable dynamic executable
+#   -debugnosplit
+#     	dump nosplit call graph
 #   -debugtextsize int
 #     	debug text section max size
 #   -debugtramp int
@@ -5098,7 +5133,6 @@ _go "$*"
 # 	vet unit.cfg	# execute analysis specified by config file
 # 	vet help    	# general help, including listing analyzers and flags
 # 	vet help name	# help on specific analyzer and its flags
-#
 #
 # ------------------------------------------------------------------------------
 #
