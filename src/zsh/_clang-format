@@ -1,9 +1,8 @@
 #compdef clang-format
 
-# ------------------------------------------------------------------------------
-# The BSD-3-Clause License
+# -----------------------------------------------------------------------------
 #
-# Copyright (c) 2016, Koichi Shiraishi
+# Copyright 2016, The zsh-completions Authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +30,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# ------------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
 
 _clang-format() {
   local context curcontext=$curcontext state line ret=1
@@ -112,5 +112,5 @@ _clang-format() {
 
 _clang-format "$@"
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # vim:ft=zsh:et:sts=2:sw=2
