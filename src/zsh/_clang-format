@@ -1,6 +1,6 @@
 #compdef clang-format
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # The BSD-3-Clause License
 #
 # Copyright (c) 2016, Koichi Shiraishi
@@ -31,58 +31,59 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 _clang-format() {
   local context curcontext=$curcontext state line ret=1
   declare -A opt_args
-  
-  local -a __llvm_generic_options
 
-  __llvm_generic_options=(
-    '-help:Display available options (-help-hiddeen for more)'
-    '-help-hidden:Display all available options'
-    '-help-list:Display list of available options (-help-list-hidden for more)'
-    '-help-list-hidden:Display list of all available options'
-    '-print-all-options:Print all option values after command line parsing'
-    '-print-options:Print non-default options after command line parsing'
-    '-version:Display the version of this program'
+  local -a _llvm_generic_options
+  _llvm_generic_options=(
+    '--help:Display available options'
+    '--help-hidden:Display all available options'
+    '--help-list:Display list of available options'
+    '--help-list-hidden:Display list of all available options'
+    '--print-all-options:Print all option values after command line parsing'
+    '--print-options:Print non-default options after command line parsing'
+    '--version:Display the version of this program'
   )
 
   _arguments -C \
-    '-assume-filename=[assumes arg filename to look for a style config file when reading from stdin]:filename:_files' \
-    '-cursor=[The position of the cursor when invoking clang-format from an editor integration]:cursor position <uint>' \
-    '-dump-config[Dump configuration options to stdout and exit. Can be used with -style option]' \
-    '-fallback-style=[The name of the predefined style used as a fallback in case clang-format is invoked with -style=file]:fallback style:->fallbackstyle' \
-    '-i[Inplace edit <file>s, if specified]' \
-    '-length=[Format a range of this length (in bytes). Multiple ranges can be formatted by specifying several -offset and -length pairs]:byte length <uint>' \
-    "-lines=[format a range of lines (both 1-based). Multiple ranges can be formatted by specifying several -lines arguments]: :->lines" \
-    '-offset=[Format a range starting at this byte offset. Multiple ranges can be formatted by specifying several -offset and -length pairs]:bytee offset <uint>' \
-    '-output-replacements-xml[Output replacements as XML]' \
-    '-sort-includes[If set, overrides the include sorting behavior determined by the SortIncludes style flag]' \
-    '-style=[Set coding style or -style=file or set specific parameters]:coding style:->style' \
-    '-verbose[If set, shows the list of processed files]' \
-    ${__llvm_generic_options[@]} \
+    '--Wclang-format-violations[Warnings about individual formatting changes needed. Used only with --dry-run or -n]' \
+    '--Werror[If set, changes formatting warnings to errors]' \
+    '--Wno-clang-format-violations[Do not warn about individual formatting changes needed. Used only with --dry-run or -n]' \
+    '--assume-filename=[Override filename used to determine the language. When reading from stdin, clang-format assumes this filename to determine the language.]:filename:_files' \
+    '--cursor=[The position of the cursor when invoking clang-format from an editor integration]:cursor position' \
+    {--dry-run,-n}'[If set, do not actually make the formatting changes]' \
+    '--dump-config[Dump configuration options to stdout and exit. Can be used with -style option.]' \
+    '--fallback-style=[The name of the predefined style used as a fallback in case clang-format is invoked with -style=file, but can not find the .clang-format file to use.]: :->fallbackstyle' \
+    '-i[Inplace edit <file>s, if specified.]' \
+    '--length=[Format a range of this length (in bytes). Multiple ranges can be formatted by specifying several -offset and -length pairs]:length in byte' \
+    "--lines=[format a range of lines (both 1-based). Multiple ranges can be formatted by specifying several -lines arguments.]: :->lines" \
+    '--offset=[Format a range starting at this byte offset.Multiple ranges can be formatted by specifying several -offset and -length pairs.]:byte offset' \
+    '--output-replacements-xml[Output replacements as XML.]' \
+    '--sort-includes[If set, overrides the include sorting behavior determined by the SortIncludes style flag]' \
+    '--style=[Coding style. Set coding style or -style=file or set specific parameters]:coding style:->style' \
+    '--verbose[If set, shows the list of processed files]' \
     '*:file:_files' \
-    && ret=0
+  && ret=0
 
+  _describe -t llvm_generic_options "LLVM generic options" _llvm_generic_options
 
   local -a __builtin_styles
   __builtin_styles=(
-  'LLVM:LLVM coding standards'
-  'Google:Google’s C++ style guide'
-  'Chromium:Chromium’s style guide'
-  'Mozilla:Mozilla’s style guide'
-  'WebKit:WebKit’s style guide'
+    'LLVM:LLVM coding standards'
+    'Google:Google’s C++ style guide'
+    'Chromium:Chromium’s style guide'
+    'Mozilla:Mozilla’s style guide'
+    'WebKit:WebKit’s style guide'
   )
 
   case $state in
     (style)
       local -a __based_on_style
       __based_on_style=($__builtin_styles)
-      __based_on_style+=(
-      'file:local .clang-format style'
-      )
+      __based_on_style+=('file:local .clang-format style')
 
       # TODO(zchee): support -style="{BasedOnStyle: llvm, IndentWidth: 8}"
       _describe -t based_on_style "BasedOnStyle" __based_on_style
@@ -91,9 +92,7 @@ _clang-format() {
     (fallbackstyle)
       local -a __based_on_style_fallback
       __based_on_style_fallback=($__builtin_styles)
-      __based_on_style_fallback+=(
-      'none:skip formatting'
-      )
+      __based_on_style_fallback+=('none:skip formatting')
 
       # TODO(zchee): support -style="{BasedOnStyle: llvm, IndentWidth: 8}"
       _describe -t based_on_style "BasedOnStyleFallback" __based_on_style_fallback
@@ -105,12 +104,13 @@ _clang-format() {
       else
         _arguments '*:end line'
       fi
-      ;:
+      ;;
   esac
-  
+
   return ret
 }
 
-_clang-format
+_clang-format "$@"
 
+# ------------------------------------------------------------------------------
 # vim:ft=zsh:et:sts=2:sw=2
