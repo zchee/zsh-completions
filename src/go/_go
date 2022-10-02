@@ -1,4 +1,4 @@
-#compdef go go1.1[0-9].[0-9]
+#compdef go -P -value-,GO*,-default- -P -value-,CGO*,-default-
 
 # ------------------------------------------------------------------------------
 # Copyright (c) 2017- The Go Authors
