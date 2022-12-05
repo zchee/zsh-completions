@@ -101,6 +101,7 @@ _go() {
 
   _build_flags() {
     _arguments \
+      "-C[Change to dir before running the command.]" \
       "-a[force rebuilding of packages that are already up-to-date]" \
       "-n[print the commands but do not run them]" \
       "-p[number of builds that can be run in parallel]:number" \
@@ -127,6 +128,7 @@ _go() {
    	  "-modfile=[in module aware mode, read (and possibly write) an alternate go.mod file instead of the one in the module root directory.]:go.mod file:_files" \
    	  "-workfile=[in module aware mode, use the given go.work file as a workspace file.]" \
    	  "-overlay=[read a JSON config file that provides an overlay for build operations.]:overlay json file:_files" \
+     	"-pgo[specify the file path of a profile for profile-guided optimization (PGO).]:pgo file:_files" \
       "-pkgdir[install and load all packages from dir]:dir" \
       "-tags=[list of build tags to consider satisfied]:tags" \
       "-toolexec[program to use to invoke toolchain programs]:args"
@@ -576,12 +578,18 @@ _go() {
                   "-dropreplace=[drop a replacement of the given module path and version pair.]:old[@v]" \
                   "-retract=[add a retraction on the given version. single version like \"v1.2.3\" or a closed interval like \"\[v1.1.0-v1.1.9\]\"]:version" \
                   "-dropretract=[drop a retraction on the given version. single version like \"v1.2.3\" or a closed interval like \"\[v1.1.0-v1.1.9\]\"]:version" \
-                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18)" \
+                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
                   "-print[prints the final go.mod in its text format instead of writing it back to go.mod.]" \
-                  "-json[prints the final go.mod in its json format instead of writing it back to go.mod.]"
+                  "-json[prints the final go.mod in its json format instead of writing it back to go.mod.]" \
+                  "-C[Change to dir before running the command.]" \
+                  "-n[print the commands but do not run them]" \
+                  "-x[print the commands]"
                 ;;
 
               graph)
+                _arguments \
+                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
+                  "-x[graph to print the commands graph executes.]"
                 ;;
 
               init)
@@ -593,8 +601,9 @@ _go() {
                 _arguments \
                   "-v[print information about removed modules to standard error.]" \
                   "-e[attempt to proceed despite errors encountered while loading packages.]" \
-                  "-go=[update the 'go' directive in the go.mod file to the given version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18)" \
-                  "-compat=[preserves any additional checksums needed for the 'go' command from the indicated major Go release to successfully]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18)"
+                  "-go=[update the 'go' directive in the go.mod file to the given version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
+                  "-compat=[preserves any additional checksums needed for the 'go' command from the indicated major Go release to successfully]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
+                  "-x[tidy to print the commands download executes.]"
                 ;;
 
               vendor)
@@ -642,7 +651,7 @@ _go() {
                   "-dropuse=[drop a use directive from the go.work file's set of module directories.]:path:_go_packages" \
                   "-replace=[adds a replacement of the given module path and version pair.]:old[@v]=new[@v]" \
                   "-dropreplace=[drops a replacement of the given module path and version pair.]:old[@v]" \
-                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18)" \
+                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
                   "-print[prints the final go.mod in its text format instead of writing it back to go.mod.]" \
                   "-json[prints the final go.mod in its json format instead of writing it back to go.mod.]" \
                   "*:go.work:_files"
@@ -756,6 +765,7 @@ _go() {
                     "-dynpackage[set Go package for -dynimport output (default \"main\")]:string" \
                     "-exportheader[where to write export header if any exported functions]:string" \
                     "-gccgo[generate files for use with gccgo]" \
+                    "-gccgo_define_cgoincomplete[define cgo.Incomplete for older gccgo/GoLLVM]" \
                     "-gccgopkgpath[-fgo-pkgpath option used with gccgo]:string" \
                     "-gccgoprefix[-fgo-prefix option used with gccgo]:string" \
                     "-godefs[for bootstrap: write Go definitions for C file to standard output]" \
@@ -813,8 +823,10 @@ _go() {
                     "-mutexprofile[write mutex profile to file]:output file:_files" \
                     "-nolocalimports[reject local (relative) imports]" \
                     "-o[write output to file]:output file:_files" \
+                    "-oldcomparable[enable old comparable semantics]" \
                     "-p[set expected package import path]:package import path" \
                     "-pack[write to file.a instead of file.o]" \
+                    "-pgoprofile[read profile from file]:file:_files" \
                     "-r[debug generated wrappers]" \
                     "-race[enable race detector]" \
                     "-shared[generate code that can be linked into a shared library]" \
@@ -884,7 +896,8 @@ _go() {
                   _arguments \
                     "-c[respect case when matching symbols]" \
                     "-cmd[treat a command (package main) like a regular package]" \
-                    "-u[show docs for unexported and exported symbols and methods]"
+                    "-u[show docs for unexported and exported symbols and methods]" \
+                    "-C[change to dir before running command]:dir:_directories"
                     ;;
 
                 fix)
@@ -913,6 +926,7 @@ _go() {
                     "-buildid[record id as Go toolchain build id]:id" \
                     "-buildmode[set build mode]:mode" \
                     "-c[dump call graph]" \
+                    "-capturehostobjs[capture host object files loaded during internal linking to specified dir]:dir:_directories" \
                     "-cpuprofile[write cpu profile to file]:file" \
                     "-d[disable dynamic executable]" \
                     "-extld[use linker when linking in external mode]:linker" \
@@ -1206,7 +1220,7 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# go version devel go1.20-1888875182 Sun Oct 2 02:31:23 2022 +0000 X:staticlockranking,heapminimum512kib darwin/amd64
+# go version devel go1.20-3a7a528c2d Sat Dec 3 17:08:51 2022 +0000 X:staticlockranking,heapminimum512kib,arenas,pagetrace darwin/amd64
 #
 # ------------------------------------------------------------------------------
 #
@@ -1309,6 +1323,10 @@ _go "$*"
 #  The build flags are shared by the build, clean, get, install, list, run,
 #  and test commands:
 #
+#  	-C dir
+#  		Change to dir before running the command.
+#  		Any files named on the command line are interpreted after
+#  		changing directories.
 #  	-a
 #  		force rebuilding of packages that are already up-to-date.
 #  	-n
@@ -1323,9 +1341,9 @@ _go "$*"
 #  		linux/ppc64le and linux/arm64 (only for 48-bit VMA).
 #  	-msan
 #  		enable interoperation with memory sanitizer.
-#  		Supported only on linux/amd64, linux/arm64
+#  		Supported only on linux/amd64, linux/arm64, freebsd/amd64
 #  		and only with Clang/LLVM as the host C compiler.
-#  		On linux/arm64, pie build mode will be used.
+#  		PIE build mode will be used on all platforms except linux/amd64.
 #  	-asan
 #  		enable interoperation with address sanitizer.
 #  		Supported only on linux/arm64, linux/amd64.
@@ -1405,6 +1423,11 @@ _go "$*"
 #  		include path must be in the same directory as the Go package they are
 #  		included from, and overlays will not appear when binaries and tests are
 #  		run through go run and go test respectively.
+#  	-pgo file
+#  		specify the file path of a profile for profile-guided optimization (PGO).
+#  		Special name "auto" lets the go command select a file named
+#  		"default.pgo" in the main package's directory if that file exists.
+#  		Special name "off" turns off PGO.
 #  	-pkgdir dir
 #  		install and load all packages from dir instead of the usual locations.
 #  		For example, when building with a non-standard configuration,
@@ -2462,6 +2485,8 @@ _go "$*"
 #  referred to indirectly. For the full set of modules available to a build,
 #  use 'go list -m -json all'.
 #
+#  Edit also provides the -C, -n, and -x build flags.
+#
 #  See https://golang.org/ref/mod#go-mod-edit for more about 'go mod edit'.
 #
 # ------------------------------------------------------------------------------
@@ -2470,7 +2495,7 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go mod graph [-go=version]
+#  	go mod graph [-go=version] [-x]
 #
 #  Graph prints the module requirement graph (with replacements applied)
 #  in text form. Each line in the output has two space-separated fields: a module
@@ -2480,6 +2505,8 @@ _go "$*"
 #  The -go flag causes graph to report the module graph as loaded by the
 #  given Go version, instead of the version indicated by the 'go' directive
 #  in the go.mod file.
+#
+#  The -x flag causes graph to print the commands graph executes.
 #
 #  See https://golang.org/ref/mod#go-mod-graph for more about 'go mod graph'.
 #
@@ -2511,7 +2538,7 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go mod tidy [-e] [-v] [-go=version] [-compat=version]
+#  	go mod tidy [-e] [-v] [-x] [-go=version] [-compat=version]
 #
 #  Tidy makes sure go.mod matches the source code in the module.
 #  It adds any missing modules necessary to build the current module's
@@ -2538,6 +2565,8 @@ _go "$*"
 #  version. By default, tidy acts as if the -compat flag were set to the
 #  version prior to the one indicated by the 'go' directive in the go.mod
 #  file.
+#
+#  The -x flag causes tidy to print the commands download executes.
 #
 #  See https://golang.org/ref/mod#go-mod-tidy for more about 'go mod tidy'.
 #
@@ -3029,10 +3058,9 @@ _go "$*"
 #
 #  	go version [-m] [-v] [file ...]
 #
-#  Version prints the build information for Go executables.
+#  Version prints the build information for Go binary files.
 #
-#  Go version reports the Go version used to build each of the named
-#  executable files.
+#  Go version reports the Go version used to build each of the named files.
 #
 #  If no files are named on the command line, go version prints its own
 #  version information.
@@ -3042,7 +3070,7 @@ _go "$*"
 #  By default, go version does not report unrecognized files found
 #  during a directory scan. The -v flag causes it to report unrecognized files.
 #
-#  The -m flag causes go version to print each executable's embedded
+#  The -m flag causes go version to print each file's embedded
 #  module version information, when available. In the output, the module
 #  information consists of multiple lines following the version line, each
 #  indented by a leading tab character.
@@ -3055,7 +3083,7 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go vet [-n] [-x] [-vettool prog] [build flags] [vet flags] [packages]
+#  	go vet [-C dir] [-n] [-x] [-vettool prog] [build flags] [vet flags] [packages]
 #
 #  Vet runs the Go vet command on the packages named by the import paths.
 #
@@ -3064,6 +3092,7 @@ _go "$*"
 #  For a list of checkers and their flags, see 'go tool vet help'.
 #  For details of a specific checker such as 'printf', see 'go tool vet help printf'.
 #
+#  The -C flag changes to dir before running the 'go vet' command.
 #  The -n flag prints commands that would be executed.
 #  The -x flag prints commands as they are executed.
 #
@@ -3071,7 +3100,7 @@ _go "$*"
 #  or additional checks.
 #  For example, the 'shadow' analyzer can be built and run using these commands:
 #
-#    go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+#    go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
 #    go vet -vettool=$(which shadow)
 #
 #  The build flags supported by go vet are those that control package resolution
@@ -3116,6 +3145,8 @@ _go "$*"
 #  	  GOOS environment variable.
 #  	- the target architecture, as spelled by runtime.GOARCH, set with the
 #  	  GOARCH environment variable.
+#  	- any architecture features, in the form GOARCH.feature
+#  	  (for example, "amd64.v2"), as detailed below.
 #  	- "unix", if GOOS is a Unix or Unix-like system.
 #  	- the compiler being used, either "gc" or "gccgo"
 #  	- "cgo", if the cgo command is supported (see CGO_ENABLED in
@@ -3145,11 +3176,45 @@ _go "$*"
 #  Using GOOS=ios matches build tags and files as for GOOS=darwin
 #  in addition to ios tags and files.
 #
-#  To keep a file from being considered for the build:
+#  The defined architecture feature build tags are:
+#
+#  	- For GOARCH=386, GO386=387 and GO386=sse2
+#  	  set the 386.387 and 386.sse2 build tags, respectively.
+#  	- For GOARCH=amd64, GOAMD64=v1, v2, and v3
+#  	  correspond to the amd64.v1, amd64.v2, and amd64.v3 feature build tags.
+#  	- For GOARCH=arm, GOARM=5, 6, and 7
+#  	  correspond to the arm.5, arm.6, and arm.7 feature build tags.
+#  	- For GOARCH=mips or mipsle,
+#  	  GOMIPS=hardfloat and softfloat
+#  	  correspond to the mips.hardfloat and mips.softfloat
+#  	  (or mipsle.hardfloat and mipsle.softfloat) feature build tags.
+#  	- For GOARCH=mips64 or mips64le,
+#  	  GOMIPS64=hardfloat and softfloat
+#  	  correspond to the mips64.hardfloat and mips64.softfloat
+#  	  (or mips64le.hardfloat and mips64le.softfloat) feature build tags.
+#  	- For GOARCH=ppc64 or ppc64le,
+#  	  GOPPC64=power8, power9, and power10 correspond to the
+#  	  ppc64.power8, ppc64.power9, and ppc64.power10
+#  	  (or ppc64le.power8, ppc64le.power9, and ppc64le.power10)
+#  	  feature build tags.
+#  	- For GOARCH=wasm, GOWASM=satconv and signext
+#  	  correspond to the wasm.satconv and wasm.signext feature build tags.
+#
+#  For GOARCH=amd64, arm, ppc64, and ppc64le, a particular feature level
+#  sets the feature build tags for all previous levels as well.
+#  For example, GOAMD64=v2 sets the amd64.v1 and amd64.v2 feature flags.
+#  This ensures that code making use of v2 features continues to compile
+#  when, say, GOAMD64=v4 is introduced.
+#  Code handling the absence of a particular feature level
+#  should use a negation:
+#
+#  	//go:build !amd64.v2
+#
+#  To keep a file from being considered for any build:
 #
 #  	//go:build ignore
 #
-#  (any other unsatisfied word will work as well, but "ignore" is conventional.)
+#  (Any other unsatisfied word will work as well, but "ignore" is conventional.)
 #
 #  To build a file only when using cgo, and only on Linux and OS X:
 #
@@ -4586,23 +4651,6 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# Usage of /usr/local/go/pkg/tool/darwin_amd64/api:
-#   -allow_new
-#     	allow API additions (default true)
-#   -approval files
-#     	require approvals in comma-separated list of files
-#   -c string
-#     	optional comma-separated filename(s) to check API against
-#   -contexts string
-#     	optional comma-separated list of <goos>-<goarch>[-cgo] to override default contexts.
-#   -except string
-#     	optional filename of packages that are allowed to change without triggering a failure in the tool
-#   -next files
-#     	comma-separated list of files for upcoming API features for the next release. These files can be lazily maintained. They only affects the delta warnings from the -c file printed on success.
-#   -v	verbose debugging
-#
-# ------------------------------------------------------------------------------
-#
 # usage: asm [options] file.s ...
 # Flags:
 #   -D value
@@ -4661,6 +4709,8 @@ _go "$*"
 #     	where to write export header if any exported functions
 #   -gccgo
 #     	generate files for use with gccgo
+#   -gccgo_define_cgoincomplete
+#     	define cgo.Incomplete for older gccgo/GoLLVM
 #   -gccgopkgpath string
 #     	-fgo-pkgpath option used with gccgo
 #   -gccgoprefix string
@@ -4683,8 +4733,7 @@ _go "$*"
 # ------------------------------------------------------------------------------
 #
 # usage: compile [options] file.go...
-#   -% int
-#     	debug non-static initializers
+#   -%	debug non-static initializers
 #   -+	compiling runtime
 #   -B	disable bounds checking
 #   -C	disable printing of columns in error messages
@@ -4710,7 +4759,7 @@ _go "$*"
 #   -buildid id
 #     	record id as the build id in the export metadata
 #   -c int
-#     	concurrency during compilation (1 means no concurrency) (default 1)
+#     	concurrency during compilation (1 means no concurrency) (default 20)
 #   -clobberdead
 #     	clobber dead stack slots (for debugging)
 #   -clobberdeadreg
@@ -4768,10 +4817,14 @@ _go "$*"
 #     	reject local (relative) imports
 #   -o file
 #     	write output to file
+#   -oldcomparable
+#     	enable old comparable semantics
 #   -p path
 #     	set expected package import path
 #   -pack
 #     	write to file.a instead of file.o
+#   -pgoprofile file
+#     	read profile from file
 #   -r	debug generated wrappers
 #   -race
 #     	enable race detector
@@ -4889,6 +4942,8 @@ _go "$*"
 # 	go help doc
 #
 # Flags:
+#   -C dir
+#     	change to dir before running command
 #   -all
 #     	show all documentation for package
 #   -c	symbol matching honors case (paths not affected)
@@ -4977,6 +5032,8 @@ _go "$*"
 #   -buildmode mode
 #     	set build mode
 #   -c	dump call graph
+#   -capturehostobjs string
+#     	capture host object files loaded during internal linking to specified dir
 #   -compressdwarf
 #     	compress DWARF if possible (default true)
 #   -cpuprofile file
@@ -5203,7 +5260,8 @@ _go "$*"
 #    PPROF_TOOLS        Search path for object-level tools
 #    PPROF_BINARY_PATH  Search path for local binary files
 #                       default: $HOME/pprof/binaries
-#                       searches $name, $path, $buildid/$name, $path/$buildid
+#                       searches $buildid/$name, $buildid/*, $path/$buildid,
+#                       ${buildid:0:2}/${buildid:2}.debug, $name, $path
 #    * On Windows, %USERPROFILE% is used instead of $HOME
 #
 # ------------------------------------------------------------------------------
