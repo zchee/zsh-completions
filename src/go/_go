@@ -108,7 +108,8 @@ _go() {
       "-race[enable data race detection]" \
       "-msan[Insert calls to C/C++ memory sanitizer.]" \
       "-asan[enable interoperation with address sanitizer.]" \
-      "-cover[Enable coverage analysis]" \
+      "-cover[enable code coverage instrumentation.]" \
+      "-covermode[Set the mode for coverage analysis.]:covermode:(set count atomic)"
       "-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages" \
       "-v[print the names of packages as they are compiled]" \
       "-work[print temporary work directory and keep it]" \
@@ -133,6 +134,18 @@ _go() {
       "-tags=[list of build tags to consider satisfied]:tags" \
       "-toolexec[program to use to invoke toolchain programs]:args"
 
+      # "-covermode[set the mode for coverage analysis.]: :->covermode" \
+      # covermode)
+      #   local -a _covermode
+      #   _covermode=(
+      #   "set:bool: does this statement run?"
+      #   "count:int: how many times does this statement run?"
+      #   "atomic:int: count, but correct in multithreaded tests; significantly more expensive."
+      #   )
+      #   _values \
+      #     "covermode" \
+      #     ${_covermode[@]}
+      #   ;;
     case $state in
       asmflags)
         local -a _asm_flags
@@ -581,6 +594,7 @@ _go() {
                   "-retract=[add a retraction on the given version. single version like \"v1.2.3\" or a closed interval like \"\[v1.1.0-v1.1.9\]\"]:version" \
                   "-dropretract=[drop a retraction on the given version. single version like \"v1.2.3\" or a closed interval like \"\[v1.1.0-v1.1.9\]\"]:version" \
                   "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
+                  "-toolchain=[sets the Go toolchain to use.]:toolchain" \
                   "-print[prints the final go.mod in its text format instead of writing it back to go.mod.]" \
                   "-json[prints the final go.mod in its json format instead of writing it back to go.mod.]" \
                   "-C[Change to dir before running the command.]" \
@@ -809,6 +823,7 @@ _go() {
                     "-dwarflocationlists[add location lists to DWARF in optimized mode (default true)]" \
                     "-dynlink[support references to Go symbols defined in other shared libraries]" \
                     "-e[no limit on number of errors reported]" \
+                    "-errorurl[print explanatory URL with error message if applicable]" \
                     "-gendwarfinl[generate DWARF inline info records (default 2)]:DWARF inline info records" \
                     "-goversion[string required version of the runtime]:go runtime version:(go1.12 go1.12.1 go1.12.2 go1.12.3 go1.12.4 go1.12.5 go1.12.6 go1.12.7 go1.12.8 go1.12.9 go1.12.10 go1.12.11 go1.12.12 go1.12.12 go1.13 go1.13.1 go1.13.2 go1.13.3)" \
                     "-h[halt on error]" \
@@ -1143,8 +1158,6 @@ _go() {
         vet)
           _values \
             "vet flags" \
-            "-n[print commands that would be executed]" \
-            "-x[prints commands as they are executed]" \
             "-vettool[path to vet tool binary]:binary:_files" \
             "-V[print version and exit]" \
             "-asmdecl[enable asmdecl analysis]" \
@@ -1222,7 +1235,7 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# go version devel go1.21-b94dc384ca Sat Mar 4 00:00:01 2023 +0000 X:heapminimum512kib,arenas,pagetrace,cgocheck2 darwin/amd64
+# go version devel go1.21-39effbc105 Fri Jun 9 04:07:29 2023 +0000 X:staticlockranking,heapminimum512kib,arenas,pagetrace,cgocheck2,loopvar,cacheprog darwin/amd64
 #
 # ------------------------------------------------------------------------------
 #
@@ -1329,6 +1342,7 @@ _go "$*"
 #  		Change to dir before running the command.
 #  		Any files named on the command line are interpreted after
 #  		changing directories.
+#  		If used, this flag must be the first one in the command line.
 #  	-a
 #  		force rebuilding of packages that are already up-to-date.
 #  	-n
@@ -1352,8 +1366,17 @@ _go "$*"
 #  		Supported only on linux/amd64 or linux/arm64 and only with GCC 7 and higher
 #  		or Clang/LLVM 9 and higher.
 #  	-cover
-#  		enable code coverage instrumentation (requires
-#  		that GOEXPERIMENT=coverageredesign be set).
+#  		enable code coverage instrumentation.
+#  	-covermode set,count,atomic
+#  		set the mode for coverage analysis.
+#  		The default is "set" unless -race is enabled,
+#  		in which case it is "atomic".
+#  		The values:
+#  		set: bool: does this statement run?
+#  		count: int: how many times does this statement run?
+#  		atomic: int: count, but correct in multithreaded tests;
+#  			significantly more expensive.
+#  		Sets -cover.
 #  	-coverpkg pattern1,pattern2,pattern3
 #  		For a build that targets package 'main' (e.g. building a Go
 #  		executable), apply coverage analysis to each package matching
@@ -1367,7 +1390,6 @@ _go "$*"
 #  		do not delete it when exiting.
 #  	-x
 #  		print the commands.
-#
 #  	-asmflags '[pattern=]arg list'
 #  		arguments to pass on each go tool asm invocation.
 #  	-buildmode mode
@@ -1427,9 +1449,11 @@ _go "$*"
 #  		run through go run and go test respectively.
 #  	-pgo file
 #  		specify the file path of a profile for profile-guided optimization (PGO).
-#  		Special name "auto" lets the go command select a file named
-#  		"default.pgo" in the main package's directory if that file exists.
-#  		Special name "off" turns off PGO.
+#  		When the special name "auto" is specified, for each main package in the
+#  		build, the go command selects a file named "default.pgo" in the package's
+#  		directory if that file exists, and applies it to the (transitive)
+#  		dependencies of the main package (other packages are not affected).
+#  		Special name "off" turns off PGO. The default is "auto".
 #  	-pkgdir dir
 #  		install and load all packages from dir instead of the usual locations.
 #  		For example, when building with a non-standard configuration,
@@ -1800,6 +1824,11 @@ _go "$*"
 #  		generator, containing the Go toolchain and standard library.
 #  	$DOLLAR
 #  		A dollar sign.
+#  	$PATH
+#  		The $PATH of the parent process, with $GOROOT/bin
+#  		placed at the beginning. This causes generators
+#  		that execute 'go' commands to use the same 'go'
+#  		as the parent 'go generate' command.
 #
 #  Other than variable substitution and quoted-string evaluation, no
 #  special processing such as "globbing" is performed on the command
@@ -1893,6 +1922,14 @@ _go "$*"
 #
 #  	go get example.com/mod@none
 #
+#  To upgrade the minimum required Go version to the latest released Go version:
+#
+#  	go get go@latest
+#
+#  To upgrade the Go toolchain to the latest patch release of the current Go toolchain:
+#
+#  	go get toolchain@patch
+#
 #  See https://golang.org/ref/mod#go-get for details.
 #
 #  In earlier versions of Go, 'go get' was used to build and install packages.
@@ -1926,6 +1963,9 @@ _go "$*"
 #  from a repository.
 #
 #  For more about modules, see https://golang.org/ref/mod.
+#
+#  For more about using 'go get' to update the minimum Go version and
+#  suggested Go toolchain, see https://go.dev/doc/toolchain.
 #
 #  For more about specifying packages, see 'go help packages'.
 #
@@ -1995,7 +2035,8 @@ _go "$*"
 #  Setting GODEBUG=installgoroot=all restores the use of
 #  $GOROOT/pkg/$GOOS_$GOARCH.
 #
-#  For more about the build flags, see 'go help build'.
+#  For more about build flags, see 'go help build'.
+#
 #  For more about specifying packages, see 'go help packages'.
 #
 #  See also: go build, go get, go clean.
@@ -2121,9 +2162,9 @@ _go "$*"
 #          GOROOT        string   // Go root
 #          GOPATH        string   // Go path
 #          CgoEnabled    bool     // whether cgo can be used
-#          UseAllFiles   bool     // use files regardless of +build lines, file names
+#          UseAllFiles   bool     // use files regardless of //go:build lines, file names
 #          Compiler      string   // compiler to assume when computing target paths
-#          BuildTags     []string // build constraints to match in +build lines
+#          BuildTags     []string // build constraints to match in //go:build lines
 #          ToolTags      []string // toolchain-specific build constraints
 #          ReleaseTags   []string // releases the current release is compatible with
 #          InstallSuffix string   // suffix to use in the name of the install dir
@@ -2447,6 +2488,8 @@ _go "$*"
 #
 #  The -go=version flag sets the expected Go language version.
 #
+#  The -toolchain=name flag sets the Go toolchain to use.
+#
 #  The -print flag prints the final go.mod in its text format instead of
 #  writing it back to go.mod.
 #
@@ -2459,12 +2502,13 @@ _go "$*"
 #  	}
 #
 #  	type GoMod struct {
-#  		Module  ModPath
-#  		Go      string
-#  		Require []Require
-#  		Exclude []Module
-#  		Replace []Replace
-#  		Retract []Retract
+#  		Module    ModPath
+#  		Go        string
+#  		Toolchain string
+#  		Require   []Require
+#  		Exclude   []Module
+#  		Replace   []Replace
+#  		Retract   []Retract
 #  	}
 #
 #  	type ModPath struct {
@@ -2774,6 +2818,8 @@ _go "$*"
 #
 #  The -go=version flag sets the expected Go language version.
 #
+#  The -toolchain=name flag sets the Go toolchain to use.
+#
 #  The -print flag prints the final go.work in its text format instead of
 #  writing it back to go.mod.
 #
@@ -2781,9 +2827,10 @@ _go "$*"
 #  writing it back to go.mod. The JSON output corresponds to these Go types:
 #
 #  	type GoWork struct {
-#  		Go      string
-#  		Use     []Use
-#  		Replace []Replace
+#  		Go        string
+#  		Toolchain string
+#  		Use       []Use
+#  		Replace   []Replace
 #  	}
 #
 #  	type Use struct {
@@ -2859,14 +2906,21 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go work use [-r] moddirs
+#  	go work use [-r] [moddirs]
 #
 #  Use provides a command-line interface for adding
 #  directories, optionally recursively, to a go.work file.
 #
 #  A use directive will be added to the go.work file for each argument
-#  directory listed on the command line go.work file, if it exists on disk,
-#  or removed from the go.work file if it does not exist on disk.
+#  directory listed on the command line go.work file, if it exists,
+#  or removed from the go.work file if it does not exist.
+#  Use fails if any remaining use directives refer to modules that
+#  do not exist.
+#
+#  Use updates the go line in go.work to specify a version at least as
+#  new as all the go lines in the used modules, both preexisting ones
+#  and newly added ones. With no arguments, this update is the only
+#  thing that go work use does.
 #
 #  The -r flag searches recursively for modules in the argument
 #  directories, and the use command operates as if each of the directories
@@ -2967,6 +3021,10 @@ _go "$*"
 #  error. (The go command's standard error is reserved for printing
 #  errors building the tests.)
 #
+#  The go command places $GOROOT/bin at the beginning of $PATH
+#  in the test's environment, so that tests that execute
+#  'go' commands use the same 'go' as the parent 'go test' command.
+#
 #  Go test runs in two different modes:
 #
 #  The first, called local directory mode, occurs when go test is
@@ -3021,9 +3079,9 @@ _go "$*"
 #  	    the package list (if present) must appear before this flag.
 #
 #  	-c
-#  	    Compile the test binary to pkg.test but do not run it
+#  	    Compile the test binary to pkg.test in the current directory but do not run it
 #  	    (where pkg is the last element of the package's import path).
-#  	    The file name can be changed with the -o flag.
+#  	    The file name or target directory can be changed with the -o flag.
 #
 #  	-exec xprog
 #  	    Run the test binary using xprog. The behavior is the same as
@@ -3036,6 +3094,8 @@ _go "$*"
 #  	-o file
 #  	    Compile the test binary to the named file.
 #  	    The test still runs (unless -c or -i is specified).
+#  	    If file ends in a slash or names an existing directory,
+#  	    the test is written to pkg.test in that directory.
 #
 #  The test binary also accepts flags that control execution of the test; these
 #  flags are also accessible by 'go test'. See 'go help testflag' for details.
@@ -3094,7 +3154,7 @@ _go "$*"
 #
 #  Usage:
 #
-#  	go vet [-C dir] [-n] [-x] [-vettool prog] [build flags] [vet flags] [packages]
+#  	go vet [build flags] [-vettool prog] [vet flags] [packages]
 #
 #  Vet runs the Go vet command on the packages named by the import paths.
 #
@@ -3102,10 +3162,6 @@ _go "$*"
 #  For more about specifying packages, see 'go help packages'.
 #  For a list of checkers and their flags, see 'go tool vet help'.
 #  For details of a specific checker such as 'printf', see 'go tool vet help printf'.
-#
-#  The -C flag changes to dir before running the 'go vet' command.
-#  The -n flag prints commands that would be executed.
-#  The -x flag prints commands as they are executed.
 #
 #  The -vettool=prog flag selects a different analysis tool with alternative
 #  or additional checks.
@@ -3115,7 +3171,7 @@ _go "$*"
 #    go vet -vettool=$(which shadow)
 #
 #  The build flags supported by go vet are those that control package resolution
-#  and execution, such as -n, -x, -v, -tags, and -toolexec.
+#  and execution, such as -C, -n, -x, -v, -tags, and -toolexec.
 #  For more about these flags, see 'go help build'.
 #
 #  See also: go fmt, go fix.
@@ -3367,9 +3423,9 @@ _go "$*"
 #  Environment variables
 #
 #  The go command and the tools it invokes consult environment variables
-#  for configuration. If an environment variable is unset, the go command
-#  uses a sensible default setting. To see the effective setting of the
-#  variable <NAME>, run 'go env <NAME>'. To change the default setting,
+#  for configuration. If an environment variable is unset or empty, the go
+#  command uses a sensible default setting. To see the effective setting of
+#  the variable <NAME>, run 'go env <NAME>'. To change the default setting,
 #  run 'go env -w <NAME>=<VALUE>'. Defaults changed using 'go env -w'
 #  are recorded in a Go environment configuration file stored in the
 #  per-user configuration directory, as reported by os.UserConfigDir.
@@ -3397,7 +3453,7 @@ _go "$*"
 #  	GOMODCACHE
 #  		The directory where the go command will store downloaded modules.
 #  	GODEBUG
-#  		Enable various debugging facilities. See 'go doc runtime'
+#  		Enable various debugging facilities. See https://go.dev/doc/godebug
 #  		for details.
 #  	GOENV
 #  		The location of the Go environment configuration file.
@@ -3421,7 +3477,7 @@ _go "$*"
 #  		The operating system for which to compile code.
 #  		Examples are linux, darwin, windows, netbsd.
 #  	GOPATH
-#  		For more details see: 'go help gopath'.
+#  		Controls where various files are stored. See: 'go help gopath'.
 #  	GOPROXY
 #  		URL of Go module proxy. See https://golang.org/ref/mod#environment-variables
 #  		and https://golang.org/ref/mod#module-proxy for details.
@@ -3435,6 +3491,8 @@ _go "$*"
 #  	GOSUMDB
 #  		The name of checksum database to use and optionally its public key and
 #  		URL. See https://golang.org/ref/mod#authenticating.
+#  	GOTOOLCHAIN
+#  		Controls which Go toolchain is used. See https://go.dev/doc/toolchain.
 #  	GOTMPDIR
 #  		The directory where the go command will write
 #  		temporary source files, packages, and binaries.
@@ -3841,6 +3899,8 @@ _go "$*"
 #
 #  Get never checks out or updates code stored in vendor directories.
 #
+#  For more about build flags, see 'go help build'.
+#
 #  For more about specifying packages, see 'go help packages'.
 #
 #  For more about how 'go get' finds source code to
@@ -4100,7 +4160,7 @@ _go "$*"
 #
 #  Many commands apply to a set of packages:
 #
-#  	go action [packages]
+#  	go <action> [packages]
 #
 #  Usually, [packages] is a list of import paths.
 #
@@ -4773,7 +4833,7 @@ _go "$*"
 #   -buildid id
 #     	record id as the build id in the export metadata
 #   -c int
-#     	concurrency during compilation (1 means no concurrency) (default 20)
+#     	concurrency during compilation (1 means no concurrency)
 #   -clobberdead
 #     	clobber dead stack slots (for debugging)
 #   -clobberdeadreg
@@ -4797,6 +4857,8 @@ _go "$*"
 #   -e	no limit on number of errors reported
 #   -embedcfg file
 #     	read go:embed configuration from file
+#   -errorurl
+#     	print explanatory URL with error message if applicable
 #   -gendwarfinl int
 #     	generate DWARF inline info records (default 2)
 #   -goversion string
@@ -4859,8 +4921,6 @@ _go "$*"
 #   -w	debug type checking
 #   -wb
 #     	enable write barrier (default true)
-#   -wrapglobalmapinit
-#     	wrap global map large inits in their own functions (to permit deadcode) (default true)
 #
 # ------------------------------------------------------------------------------
 #
