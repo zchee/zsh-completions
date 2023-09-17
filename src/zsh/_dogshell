@@ -1,0 +1,1503 @@
+#compdef dogshell dog
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2023, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/DataDog/datadogpy
+#
+# -----------------------------------------------------------------------------
+
+function _dogshell() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a _commands
+  _commands=(
+    "comment:Post, update, and delete comments."
+    "search:search datadog"
+    "metric:Post metrics."
+    "tag:View and modify host tags."
+    "event:Post events, get event details, and view the event stream."
+    "monitor:Create, edit, and delete monitors"
+    "timeboard:Create, edit, and delete timeboards"
+    "dashboard:Create, edit, and delete dashboards"
+    "screenboard:Create, edit, and delete screenboards."
+    "dashboard_list:Create, edit, and delete dashboard lists"
+    "host:Mute, unmute hosts"
+    "downtime:Create, edit, and delete downtimes"
+    "service_check:Perform service checks"
+    "service_level_objective:Create, edit, and delete service level objectives"
+  )
+
+  _arguments -C \
+    "(: -)"{-h,--help}"[show this help message and exit]" \
+    "(: -)--config[location of your dogrc file]:config:_files" \
+    "(: -)--api-key[your API key]:API KEY" \
+    "(: -)--application-key[your Application key]:APP_KEY" \
+    "(: -)--pretty[pretty-print output]" \
+    "(: -)--raw[raw JSON as returned by the HTTP service]" \
+    "(: -)--timeout[time to wait in seconds before timing out an API call]:duration" \
+    "(: -)"{-v,--version}"[Dog API version]" \
+    "(: -)--api_host[Datadog site to send data]" \
+    \
+    "1: :{_describe '$words[0] commands' _commands}" \
+    "*:: :->args" \
+    && ret=0
+
+  local global_flags flags="-h,--help"
+  global_flags=({-h,--help}"[show this help message and exit]")
+
+  case $state in
+    args)
+      case $words[1] in
+        (comment)
+          local -a _comment_commands
+          _comment_commands=(
+            "post:Post comments."
+            "update:Update existing comments."
+            "reply:Reply to existing comments."
+            "show:Show comment details."
+          )
+          _arguments \
+            "1: :{_describe '$words[1] commands' _comment_commands}" \
+            && ret=0
+
+            case $words[2] in
+              (post)
+                _arguments \
+                  $global_flags \
+                  "($flags)2:handle\: handle to post as" \
+                  "($flags)*:comment\: comment message to post. if unset, reads from stdin." \
+                  && ret=0
+                ;;
+
+              (update|reply)
+                _arguments \
+                  $global_flags \
+                  "($flags)2:comment_id\: comment to update (by id)" \
+                  "($flags)3:handle\: handle to post as" \
+                  "($flags)*:comment\: comment message to post. if unset, reads from stdin." \
+                  && ret=0
+                ;;
+
+              (show)
+                _arguments \
+                  $global_flags \
+                  "($flags)2:comment_id\: comment to show" \
+                  && ret=0
+                ;;
+            esac
+          ;;
+
+        (search)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (metric)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (tag)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (event)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (monitor)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (timeboard)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (dashboard)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (screenboard)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (dashboard_list)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (host)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (downtime)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (service_check)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        (service_level_objective)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_dogshell "$*"
+
+# -----------------------------------------------------------------------------
+#
+# usage: dog [-h] [--config CONFIG] [--api-key API_KEY]
+#            [--application-key APP_KEY] [--pretty] [--raw] [--timeout TIMEOUT]
+#            [-v] [--api_host API_HOST]
+#            {comment,search,metric,tag,event,monitor,timeboard,dashboard,screenboard,dashboard_list,host,downtime,service_check,service_level_objective}
+#            ...
+#
+# Interact with the Datadog API
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --config CONFIG       location of your dogrc file (default ~/.dogrc)
+#                         (default: /Users/zchee/.dogrc)
+#   --api-key API_KEY     your API key, from
+#                         https://app.datadoghq.com/account/settings#api. You
+#                         can also set the environment variables DATADOG_API_KEY
+#                         or DD_API_KEY
+#   --application-key APP_KEY
+#                         your Application key, from
+#                         https://app.datadoghq.com/account/settings#api. You
+#                         can also set the environment variables DATADOG_APP_KEY
+#                         or DD_APP_KEY (default: None)
+#   --pretty              pretty-print output (suitable for human consumption,
+#                         less useful for scripting) (default: None)
+#   --raw                 raw JSON as returned by the HTTP service (default:
+#                         None)
+#   --timeout TIMEOUT     time to wait in seconds before timing out an API call
+#                         (default 10) (default: 10)
+#   -v, --version         Dog API version
+#   --api_host API_HOST   Datadog site to send data, us (datadoghq.com), eu
+#                         (datadoghq.eu), us3 (us3.datadoghq.com), us5
+#                         (us5.datadoghq.com), ap1 (ap1.datadoghq.com), gov
+#                         (ddog-gov.com), or custom url. default: us (default:
+#                         None)
+#
+# Modes:
+#   {comment,search,metric,tag,event,monitor,timeboard,dashboard,screenboard,dashboard_list,host,downtime,service_check,service_level_objective}
+#     comment             Post, update, and delete comments.
+#     search              search datadog
+#     metric              Post metrics.
+#     tag                 View and modify host tags.
+#     event               Post events, get event details, and view the event
+#                         stream.
+#     monitor             Create, edit, and delete monitors
+#     timeboard           Create, edit, and delete timeboards
+#     dashboard           Create, edit, and delete dashboards
+#     screenboard         Create, edit, and delete screenboards.
+#     dashboard_list      Create, edit, and delete dashboard lists
+#     host                Mute, unmute hosts
+#     downtime            Create, edit, and delete downtimes
+#     service_check       Perform service checks
+#     service_level_objective
+#                         Create, edit, and delete service level objectives
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog comment [-h] {post,update,reply,show} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#
+# Verbs:
+#   {post,update,reply,show}
+#     post                Post comments.
+#     update              Update existing comments.
+#     reply               Reply to existing comments.
+#     show                Show comment details.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog comment post [-h] handle [comment]
+#
+# positional arguments:
+#   handle      handle to post as.
+#   comment     comment message to post. if unset, reads from stdin.
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog comment update [-h] comment_id handle [comment]
+#
+# positional arguments:
+#   comment_id  comment to update (by id)
+#   handle      handle to post as.
+#   comment     comment message to post. if unset, reads from stdin.
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog comment reply [-h] comment_id handle [comment]
+#
+# positional arguments:
+#   comment_id  comment to reply to (by id)
+#   handle      handle to post as.
+#   comment     comment message to post. if unset, reads from stdin.
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog comment show [-h] comment_id
+#
+# positional arguments:
+#   comment_id  comment to show
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog search [-h] {query} ...
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# Verbs:
+#   {query}
+#     query     Search datadog.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog search query [-h] query
+#
+# positional arguments:
+#   query       optionally faceted search query
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog metric [-h] {post} ...
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# Verbs:
+#   {post}
+#     post      Post metrics
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog metric post [-h] [--host HOST] [--no_host] [--device DEVICE] [--tags TAGS] [--localhostname] [--type TYPE] name value
+#
+# positional arguments:
+#   name             metric name
+#   value            metric value (integer or decimal value)
+#
+# options:
+#   -h, --help       show this help message and exit
+#   --host HOST      scopes your metric to a specific host (default to the local host name)
+#   --no_host        no host is associated with the metric (overrides --host))
+#   --device DEVICE  scopes your metric to a specific device
+#   --tags TAGS      comma-separated list of tags
+#   --localhostname  deprecated, used to force `--host` to the local hostname (now default when no `--host` is specified)
+#   --type TYPE      type of the metric - gauge(32bit float) or counter(64bit integer)
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog tag [-h] {add,replace,show,detach} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#
+# Verbs:
+#   {add,replace,show,detach}
+#     add                 Add a host to one or more tags.
+#     replace             Replace all tags with one or more new tags.
+#     show                Show host tags.
+#     detach              Remove a host from all tags.
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog tag add [-h] host tag [tag ...]
+#
+# Hosts can be specified by name or id.
+#
+# positional arguments:
+#   host        host to add
+#   tag         tag to add host to (one or more, space separated)
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog tag replace [-h] host tag [tag ...]
+#
+# Hosts can be specified by name or id.
+#
+# positional arguments:
+#   host        host to modify
+#   tag         list of tags to add host to
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog tag show [-h] host
+#
+# Hosts can be specified by name or id.
+#
+# positional arguments:
+#   host        host to show (or 'all' to show all tags)
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog tag detach [-h] host
+#
+# Hosts can be specified by name or id.
+#
+# positional arguments:
+#   host        host to detach
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog event [-h] {post,show,stream} ...
+#
+# options:
+#   -h, --help          show this help message and exit
+#
+# Verbs:
+#   {post,show,stream}
+#     post              Post events.
+#     show              Show event details.
+#     stream            Retrieve events from the Event Stream
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog event post [-h] [--date_happened DATE_HAPPENED] [--handle HANDLE] [--priority PRIORITY] [--related_event_id RELATED_EVENT_ID] [--tags TAGS] [--host HOST] [--no_host] [--device DEVICE] [--aggregation_key AGGREGATION_KEY] [--type TYPE] [--alert_type ALERT_TYPE] title [message]
+#
+# positional arguments:
+#   title                 event title
+#   message               event message body. if unset, reads from stdin.
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --date_happened DATE_HAPPENED
+#                         POSIX timestamp when the event occurred. if unset defaults to the current time.
+#   --handle HANDLE       user to post as. if unset, submits as the generic API user.
+#   --priority PRIORITY   "normal" or "low". defaults to "normal"
+#   --related_event_id RELATED_EVENT_ID
+#                         event to post as a child of. if unset, posts a top-level event
+#   --tags TAGS           comma separated list of tags
+#   --host HOST           related host (default to the local host name)
+#   --no_host             no host is associated with the event (overrides --host))
+#   --device DEVICE       related device (e.g. eth0, /dev/sda1)
+#   --aggregation_key AGGREGATION_KEY
+#                         key to aggregate the event with
+#   --type TYPE           type of event, e.g. nagios, jenkins, etc.
+#   --alert_type ALERT_TYPE
+#                         "error", "warning", "info" or "success". defaults to "info"
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog event show [-h] event_id
+#
+# positional arguments:
+#   event_id    event to show
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog event stream [-h] [--priority PRIORITY] [--sources SOURCES] [--tags TAGS] start [end]
+#
+# Stream start and end times can be specified as either a POSIX timestamp (e.g. the output of `date +%s`) or as a period of time in the past (e.g. '5m', '6h', '3d').
+#
+# positional arguments:
+#   start                start date for the stream request
+#   end                  end date for the stream request (defaults to 'now')
+#
+# options:
+#   -h, --help           show this help message and exit
+#   --priority PRIORITY  filter by priority. 'normal' or 'low'. defaults to 'normal'
+#   --sources SOURCES    comma separated list of sources to filter by
+#   --tags TAGS          comma separated list of tags to filter by
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor [-h] [--string_ids] {post,fpost,update,fupdate,show,show_all,delete,mute_all,unmute_all,mute,unmute,can_delete,validate} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --string_ids          Represent monitor IDs as strings instead of ints in JSON
+#
+# Verbs:
+#   {post,fpost,update,fupdate,show,show_all,delete,mute_all,unmute_all,mute,unmute,can_delete,validate}
+#     post                Create a monitor
+#     fpost               Create a monitor from file
+#     update              Update existing monitor
+#     fupdate             Update existing monitor from file
+#     show                Show a monitor definition
+#     show_all            Show a list of all monitors
+#     delete              Delete a monitor
+#     mute_all            Globally mute monitors (downtime over *)
+#     unmute_all          Globally unmute monitors (cancel downtime over *)
+#     mute                Mute a monitor
+#     unmute              Unmute a monitor
+#     can_delete          Check if you can delete some monitors
+#     validate            Validates if a monitor definition is correct
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor post [-h] [--name NAME] [--message MESSAGE] [--tags TAGS] [--priority PRIORITY] [--options OPTIONS] type query
+#
+# positional arguments:
+#   type                 type of the monitor, e.g.'metric alert' 'service check'
+#   query                query to notify on with syntax varying depending on what type of monitor you are creating
+#
+# options:
+#   -h, --help           show this help message and exit
+#   --name NAME          name of the alert
+#   --message MESSAGE    message to include with notifications for this monitor
+#   --tags TAGS          comma-separated list of tags
+#   --priority PRIORITY  Integer from 1 (high) to 5 (low) indicating alert severity.
+#   --options OPTIONS    json options for the monitor
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor fpost [-h] file
+#
+# positional arguments:
+#   file        json file holding all details
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor update [-h] [--type TYPE_OPT] [--query QUERY_OPT] [--name NAME] [--tags TAGS] [--message MESSAGE] [--priority PRIORITY] [--options OPTIONS] monitor_id [type] [query]
+#
+# positional arguments:
+#   monitor_id           monitor to replace with the new definition
+#   type                 [Deprecated] optional argument preferredtype of the monitor, e.g. 'metric alert' 'service check'
+#   query                [Deprecated] optional argument preferredquery to notify on with syntax varying depending on monitor type
+#
+# options:
+#   -h, --help           show this help message and exit
+#   --type TYPE_OPT      type of the monitor, e.g. 'metric alert' 'service check'
+#   --query QUERY_OPT    query to notify on with syntax varying depending on monitor type
+#   --name NAME          name of the alert
+#   --tags TAGS          comma-separated list of tags
+#   --message MESSAGE    message to include with notifications for this monitor
+#   --priority PRIORITY  Integer from 1 (high) to 5 (low) indicating alert severity.
+#   --options OPTIONS    json options for the monitor
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor fupdate [-h] file
+#
+# positional arguments:
+#   file        json file holding all details
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor show [-h] monitor_id
+#
+# positional arguments:
+#   monitor_id  monitor to show
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor show_all [-h] [--group_states GROUP_STATES] [--name NAME] [--tags TAGS] [--monitor_tags MONITOR_TAGS]
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --group_states GROUP_STATES
+#                         comma separated list of group states to filter by(choose one or more from 'all', 'alert', 'warn', or 'no data')
+#   --name NAME           string to filter monitors by name
+#   --tags TAGS           comma separated list indicating what tags, if any, should be used to filter the list of monitors by scope (e.g. 'host:host0')
+#   --monitor_tags MONITOR_TAGS
+#                         comma separated list indicating what service and/or custom tags, if any, should be used to filter the list of monitors
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor delete [-h] monitor_id
+#
+# positional arguments:
+#   monitor_id  monitor to delete
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor mute_all [-h]
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor unmute_all [-h]
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor mute [-h] [--scope SCOPE] [--end END] monitor_id
+#
+# positional arguments:
+#   monitor_id     monitor to mute
+#
+# options:
+#   -h, --help     show this help message and exit
+#   --scope SCOPE  scope to apply the mute to, e.g. role:db (optional)
+#   --end END      POSIX timestamp for when the mute should end (optional)
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor unmute [-h] [--scope SCOPE] [--all_scopes] monitor_id
+#
+# positional arguments:
+#   monitor_id     monitor to unmute
+#
+# options:
+#   -h, --help     show this help message and exit
+#   --scope SCOPE  scope to unmute (must be muted), e.g. role:db
+#   --all_scopes   clear muting across all scopes
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor can_delete [-h] monitor_ids
+#
+# positional arguments:
+#   monitor_ids  monitors to check if they can be deleted
+#
+# options:
+#   -h, --help   show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard [-h] [--string_ids] {post,update,show,show_all,pull,pull_all,push,new_file,web_view,delete} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --string_ids          Represent timeboard IDs as strings instead of ints in JSON
+#
+# Verbs:
+#   {post,update,show,show_all,pull,pull_all,push,new_file,web_view,delete}
+#     post                Create timeboards
+#     update              Update existing timeboards
+#     show                Show a timeboard definition
+#     show_all            Show a list of all timeboards
+#     pull                Pull a timeboard on the server into a local file
+#     pull_all            Pull all timeboards into files in a directory
+#     push                Push updates to timeboards from local files to the server
+#     new_file            Create a new timeboard and put its contents in a file
+#     web_view            View the timeboard in a web browser
+#     delete              Delete timeboards
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard post [-h] [--template_variables TEMPLATE_VARIABLES] title description [graphs]
+#
+# positional arguments:
+#   title                 title for the new timeboard
+#   description           short description of the timeboard
+#   graphs                graph definitions as a JSON string. if unset, reads from stdin.
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --template_variables TEMPLATE_VARIABLES
+#                         a json list of template variable dicts, e.g. [{'name': 'host', 'prefix': 'host', 'default': 'host:my-host'}]'
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard update [-h] [--template_variables TEMPLATE_VARIABLES] timeboard_id title description [graphs]
+#
+# positional arguments:
+#   timeboard_id          timeboard to replace with the new definition
+#   title                 new title for the timeboard
+#   description           short description of the timeboard
+#   graphs                graph definitions as a JSON string. if unset, reads from stdin
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --template_variables TEMPLATE_VARIABLES
+#                         a json list of template variable dicts, e.g. [{'name': 'host', 'prefix': 'host', 'default': 'host:my-host'}]'
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard show [-h] timeboard_id
+#
+# positional arguments:
+#   timeboard_id  timeboard to show
+#
+# options:
+#   -h, --help    show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard show_all [-h]
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard pull [-h] timeboard_id filename
+#
+# positional arguments:
+#   timeboard_id  ID of timeboard to pull
+#   filename      file to pull timeboard into
+#
+# options:
+#   -h, --help    show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard pull_all [-h] pull_dir
+#
+# positional arguments:
+#   pull_dir    directory to pull timeboards into
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard push [-h] [--append_auto_text] file [file ...]
+#
+# positional arguments:
+#   file                timeboard files to push to the server
+#
+# options:
+#   -h, --help          show this help message and exit
+#   --append_auto_text  When pushing to the server, appends filename and timestamp to the end of the timeboard description
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard new_file [-h] filename [graphs]
+#
+# positional arguments:
+#   filename    name of file to create with empty timeboard
+#   graphs      graph definitions as a JSON string. if unset, reads from stdin.
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard web_view [-h] file
+#
+# positional arguments:
+#   file        timeboard file
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog timeboard delete [-h] timeboard_id
+#
+# positional arguments:
+#   timeboard_id  timeboard to delete
+#
+# options:
+#   -h, --help    show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog monitor validate [-h] [--name NAME] [--message MESSAGE] [--tags TAGS] [--options OPTIONS] type query
+#
+# positional arguments:
+#   type               type of the monitor, e.g.'metric alert' 'service check'
+#   query              the monitor query
+#
+# options:
+#   -h, --help         show this help message and exit
+#   --name NAME        name of the alert
+#   --message MESSAGE  message to include with notifications for this monitor
+#   --tags TAGS        comma-separated list of tags
+#   --options OPTIONS  json options for the monitor
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard [-h] {post,update,show,delete} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#
+# Verbs:
+#   {post,update,show,delete}
+#     post                Create dashboards
+#     update              Update existing dashboards
+#     show                Show a dashboard definition
+#     delete              Delete dashboards
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard post [-h] [--description DESCRIPTION] [--read_only] [--notify_list NOTIFY_LIST] [--template_variables TEMPLATE_VARIABLES] title [widgets] {ordered,free}
+#
+# positional arguments:
+#   title                 title for the new dashboard
+#   widgets               widget definitions as a JSON string. If unset, reads from stdin.
+#   {ordered,free}        Layout type of the dashboard.
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --description DESCRIPTION
+#                         Short description of the dashboard
+#   --read_only           Whether this dashboard is read-only. If True, only the author and admins can make changes to it.
+#   --notify_list NOTIFY_LIST
+#                         A json list of user handles, e.g. '["user1@domain.com", "user2@domain.com"]'
+#   --template_variables TEMPLATE_VARIABLES
+#                         A json list of template variable dicts, e.g. '[{"name": "host", "prefix": "host", "default": "my-host"}]'
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard update [-h] [--description DESCRIPTION] [--read_only] [--notify_list NOTIFY_LIST] [--template_variables TEMPLATE_VARIABLES] dashboard_id title [widgets] {ordered,free}
+#
+# positional arguments:
+#   dashboard_id          Dashboard to replace with the new definition
+#   title                 New title for the dashboard
+#   widgets               Widget definitions as a JSON string. If unset, reads from stdin
+#   {ordered,free}        Layout type of the dashboard.
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --description DESCRIPTION
+#                         Short description of the dashboard
+#   --read_only           Whether this dashboard is read-only. If True, only the author and admins can make changes to it.
+#   --notify_list NOTIFY_LIST
+#                         A json list of user handles, e.g. '["user1@domain.com", "user2@domain.com"]'
+#   --template_variables TEMPLATE_VARIABLES
+#                         A json list of template variable dicts, e.g. '[{"name": "host", "prefix": "host", "default": "my-host"}]'
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard show [-h] dashboard_id
+#
+# positional arguments:
+#   dashboard_id  Dashboard to show
+#
+# options:
+#   -h, --help    show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard delete [-h] dashboard_id
+#
+# positional arguments:
+#   dashboard_id  Dashboard to delete
+#
+# options:
+#   -h, --help    show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard [-h] [--string_ids] {post,update,show,delete,share,revoke,pull,push,new_file} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --string_ids          Represent screenboard IDs as strings instead of ints in JSON
+#
+# Verbs:
+#   {post,update,show,delete,share,revoke,pull,push,new_file}
+#     post                Create screenboards.
+#     update              Update existing screenboards.
+#     show                Show a screenboard definition.
+#     delete              Delete a screenboard.
+#     share               Share an existing screenboard's with a public URL.
+#     revoke              Revoke an existing screenboard's with a public URL.
+#     pull                Pull a screenboard on the server into a local file
+#     push                Push updates to screenboards from local files to the server
+#     new_file            Create a new screenboard and put its contents in a file
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard post [-h] [--template_variables TEMPLATE_VARIABLES] [--width WIDTH] [--height HEIGHT] title description [graphs]
+#
+# positional arguments:
+#   title                 title for the new screenboard
+#   description           short description of the screenboard
+#   graphs                graph definitions as a JSON string. if unset, reads from stdin.
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --template_variables TEMPLATE_VARIABLES
+#                         a json list of template variable dicts, e.g. [{'name': 'host', 'prefix': 'host', 'default': 'host:my-host'}]
+#   --width WIDTH         screenboard width in pixels
+#   --height HEIGHT       screenboard height in pixels
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard update [-h] [--template_variables TEMPLATE_VARIABLES] [--width WIDTH] [--height HEIGHT] screenboard_id title description [graphs]
+#
+# positional arguments:
+#   screenboard_id        screenboard to replace with the new definition
+#   title                 title for the new screenboard
+#   description           short description of the screenboard
+#   graphs                graph definitions as a JSON string. if unset, reads from stdin.
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --template_variables TEMPLATE_VARIABLES
+#                         a json list of template variable dicts, e.g. [{'name': 'host', 'prefix': 'host', 'default': 'host:my-host'}]
+#   --width WIDTH         screenboard width in pixels
+#   --height HEIGHT       screenboard height in pixels
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard show [-h] screenboard_id
+#
+# positional arguments:
+#   screenboard_id  screenboard to show
+#
+# options:
+#   -h, --help      show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard delete [-h] screenboard_id
+#
+# positional arguments:
+#   screenboard_id  screenboard to delete
+#
+# options:
+#   -h, --help      show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard share [-h] screenboard_id
+#
+# positional arguments:
+#   screenboard_id  screenboard to share
+#
+# options:
+#   -h, --help      show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard revoke [-h] screenboard_id
+#
+# positional arguments:
+#   screenboard_id  screenboard to revoke
+#
+# options:
+#   -h, --help      show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard pull [-h] screenboard_id filename
+#
+# positional arguments:
+#   screenboard_id  ID of screenboard to pull
+#   filename        file to pull screenboard into
+#
+# options:
+#   -h, --help      show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard push [-h] [--append_auto_text] file [file ...]
+#
+# positional arguments:
+#   file                screenboard files to push to the server
+#
+# options:
+#   -h, --help          show this help message and exit
+#   --append_auto_text  When pushing to the server, appends filename and timestamp to the end of the screenboard description
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog screenboard new_file [-h] filename [graphs]
+#
+# positional arguments:
+#   filename    name of file to create with empty screenboard
+#   graphs      graph definitions as a JSON string. if unset, reads from stdin.
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list [-h] {post,update,show,show_all,delete,show_dashboards,show_dashboards_v2,add_dashboards,add_dashboards_v2,update_dashboards,update_dashboards_v2,delete_dashboards,delete_dashboards_v2} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#
+# Verbs:
+#   {post,update,show,show_all,delete,show_dashboards,show_dashboards_v2,add_dashboards,add_dashboards_v2,update_dashboards,update_dashboards_v2,delete_dashboards,delete_dashboards_v2}
+#     post                Create a dashboard list
+#     update              Update existing dashboard list
+#     show                Show a dashboard list definition
+#     show_all            Show a list of all dashboard lists
+#     delete              Delete existing dashboard list
+#     show_dashboards     Show a list of all dashboards for an existing dashboard list
+#     show_dashboards_v2  Show a list of all dashboards for an existing dashboard list
+#     add_dashboards      Add dashboards to an existing dashboard list
+#     add_dashboards_v2   Add dashboards to an existing dashboard list
+#     update_dashboards   Update dashboards of an existing dashboard list
+#     update_dashboards_v2
+#                         Update dashboards of an existing dashboard list
+#     delete_dashboards   Delete dashboards from an existing dashboard list
+#     delete_dashboards_v2
+#                         Delete dashboards from an existing dashboard list
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list post [-h] name
+#
+# positional arguments:
+#   name        Name for the dashboard list
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list update [-h] dashboard_list_id name
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to replace with the new definition
+#   name               Name for the dashboard list
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list show [-h] dashboard_list_id
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to show
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list show_all [-h]
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list delete [-h] dashboard_list_id
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to delete
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list show_dashboards [-h] dashboard_list_id
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to show dashboards from
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list show_dashboards_v2 [-h] dashboard_list_id
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to show dashboards from
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list add_dashboards [-h] dashboard_list_id dashboards
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to add dashboards to
+#   dashboards         A JSON list of dashboard dicts, e.g. [{"type": "custom_timeboard", "id": 1234}, {"type": "custom_screenboard", "id": 123}]
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list add_dashboards_v2 [-h] dashboard_list_id dashboards
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to add dashboards to
+#   dashboards         A JSON list of dashboard dicts, e.g. [{"type": "custom_timeboard", "id": "ewc-a4f-8ps"}, {"type": "custom_screenboard", "id": "kwj-3t3-d3m"}]
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list update_dashboards [-h] dashboard_list_id dashboards
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to update with dashboards
+#   dashboards         A JSON list of dashboard dicts, e.g. [{"type": "custom_timeboard", "id": 1234}, {"type": "custom_screenboard", "id": 123}]
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list update_dashboards_v2 [-h] dashboard_list_id dashboards
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to update with dashboards
+#   dashboards         A JSON list of dashboard dicts, e.g. [{"type": "custom_timeboard", "id": "ewc-a4f-8ps"}, {"type": "custom_screenboard", "id": "kwj-3t3-d3m"}]
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list delete_dashboards [-h] dashboard_list_id dashboards
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to delete dashboards from
+#   dashboards         A JSON list of dashboard dicts, e.g. [{"type": "custom_timeboard", "id": 1234}, {"type": "custom_screenboard", "id": 123}]
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog dashboard_list delete_dashboards_v2 [-h] dashboard_list_id dashboards
+#
+# positional arguments:
+#   dashboard_list_id  Dashboard list to delete dashboards from
+#   dashboards         A JSON list of dashboard dicts, e.g. [{"type": "custom_timeboard", "id": "ewc-a4f-8ps"}, {"type": "custom_screenboard", "id": "kwj-3t3-d3m"}]
+#
+# options:
+#   -h, --help         show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog host [-h] {mute,unmute} ...
+#
+# options:
+#   -h, --help     show this help message and exit
+#
+# Verbs:
+#   {mute,unmute}
+#     mute         Mute a host
+#     unmute       Unmute a host
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog host mute [-h] [--end END] [--message MESSAGE] [--override] host_name
+#
+# positional arguments:
+#   host_name          host to mute
+#
+# options:
+#   -h, --help         show this help message and exit
+#   --end END          POSIX timestamp, if omitted, host will be muted until explicitly unmuted
+#   --message MESSAGE  string to associate with the muting of this host
+#   --override         true/false, if true and the host is already muted, will overwrite existing end on the host
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog host unmute [-h] host_name
+#
+# positional arguments:
+#   host_name   host to mute
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime [-h] [--string_ids] {post,update,show,show_all,delete,cancel_by_scope} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --string_ids          Represent downtime IDs as strings instead of ints in JSON
+#
+# Verbs:
+#   {post,update,show,show_all,delete,cancel_by_scope}
+#     post                Create a downtime
+#     update              Update existing downtime
+#     show                Show a downtime definition
+#     show_all            Show a list of all downtimes
+#     delete              Delete a downtime
+#     cancel_by_scope     Cancel all downtimes with a given scope
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime post [-h] [--end END] [--message MESSAGE] scope start
+#
+# positional arguments:
+#   scope              scope to apply downtime to
+#   start              POSIX timestamp to start the downtime
+#
+# options:
+#   -h, --help         show this help message and exit
+#   --end END          POSIX timestamp to end the downtime
+#   --message MESSAGE  message to include with notifications for this downtime
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime update [-h] [--scope SCOPE] [--start START] [--end END] [--message MESSAGE] downtime_id
+#
+# positional arguments:
+#   downtime_id        downtime to replace with the new definition
+#
+# options:
+#   -h, --help         show this help message and exit
+#   --scope SCOPE      scope to apply downtime to
+#   --start START      POSIX timestamp to start the downtime
+#   --end END          POSIX timestamp to end the downtime
+#   --message MESSAGE  message to include with notifications for this downtime
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime show [-h] downtime_id
+#
+# positional arguments:
+#   downtime_id  downtime to show
+#
+# options:
+#   -h, --help   show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime show_all [-h] [--current_only CURRENT_ONLY]
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --current_only CURRENT_ONLY
+#                         only return downtimes that are active when the request is made
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime delete [-h] downtime_id
+#
+# positional arguments:
+#   downtime_id  downtime to delete
+#
+# options:
+#   -h, --help   show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog downtime cancel_by_scope [-h] scope
+#
+# positional arguments:
+#   scope       The scope of the downtimes to cancel
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_check [-h] {check} ...
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# Verbs:
+#   {check}
+#     check     text for the message
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_check check [-h] [--timestamp TIMESTAMP] [--message MESSAGE] [--tags TAGS] check host_name status
+#
+# positional arguments:
+#   check                 text for the message
+#   host_name             name of the host submitting the check
+#   status                integer for the status of the check. i.e: '0': OK, '1': WARNING, '2': CRITICAL, '3': UNKNOWN
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --timestamp TIMESTAMP
+#                         POSIX timestamp of the event
+#   --message MESSAGE     description of why this status occurred
+#   --tags TAGS           comma separated list of tags
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective [-h] {create,fcreate,update,fupdate,show,show_all,delete,delete_many,delete_many_timeframe,can_delete,history} ...
+#
+# options:
+#   -h, --help            show this help message and exit
+#
+# Verbs:
+#   {create,fcreate,update,fupdate,show,show_all,delete,delete_many,delete_many_timeframe,can_delete,history}
+#     create              Create a SLO
+#     fcreate             Create a SLO from file
+#     update              Update existing SLO
+#     fupdate             Update existing SLO from file
+#     show                Show a SLO definition
+#     show_all            Show a list of all SLOs
+#     delete              Delete a SLO
+#     delete_many         Delete a SLO
+#     delete_many_timeframe
+#                         Delete a SLO timeframe
+#     can_delete          Check if can delete SLOs
+#     history             Get the SLO history
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective create [-h] [--type {metric,monitor}] [--name NAME] [--description DESCRIPTION] [--tags TAGS] [--thresholds THRESHOLDS] [--numerator NUMERATOR] [--denominator DENOMINATOR] [--monitor_ids MONITOR_IDS] [--monitor_search MONITOR_SEARCH] [--groups GROUPS]
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --type {metric,monitor}
+#                         type of the SLO, e.g.
+#   --name NAME           name of the SLO
+#   --description DESCRIPTION
+#                         description of the SLO
+#   --tags TAGS           comma-separated list of tags
+#   --thresholds THRESHOLDS
+#                         comma separated list of <timeframe>:<target>[:<warning>[:<target_display>[:<warning_display>]]
+#   --numerator NUMERATOR
+#                         numerator metric query (sum of good events)
+#   --denominator DENOMINATOR
+#                         denominator metric query (sum of total events)
+#   --monitor_ids MONITOR_IDS
+#                         explicit monitor_ids to use (CSV)
+#   --monitor_search MONITOR_SEARCH
+#                         monitor search terms to use
+#   --groups GROUPS       for a single monitor you can specify the specific groups as a pipe (|) delimited string
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective fcreate [-h] file
+#
+# positional arguments:
+#   file        json file holding all details
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective update [-h] [--type {metric,monitor}] [--name NAME] [--description DESCRIPTION] [--thresholds THRESHOLDS] [--tags TAGS] [--numerator NUMERATOR] [--denominator DENOMINATOR] [--monitor_ids MONITOR_IDS] [--monitor_search MONITOR_SEARCH] [--groups GROUPS] slo_id
+#
+# positional arguments:
+#   slo_id                SLO to replace with the new definition
+#
+# options:
+#   -h, --help            show this help message and exit
+#   --type {metric,monitor}
+#                         type of the SLO (must specify it's original type)
+#   --name NAME           name of the SLO
+#   --description DESCRIPTION
+#                         description of the SLO
+#   --thresholds THRESHOLDS
+#                         comma separated list of <timeframe>:<target>[:<warning>[:<target_display>[:<warning_display>]]
+#   --tags TAGS           comma-separated list of tags
+#   --numerator NUMERATOR
+#                         numerator metric query (sum of good events)
+#   --denominator DENOMINATOR
+#                         denominator metric query (sum of total events)
+#   --monitor_ids MONITOR_IDS
+#                         explicit monitor_ids to use (CSV)
+#   --monitor_search MONITOR_SEARCH
+#                         monitor search terms to use
+#   --groups GROUPS       for a single monitor you can specify the specific groups as a pipe (|) delimited string
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective fupdate [-h] file
+#
+# positional arguments:
+#   file        json file holding all details
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective show [-h] slo_id
+#
+# positional arguments:
+#   slo_id      SLO to show
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective show_all [-h] [--query QUERY] [--slo_ids SLO_IDS] [--offset OFFSET] [--limit LIMIT]
+#
+# options:
+#   -h, --help         show this help message and exit
+#   --query QUERY      string to filter SLOs by query (see UI or documentation)
+#   --slo_ids SLO_IDS  comma separated list indicating what SLO IDs to get at once
+#   --offset OFFSET    offset of query pagination
+#   --limit LIMIT      limit of query pagination
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective delete [-h] slo_id
+#
+# positional arguments:
+#   slo_id      SLO to delete
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective delete_many [-h] slo_ids
+#
+# positional arguments:
+#   slo_ids     comma separated list of SLO IDs to delete
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective delete_many_timeframe [-h] slo_id timeframes
+#
+# positional arguments:
+#   slo_id      SLO ID to update
+#   timeframes  CSV of timeframes to delete, e.g. 7d,30d,90d
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective can_delete [-h] slo_ids
+#
+# positional arguments:
+#   slo_ids     comma separated list of SLO IDs to delete
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+#
+# usage: dog service_level_objective history [-h] slo_id from_ts to_ts
+#
+# positional arguments:
+#   slo_id      SLO to query the history
+#   from_ts     `from` date or timestamp
+#   to_ts       `to` date or timestamp
+#
+# options:
+#   -h, --help  show this help message and exit
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
