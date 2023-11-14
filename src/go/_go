@@ -154,7 +154,6 @@ _go() {
           "-I[include directory; can be set multiple times]:value"
           "-S[print assembly and machine code]"
           "-V[print version and exit]"
-          "-compiling-runtime[source to be compiled is part of the Go runtime]"
           "-d[enable debugging settings; try -d help]:value]"
           "-debug[dump instructions as they are parsed]"
           "-dynlink[support references to Go symbols defined in other shared libraries]"
@@ -653,6 +652,7 @@ _go() {
             "init:initialize workspace file"
             "sync:sync workspace build list to modules"
             "use:add modules to workspace file"
+            "vendor:make vendored copy of dependencies"
           )
 
           _arguments \
@@ -667,7 +667,8 @@ _go() {
                   "-dropuse=[drop a use directive from the go.work file's set of module directories.]:path:_go_packages" \
                   "-replace=[adds a replacement of the given module path and version pair.]:old[@v]=new[@v]" \
                   "-dropreplace=[drops a replacement of the given module path and version pair.]:old[@v]" \
-                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
+                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20 1.21 1.22)" \
+                  "-toolchain=[sets the Go toolchain to use.]:go toolchain" \
                   "-print[prints the final go.mod in its text format instead of writing it back to go.mod.]" \
                   "-json[prints the final go.mod in its json format instead of writing it back to go.mod.]" \
                   "*:go.work:_files"
@@ -687,6 +688,13 @@ _go() {
                 _arguments \
                   "-r[searches recursively for modules in the argument directories.]" \
                   "*:moddirs:_files"
+                ;;
+
+              vendor)
+                _arguments \
+                  "-v[print the names of vendored modules and packages to standard error.]" \
+                  "-v[attempt to proceed despite errors encountered while loading packages.]" \
+                  "-o[create the vendor directory at the given path instead of \"vendor\".]"
                 ;;
 
               help)
@@ -809,11 +817,14 @@ _go() {
                     "-S[print assembly listing]" \
                     "-V[print version and exit]" \
                     "-W[debug parse tree after type checking]" \
+                    "-asan[build code compatible with C/C++ address sanitizer]" \
                     "-asmhdr[write assembly header to file]:output file:_files" \
                     "-bench[append benchmark times to file]:output file:_files" \
                     "-blockprofile[write block profile to file]:output file:_files" \
                     "-buildid[record id as the build id in the export metadata]:buildid" \
                     "-c[concurrency during compilation, 1 means no concurrency (default 1)]:number of concurrency" \
+                    "-clobberdead[clobber dead stack slots (for debugging)]" \
+                    "-clobberdeadreg[clobber dead registers (for debugging)]" \
                     "-complete[compiling complete package (no C or assembly)]" \
                     "-coveragecfg[read coverage configuration from file]:coverage configuration:_files" \
                     "-cpuprofile[write cpu profile to file]:output file:_files" \
@@ -823,6 +834,8 @@ _go() {
                     "-dwarflocationlists[add location lists to DWARF in optimized mode (default true)]" \
                     "-dynlink[support references to Go symbols defined in other shared libraries]" \
                     "-e[no limit on number of errors reported]" \
+                    "-embedcfg[read go:embed configuration from file]:file:_files" \
+                    "-env[add definition of the form key=value to environment]:definition" \
                     "-errorurl[print explanatory URL with error message if applicable]" \
                     "-gendwarfinl[generate DWARF inline info records (default 2)]:DWARF inline info records" \
                     "-goversion[string required version of the runtime]:go runtime version:(go1.12 go1.12.1 go1.12.2 go1.12.3 go1.12.4 go1.12.5 go1.12.6 go1.12.7 go1.12.8 go1.12.9 go1.12.10 go1.12.11 go1.12.12 go1.12.12 go1.13 go1.13.1 go1.13.2 go1.13.3)" \
@@ -830,13 +843,16 @@ _go() {
                     "-importcfg[file read import configuration from file]" \
                     "-installsuffix[set pkg directory suffix]:install suffix" \
                     "-j[debug runtime-initialized variables]" \
+                    "-json[version,file for JSON compiler/optimizer detail output]:output:_files" \
                     "-l[disable inlining]" \
                     "-lang[release to compile for]" \
                     "-linkobj[write linker-specific object to file]:output file:_files" \
+                    "-linkshared[generate code that will be linked against Go shared libraries]" \
                     "-live[debug liveness analysis]" \
                     "-m[print optimization decisions]" \
                     "-memprofile[write memory profile to file]:output file:_files" \
                     "-memprofilerate[set runtime.MemProfileRate to rate]:profile rate" \
+                    "-msan[build code compatible with C/C++ memory sanitizer]" \
                     "-mutexprofile[write mutex profile to file]:output file:_files" \
                     "-nolocalimports[reject local (relative) imports]" \
                     "-o[write output to file]:output file:_files" \
@@ -847,14 +863,15 @@ _go() {
                     "-race[enable race detector]" \
                     "-shared[generate code that can be linked into a shared library]" \
                     "-smallframes[reduce the size limit for stack allocated objects]" \
+                    "-spectre[enable spectre mitigations]:mode:(all index ret)" \
                     "-std[compiling standard library]" \
                     "-symabis[read symbol ABIs from file]:symbol ABIs file:_files" \
+                    "-t[enable tracing for debugging the compiler]" \
                     "-traceprofile[write an execution trace to file]:output file:_files" \
                     "-trimpath[prefix remove prefix from recorded source file paths]" \
                     "-v[increase debug verbosity]" \
                     "-w[debug type checking]" \
                     "-wb[enable write barrier (default true)]" \
-                    "-wrapglobalmapinit[wrap global map large inits in their own functions (to permit deadcode) (default true)]" \
                     '*:file:_path_files -g "*.go"'
                   ;;
 
@@ -925,9 +942,9 @@ _go() {
                     "*:files:_files"
                   ;;
 
-                (link|oldlink)
+                link)
                   _arguments \
-                    "-B[add an ELF NT_GNU_BUILD_ID note when using ELF]:note" \
+                    "-B[add an ELF NT_GNU_BUILD_ID note when using ELF; use \"gobuildid\" to generate it from the Go build ID]:note" \
                     "-C[check Go calls to C code]" \
                     "-D[set data segment address (default -1)]:address" \
                     "-E[set entry symbol name]:entry" \
@@ -1235,7 +1252,7 @@ _go "$*"
 #
 # ------------------------------------------------------------------------------
 #
-# go version devel go1.21-39effbc105 Fri Jun 9 04:07:29 2023 +0000 X:staticlockranking,heapminimum512kib,arenas,pagetrace,cgocheck2,loopvar,cacheprog darwin/amd64
+# go version devel go1.22-42bd21be1c Mon Nov 13 18:17:57 2023 +0000
 #
 # ------------------------------------------------------------------------------
 #
@@ -1278,11 +1295,9 @@ _go "$*"
 #  	filetype        file types
 #  	go.mod          the go.mod file
 #  	gopath          GOPATH environment variable
-#  	gopath-get      legacy GOPATH go get
 #  	goproxy         module proxy protocol
 #  	importpath      import path syntax
 #  	modules         modules, module versions, and more
-#  	module-get      module-aware go get
 #  	module-auth     module authentication using go.sum
 #  	packages        package lists and patterns
 #  	private         configuration for downloading non-public code
@@ -1319,11 +1334,16 @@ _go "$*"
 #
 #  When compiling packages, build ignores files that end in '_test.go'.
 #
-#  When compiling a single main package, build writes
-#  the resulting executable to an output file named after
-#  the first source file ('go build ed.go rx.go' writes 'ed' or 'ed.exe')
-#  or the source code directory ('go build unix/sam' writes 'sam' or 'sam.exe').
-#  The '.exe' suffix is added when writing a Windows executable.
+#  When compiling a single main package, build writes the resulting
+#  executable to an output file named after the last non-major-version
+#  component of the package import path. The '.exe' suffix is added
+#  when writing a Windows executable.
+#  So 'go build example/sam' writes 'sam' or 'sam.exe'.
+#  'go build example.com/foo/v2' writes 'foo' or 'foo.exe', not 'v2.exe'.
+#
+#  When compiling a package from a list of .go files, the executable
+#  is named after the first source file.
+#  'go build ed.go rx.go' writes 'ed' or 'ed.exe'.
 #
 #  When compiling multiple packages or a single non-main package,
 #  build compiles the packages but discards the resulting object,
@@ -1357,14 +1377,15 @@ _go "$*"
 #  		linux/ppc64le and linux/arm64 (only for 48-bit VMA).
 #  	-msan
 #  		enable interoperation with memory sanitizer.
-#  		Supported only on linux/amd64, linux/arm64, freebsd/amd64
+#  		Supported only on linux/amd64, linux/arm64, linux/loong64, freebsd/amd64
 #  		and only with Clang/LLVM as the host C compiler.
 #  		PIE build mode will be used on all platforms except linux/amd64.
 #  	-asan
 #  		enable interoperation with address sanitizer.
-#  		Supported only on linux/arm64, linux/amd64.
-#  		Supported only on linux/amd64 or linux/arm64 and only with GCC 7 and higher
+#  		Supported only on linux/arm64, linux/amd64, linux/loong64.
+#  		Supported on linux/amd64 or linux/arm64 and only with GCC 7 and higher
 #  		or Clang/LLVM 9 and higher.
+#  		And supported on linux/loong64 only with Clang/LLVM 16 and higher.
 #  	-cover
 #  		enable code coverage instrumentation.
 #  	-covermode set,count,atomic
@@ -2776,6 +2797,7 @@ _go "$*"
 #  	init        initialize workspace file
 #  	sync        sync workspace build list to modules
 #  	use         add modules to workspace file
+#  	vendor      make vendored copy of dependencies
 #
 #  Use "go help work <command>" for more information about a command.
 #
@@ -2929,6 +2951,29 @@ _go "$*"
 #
 #  See the workspaces reference at https://go.dev/ref/mod#workspaces
 #  for more information.
+#
+# ------------------------------------------------------------------------------
+#
+#  Make vendored copy of dependencies
+#
+#  Usage:
+#
+#  	go work vendor [-e] [-v] [-o outdir]
+#
+#  Vendor resets the workspace's vendor directory to include all packages
+#  needed to build and test all the workspace's packages.
+#  It does not include test code for vendored packages.
+#
+#  The -v flag causes vendor to print the names of vendored
+#  modules and packages to standard error.
+#
+#  The -e flag causes vendor to attempt to proceed despite errors
+#  encountered while loading packages.
+#
+#  The -o flag causes vendor to create the vendor directory at the given
+#  path instead of "vendor". The go command can only use a vendor directory
+#  named "vendor" within the module root directory, so this flag is
+#  primarily useful for other tools.
 #
 # ------------------------------------------------------------------------------
 #
@@ -3188,7 +3233,7 @@ _go "$*"
 #
 #  Constraints may appear in any kind of source file (not just Go), but
 #  they must appear near the top of the file, preceded
-#  only by blank lines and other line comments. These rules mean that in Go
+#  only by blank lines and other comments. These rules mean that in Go
 #  files a build constraint must appear before the package clause.
 #
 #  To distinguish build constraints from package documentation,
@@ -3847,72 +3892,6 @@ _go "$*"
 #  placed in the main GOPATH, never in a vendor subtree.
 #
 #  See https://golang.org/s/go15vendor for details.
-#
-# ------------------------------------------------------------------------------
-#
-#  Legacy GOPATH go get
-#
-#  The 'go get' command changes behavior depending on whether the
-#  go command is running in module-aware mode or legacy GOPATH mode.
-#  This help text, accessible as 'go help gopath-get' even in module-aware mode,
-#  describes 'go get' as it operates in legacy GOPATH mode.
-#
-#  Usage: go get [-d] [-f] [-t] [-u] [-v] [-fix] [build flags] [packages]
-#
-#  Get downloads the packages named by the import paths, along with their
-#  dependencies. It then installs the named packages, like 'go install'.
-#
-#  The -d flag instructs get to stop after downloading the packages; that is,
-#  it instructs get not to install the packages.
-#
-#  The -f flag, valid only when -u is set, forces get -u not to verify that
-#  each package has been checked out from the source control repository
-#  implied by its import path. This can be useful if the source is a local fork
-#  of the original.
-#
-#  The -fix flag instructs get to run the fix tool on the downloaded packages
-#  before resolving dependencies or building the code.
-#
-#  The -t flag instructs get to also download the packages required to build
-#  the tests for the specified packages.
-#
-#  The -u flag instructs get to use the network to update the named packages
-#  and their dependencies. By default, get uses the network to check out
-#  missing packages but does not use it to look for updates to existing packages.
-#
-#  The -v flag enables verbose progress and debug output.
-#
-#  Get also accepts build flags to control the installation. See 'go help build'.
-#
-#  When checking out a new package, get creates the target directory
-#  GOPATH/src/<import-path>. If the GOPATH contains multiple entries,
-#  get uses the first one. For more details see: 'go help gopath'.
-#
-#  When checking out or updating a package, get looks for a branch or tag
-#  that matches the locally installed version of Go. The most important
-#  rule is that if the local installation is running version "go1", get
-#  searches for a branch or tag named "go1". If no such version exists
-#  it retrieves the default branch of the package.
-#
-#  When go get checks out or updates a Git repository,
-#  it also updates any git submodules referenced by the repository.
-#
-#  Get never checks out or updates code stored in vendor directories.
-#
-#  For more about build flags, see 'go help build'.
-#
-#  For more about specifying packages, see 'go help packages'.
-#
-#  For more about how 'go get' finds source code to
-#  download, see 'go help importpath'.
-#
-#  This text describes the behavior of get when using GOPATH
-#  to manage source code and dependencies.
-#  If instead the go command is running in module-aware mode,
-#  the details of get's flags and effects change, as does 'go help get'.
-#  See 'go help modules' and 'go help module-get'.
-#
-#  See also: go build, go install, go clean.
 #
 # ------------------------------------------------------------------------------
 #
@@ -4733,8 +4712,6 @@ _go "$*"
 #     	include directory; can be set multiple times
 #   -S	print assembly and machine code
 #   -V	print version and exit
-#   -compiling-runtime
-#     	source to be compiled is part of the Go runtime
 #   -d value
 #     	enable debugging settings; try -d help
 #   -debug
@@ -4833,7 +4810,7 @@ _go "$*"
 #   -buildid id
 #     	record id as the build id in the export metadata
 #   -c int
-#     	concurrency during compilation (1 means no concurrency)
+#     	concurrency during compilation (1 means no concurrency) (default 32)
 #   -clobberdead
 #     	clobber dead stack slots (for debugging)
 #   -clobberdeadreg
@@ -4857,6 +4834,8 @@ _go "$*"
 #   -e	no limit on number of errors reported
 #   -embedcfg file
 #     	read go:embed configuration from file
+#   -env definition
+#     	add definition of the form key=value to environment
 #   -errorurl
 #     	print explanatory URL with error message if applicable
 #   -gendwarfinl int
@@ -4965,7 +4944,7 @@ _go "$*"
 # package name, module path, and related info from "go build",
 # and -outfilelist points to a file containing the filenames
 # of the instrumented output files (one per input file).
-# See https://pkg.go.dev/internal/coverage#CoverPkgConfig for
+# See https://pkg.go.dev/cmd/internal/cov/covcmd#CoverPkgConfig for
 # more on the package config.
 #
 # Flags:
@@ -4992,14 +4971,14 @@ _go "$*"
 # usage: go tool dist [command]
 # Commands are:
 #
-# banner         print installation banner
-# bootstrap      rebuild everything
-# clean          deletes all built files
-# env [-p]       print environment (-p: include $PATH)
-# install [dir]  install individual directory
-# list [-json]   list all supported platforms
-# test [-h]      run Go test(s)
-# version        print Go version
+# banner                  print installation banner
+# bootstrap               rebuild everything
+# clean                   deletes all built files
+# env [-p]                print environment (-p: include $PATH)
+# install [dir]           install individual directory
+# list [-json] [-broken]  list all supported platforms
+# test [-h]               run Go test(s)
+# version                 print Go version
 #
 # All commands take -v flags to emit extra information.
 #
@@ -5076,7 +5055,7 @@ _go "$*"
 #
 # usage: link [options] main.o
 #   -B note
-#     	add an ELF NT_GNU_BUILD_ID note when using ELF
+#     	add an ELF NT_GNU_BUILD_ID note when using ELF; use "gobuildid" to generate it from the Go build ID
 #   -E entry
 #     	set entry symbol name
 #   -H type
@@ -5337,7 +5316,9 @@ _go "$*"
 #    PPROF_BINARY_PATH  Search path for local binary files
 #                       default: $HOME/pprof/binaries
 #                       searches $buildid/$name, $buildid/*, $path/$buildid,
-#                       ${buildid:0:2}/${buildid:2}.debug, $name, $path
+#                       ${buildid:0:2}/${buildid:2}.debug, $name, $path,
+#                       ${name}.debug, $dir/.debug/${name}.debug,
+#                       usr/lib/debug/$dir/${name}.debug
 #    * On Windows, %USERPROFILE% is used instead of $HOME
 #
 # ------------------------------------------------------------------------------
