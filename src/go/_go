@@ -1,4 +1,4 @@
-#compdef -P go[0-9.]# -P -value-,GO*,-default- -P -value-,CGO*,-default-
+#compdef go,-P go[0-9.]# -P -value-,GO*,-default- -P -value-,CGO*,-default-
 
 # ------------------------------------------------------------------------------
 # Copyright (c) 2017- The Go Authors
@@ -109,7 +109,7 @@ _go() {
       "-msan[Insert calls to C/C++ memory sanitizer.]" \
       "-asan[enable interoperation with address sanitizer.]" \
       "-cover[enable code coverage instrumentation.]" \
-      "-covermode[Set the mode for coverage analysis.]:covermode:(set count atomic)"
+      "-covermode[Set the mode for coverage analysis.]:covermode:(set count atomic)" \
       "-coverpkg[Apply coverage analysis in each test to the given list of packages]: :_go_packages" \
       "-v[print the names of packages as they are compiled]" \
       "-work[print temporary work directory and keep it]" \
@@ -592,8 +592,8 @@ _go() {
                   "-dropreplace=[drop a replacement of the given module path and version pair.]:old[@v]" \
                   "-retract=[add a retraction on the given version. single version like \"v1.2.3\" or a closed interval like \"\[v1.1.0-v1.1.9\]\"]:version" \
                   "-dropretract=[drop a retraction on the given version. single version like \"v1.2.3\" or a closed interval like \"\[v1.1.0-v1.1.9\]\"]:version" \
-                  "-go=[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20)" \
-                  "-toolchain=[sets the Go toolchain to use.]:toolchain" \
+                  "-go[sets the expected Go language version.]:go version:(1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 1.20 1.21 1.22)" \
+                  "-toolchain[sets the Go toolchain to use.]:go toolchain" \
                   "-print[prints the final go.mod in its text format instead of writing it back to go.mod.]" \
                   "-json[prints the final go.mod in its json format instead of writing it back to go.mod.]" \
                   "-C[Change to dir before running the command.]" \
@@ -838,7 +838,7 @@ _go() {
                     "-env[add definition of the form key=value to environment]:definition" \
                     "-errorurl[print explanatory URL with error message if applicable]" \
                     "-gendwarfinl[generate DWARF inline info records (default 2)]:DWARF inline info records" \
-                    "-goversion[string required version of the runtime]:go runtime version:(go1.12 go1.12.1 go1.12.2 go1.12.3 go1.12.4 go1.12.5 go1.12.6 go1.12.7 go1.12.8 go1.12.9 go1.12.10 go1.12.11 go1.12.12 go1.12.12 go1.13 go1.13.1 go1.13.2 go1.13.3)" \
+                    "-goversion[string required version of the runtime]:go runtime version" \
                     "-h[halt on error]" \
                     "-importcfg[file read import configuration from file]" \
                     "-installsuffix[set pkg directory suffix]:install suffix" \
