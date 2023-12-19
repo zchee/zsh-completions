@@ -1,0 +1,974 @@
+#compdef tailscale Tailscale
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2023, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# tailscale.com/cmd/tailscale
+#
+# 1.57.9
+#   track: unstable (dev); frequent updates and bugs are likely
+#   tailscale commit: 3a635db06e61b2614f748b5d9fb90c770456d98b
+#   other commit: 6fa4e4bbdb8bc5fa17d2579024102b9021117d2e
+#   go version: go1.21.5
+#
+# -----------------------------------------------------------------------------
+
+function _tailscale() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local _tailscale_cmd=$(alias tailscale | cut -d'=' -f 2)
+
+  local -a _commands
+  _commands=(
+    "up:Connect to Tailscale, logging in if needed"
+    "down:Disconnect from Tailscale"
+    "set:Change specified preferences"
+    "login:Log in to a Tailscale account"
+    "logout:Disconnect from Tailscale and expire current node key"
+    "switch:Switches to a different Tailscale account"
+    "configure:[ALPHA] Configure the host to enable more Tailscale features"
+    "netcheck:Print an analysis of local network conditions"
+    "ip:Show Tailscale IP addresses"
+    "status:Show state of tailscaled and its connections"
+    "ping:Ping a host at the Tailscale layer, see how it routed"
+    "nc:Connect to a port on a host, connected to stdin/stdout"
+    "ssh:SSH to a Tailscale machine"
+    "funnel:Serve content and local servers on the internet"
+    "serve:Serve content and local servers on your tailnet"
+    "version:Print Tailscale version"
+    "web:Run a web server for controlling Tailscale"
+    "file:Send or receive files"
+    "cert:Get TLS certs"
+    "lock:Manage tailnet lock"
+    "licenses:Get open source license information"
+    "exit-node:Tailscale exit node"
+    "update:Update Tailscale to the latest/different version"
+    "whois:Show the machine and user associated with a Tailscale IP (v4 or v6)"
+  )
+
+  _arguments -C \
+    "1: :{_describe 'tailscale commands' _commands}" \
+    "*:: :->args" \
+    && ret=0
+
+  local global_flags flags="--help"
+  global_flags=("--help[Help for $words[1]]")
+
+  case $state in
+    (args)
+      case $words[1] in
+        (up)
+          _arguments \
+            $global_flags \
+            "--accept-dns[accept DNS configuration from the admin panel (default true)]" \
+            "--accept-risk[accept risk and skip confirmation for risk types: lose-ssh,all]:risk types:(lose-ssh all)" \
+            "--accept-routes[accept routes advertised by other Tailscale nodes (default true)]" \
+            "--advertise-connector[advertise this node as an app connector (default false)]" \
+            "--advertise-exit-node[offer to be an exit node for internet traffic for the tailnet (default false)]" \
+            "--advertise-routes[routes to advertise to other nodes (comma-separated, e.g. \"10.0.0.0/8,192.168.0.0/24\") or empty string to not advertise routes]" \
+            "--advertise-tags[comma-separated ACL tags to request; each must start with \"tag:\" (e.g. \"tag:eng,tag:montreal,tag:ssh\")]:advertise tags" \
+            "--auth-key[node authorization key; if it begins with \"file:\", then it's a path to a file containing the authkey]:authkey" \
+            "--exit-node[Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node]" \
+            "--exit-node-allow-lan-access[Allow direct access to the local network when routing traffic via an exit node (default false)]" \
+            "--force-reauth[force reauthentication (default false)]" \
+            "--hostname[hostname to use instead of the one provided by the OS]:hostname" \
+            "--json[output in JSON format (default false)]" \
+            "--login-server[base URL of control server (default https://controlplane.tailscale.com)]:control server" \
+            "--operator[Unix username to allow to operate on tailscaled without sudo]" \
+            "--qr[show QR code for login URLs (default false)]" \
+            "--reset[reset unspecified settings to their default values (default false)]" \
+            "--shields-up[don't allow incoming connections (default false)]" \
+            "--ssh[run an SSH server, permitting access per tailnet admin's declared policy (default false)]" \
+            "--timeout[maximum amount of time to wait for tailscaled to enter a Running state; default (0s) blocks forever (default 0s)]:duration" \
+            && ret=0
+          ;;
+
+        (down)
+          _arguments \
+            $global_flags \
+            "--accept-risk[accept risk and skip confirmation for risk types: lose-ssh,all]:risk types:(lose-ssh all)" \
+            && ret=0
+          ;;
+
+        (set)
+          _arguments \
+            $global_flags \
+            "--accept-dns[accept DNS configuration from the admin panel (default true)]" \
+            "--accept-risk[accept risk and skip confirmation for risk types: lose-ssh,all]:risk types:(lose-ssh all)" \
+            "--accept-routes[accept routes advertised by other Tailscale nodes (default true)]" \
+            "--advertise-connector[advertise this node as an app connector (default false)]" \
+            "--advertise-exit-node[offer to be an exit node for internet traffic for the tailnet (default false)]" \
+            "--advertise-routes[routes to advertise to other nodes (comma-separated, e.g. \"10.0.0.0/8,192.168.0.0/24\") or empty string to not advertise routes]" \
+            "--auto-update[automatically update to the latest available version]" \
+            "--exit-node[Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node]" \
+            "--exit-node-allow-lan-access[Allow direct access to the local network when routing traffic via an exit node (default false)]" \
+            "--hostname[hostname to use instead of the one provided by the OS]:hostname" \
+            "--nickname[nickname for the current account]:nickname" \
+            "--operator[Unix username to allow to operate on tailscaled without sudo]:Unix username" \
+            "--shields-up[don't allow incoming connections (default false)]" \
+            "--ssh[run an SSH server, permitting access per tailnet admin's declared policy (default false)]" \
+            "--update-check[notify about available Tailscale updates]" \
+            "--webclient[run a web interface for managing this node, served over Tailscale at port 5252]" \
+            && ret=0
+          ;;
+
+        (login)
+          _arguments \
+            $global_flags \
+            "--accept-dns[accept DNS configuration from the admin panel (default true)]" \
+            "--accept-routes[accept routes advertised by other Tailscale nodes (default true)]" \
+            "--advertise-connector[advertise this node as an app connector (default false)]" \
+            "--advertise-exit-node[offer to be an exit node for internet traffic for the tailnet (default false)]" \
+            "--advertise-routes[routes to advertise to other nodes (comma-separated, e.g. \"10.0.0.0/8,192.168.0.0/24\") or empty string to not advertise routes]" \
+            "--advertise-tags[comma-separated ACL tags to request; each must start with \"tag:\" (e.g. \"tag:eng,tag:montreal,tag:ssh\")]:advertise tags" \
+            "--auth-key[node authorization key; if it begins with \"file:\", then it's a path to a file containing the authkey]:authkey" \
+            "--exit-node[Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node]" \
+            "--exit-node-allow-lan-access[Allow direct access to the local network when routing traffic via an exit node (default false)]" \
+            "--hostname[hostname to use instead of the one provided by the OS]:hostname" \
+            "--login-server[base URL of control server (default https://controlplane.tailscale.com)]:control server" \
+            "--nickname[nickname for the current account]:nickname" \
+            "--operator[Unix username to allow to operate on tailscaled without sudo]" \
+            "--qr[show QR code for login URLs (default false)]" \
+            "--shields-up[don't allow incoming connections (default false)]" \
+            "--ssh[run an SSH server, permitting access per tailnet admin's declared policy (default false)]" \
+            "--timeout[maximum amount of time to wait for tailscaled to enter a Running state; default (0s) blocks forever (default 0s)]:duration" \
+            && ret=0
+          ;;
+
+        (logout)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        (switch)
+          local -a _ip_list=($($_tailscale_cmd switch --list | awk '{if(NR>1) print $1":"$2}'))
+          _arguments \
+            $global_flags \
+            "--list[list of ip]" \
+            "*: :{_describe 'ip' _ip_list}" \
+            && ret=0
+          ;;
+
+        # TODO(zchee): subcommand
+        (configure)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        (netcheck)
+          _arguments \
+            $global_flags \
+            "--every[if non-zero, do an incremental report with the given frequency (default 0s)]:duration" \
+            "--format[output format]:output format:(json json-line)" \
+            "--verbose[verbose logs (default false)]" \
+            && ret=0
+          ;;
+
+        (ip)
+          _arguments \
+            $global_flags \
+            "--1[only print one IP address (default false)]" \
+            "--4[only print IPv4 address (default false)]" \
+            "--6[only print IPv6 address (default false)]" \
+            "1:peer hostname or ip address" \
+            && ret=0
+          ;;
+
+        (status)
+          _arguments \
+            $global_flags \
+            "--active[filter output to only peers with active sessions (not applicable to web mode) (default false)]" \
+            "--browser[Open a browser in web mode (default true)]" \
+            "--json[output in JSON format (default false)]" \
+            "--listen[listen address for web mode; use port 0 for automatic (default 127.0.0.1:8384)]:listen address" \
+            "--peers[show status of peers (default true)]" \
+            "--self[show status of local machine (default true)]" \
+            "--web[run webserver with HTML showing status (default false)]" \
+            && ret=0
+          ;;
+
+        (ping)
+          _arguments \
+            $global_flags \
+            "--c[max number of pings to send. 0 for infinity. (default 10)]:max send" \
+            "--icmp[do a ICMP-level ping (through WireGuard, but not the local host OS stack) (default false)]" \
+            "--peerapi[try hitting the peer's peerapi HTTP server (default false)]" \
+            "--size[size of the ping message (disco pings only). 0 for minimum size. (default 0)]:ping size" \
+            "--timeout[timeout before giving up on a ping (default 5s)]:duration" \
+            "--tsmp[do a TSMP-level ping (through WireGuard, but not either host OS stack) (default false)]" \
+            "--until-direct[stop once a direct path is established (default true)]" \
+            "--verbose[verbose logs (default false)]" \
+            "1:peer hostname or ip address" \
+            && ret=0
+          ;;
+
+        (nc)
+          _arguments \
+            $global_flags \
+            "1:hostname-or-IP" \
+            "2:port" \
+            && ret=0
+          ;;
+
+        (ssh)
+          _ssh
+          # _arguments \
+          #   $global_flags \
+          #   "--accept-risk[accept risk and skip confirmation for risk types: lose-ssh,all]:risk types:(lose-ssh all)" \
+          #   && ret=0
+          ;;
+
+        # TODO(zchee): subcommand
+        (funnel)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        # TODO(zchee): subcommand
+        (serve)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        (version)
+          _arguments \
+            $global_flags \
+            "--daemon[also print local node's daemon version (default false)]" \
+            "--json[output in JSON format (default false)]" \
+            "--upstream[fetch and print the latest upstream release version from pkgs.tailscale.com (default false)]" \
+            && ret=0
+          ;;
+
+        (web)
+          _arguments \
+            $global_flags \
+            "--cgi[run as CGI script (default false)]" \
+            "--listen[listen address; use port 0 for automatic (default localhost:8088)]:listen address" \
+            "--prefix[URL prefix added to requests (for cgi or reverse proxies)]:prefix" \
+            && ret=0
+          ;;
+
+        # TODO(zchee): subcommand
+        (file)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        (cert)
+          _arguments \
+            $global_flags \
+            "--cert-file[output cert file or \"-\" for stdout; defaults to DOMAIN.crt if --cert-file and --key-file are both unset]:cert file:_files" \
+            "--key-file[output key file or \"-\" for stdout; defaults to DOMAIN.key if --cert-file and --key-file are both unset]:key file:_files" \
+            "--serve-demo[if true, serve on port :443 using the cert as a demo, instead of writing out the files to disk (default false)]" \
+            "1:domain" \
+            && ret=0
+          ;;
+
+        # TODO(zchee): subcommand
+        (lock)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        (licenses)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        # TODO(zchee): subcommand
+        (exit-node)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        (whois)
+          local _tailnet_ip="($($_tailscale_cmd ip | tr '\n' ' '))"
+          _arguments \
+            $global_flags \
+            "--json[output in JSON format (default false)]" \
+            "1:ip or ip\:port:$_tailnet_ip" \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_tailscale "$*"
+
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   tailscale [flags] <subcommand> [command flags]
+#
+# For help on subcommands, add --help after: "tailscale status --help".
+#
+# This CLI is still under active development. Commands and flags will
+# change in the future.
+#
+# SUBCOMMANDS
+#   up         Connect to Tailscale, logging in if needed
+#   down       Disconnect from Tailscale
+#   set        Change specified preferences
+#   login      Log in to a Tailscale account
+#   logout     Disconnect from Tailscale and expire current node key
+#   switch     Switches to a different Tailscale account
+#   configure  [ALPHA] Configure the host to enable more Tailscale features
+#   netcheck   Print an analysis of local network conditions
+#   ip         Show Tailscale IP addresses
+#   status     Show state of tailscaled and its connections
+#   ping       Ping a host at the Tailscale layer, see how it routed
+#   nc         Connect to a port on a host, connected to stdin/stdout
+#   ssh        SSH to a Tailscale machine
+#   funnel     Serve content and local servers on the internet
+#   serve      Serve content and local servers on your tailnet
+#   version    Print Tailscale version
+#   web        Run a web server for controlling Tailscale
+#   file       Send or receive files
+#   bugreport  Print a shareable identifier to help diagnose issues
+#   cert       Get TLS certs
+#   lock       Manage tailnet lock
+#   licenses   Get open source license information
+#   exit-node
+#   update     [BETA] Update Tailscale to the latest/different version
+#   whois      Show the machine and user associated with a Tailscale IP (v4 or v6)
+#
+# FLAGS
+#   --socket string
+#     	path to tailscaled socket (default /var/run/tailscaled.socket)
+#
+# -----------------------------------------------------------------------------
+#
+#
+# USAGE
+#   up [flags]
+#
+# "tailscale up" connects this machine to your Tailscale network,
+# triggering authentication if necessary.
+#
+# With no flags, "tailscale up" brings the network online without
+# changing any settings. (That is, it's the opposite of "tailscale
+# down").
+#
+# If flags are specified, the flags must be the complete set of desired
+# settings. An error is returned if any setting would be changed as a
+# result of an unspecified flag's default value, unless the --reset flag
+# is also used. (The flags --auth-key, --force-reauth, and --qr are not
+# considered settings that need to be re-specified when modifying
+# settings.)
+#
+# FLAGS
+#   --accept-dns, --accept-dns=false
+#     	accept DNS configuration from the admin panel (default true)
+#   --accept-risk string
+#     	accept risk and skip confirmation for risk types: lose-ssh,all
+#   --accept-routes, --accept-routes=false
+#     	accept routes advertised by other Tailscale nodes (default true)
+#   --advertise-connector, --advertise-connector=false
+#     	advertise this node as an app connector (default false)
+#   --advertise-exit-node, --advertise-exit-node=false
+#     	offer to be an exit node for internet traffic for the tailnet (default false)
+#   --advertise-routes string
+#     	routes to advertise to other nodes (comma-separated, e.g. "10.0.0.0/8,192.168.0.0/24") or empty string to not advertise routes
+#   --advertise-tags string
+#     	comma-separated ACL tags to request; each must start with "tag:" (e.g. "tag:eng,tag:montreal,tag:ssh")
+#   --auth-key string
+#     	node authorization key; if it begins with "file:", then it's a path to a file containing the authkey
+#   --exit-node string
+#     	Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node
+#   --exit-node-allow-lan-access, --exit-node-allow-lan-access=false
+#     	Allow direct access to the local network when routing traffic via an exit node (default false)
+#   --force-reauth, --force-reauth=false
+#     	force reauthentication (default false)
+#   --hostname string
+#     	hostname to use instead of the one provided by the OS
+#   --json, --json=false
+#     	output in JSON format (WARNING: format subject to change) (default false)
+#   --login-server string
+#     	base URL of control server (default https://controlplane.tailscale.com)
+#   --operator string
+#     	Unix username to allow to operate on tailscaled without sudo
+#   --qr, --qr=false
+#     	show QR code for login URLs (default false)
+#   --reset, --reset=false
+#     	reset unspecified settings to their default values (default false)
+#   --shields-up, --shields-up=false
+#     	don't allow incoming connections (default false)
+#   --ssh, --ssh=false
+#     	run an SSH server, permitting access per tailnet admin's declared policy (default false)
+#   --timeout duration
+#     	maximum amount of time to wait for tailscaled to enter a Running state; default (0s) blocks forever (default 0s)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   down
+#
+# FLAGS
+#   --accept-risk string
+#     	accept risk and skip confirmation for risk types: lose-ssh,all
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   set [flags]
+#
+# "tailscale set" allows changing specific preferences.
+#
+# Unlike "tailscale up", this command does not require the complete set of desired settings.
+#
+# Only settings explicitly mentioned will be set. There are no default values.
+#
+# FLAGS
+#   --accept-dns, --accept-dns=false
+#     	accept DNS configuration from the admin panel
+#   --accept-risk string
+#     	accept risk and skip confirmation for risk types: lose-ssh,all
+#   --accept-routes, --accept-routes=false
+#     	accept routes advertised by other Tailscale nodes
+#   --advertise-connector, --advertise-connector=false
+#     	offer to be an app connector for domain specific internet traffic for the tailnet
+#   --advertise-exit-node, --advertise-exit-node=false
+#     	offer to be an exit node for internet traffic for the tailnet
+#   --advertise-routes string
+#     	routes to advertise to other nodes (comma-separated, e.g. "10.0.0.0/8,192.168.0.0/24") or empty string to not advertise routes
+#   --auto-update, --auto-update=false
+#     	automatically update to the latest available version
+#   --exit-node string
+#     	Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node
+#   --exit-node-allow-lan-access, --exit-node-allow-lan-access=false
+#     	Allow direct access to the local network when routing traffic via an exit node
+#   --hostname string
+#     	hostname to use instead of the one provided by the OS
+#   --nickname string
+#     	nickname for the current account
+#   --operator string
+#     	Unix username to allow to operate on tailscaled without sudo
+#   --shields-up, --shields-up=false
+#     	don't allow incoming connections
+#   --ssh, --ssh=false
+#     	run an SSH server, permitting access per tailnet admin's declared policy
+#   --update-check, --update-check=false
+#     	notify about available Tailscale updates
+#   --webclient, --webclient=false
+#     	run a web interface for managing this node, served over Tailscale at port 5252
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   login [flags]
+#
+# "tailscale login" logs this machine in to your Tailscale network.
+# This command is currently in alpha and may change in the future.
+#
+# FLAGS
+#   --accept-dns, --accept-dns=false
+#     	accept DNS configuration from the admin panel (default true)
+#   --accept-routes, --accept-routes=false
+#     	accept routes advertised by other Tailscale nodes (default true)
+#   --advertise-connector, --advertise-connector=false
+#     	advertise this node as an app connector (default false)
+#   --advertise-exit-node, --advertise-exit-node=false
+#     	offer to be an exit node for internet traffic for the tailnet (default false)
+#   --advertise-routes string
+#     	routes to advertise to other nodes (comma-separated, e.g. "10.0.0.0/8,192.168.0.0/24") or empty string to not advertise routes
+#   --advertise-tags string
+#     	comma-separated ACL tags to request; each must start with "tag:" (e.g. "tag:eng,tag:montreal,tag:ssh")
+#   --auth-key string
+#     	node authorization key; if it begins with "file:", then it's a path to a file containing the authkey
+#   --exit-node string
+#     	Tailscale exit node (IP or base name) for internet traffic, or empty string to not use an exit node
+#   --exit-node-allow-lan-access, --exit-node-allow-lan-access=false
+#     	Allow direct access to the local network when routing traffic via an exit node (default false)
+#   --hostname string
+#     	hostname to use instead of the one provided by the OS
+#   --login-server string
+#     	base URL of control server (default https://controlplane.tailscale.com)
+#   --nickname string
+#     	short name for the account
+#   --operator string
+#     	Unix username to allow to operate on tailscaled without sudo
+#   --qr, --qr=false
+#     	show QR code for login URLs (default false)
+#   --shields-up, --shields-up=false
+#     	don't allow incoming connections (default false)
+#   --ssh, --ssh=false
+#     	run an SSH server, permitting access per tailnet admin's declared policy (default false)
+#   --timeout duration
+#     	maximum amount of time to wait for tailscaled to enter a Running state; default (0s) blocks forever (default 0s)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   logout [flags]
+#
+# "tailscale logout" brings the network down and invalidates
+# the current node key, forcing a future use of it to cause
+# a reauthentication.
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   switch <id>
+#   switch --list
+#
+# "tailscale switch" switches between logged in accounts. You can
+# use the ID that's returned from 'tailnet switch -list'
+# to pick which profile you want to switch to. Alternatively, you
+# can use the Tailnet or the account names to switch as well.
+#
+# This command is currently in alpha and may change in the future.
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   configure
+#
+# The 'configure' set of commands are intended to provide a way to enable different
+# services on the host to use Tailscale in more ways.
+#
+# SUBCOMMANDS
+#   kubeconfig  [ALPHA] Connect to a Kubernetes cluster using a Tailscale Auth Proxy
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   [ALPHA] Connect to a Kubernetes cluster using a Tailscale Auth Proxy
+#
+# USAGE
+#   kubeconfig <hostname-or-fqdn>
+#
+# Run this command to configure kubectl to connect to a Kubernetes cluster over Tailscale.
+#
+# The hostname argument should be set to the Tailscale hostname of the peer running as an auth proxy in the cluster.
+#
+# See: https://tailscale.com/s/k8s-auth-proxy
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   netcheck
+#
+# FLAGS
+#   --every duration
+#     	if non-zero, do an incremental report with the given frequency (default 0s)
+#   --format string
+#     	output format; empty (for human-readable), "json" or "json-line"
+#   --verbose, --verbose=false
+#     	verbose logs (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   ip [-1] [-4] [-6] [peer hostname or ip address]
+#
+# Show Tailscale IP addresses for peer. Peer defaults to the current machine.
+#
+# FLAGS
+#   --1, --1=false
+#     	only print one IP address (default false)
+#   --4, --4=false
+#     	only print IPv4 address (default false)
+#   --6, --6=false
+#     	only print IPv6 address (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   status [--active] [--web] [--json]
+#
+# JSON FORMAT
+#
+# Warning: this format has changed between releases and might change more
+# in the future.
+#
+# For a description of the fields, see the "type Status" declaration at:
+#
+# https://github.com/tailscale/tailscale/blob/main/ipn/ipnstate/ipnstate.go
+#
+# (and be sure to select branch/tag that corresponds to the version
+#  of Tailscale you're running)
+#
+# FLAGS
+#   --active, --active=false
+#     	filter output to only peers with active sessions (not applicable to web mode) (default false)
+#   --browser, --browser=false
+#     	Open a browser in web mode (default true)
+#   --json, --json=false
+#     	output in JSON format (WARNING: format subject to change) (default false)
+#   --listen string
+#     	listen address for web mode; use port 0 for automatic (default 127.0.0.1:8384)
+#   --peers, --peers=false
+#     	show status of peers (default true)
+#   --self, --self=false
+#     	show status of local machine (default true)
+#   --web, --web=false
+#     	run webserver with HTML showing status (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   ping <hostname-or-IP>
+#
+# The 'tailscale ping' command pings a peer node from the Tailscale layer
+# and reports which route it took for each response. The first ping or
+# so will likely go over DERP (Tailscale's TCP relay protocol) while NAT
+# traversal finds a direct path through.
+#
+# If 'tailscale ping' works but a normal ping does not, that means one
+# side's operating system firewall is blocking packets; 'tailscale ping'
+# does not inject packets into either side's TUN devices.
+#
+# By default, 'tailscale ping' stops after 10 pings or once a direct
+# (non-DERP) path has been established, whichever comes first.
+#
+# The provided hostname must resolve to or be a Tailscale IP
+# (e.g. 100.x.y.z) or a subnet IP advertised by a Tailscale
+# relay node.
+#
+# FLAGS
+#   --c int
+#     	max number of pings to send. 0 for infinity. (default 10)
+#   --icmp, --icmp=false
+#     	do a ICMP-level ping (through WireGuard, but not the local host OS stack) (default false)
+#   --peerapi, --peerapi=false
+#     	try hitting the peer's peerapi HTTP server (default false)
+#   --size int
+#     	size of the ping message (disco pings only). 0 for minimum size. (default 0)
+#   --timeout duration
+#     	timeout before giving up on a ping (default 5s)
+#   --tsmp, --tsmp=false
+#     	do a TSMP-level ping (through WireGuard, but not either host OS stack) (default false)
+#   --until-direct, --until-direct=false
+#     	stop once a direct path is established (default true)
+#   --verbose, --verbose=false
+#     	verbose output (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   nc <hostname-or-IP> <port>
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   ssh [user@]<host> [args...]
+#
+# The 'tailscale ssh' command is an optional wrapper around the system 'ssh'
+# command that's useful in some cases. Tailscale SSH does not require its use;
+# most users running the Tailscale SSH server will prefer to just use the normal
+# 'ssh' command or their normal SSH client.
+#
+# The 'tailscale ssh' wrapper adds a few things:
+#
+# * It resolves the destination server name in its arguments using MagicDNS,
+#   even if --accept-dns=false.
+# * It works in userspace-networking mode, by supplying a ProxyCommand to the
+#   system 'ssh' command that connects via a pipe through tailscaled.
+# * It automatically checks the destination server's SSH host key against the
+#   node's SSH host key as advertised via the Tailscale coordination server.
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   funnel <target>
+#   funnel status [--json]
+#   funnel reset
+#
+# Funnel enables you to share a local server on the internet using Tailscale.
+#
+# To share only within your tailnet, use `tailscale serve`
+#
+# <target> can be a file, directory, text, or most commonly the location to a service running on the
+# local machine. The location to the location service can be expressed as a port number (e.g., 3000),
+# a partial URL (e.g., localhost:3000), or a full URL including a path (e.g., http://localhost:3000/foo).
+#
+# EXAMPLES
+#   - Expose an HTTP server running at 127.0.0.1:3000 in the foreground:
+#     $ tailscale funnel 3000
+#
+#   - Expose an HTTP server running at 127.0.0.1:3000 in the background:
+#     $ tailscale funnel --bg 3000
+#
+#   - Expose an HTTPS server with invalid or self-signed certificates at https://localhost:8443
+#     $ tailscale funnel https+insecure://localhost:8443
+#
+# For more examples and use cases visit our docs site https://tailscale.com/kb/1247/funnel-serve-use-cases
+#
+# SUBCOMMANDS
+#   status  view current proxy configuration
+#   reset   reset current serve/funnel config
+#
+# FLAGS
+#   --bg, --bg=false
+#     	Run the command as a background process (default false)
+#   --https uint
+#     	Expose an HTTPS server at the specified port (default mode)
+#   --set-path string
+#     	Appends the specified path to the base URL for accessing the underlying service
+#   --tcp uint
+#     	Expose a TCP forwarder to forward raw TCP packets at the specified port
+#   --tls-terminated-tcp uint
+#     	Expose a TCP forwarder to forward TLS-terminated TCP packets at the specified port
+#   --yes, --yes=false
+#     	Update without interactive prompts (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   status
+#
+# FLAGS
+#   --json, --json=false
+#     	output JSON (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   reset
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   serve <target>
+#   serve status [--json]
+#   serve reset
+#
+# Tailscale Serve enables you to share a local server securely within your tailnet.
+#
+# To share a local server on the internet, use `tailscale funnel`
+#
+# <target> can be a file, directory, text, or most commonly the location to a service running on the
+# local machine. The location to the location service can be expressed as a port number (e.g., 3000),
+# a partial URL (e.g., localhost:3000), or a full URL including a path (e.g., http://localhost:3000/foo).
+#
+# EXAMPLES
+#   - Expose an HTTP server running at 127.0.0.1:3000 in the foreground:
+#     $ tailscale serve 3000
+#
+#   - Expose an HTTP server running at 127.0.0.1:3000 in the background:
+#     $ tailscale serve --bg 3000
+#
+#   - Expose an HTTPS server with invalid or self-signed certificates at https://localhost:8443
+#     $ tailscale serve https+insecure://localhost:8443
+#
+# For more examples and use cases visit our docs site https://tailscale.com/kb/1247/funnel-serve-use-cases
+#
+# SUBCOMMANDS
+#   status  view current proxy configuration
+#   reset   reset current serve/funnel config
+#
+# FLAGS
+#   --bg, --bg=false
+#     	Run the command as a background process (default false)
+#   --http uint
+#     	Expose an HTTP server at the specified port
+#   --https uint
+#     	Expose an HTTPS server at the specified port (default mode)
+#   --set-path string
+#     	Appends the specified path to the base URL for accessing the underlying service
+#   --tcp uint
+#     	Expose a TCP forwarder to forward raw TCP packets at the specified port
+#   --tls-terminated-tcp uint
+#     	Expose a TCP forwarder to forward TLS-terminated TCP packets at the specified port
+#   --yes, --yes=false
+#     	Update without interactive prompts (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   status
+#
+# FLAGS
+#   --json, --json=false
+#     	output JSON (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   reset
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   version [flags]
+#
+# FLAGS
+#   --daemon, --daemon=false
+#     	also print local node's daemon version (default false)
+#   --json, --json=false
+#     	output in JSON format (default false)
+#   --upstream, --upstream=false
+#     	fetch and print the latest upstream release version from pkgs.tailscale.com (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   web [flags]
+#
+# "tailscale web" runs a webserver for controlling the Tailscale daemon.
+#
+# It's primarily intended for use on Synology, QNAP, and other
+# NAS devices where a web interface is the natural place to control
+# Tailscale, as opposed to a CLI or a native app.
+#
+# FLAGS
+#   --cgi, --cgi=false
+#     	run as CGI script (default false)
+#   --listen string
+#     	listen address; use port 0 for automatic (default localhost:8088)
+#   --prefix string
+#     	URL prefix added to requests (for cgi or reverse proxies)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   file <cp|get> ...
+#
+# SUBCOMMANDS
+#   cp   Copy file(s) to a host
+#   get  Move files out of the Tailscale file inbox
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Copy file(s) to a host
+#
+# USAGE
+#   file cp <files...> <target>:
+#
+# FLAGS
+#   -name string    alternate filename to use, especially useful when <file> is "-" (stdin)
+#   -targets=false  list possible file cp targets
+#   -verbose=false  verbose output
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Move files out of the Tailscale file inbox
+#
+# USAGE
+#   file get [--wait] [--verbose] [--conflict=(skip|overwrite|rename)] <target-directory>
+#
+# FLAGS
+#   -conflict skip  behavior when a conflicting (same-named) file already exists in the target directory.
+#                   skip:       skip conflicting files: leave them in the taildrop inbox and print an error. get any non-conflicting files
+#                   overwrite:  overwrite existing file
+#                   rename:     write to a new number-suffixed filename
+#   -loop=false     run get in a loop, receiving files as they come in
+#   -verbose=false  verbose output
+#   -wait=false     wait for a file to arrive if inbox is empty
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   cert [flags] <domain>
+#
+# FLAGS
+#   --cert-file string
+#     	output cert file or "-" for stdout; defaults to DOMAIN.crt if --cert-file and --key-file are both unset
+#   --key-file string
+#     	output key file or "-" for stdout; defaults to DOMAIN.key if --cert-file and --key-file are both unset
+#   --serve-demo, --serve-demo=false
+#     	if true, serve on port :443 using the cert as a demo, instead of writing out the files to disk (default false)
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   lock <sub-command> <arguments>
+#
+# Manage tailnet lock
+#
+# SUBCOMMANDS
+#   init             Initialize tailnet lock
+#   status           Outputs the state of tailnet lock
+#   add              Adds one or more trusted signing keys to tailnet lock
+#   remove           Removes one or more trusted signing keys from tailnet lock
+#   sign             Signs a node or pre-approved auth key
+#   disable          Consumes a disablement secret to shut down tailnet lock for the tailnet
+#   disablement-kdf  Computes a disablement value from a disablement secret (advanced users only)
+#   log              List changes applied to tailnet lock
+#   local-disable    Disables tailnet lock for this node only
+#   revoke-keys      Revoke compromised tailnet-lock keys
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   licenses
+#
+# Get open source license information
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   exit-node [flags]
+#
+# SUBCOMMANDS
+#   list  Show exit nodes
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Show exit nodes
+#
+# USAGE
+#   exit-node list [flags]
+#
+# FLAGS
+#   -filter string  filter exit nodes by country
+#
+# -----------------------------------------------------------------------------
+#
+# USAGE
+#   whois [--json] [ip|ip:port]
+#
+# 'tailscale whois' shows the machine and user associated with a Tailscale IP (v4 or v6).
+#
+# FLAGS
+#   --json, --json=false
+#     	output in JSON format (default false)
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
