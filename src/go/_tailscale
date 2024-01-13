@@ -35,10 +35,10 @@
 #
 # tailscale.com/cmd/tailscale
 #
-# 1.57.9
+# 1.57.84
 #   track: unstable (dev); frequent updates and bugs are likely
-#   tailscale commit: 3a635db06e61b2614f748b5d9fb90c770456d98b
-#   other commit: 6fa4e4bbdb8bc5fa17d2579024102b9021117d2e
+#   tailscale commit: 7100b6e72162d532efd10021e47b710fc10c9b64
+#   other commit: baf68704840f8905189bb6818f0c55b969061bfa
 #   go version: go1.21.5
 #
 # -----------------------------------------------------------------------------
@@ -49,6 +49,7 @@ function _tailscale() {
 
   local _tailscale_cmd=$(alias tailscale | cut -d'=' -f 2)
 
+  # NOTE(zchee): hide bugreport subcommand
   local -a _commands
   _commands=(
     "up:Connect to Tailscale, logging in if needed"
@@ -72,7 +73,7 @@ function _tailscale() {
     "cert:Get TLS certs"
     "lock:Manage tailnet lock"
     "licenses:Get open source license information"
-    "exit-node:Tailscale exit node"
+    "exit-node:machines on your tailnet configured as exit nodes"
     "update:Update Tailscale to the latest/different version"
     "whois:Show the machine and user associated with a Tailscale IP (v4 or v6)"
   )
@@ -370,7 +371,7 @@ _tailscale "$*"
 #   cert       Get TLS certs
 #   lock       Manage tailnet lock
 #   licenses   Get open source license information
-#   exit-node
+#   exit-node  Show machines on your tailnet configured as exit nodes
 #   update     [BETA] Update Tailscale to the latest/different version
 #   whois      Show the machine and user associated with a Tailscale IP (v4 or v6)
 #
@@ -379,7 +380,6 @@ _tailscale "$*"
 #     	path to tailscaled socket (default /var/run/tailscaled.socket)
 #
 # -----------------------------------------------------------------------------
-#
 #
 # USAGE
 #   up [flags]
@@ -572,7 +572,6 @@ _tailscale "$*"
 #   kubeconfig  [ALPHA] Connect to a Kubernetes cluster using a Tailscale Auth Proxy
 #
 # -----------------------------------------------------------------------------
-#
 # DESCRIPTION
 #   [ALPHA] Connect to a Kubernetes cluster using a Tailscale Auth Proxy
 #
@@ -934,21 +933,183 @@ _tailscale "$*"
 #
 # -----------------------------------------------------------------------------
 #
+# DESCRIPTION
+#   Initialize tailnet lock
+#
+# USAGE
+#   init [--gen-disablement-for-support] --gen-disablements N <trusted-key>...
+#
+# The 'tailscale lock init' command initializes tailnet lock for the
+# entire tailnet. The tailnet lock keys specified are those initially
+# trusted to sign nodes or to make further changes to tailnet lock.
+#
+# You can identify the tailnet lock key for a node you wish to trust by
+# running 'tailscale lock' on that node, and copying the node's tailnet
+# lock key.
+#
+# To disable tailnet lock, use the 'tailscale lock disable' command
+# along with one of the disablement secrets.
+# The number of disablement secrets to be generated is specified using the
+# --gen-disablements flag. Initializing tailnet lock requires at least
+# one disablement.
+#
+# If --gen-disablement-for-support is specified, an additional disablement secret
+# will be generated and transmitted to Tailscale, which support can use to disable
+# tailnet lock. We recommend setting this flag.
+#
+# FLAGS
+#   -confirm=false                      do not prompt for confirmation
+#   -gen-disablement-for-support=false  generates and transmits a disablement secret for Tailscale support
+#   -gen-disablements 1                 number of disablement secrets to generate
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Outputs the state of tailnet lock
+#
+# USAGE
+#   status
+#
+# Outputs the state of tailnet lock
+#
+# FLAGS
+#   -json=false  output in JSON format (WARNING: format subject to change)
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Adds one or more trusted signing keys to tailnet lock
+#
+# USAGE
+#   add <public-key>...
+#
+# Adds one or more trusted signing keys to tailnet lock
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Removes one or more trusted signing keys from tailnet lock
+#
+# USAGE
+#   remove [--re-sign=false] <public-key>...
+#
+# Removes one or more trusted signing keys from tailnet lock
+#
+# FLAGS
+#   -re-sign=true  resign signatures which would be invalidated by removal of trusted signing keys
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Signs a node or pre-approved auth key
+#
+# USAGE
+#   sign <node-key> [<rotation-key>] or sign <auth-key>
+#
+# Either:
+#   - signs a node key and transmits the signature to the coordination server, or
+#   - signs a pre-approved auth key, printing it in a form that can be used to bring up nodes under tailnet lock
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Consumes a disablement secret to shut down tailnet lock for the tailnet
+#
+# USAGE
+#   disable <disablement-secret>
+#
+# The 'tailscale lock disable' command uses the specified disablement
+# secret to disable tailnet lock.
+#
+# If tailnet lock is re-enabled, new disablement secrets can be generated.
+#
+# Once this secret is used, it has been distributed
+# to all nodes in the tailnet and should be considered public.
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Computes a disablement value from a disablement secret (advanced users only)
+#
+# USAGE
+#   disablement-kdf <hex-encoded-disablement-secret>
+#
+# Computes a disablement value from a disablement secret (advanced users only)
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   List changes applied to tailnet lock
+#
+# USAGE
+#   log [--limit N]
+#
+# List changes applied to tailnet lock
+#
+# FLAGS
+#   -json=false  output in JSON format (WARNING: format subject to change)
+#   -limit 50    max number of updates to list
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Disables tailnet lock for this node only
+#
+# USAGE
+#   local-disable
+#
+# The 'tailscale lock local-disable' command disables tailnet lock for only
+# the current node.
+#
+# If the current node is locked out, this does not mean that it can initiate
+# connections in a tailnet with tailnet lock enabled. Rather, this means
+# that the current node will accept traffic from other nodes in the tailnet
+# that are locked out.
+#
+# -----------------------------------------------------------------------------
+#
+# DESCRIPTION
+#   Revoke compromised tailnet-lock keys
+#
+# USAGE
+#   revoke-keys <tailnet-lock-key>...
+#   revoke-keys [--cosign] [--finish] <recovery-blob>
+#
+# Retroactively revoke the specified tailnet lock keys (tlpub:abc).
+#
+# Revoked keys are prevented from being used in the future. Any nodes previously signed
+# by revoked keys lose their authorization and must be signed again.
+#
+# Revocation is a multi-step process that requires several signing nodes to `--cosign` the revocation. Use `tailscale lock remove` instead if the key has not been compromised.
+#
+# 1. To start, run `tailscale revoke-keys <tlpub-keys>` with the tailnet lock keys to revoke.
+# 2. Re-run the `--cosign` command output by `revoke-keys` on other signing nodes. Use the
+#    most recent command output on the next signing node in sequence.
+# 3. Once the number of `--cosign`s is greater than the number of keys being revoked,
+#    run the command one final time with `--finish` instead of `--cosign`.
+#
+# FLAGS
+#   -cosign=false      continue generating the recovery using the tailnet lock key on this device and the provided recovery blob
+#   -finish=false      finish the recovery process by transmitting the revocation
+#   -fork-from string  parent AUM hash to rewrite from (advanced users only)
+#
+# -----------------------------------------------------------------------------
+#
 # USAGE
 #   licenses
 #
 # Get open source license information
 #
 # -----------------------------------------------------------------------------
-#
 # USAGE
 #   exit-node [flags]
+#
+# Show machines on your tailnet configured as exit nodes
 #
 # SUBCOMMANDS
 #   list  Show exit nodes
 #
 # -----------------------------------------------------------------------------
-#
 # DESCRIPTION
 #   Show exit nodes
 #
@@ -961,7 +1122,7 @@ _tailscale "$*"
 # -----------------------------------------------------------------------------
 #
 # USAGE
-#   whois [--json] [ip|ip:port]
+#   whois [--json] ip[:port]
 #
 # 'tailscale whois' shows the machine and user associated with a Tailscale IP (v4 or v6).
 #
