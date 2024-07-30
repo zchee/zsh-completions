@@ -1,0 +1,127 @@
+#compdef yamlfmt
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2023, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/google/yamlfmt/cmd/yamlfmt
+#
+# -----------------------------------------------------------------------------
+
+function _yamlfmt() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    "-conf[Read yamlfmt config from this path]:config file:_files" \
+    "-continue_on_error[Continue to format files that didn't fail instead of exiting with code 1.]" \
+    "-debug[Debug codes to activate for debug logging]" \
+    "-dry[Perform a dry run; show the output of a formatting operation without performing it.]" \
+    "-dstar[Use doublestar globs for include and exclude]" \
+    "-exclude[Paths to exclude]:exclude files:_files" \
+    "-extensions[File extensions to use for standard path collection]:extensions" \
+    "-formatter[Config value overrides to pass to the formatter]:formatter" \
+    "-gitignore_excludes[Use a gitignore file for excludes]" \
+    "-gitignore_path[Path to gitignore file to use (default \".gitignore\")]:gitignore path:_files" \
+    "-global_conf[Use global yamlfmt config from XDG_CONFIG_HOME]" \
+    "-in[Format yaml read from stdin and output to stdout]" \
+    "-lint[Check if there are any differences between source yaml and formatted yaml.]" \
+    "-no_global_conf[Disabled usage of global yamlfmt config from XDG_CONFIG_HOME]" \
+    "-output_format[The engine output format (default \"default\")]" \
+    "-print_conf[Print config]" \
+    "-quiet[Print minimal output to stdout]" \
+    "-version[Print yamlfmt version]" \
+    \
+    "*:files:_files" \
+    && ret=0
+
+  return ret
+}
+
+_yamlfmt "$*"
+
+# -----------------------------------------------------------------------------
+#
+# yamlfmt is a simple command line tool for formatting yaml files.
+#
+# 	Arguments:
+#
+# 	Glob paths to yaml files
+# 			Send any number of paths to yaml files specified in doublestar glob format (see: https://github.com/bmatcuk/doublestar).
+# 			Any flags must be specified before the paths.
+#
+# 	- or /dev/stdin
+# 			Passing in a single - or /dev/stdin will read the yaml from stdin and output the formatted result to stdout
+#
+# 	Flags:
+#   -conf string
+#     	Read yamlfmt config from this path
+#   -continue_on_error
+#     	Continue to format files that didn't fail instead of exiting with code 1.
+#   -debug value
+#     	Debug codes to activate for debug logging
+#   -dry
+#     	Perform a dry run; show the output of a formatting
+#     	operation without performing it.
+#   -dstar
+#     	Use doublestar globs for include and exclude
+#   -exclude value
+#     	Paths to exclude in the chosen format (standard or doublestar)
+#   -extensions value
+#     	File extensions to use for standard path collection
+#   -formatter value
+#     	Config value overrides to pass to the formatter
+#   -gitignore_excludes
+#     	Use a gitignore file for excludes
+#   -gitignore_path string
+#     	Path to gitignore file to use (default ".gitignore")
+#   -global_conf
+#     	Use global yamlfmt config from XDG_CONFIG_HOME
+#   -in
+#     	Format yaml read from stdin and output to stdout
+#   -lint
+#     	Check if there are any differences between
+#     	source yaml and formatted yaml.
+#   -no_global_conf
+#     	Disabled usage of global yamlfmt config from XDG_CONFIG_HOME
+#   -output_format string
+#     	The engine output format (default "default")
+#   -print_conf
+#     	Print config
+#   -quiet
+#     	Print minimal output to stdout
+#   -version
+#     	Print yamlfmt version
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
