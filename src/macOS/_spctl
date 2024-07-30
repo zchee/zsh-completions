@@ -1,0 +1,266 @@
+#compdef spctl
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2023, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# /usr/sbin/spctl
+# man 8 spctl
+#
+# -----------------------------------------------------------------------------
+
+function _spctl() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a _commands
+  _commands=(
+    "subcommand1:description1"
+    "subcommand2:description2"
+    "subcommand3:description3"
+  )
+
+  _arguments -C \
+    "1: :{_describe 'spctl commands' _commands}" \
+    "*:: :->args" \
+    \
+    '*:(ext) files:_path_files -g "**/*.ext(-.)"' \
+    && ret=0
+
+  local _global_flags flags="--help"
+  global_flags=("(: -)--help[Help for $words[1]]")
+
+  case $state in
+    args)
+      if (( CURRENT == 2 )); then
+        _arguments "*:after the (( CURRENT == 2 )) comment:"
+        return
+      fi
+      _arguments "*:before the (( CURRENT == 2 )) comment:_files"
+
+      case $words[1] in
+        subcommand1)
+          _arguments \
+            $global_flags \
+            "($flags)-bar[subcommand2 -bar argument]" \
+            "($flags)-baz[subcommand2 -baz argument]" \
+            "($flags -q -qux)"{-q,-qux}"[subcommand2 -bar argument comment]" \
+            "($flags -)*:devices:_devices" \
+            && ret=0
+          ;;
+
+        subcommand2)
+          _arguments \
+            $global_flags \
+            "($flags)-foo[subcommand1 -foo argument]" \
+            "($flags -)*:file:_files" \
+            && ret=0
+          ;;
+
+        help)
+          local -a topics
+          topics=(
+            "buildconstraint:build constraints"
+            "buildmode:build modes"
+            "c:calling between Go and C"
+            "cache:build and test caching"
+            "environment:environment variables"
+            "filetype:file types"
+            "go.mod:the go.mod file"
+            "gopath:GOPATH environment variable"
+            "gopath-get:legacy GOPATH go get"
+            "goproxy:module proxy protocol"
+            "importpath:import path syntax"
+            "modules:modules, module versions, and more"
+            "module-get:module-aware go get"
+            "module-auth:module authentication using go.sum"
+            "module-private:module configuration for non-public modules"
+            "packages:package lists and patterns"
+            "testflag:testing flags"
+            "testfunc:testing functions"
+          )
+          _arguments "1: :{_describe 'command' _commands -- topics}"
+          ;;
+
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_spctl "$*"
+
+# -----------------------------------------------------------------------------
+#
+# System Policy Basic Usage:
+#        spctl --assess [--type type] [-v] path ... # assessment
+#        spctl --add [--type type] [--path|--requirement|--anchor|--hash] spec ... # add rule(s)
+#        spctl [--enable|--disable|--remove] [--type type] [--path|--requirement|--anchor|--hash|--rule] spec # change rule(s)
+#        spctl --status | --global-enable | --global-disable # system global switch
+#
+# Developer Mode Usage:
+#     spctl developer-mode <action>
+#         enable-terminal
+#             Add Terminal as a developer tool.
+# Kernel Extension User Consent Usage:
+#     spctl kext-consent <action>         ** Modifications only available in Recovery OS **
+#         status
+#             Print whether kernel extension user consent is enabled or disabled.
+#         enable
+#             Enable requiring user consent for kernel extensions.
+#         disable
+#             Disable requiring user consent for kernel extensions.
+#         add <team-id>
+#             Insert a new Team Identifier into the list allowed to load kernel extensions without user consent.
+#         list
+#             Print the list of Team Identifiers allowed to load without user consent.
+#         remove <team-id>
+#             Remove a Team Identifier from the list allowed to load kernel extensions without user consent.
+#
+# -----------------------------------------------------------------------------
+#
+# SPCTL(8)          System Manager's Manual          SPCTL(8)
+#
+# NAME
+#      spctl - SecAssessment system policy security
+#
+# SYNOPSIS
+#      spctl --assess [-t type] [-] file ...
+#      spctl --global-enable | --global-disable
+#      spctl --enable | --disable | --remove [-t type] [--path path] [--requirement requirement] [--anchor hash] [--hash hash]
+#      spctl --status
+#
+# DESCRIPTION
+#      spctl manages the security assessment policy subsystem.
+#
+#      This subsystem maintains and evaluates rules that determine whether the system allows the installation, execution, and other operations on files on the system.
+#
+#      spctl requires one command option that determines its principal operation:
+#
+#      --add    Add rule(s) to the system-wide assessment rule database.
+#
+#      -a, --assess
+#               Requests that spctl perform an assessment on the files given.
+#
+#      --disable
+#               Disable one or more rules in the assessment rule database.  Disabled rules are not considered when performing assessment, but remain in the database and can be re-enabled later.
+#
+#      --enable
+#               Enable rule(s) in the assessment rule database, counteracting earlier disabling.
+#
+#      --disable
+#
+#      --global-disable
+#               Disable the assessment subsystem altogether.  Operations that would be denied by system policy will be allowed to proceed; assessment APIs always report success.  Requires root access.
+#
+#      --global-enable
+#               Enable the assessment subsystem.  Operations that are denied by system policy will fail; assessment APIs report the truth.  Requires root access.
+#
+#      --remove
+#               Remove rule(s) from the assessment rule database.
+#
+#      --status
+#               Query whether the assessment subsystem is enabled or disabled.
+#
+#      In addition, the following options are recognized:
+#
+#      --anchor
+#               In rule update operations, indicates that the arguments are hashes of anchor certificates.
+#
+#      --continue
+#               If the assessment of a file fails, continue assessing additional file arguments.  Without this option, the first failed assessment terminates operation.
+#
+#      --hash   In rule update operations, indicates that the arguments are code directory hashes.
+#
+#      --ignore-cache
+#               Do not query or use the assessment object cache.  This may significantly slow down operation.  Newly generated assessments may still be stored in the cache.
+#
+#      --label label
+#               Specifies a string label to attach to new rules, or find in existing rules.  Labels are arbitrary strings that are assigned by convention.  Rule labels are optional.
+#
+#      --no-cache
+#               Do not place the outcome of any assessments into the assessment object cache.  No other assessment may reuse this outcome.  This option not prohibit the use of existing cache entries.
+#
+#      --path   In rule update operations, indicates that the argument(s) denote paths to files on disk.
+#
+#      --priority priority
+#               In rule update operations, specifies the priority of the rule(s) created or changed.  Priorities are floating-point numbers.  Higher numeric values indicate higher priority.
+#
+#      --raw    When displaying the outcome of an assessment, write it as a "raw" XML plist instead of parsing it in somewhat more friendly form.  This is useful when used in scripts, or to access newly invented assessment aspects that spctl does not yet know about.
+#
+#      --requirement
+#               In rule update operations, indicates that the argument(s) are code requirement source.
+#
+#      --reset-default
+#               Unconditionally reset the system policy database to its default value. This discards all changes made by administrators. It also heals any corruption to the database. It does not implicitly either enable or disable the facility. This must be done as the super user. Reboot after use.
+#
+#      --rule   In rule update operations, indicates that the argument(s) are the index numbers of existing rules.
+#
+#      -t, --type
+#               Specify which type of assessment is desired: execute to assess code execution, install to assess installation of an installer package, and open to assess the opening of documents.  The default is to assess execution.
+#
+#      -v, --verbose
+#               Requests more verbose output.  Repeat the option or give it a higher numeric value to increase verbosity.
+#
+# RULE SUBJECTS
+#      The system assessement rule database contains entries that match candidates based on Code Requirements.  spctl allows you to specify these requirements directly using the --requirement option.  In addition, individual programs on disk can be addressed with the --path option (which uses their Designated Requirement).  The --anchor option takes the hash of a (full) certificate and turns it into a requirement matching any signature based on that anchor certificate.  Alternatively, it can take the absolute path of a certificate file on disk, containing the DER form of an anchor certificate.  Finally, the --hash option generates a code requirement that denotes only and exactly one program whose CodeDirectory hash is given.  The means of specifying subjects does not affect the remaining processing.
+#
+# FILES
+#      /var/db/SystemPolicy  The system policy database.
+#      /var/db/.SystemPolicy-default
+#                            A copy of the initial distribution version of the system policy database.  Useful for starting over if the database gets messed up beyond recognition.
+#
+# EXAMPLES
+#      To check whether Mail.app is allowed to run on the local system:
+#            spctl -a /Applications/Mail.app
+#
+#      To allow Frobozz.app to run on the local system:
+#            spctl --add --label "My Stuff" /Applications/Frobozz.app
+#
+#      To forbid all code obtained from the Mac App Store from running:
+#            spctl --disable --label "Mac App Store"
+#
+# DIAGNOSTICS
+#      spctl exits zero on success, or one if an operation has failed.  Exit code two indicates unrecognized or unsuitable arguments.  If an assessment operation results in denial but no other problem has occurred, the exit code is three.
+#
+# SEE ALSO
+#      codesign(1), syspolicyd(1)
+#
+# HISTORY
+#      The system policy facility and spctl command first appeared in Mac OS X Lion 10.7.3 as a limited developer preview.
+#
+# macOS 13.3          January 19, 2012          macOS 13.3
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
