@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 # The BSD-3-Clause License
 #
-# Copyright (c) 2018, Koichi Shiraishi
+# Copyright 2025, The zsh-completions Authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# github.com/golangci/golangci-lint/cmd/golangci-lint
+# github.com/golangci/golangci-lint/v2/cmd/golangci-lint@ccf16f7213cc
 #
 # -------------------------------------------------------------------------------
 
@@ -44,52 +44,55 @@ function _golangci-lint() {
   local -a commands
   commands=(
     "cache:Cache control and information"
-    "completion:Output completion script"
-    "config:Config"
+    "config:Config file information"
+    "custom:Build a version of golangci-lint with custom linters"
+    "fmt:Format Go source files"
+    "formatters:List current formatters configuration"
     "help:Help"
     "linters:List current linters configuration"
-    "run:Run linters"
+    "migrate:Migrate configuration file from v1 to v2"
+    "run:Run the linters"
     "version:Version"
   )
 
   local -a _global_flags
   _global_flags=(
-    "--color=[Use color when printing \(default "auto"\)]:color mode:(always auto never)"
-    {-j,--concurrency}="[Concurrency \(default NumCPU\)]:num of concurrency"
-    "--cpu-profile-path=[Path to CPU profile output file]:cpu profile filepath:_files"
-    "--mem-profile-path=[Path to memory profile output file]:memory profile filepath:_files"
-    "--trace-path=[Path to trace output file]:trace profile filepath:_files"
-    {-v,--verbose}"[verbose output]"
-    "--version[Print version]"
-    {-h,--help}"[Show help]"
+    "--color=[Use color when printing (default \"auto\")]:color mode:(always auto never)"
+    {-h,--help}"[Help for a command]"
+    {-v,--verbose}"[Verbose output]"
   )
+
+  local -a _linters_
+  _linters="($( _call_program linters golangci-lint linters | grep -v -e Enabled -e Disabled | awk -F':' '{print $1}' | sed '/^$/d' ))"
+  local -a _formatters
+  _formatters="($( _call_program formatters golangci-lint formatters | grep -v -e Enabled -e Disabled | awk -F':' '{print $1}' | sed '/^$/d' ))"
 
   local -a _all_flags
   _all_flags=(
-    "--out-format=[Format of output \(default "colored-line-number"\)]:output format:(colored-line-number line-number json tab checkstyle code-climate html junit-xml github-actions)"
-    "--print-issued-lines[Print lines of code with issue \(default true\)]"
-    "--print-linter-name [Print linter name in issue line \(default true\)]"
-    "--uniq-by-line[Make issues output unique by line \(default true\)]"
+    "--out-format=[Format of output (default \"colored-line-number\")]:output format:(colored-line-number line-number json tab checkstyle code-climate html junit-xml github-actions)"
+    "--print-issued-lines[Print lines of code with issue (default true)]"
+    "--print-linter-name [Print linter name in issue line (default true)]"
+    "--uniq-by-line[Make issues output unique by line (default true)]"
     "--modules-download-mode=[Modules download mode. If not empty, passed as -mod=<mode> to go tools]:module download mode:(vendor mod readonly)"
-    "--issues-exit-code=[Exit code when issues were found \(default 1\)]:exit code"
+    "--issues-exit-code=[Exit code when issues were found (default 1)]:exit code"
     "--build-tags=[Build tags]:build tags"
-    "--timeout=[Timeout for total work \(default 1m0s\)]:deadline duration"
-    "--tests[Analyze tests (default true\)]"
+    "--timeout=[Timeout for total work (default 1m0s)]:deadline duration"
+    "--tests[Analyze tests (default true)]"
     "--print-resources-usage[Print avg and max memory usage of golangci-lint and total time]"
     {-c,--config}="[Read config from file path PATH]:config path:_files"
     "--no-config[Don't read config]"
     "--skip-dirs=[Regexps of directories to skip]:skip dir regexp:_directories"
     "--skip-dirs-use-default[Use or not use default excluded directories]"
     "--skip-files=[Regexps of files to skip]:skip file name regexp:_files"
-    {-E,--enable}"=[Enable specific linter]:enable linters"
+    {-E,--enable}"=[Enable specific linter]:enable linters:(asciicheck bidichk bodyclose containedctx contextcheck cyclop deadcode decorder depguard dogsled dupl durationcheck errcheck errchkjson errname errorlint exhaustive exportloopref forcetypeassert funlen gocognit goconst gocritic gocyclo godot goerr113 gofmt gofumpt goimports gomodguard goprintffuncname grouper ifshort importas ineffassign lll maintidx makezero misspell nakedret nestif nilerr nilnil nlreturn noctx nolintlint paralleltest prealloc predeclared revive rowserrcheck sqlclosecheck structcheck stylecheck tenv thelper tparallel typecheck unconvert unparam varcheck varnamelen wastedassign whitespace wrapcheck exhaustivestruct forbidigo gci gochecknoglobals gochecknoinits godox goheader gomnd gomoddirectives ireturn promlinter tagliatelle testpackage wsl)"
     {-D,--disable}"=[Disable specific linter]:enable linters"
     "--disable-all[Disable all linters]"
-    {-p,--presets}"[Enable presets \(bugs|complexity|format|performance|style|unused\) of linters.]"
+    {-p,--presets}"[Enable presets (bugs|complexity|format|performance|style|unused) of linters.]"
     "--fast[Run only fast linters from enabled linters set]"
     {-e,--exclude}"=[Exclude issue by regexp]:exclude regexp pattern"
     "--exclude-use-default[Use or not use default excludes]"
-    "--max-issues-per-linter=[Maximum issues count per one linter. Set to 0 to disable \(default 50\)]:max issues count"
-    "--max-same-issues=[Maximum count of issues with the same text. Set to 0 to disable \(default 3\)]:max count of same issues text"
+    "--max-issues-per-linter=[Maximum issues count per one linter. Set to 0 to disable (default 50)]:max issues count"
+    "--max-same-issues=[Maximum count of issues with the same text. Set to 0 to disable (default 3)]:max count of same issues text"
     {-n,--new}"[Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.]"
     "--new-from-rev=[Show only new issues created after git revision REV]:git revision"
     "--new-from-patch=[Show only new issues created in git patch with file path PATH]:git patch file path:_files"
@@ -141,16 +144,17 @@ function _golangci-lint() {
       esac
       ;;
 
-    completion)
-      local -a completion_commands
-      completion_commands=(
-        "bash:Output bash completion script"
-        "zsh:Output zsh completion script"
-      )
-
+    fmt)
       _arguments \
-        "1: :{_describe 'completion commands' completion_commands}" \
-        $_global_flags[@]
+        {-c,--config}"[Read config from file path]:config path:_files" \
+        "--no-config[Don't read config file]" \
+        {-E,--enable}"[Enable specific formatter]:formatter:$_formatters" \
+        {-d,--diff}"[Display diffs instead of rewriting files]" \
+        "--diff-colored[Display diffs instead of rewriting files (with colors)]" \
+        "--stdin[Use standard input for piping source files]" \
+        \
+        $_global_flags[@] \
+        "1:files or packages:_files" \
       ;;
 
     help)
@@ -176,8 +180,55 @@ function _golangci-lint() {
 
     run)
       _arguments \
+        {-c,--config}"[Read config from file path]:config path:_files" \
+        "--no-config[Don't read config file]" \
+        "--default[Default set of linters to enable (default \"standard\")]" \
+        {-D,--disable}"[Disable specific linter]:linter:$_linters" \
+        {-E,--enable}"[Enable specific linter]:linters:$_linters" \
+        "--enable-only[Override linters configuration section to only run the specific linter(s)]:linters:$_linters" \
+        "--fast-only[Filter enabled linters to run only fast linters]" \
+        {-j,--concurrency}"[Number of CPUs to use (Default: Automatically set to match Linux container CPU quota and fall back to the number of logical CPUs in the machine)]:concurrency" \
+        "--modules-download-mode[Modules download mode. If not empty, passed as -mod=<mode> to go tools]:module mode" \
+        "--issues-exit-code[Exit code when issues were found (default 1)]:exit code" \
+        "--build-tags[Build tags]:build tags" \
+        "--timeout[Timeout for total work. Disabled by default]:timeout" \
+        "--tests[Analyze tests (*_test.go) (default true)]" \
+        "--allow-parallel-runners[Allow multiple parallel golangci-lint instances running. If false (default) - golangci-lint acquires file lock on start.]" \
+        "--allow-serial-runners[Allow multiple golangci-lint instances running, but serialize them around a lock. If false (default) - golangci-lint exits with an error if it fails to acquire file lock on start.]" \
+        "--path-prefix[Path prefix to add to output]:prefix" \
+        "--path-mode[Path mode to use (empty, or 'abs')]:path mode" \
+        "--show-stats[Show statistics per linter (default true)]" \
+        "--output.text.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.text.print-linter-name[Print linter name in the end of issue text. (default true)]" \
+        "--output.text.print-issued-lines[Print lines of code with issue. (default true)]" \
+        "--output.text.colors[Use colors. (default true)]" \
+        "--output.json.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.tab.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.tab.print-linter-name[Print linter name in the end of issue text. (default true)]" \
+        "--output.tab.colors[Use colors. (default true)]" \
+        "--output.html.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.checkstyle.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.code-climate.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.junit-xml.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.junit-xml.extended[Support extra JUnit XML fields.]" \
+        "--output.teamcity.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--output.sarif.path[Output path can be either stdout, stderr or path to the file to write to.]:output path:(stdout stderr)" \
+        "--max-issues-per-linter[Maximum issues count per one linter. Set to 0 to disable (default 50)]:issues count" \
+        "--max-same-issues[Maximum count of issues with the same text. Set to 0 to disable (default 3)]:Maximum count of issues" \
+        "--uniq-by-line[Make issues output unique by line (default true)]" \
+        {-n,--new}"[Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.]" \
+        "--new-from-rev[Show only new issues created after git revision REV]:revision" \
+        "--new-from-patch[Show only new issues created in git patch with file path PATH]:path:_files" \
+        "--new-from-merge-base[Show only new issues created after the best common ancestor (merge-base against HEAD)]:base" \
+        "--whole-files[Show issues in any part of update files (requires new-from-rev or new-from-patch)]" \
+        "--fix[Fix found issues (if it's supported by the linter)]" \
+        "--cpu-profile-path[Path to CPU profile output file]:profile output:_files" \
+        "--mem-profile-path[Path to memory profile output file]:profile output:_files" \
+        "--print-resources-usage[Print avg and max memory usage of golangci-lint and total time]" \
+        "--trace-path[Path to trace output file]:profile output:_files" \
+        \
+        $_global_flags[@] \
         "1:files or packages:_files" \
-        $_all_flags[@]
       ;;
 
     version)
@@ -190,9 +241,9 @@ function _golangci-lint() {
 
 _golangci-lint "$*"
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
-# Smart, fast linters runner. Run it in cloud for every GitHub pull request on https://golangci.com
+# Smart, fast linters runner.
 #
 # Usage:
 #   golangci-lint [flags]
@@ -200,26 +251,26 @@ _golangci-lint "$*"
 #
 # Available Commands:
 #   cache       Cache control and information
-#   completion  Output completion script
-#   config      Config
+#   completion  Generate the autocompletion script for the specified shell
+#   config      Config file information
+#   custom      Build a version of golangci-lint with custom linters
+#   fmt         Format Go source files
+#   formatters  List current formatters configuration
 #   help        Help
 #   linters     List current linters configuration
-#   run         Run this tool in cloud on every github pull request in https://golangci.com for free (public repos)
+#   migrate     Migrate configuration file from v1 to v2
+#   run         Run the linters
 #   version     Version
 #
 # Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#   -h, --help                      help for golangci-lint
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
+#       --version        Print version
 #
 # Use "golangci-lint [command] --help" for more information about a command.
 #
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Cache control and information
 #
@@ -231,86 +282,16 @@ _golangci-lint "$*"
 #   clean       Clean cache
 #   status      Show cache status
 #
-# Flags:
-#   -h, --help   help for cache
-#
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
 #
 # Use "golangci-lint cache [command] --help" for more information about a command.
 #
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
-# Clean cache
-#
-# Usage:
-#   golangci-lint cache clean [flags]
-#
-# Flags:
-#   -h, --help   help for clean
-#
-# Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
-#
-# -------------------------------------------------------------------------------
-#
-# Show cache status
-#
-# Usage:
-#   golangci-lint cache status [flags]
-#
-# Flags:
-#   -h, --help   help for status
-#
-# Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
-#
-# -------------------------------------------------------------------------------
-#
-# Output completion script
-#
-# Usage:
-#   golangci-lint completion [command]
-#
-# Available Commands:
-#   bash        Output bash completion script
-#   zsh         Output zsh completion script
-#
-# Flags:
-#   -h, --help   help for completion
-#
-# Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
-#
-# Use "golangci-lint completion [command] --help" for more information about a command.
-#
-# -------------------------------------------------------------------------------
-#
-# Config
+# Config file information
 #
 # Usage:
 #   golangci-lint config [flags]
@@ -318,22 +299,20 @@ _golangci-lint "$*"
 #
 # Available Commands:
 #   path        Print used config path
+#   verify      Verify configuration against JSON schema
 #
 # Flags:
-#   -h, --help   help for config
+#   -c, --config PATH   Read config from file path PATH
+#       --no-config     Don't read config file
 #
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
 #
 # Use "golangci-lint config [command] --help" for more information about a command.
 #
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Print used config path
 #
@@ -341,111 +320,85 @@ _golangci-lint "$*"
 #   golangci-lint config path [flags]
 #
 # Flags:
-#       --out-format string              Format of output: colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml (default "colored-line-number")
-#       --print-issued-lines             Print lines of code with issue (default true)
-#       --print-linter-name              Print linter name in issue line (default true)
-#       --uniq-by-line                   Make issues output unique by line (default true)
-#       --modules-download-mode string   Modules download mode. If not empty, passed as -mod=<mode> to go tools
-#       --issues-exit-code int           Exit code when issues were found (default 1)
-#       --build-tags strings             Build tags
-#       --timeout duration               Timeout for total work (default 1m0s)
-#       --tests                          Analyze tests (*_test.go) (default true)
-#       --print-resources-usage          Print avg and max memory usage of golangci-lint and total time
-#   -c, --config PATH                    Read config from file path PATH
-#       --no-config                      Don't read config
-#       --skip-dirs strings              Regexps of directories to skip
-#       --skip-dirs-use-default          Use or not use default excluded directories:
-#                                          - (^|/)vendor($|/)
-#                                          - (^|/)third_party($|/)
-#                                          - (^|/)testdata($|/)
-#                                          - (^|/)examples($|/)
-#                                          - (^|/)Godeps($|/)
-#                                          - (^|/)builtin($|/)
-#                                         (default true)
-#       --skip-files strings             Regexps of files to skip
-#   -E, --enable strings                 Enable specific linter
-#   -D, --disable strings                Disable specific linter
-#       --disable-all                    Disable all linters
-#   -p, --presets strings                Enable presets (bugs|complexity|format|performance|style|unused) of linters. Run 'golangci-lint linters' to see them. This option implies option --disable-all
-#       --fast                           Run only fast linters from enabled linters set (first run won't be fast)
-#   -e, --exclude strings                Exclude issue by regexp
-#       --exclude-use-default            Use or not use default excludes:
-#                                          # errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
-#                                          - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
-#
-#                                          # golint: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
-#
-#                                          # golint: False positive when tests are defined in package 'test'
-#                                          - func name will be used as test\.Test.* by other packages, and that stutters; consider calling this
-#
-#                                          # govet: Common false positives
-#                                          - (possible misuse of unsafe.Pointer|should have signature)
-#
-#                                          # staticcheck: Developers tend to write in C-style with an explicit 'break' in a 'switch', so it's ok to ignore
-#                                          - ineffective break statement. Did you mean to break out of the outer loop
-#
-#                                          # gosec: Too many false-positives on 'unsafe' usage
-#                                          - Use of unsafe calls should be audited
-#
-#                                          # gosec: Too many false-positives for parametrized shell calls
-#                                          - Subprocess launch(ed with variable|ing should be audited)
-#
-#                                          # gosec: Duplicated errcheck checks
-#                                          - G104
-#
-#                                          # gosec: Too many issues in popular repos
-#                                          - (Expect directory permissions to be 0750 or less|Expect file permissions to be 0600 or less)
-#
-#                                          # gosec: False positive is triggered by 'src, err := ioutil.ReadFile(filename)'
-#                                          - Potential file inclusion via variable
-#                                         (default true)
-#       --max-issues-per-linter int      Maximum issues count per one linter. Set to 0 to disable (default 50)
-#       --max-same-issues int            Maximum count of issues with the same text. Set to 0 to disable (default 3)
-#   -n, --new                            Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.
-#                                        It's a super-useful option for integration of golangci-lint into existing large codebase.
-#                                        It's not practical to fix all existing issues at the moment of integration: much better to not allow issues in new code.
-#                                        For CI setups, prefer --new-from-rev=HEAD~, as --new can skip linting the current patch if any scripts generate unstaged files before golangci-lint runs.
-#       --new-from-rev REV               Show only new issues created after git revision REV
-#       --new-from-patch PATH            Show only new issues created in git patch with file path PATH
-#       --fix                            Fix found issues (if it's supported by the linter)
-#   -h, --help                           help for path
+#       --json   Display as JSON
 #
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -c, --config PATH    Read config from file path PATH
+#   -h, --help           Help for a command
+#       --no-config      Don't read config file
+#   -v, --verbose        Verbose output
 #
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
-# Help
+# Verify configuration against JSON schema
 #
 # Usage:
-#   golangci-lint help [flags]
-#   golangci-lint help [command]
-#
-# Available Commands:
-#   linters     Help about linters
-#
-# Flags:
-#   -h, --help   help for help
+#   golangci-lint config verify [flags]
 #
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -c, --config PATH    Read config from file path PATH
+#   -h, --help           Help for a command
+#       --no-config      Don't read config file
+#   -v, --verbose        Verbose output
 #
-# Use "golangci-lint help [command] --help" for more information about a command.
+# ------------------------------------------------------------------------------
 #
-# -------------------------------------------------------------------------------
+#
+# Build a version of golangci-lint with custom linters
+#
+# Usage:
+#   golangci-lint custom [flags]
+#
+# Global Flags:
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
+#
+# ------------------------------------------------------------------------------
+#
+# Format Go source files
+#
+# Usage:
+#   golangci-lint fmt [flags]
+#
+# Flags:
+#   -c, --config PATH      Read config from file path PATH
+#       --no-config        Don't read config file
+#   -E, --enable strings   Enable specific formatter
+#   -d, --diff             Display diffs instead of rewriting files
+#       --diff-colored     Display diffs instead of rewriting files (with colors)
+#       --stdin            Use standard input for piping source files
+#
+# Global Flags:
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
+#
+# ------------------------------------------------------------------------------
+#
+# List current formatters configuration
+#
+# Usage:
+#   golangci-lint formatters [flags]
+#
+# Flags:
+#   -c, --config PATH           Read config from file path PATH
+#       --no-config             Don't read config file
+#       --default string        Default set of linters to enable (default "standard")
+#   -D, --disable strings       Disable specific linter
+#   -E, --enable strings        Enable specific linter
+#       --enable-only strings   Override linters configuration section to only run the specific linter(s)
+#       --fast-only             Filter enabled linters to run only fast linters
+#       --json                  Display as JSON
+#
+# Global Flags:
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
+#
+# ------------------------------------------------------------------------------
 #
 # List current linters configuration
 #
@@ -453,86 +406,41 @@ _golangci-lint "$*"
 #   golangci-lint linters [flags]
 #
 # Flags:
-#       --out-format string              Format of output: colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml (default "colored-line-number")
-#       --print-issued-lines             Print lines of code with issue (default true)
-#       --print-linter-name              Print linter name in issue line (default true)
-#       --uniq-by-line                   Make issues output unique by line (default true)
-#       --modules-download-mode string   Modules download mode. If not empty, passed as -mod=<mode> to go tools
-#       --issues-exit-code int           Exit code when issues were found (default 1)
-#       --build-tags strings             Build tags
-#       --timeout duration               Timeout for total work (default 1m0s)
-#       --tests                          Analyze tests (*_test.go) (default true)
-#       --print-resources-usage          Print avg and max memory usage of golangci-lint and total time
-#   -c, --config PATH                    Read config from file path PATH
-#       --no-config                      Don't read config
-#       --skip-dirs strings              Regexps of directories to skip
-#       --skip-dirs-use-default          Use or not use default excluded directories:
-#                                          - (^|/)vendor($|/)
-#                                          - (^|/)third_party($|/)
-#                                          - (^|/)testdata($|/)
-#                                          - (^|/)examples($|/)
-#                                          - (^|/)Godeps($|/)
-#                                          - (^|/)builtin($|/)
-#                                         (default true)
-#       --skip-files strings             Regexps of files to skip
-#   -E, --enable strings                 Enable specific linter
-#   -D, --disable strings                Disable specific linter
-#       --disable-all                    Disable all linters
-#   -p, --presets strings                Enable presets (bugs|complexity|format|performance|style|unused) of linters. Run 'golangci-lint linters' to see them. This option implies option --disable-all
-#       --fast                           Run only fast linters from enabled linters set (first run won't be fast)
-#   -e, --exclude strings                Exclude issue by regexp
-#       --exclude-use-default            Use or not use default excludes:
-#                                          # errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
-#                                          - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
-#
-#                                          # golint: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
-#
-#                                          # golint: False positive when tests are defined in package 'test'
-#                                          - func name will be used as test\.Test.* by other packages, and that stutters; consider calling this
-#
-#                                          # govet: Common false positives
-#                                          - (possible misuse of unsafe.Pointer|should have signature)
-#
-#                                          # staticcheck: Developers tend to write in C-style with an explicit 'break' in a 'switch', so it's ok to ignore
-#                                          - ineffective break statement. Did you mean to break out of the outer loop
-#
-#                                          # gosec: Too many false-positives on 'unsafe' usage
-#                                          - Use of unsafe calls should be audited
-#
-#                                          # gosec: Too many false-positives for parametrized shell calls
-#                                          - Subprocess launch(ed with variable|ing should be audited)
-#
-#                                          # gosec: Duplicated errcheck checks
-#                                          - G104
-#
-#                                          # gosec: Too many issues in popular repos
-#                                          - (Expect directory permissions to be 0750 or less|Expect file permissions to be 0600 or less)
-#
-#                                          # gosec: False positive is triggered by 'src, err := ioutil.ReadFile(filename)'
-#                                          - Potential file inclusion via variable
-#                                         (default true)
-#       --max-issues-per-linter int      Maximum issues count per one linter. Set to 0 to disable (default 50)
-#       --max-same-issues int            Maximum count of issues with the same text. Set to 0 to disable (default 3)
-#   -n, --new                            Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.
-#                                        It's a super-useful option for integration of golangci-lint into existing large codebase.
-#                                        It's not practical to fix all existing issues at the moment of integration: much better to not allow issues in new code.
-#                                        For CI setups, prefer --new-from-rev=HEAD~, as --new can skip linting the current patch if any scripts generate unstaged files before golangci-lint runs.
-#       --new-from-rev REV               Show only new issues created after git revision REV
-#       --new-from-patch PATH            Show only new issues created in git patch with file path PATH
-#       --fix                            Fix found issues (if it's supported by the linter)
-#   -h, --help                           help for linters
+#   -c, --config PATH           Read config from file path PATH
+#       --no-config             Don't read config file
+#       --default string        Default set of linters to enable (default "standard")
+#   -D, --disable strings       Disable specific linter
+#   -E, --enable strings        Enable specific linter
+#       --enable-only strings   Override linters configuration section to only run the specific linter(s)
+#       --fast-only             Filter enabled linters to run only fast linters
+#       --json                  Display as JSON
 #
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
 #
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+#
+# Migrate configuration file from v1 to v2
+#
+# Usage:
+#   golangci-lint migrate [flags]
+#
+# Flags:
+#   -c, --config PATH       Read config from file path PATH
+#       --no-config         Don't read config file
+#       --format string     Output file format.
+#                           By default, the format of the input configuration file is used.
+#                           It can be 'yml', 'yaml', 'toml', or 'json'.
+#       --skip-validation   Skip validation of the configuration file against the JSON Schema for v1.
+#
+# Global Flags:
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
+#
+# ------------------------------------------------------------------------------
 #
 # Run the linters
 #
@@ -540,108 +448,64 @@ _golangci-lint "$*"
 #   golangci-lint run [flags]
 #
 # Flags:
-#       --out-format string              Format of output: colored-line-number|line-number|json|tab|checkstyle|code-climate|html|junit-xml|github-actions (default "colored-line-number")
-#       --print-issued-lines             Print lines of code with issue (default true)
-#       --print-linter-name              Print linter name in issue line (default true)
-#       --uniq-by-line                   Make issues output unique by line (default true)
-#       --sort-results                   Sort linter results
-#       --path-prefix string             Path prefix to add to output
-#       --modules-download-mode string   Modules download mode. If not empty, passed as -mod=<mode> to go tools
-#       --issues-exit-code int           Exit code when issues were found (default 1)
-#       --build-tags strings             Build tags
-#       --timeout duration               Timeout for total work (default 1m0s)
-#       --tests                          Analyze tests (*_test.go) (default true)
-#       --print-resources-usage          Print avg and max memory usage of golangci-lint and total time
-#   -c, --config PATH                    Read config from file path PATH
-#       --no-config                      Don't read config
-#       --skip-dirs strings              Regexps of directories to skip
-#       --skip-dirs-use-default          Use or not use default excluded directories:
-#                                          - (^|/)vendor($|/)
-#                                          - (^|/)third_party($|/)
-#                                          - (^|/)testdata($|/)
-#                                          - (^|/)examples($|/)
-#                                          - (^|/)Godeps($|/)
-#                                          - (^|/)builtin($|/)
-#                                         (default true)
-#       --skip-files strings             Regexps of files to skip
-#       --allow-parallel-runners         Allow multiple parallel golangci-lint instances running. If false (default) - golangci-lint acquires file lock on start.
-#       --allow-serial-runners           Allow multiple golangci-lint instances running, but serialize them	around a lock. If false (default) - golangci-lint exits with an error if it fails to acquire file lock on start.
-#   -E, --enable strings                 Enable specific linter
-#   -D, --disable strings                Disable specific linter
-#       --enable-all                     Enable all linters
-#       --disable-all                    Disable all linters
-#   -p, --presets strings                Enable presets (bugs|comment|complexity|error|format|import|metalinter|module|performance|sql|style|test|unused) of linters. Run 'golangci-lint linters' to see them. This option implies option --disable-all
-#       --fast                           Run only fast linters from enabled linters set (first run won't be fast)
-#   -e, --exclude strings                Exclude issue by regexp
-#       --exclude-use-default            Use or not use default excludes:
-#                                          # EXC0001 errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
-#                                          - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked
-#
-#                                          # EXC0002 golint: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
-#
-#                                          # EXC0003 golint: False positive when tests are defined in package 'test'
-#                                          - func name will be used as test\.Test.* by other packages, and that stutters; consider calling this
-#
-#                                          # EXC0004 govet: Common false positives
-#                                          - (possible misuse of unsafe.Pointer|should have signature)
-#
-#                                          # EXC0005 staticcheck: Developers tend to write in C-style with an explicit 'break' in a 'switch', so it's ok to ignore
-#                                          - ineffective break statement. Did you mean to break out of the outer loop
-#
-#                                          # EXC0006 gosec: Too many false-positives on 'unsafe' usage
-#                                          - Use of unsafe calls should be audited
-#
-#                                          # EXC0007 gosec: Too many false-positives for parametrized shell calls
-#                                          - Subprocess launch(ed with variable|ing should be audited)
-#
-#                                          # EXC0008 gosec: Duplicated errcheck checks
-#                                          - (G104|G307)
-#
-#                                          # EXC0009 gosec: Too many issues in popular repos
-#                                          - (Expect directory permissions to be 0750 or less|Expect file permissions to be 0600 or less)
-#
-#                                          # EXC0010 gosec: False positive is triggered by 'src, err := ioutil.ReadFile(filename)'
-#                                          - Potential file inclusion via variable
-#
-#                                          # EXC0011 stylecheck: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
-#
-#                                          # EXC0012 revive: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - exported (.+) should have comment( \(or a comment on this block\))? or be unexported
-#
-#                                          # EXC0013 revive: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - package comment should be of the form "(.+)...
-#
-#                                          # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - comment on exported (.+) should be of the form "(.+)..."
-#
-#                                          # EXC0015 revive: Annoying issue about not having a comment. The rare codebase has such comments
-#                                          - should have a package comment, unless it's in another file for this package
-#                                         (default true)
-#       --exclude-case-sensitive         If set to true exclude and exclude rules regular expressions are case sensitive
-#       --max-issues-per-linter int      Maximum issues count per one linter. Set to 0 to disable (default 50)
-#       --max-same-issues int            Maximum count of issues with the same text. Set to 0 to disable (default 3)
-#   -n, --new                            Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.
-#                                        It's a super-useful option for integration of golangci-lint into existing large codebase.
-#                                        It's not practical to fix all existing issues at the moment of integration: much better to not allow issues in new code.
-#                                        For CI setups, prefer --new-from-rev=HEAD~, as --new can skip linting the current patch if any scripts generate unstaged files before golangci-lint runs.
-#       --new-from-rev REV               Show only new issues created after git revision REV
-#       --new-from-patch PATH            Show only new issues created in git patch with file path PATH
-#       --whole-files                    Show issues in any part of update files (requires new-from-rev or new-from-patch)
-#       --fix                            Fix found issues (if it's supported by the linter)
-#   -h, --help                           help for run
+#   -c, --config PATH                       Read config from file path PATH
+#       --no-config                         Don't read config file
+#       --default string                    Default set of linters to enable (default "standard")
+#   -D, --disable strings                   Disable specific linter
+#   -E, --enable strings                    Enable specific linter
+#       --enable-only strings               Override linters configuration section to only run the specific linter(s)
+#       --fast-only                         Filter enabled linters to run only fast linters
+#   -j, --concurrency int                   Number of CPUs to use (Default: Automatically set to match Linux container CPU quota and fall back to the number of logical CPUs in the machine)
+#       --modules-download-mode string      Modules download mode. If not empty, passed as -mod=<mode> to go tools
+#       --issues-exit-code int              Exit code when issues were found (default 1)
+#       --build-tags strings                Build tags
+#       --timeout duration                  Timeout for total work. Disabled by default
+#       --tests                             Analyze tests (*_test.go) (default true)
+#       --allow-parallel-runners            Allow multiple parallel golangci-lint instances running.
+#                                           If false (default) - golangci-lint acquires file lock on start.
+#       --allow-serial-runners              Allow multiple golangci-lint instances running, but serialize them around a lock.
+#                                           If false (default) - golangci-lint exits with an error if it fails to acquire file lock on start.
+#       --path-prefix string                Path prefix to add to output
+#       --path-mode string                  Path mode to use (empty, or 'abs')
+#       --show-stats                        Show statistics per linter (default true)
+#       --output.text.path stdout           Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.text.print-linter-name     Print linter name in the end of issue text. (default true)
+#       --output.text.print-issued-lines    Print lines of code with issue. (default true)
+#       --output.text.colors                Use colors. (default true)
+#       --output.json.path stdout           Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.tab.path stdout            Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.tab.print-linter-name      Print linter name in the end of issue text. (default true)
+#       --output.tab.colors                 Use colors. (default true)
+#       --output.html.path stdout           Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.checkstyle.path stdout     Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.code-climate.path stdout   Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.junit-xml.path stdout      Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.junit-xml.extended         Support extra JUnit XML fields.
+#       --output.teamcity.path stdout       Output path can be either stdout, `stderr` or path to the file to write to.
+#       --output.sarif.path stdout          Output path can be either stdout, `stderr` or path to the file to write to.
+#       --max-issues-per-linter int         Maximum issues count per one linter. Set to 0 to disable (default 50)
+#       --max-same-issues int               Maximum count of issues with the same text. Set to 0 to disable (default 3)
+#       --uniq-by-line                      Make issues output unique by line (default true)
+#   -n, --new                               Show only new issues: if there are unstaged changes or untracked files, only those changes are analyzed, else only changes in HEAD~ are analyzed.
+#                                           It's a super-useful option for integration of golangci-lint into existing large codebase.
+#                                           It's not practical to fix all existing issues at the moment of integration: much better to not allow issues in new code.
+#                                           For CI setups, prefer --new-from-rev=HEAD~, as --new can skip linting the current patch if any scripts generate unstaged files before golangci-lint runs.
+#       --new-from-rev REV                  Show only new issues created after git revision REV
+#       --new-from-patch PATH               Show only new issues created in git patch with file path PATH
+#       --new-from-merge-base string        Show only new issues created after the best common ancestor (merge-base against HEAD)
+#       --whole-files                       Show issues in any part of update files (requires new-from-rev or new-from-patch)
+#       --fix                               Fix found issues (if it's supported by the linter)
+#       --cpu-profile-path string           Path to CPU profile output file
+#       --mem-profile-path string           Path to memory profile output file
+#       --print-resources-usage             Print avg and max memory usage of golangci-lint and total time
+#       --trace-path string                 Path to trace output file
 #
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 20)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
 #
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Version
 #
@@ -649,17 +513,13 @@ _golangci-lint "$*"
 #   golangci-lint version [flags]
 #
 # Flags:
-#   -h, --help   help for version
+#       --debug   Add build information
+#       --json    Display as JSON
+#       --short   Display only the version number
 #
 # Global Flags:
-#       --color string              Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
-#   -j, --concurrency int           Concurrency (default NumCPU) (default 16)
-#       --cpu-profile-path string   Path to CPU profile output file
-#       --mem-profile-path string   Path to memory profile output file
-#       --trace-path string         Path to trace output file
-#   -v, --verbose                   verbose output
-#       --version                   Print version
-#
-# -------------------------------------------------------------------------------
+#       --color string   Use color when printing; can be 'always', 'auto', or 'never' (default "auto")
+#   -h, --help           Help for a command
+#   -v, --verbose        Verbose output
 
 # vim:ft=zsh:et:sts=2:sw=2
