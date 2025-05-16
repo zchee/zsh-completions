@@ -2,7 +2,7 @@
 
 # -----------------------------------------------------------------------------
 #
-# Copyright 2021, The zsh-completions Authors.
+# Copyright 2025, The zsh-completions Authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,16 +41,18 @@ function _$BIN() {
   local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
-  local -a _cmds
-  _cmds=(
+  local -a _commands
+  _commands=(
     "subcommand1:description1"
     "subcommand2:description2"
     "subcommand3:description3"
   )
 
   _arguments -C \
-    "1: :{_describe '$BIN commands' commands}" \
+    "1: :{_describe '$BIN commands' _commands}" \
     "*:: :->args" \
+    \
+    '*:(ext) files:_path_files -g "**/*.ext(-.)"' \
     && ret=0
 
   local _global_flags flags="--help"
@@ -105,7 +107,7 @@ function _$BIN() {
             "testflag:testing flags"
             "testfunc:testing functions"
           )
-          _arguments "1: :{_describe 'command' _cmds -- topics}"
+          _arguments "1: :{_describe 'command' _commands -- topics}"
           ;;
 
       esac
