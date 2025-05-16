@@ -1,0 +1,114 @@
+#compdef oapi-codegen
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2025, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen
+#
+# -----------------------------------------------------------------------------
+
+function _oapi-codegen() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C \
+    "-alias-types[Alias type declarations if possible.]" \
+    "-config[A YAML config file that controls oapi-codegen behavior.]:config file:_files" \
+    "-exclude-operation-ids[Exclude operations with the given operation-ids. Comma-separated list of operation-ids.]:operation-ids" \
+    "-exclude-schemas[A comma separated list of schemas which must be excluded from generation.]:schemas" \
+    "-exclude-tags[Exclude operations that are tagged with the given tags. Comma-separated list of tags.]:tags" \
+    "-generate[Comma-separated list of code to generate; valid options. (default \"types,client,server,spec\")]:options:(types client chi-server server gin gorilla spec skip-fmt skip-prune fiber iris std-http)" \
+    {-h,-help}"[Show this help and exit.]" \
+    "-import-mapping[A dict from the external reference to golang package path.]:import packages" \
+    "-include-operation-ids[Only include operations with the given operation-ids. Comma-separated list of operation-ids.]:operation-ids" \
+    "-include-tags[Only include operations with the given tags. Comma-separated list of tags.]:tags" \
+    "-initialism-overrides[Use initialism overrides.]" \
+    "-o[Where to output generated code, stdout is default.]:output:_files" \
+    "-old-config-style[Whether to use the older style config file format.]" \
+    "-output-config[When true, outputs a configuration file for oapi-codegen using current settings.]" \
+    "-package[The package name for generated code.]:package name" \
+    "-response-type-suffix[The suffix used for responses types.]:suffix of responses types" \
+    "-templates[Path to directory containing user templates.]:template directory:_files" \
+    "-version[When specified, print version and exit.]" \
+    "*:openapi files:_files" \
+    && ret=0
+
+  return ret
+}
+
+_oapi-codegen "$*"
+
+# -----------------------------------------------------------------------------
+#
+# Usage of oapi-codegen:
+#   -alias-types
+#     	Alias type declarations if possible.
+#   -config string
+#     	A YAML config file that controls oapi-codegen behavior.
+#   -exclude-operation-ids string
+#     	Exclude operations with the given operation-ids. Comma-separated list of operation-ids.
+#   -exclude-schemas string
+#     	A comma separated list of schemas which must be excluded from generation.
+#   -exclude-tags string
+#     	Exclude operations that are tagged with the given tags. Comma-separated list of tags.
+#   -generate string
+#     	Comma-separated list of code to generate; valid options: "types", "client", "chi-server", "server", "gin", "gorilla", "spec", "skip-fmt", "skip-prune", "fiber", "iris", "std-http". (default "types,client,server,spec")
+#   -h	Same as -help.
+#   -help
+#     	Show this help and exit.
+#   -import-mapping string
+#     	A dict from the external reference to golang package path.
+#   -include-operation-ids string
+#     	Only include operations with the given operation-ids. Comma-separated list of operation-ids.
+#   -include-tags string
+#     	Only include operations with the given tags. Comma-separated list of tags.
+#   -initialism-overrides
+#     	Use initialism overrides.
+#   -o string
+#     	Where to output generated code, stdout is default.
+#   -old-config-style
+#     	Whether to use the older style config file format.
+#   -output-config
+#     	When true, outputs a configuration file for oapi-codegen using current settings.
+#   -package string
+#     	The package name for generated code.
+#   -response-type-suffix string
+#     	The suffix used for responses types.
+#   -templates string
+#     	Path to directory containing user templates.
+#   -version
+#     	When specified, print version and exit.
+#
+# -----------------------------------------------------------------------------
+ 
+# vim:ft=zsh:et:sts=2:sw=2
