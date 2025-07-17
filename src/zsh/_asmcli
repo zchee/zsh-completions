@@ -1,0 +1,275 @@
+#compdef asmcli
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2025, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://cloud.google.com/service-mesh/docs/asmcli-reference
+#
+# $ asmcli --version
+# 1.25.3-asm.11+config1
+#
+# -----------------------------------------------------------------------------
+
+function _asmcli() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a _commands
+  _commands=(
+    "install:Install will attempt a new ASM installation"
+    "validate:Validate will attempt a new ASM validation"
+    "create-mesh:Add multiple clusters to the mesh"
+    "build-offline-package:Download required packages for offline installation"
+  )
+
+  _arguments -C \
+    {-l,--cluster_location}"[The GCP location of the target cluster.]:location" \
+    {-n,--cluster_name}"[The name of the target cluster.]:cluster name" \
+    {-p,--project_id}"[The GCP project ID.]:project id" \
+    {--kc,--kubeconfig}"[Path to the kubeconfig file to use for CLI requests.]" \
+    {--ctx,--context}"[The name of the kubeconfig context to use.]:context" \
+    "--fleet_id[The Fleet host project ID. Required for non-GCP clusters. When not provided for GCP clusters, it defaults to the cluster's project ID.]:Fleet host project ID" \
+    "--network_id[The value for topology.istio.io/network label that will be applied to the istio-system namespace.]:network id" \
+    {-c,--ca}"[The type of certificate authority to be used.]:certificate file:_files" \
+    {-o,--option}"[The name of a YAML file in the kpt pkg to apply.]:option YAML file:_files" \
+    {-s,--service_account}"[The name of a service account used to install ASM.]:service account" \
+    {-k,--key_file}"[The key file for a service account. This option can be omitted if not using a service account.]:key file:_files" \
+    {-D,--output_dir}"[The directory where this script will place downloaded ASM packages and configuration.]:output directory:_files" \
+    {--co,--custom_overlay}"[The location of a YAML file to overlay on the ASM IstioOperator.]:overlay file:_files" \
+    "--ca_pool[Required only if --ca option is gcp_cas. Name of the ca pool in the GCP CAS service used to sign certificates in the format 'projects/project_name/locations/ca_region/caPools/ca_pool'.]:ca pool" \
+    {-r,--revision_name}"[Custom revision label. Label needs to follow DNS label formats (re: RFC 1123).]:revision name" \
+    "--platform[The platorm or the provider of the kubernetes cluster. Defaults to "gcp" (for GKE clusters).]:platform" \
+    "--ca_cert[The intermediate certificate]:file:_files" \
+    "--ca_key[The key for the intermediate certificate]:file:_files" \
+    "--root_cert[The root certificate]:file:_files" \
+    "--cert_chain[The certificate chain]:file:_files" \
+    \
+    "--disable_ui[Indicates that you do not wish to use the ASM UI, disabling some feature checks.]" \
+    {-e,--enable_all}"[Allow the script to perform all of the individual enable actions below. (Fleet registration won't happen unless necessary for a selected option.)]" \
+    "--enable_cluster_roles[Allow the script to attempt to set the necessary cluster roles.]" \
+    "--enable_cluster_labels[Allow the script to attempt to set necessary cluster labels.]" \
+    "--enable_gcp_apis[Allow the script to enable GCP APIs on the user's behalf]" \
+    "--enable_gcp_iam_roles[Allow the script to set the required GCP IAM permissions]" \
+    "--enable_gcp_components[Allow the script to enable required GCP managed services and components]" \
+    "--enable_meshconfig_init[Allow the script to initialize the meshconfig endpoint on your behalf. Implied by --enable_gcp_components and --managed.]" \
+    "--enable_registration[Allow the script to register the cluster to a fleet]" \
+    "--enable_namespace_creation[Allow the script to create the istio-system namespace for the user]" \
+    "--use_vpcsc[Provision a remote, managed control plane in VPCSC environment.]" \
+    "--offline[Perform an offline installation using the pre-downloaded package in the output directory.]" \
+    "--managed_certificates[Enable the managed certificates, which automatically manages the workload certificates.]" \
+    {-v,--verbose}"[Print commands before and after execution.]" \
+    "--dry_run[Print commands, but don't execute them.]" \
+    "--only_validate[Run validation, but don't install.]" \
+    "--only_enable[Perform the specified steps to set up the current user/cluster but don't install anything.]" \
+    {-h,--help}"[Show this message and exit.]" \
+    "--version[Print the version of this tool and exit.]" \
+    \
+    "*: :{_describe 'asmcli commands' _commands}" \
+    && ret=0
+
+  return ret
+}
+
+_asmcli "$*"
+
+# -----------------------------------------------------------------------------
+#
+# asmcli 1.25.3-asm.11+config1
+# usage: asmcli [SUBCOMMAND] [OPTION]...
+#
+# Set up, validate, and install ASM in a Google Cloud environment.
+# Single argument options can also be passed via environment variables by using
+# the ALL_CAPS name. Options specified via flags take precedence over environment
+# variables.
+#
+# SUBCOMMANDS:
+#   install                             Install will attempt a new ASM installation
+#   validate                            Validate will attempt a new ASM validation
+#   create-mesh                         Add multiple clusters to the mesh
+#   build-offline-package               Download required packages for offline installation
+#
+# OPTIONS:
+#   -l|--cluster_location  <LOCATION>   The GCP location of the target cluster.
+#   -n|--cluster_name      <NAME>       The name of the target cluster.
+#   -p|--project_id        <ID>         The GCP project ID.
+#   --kc|--kubeconfig <KUBECONFIG_FILE> Path to the kubeconfig file to use for CLI requests.
+#                                       Required if not supplying --cluster_location,
+#                                       --cluster_name, --project_id in order to locate
+#                                       and connect to the intended cluster.
+#   --ctx|--context        <CONTEXT>    The name of the kubeconfig context to use.
+#   --fleet_id             <FLEET ID>   The Fleet host project ID. Required for non-GCP
+#                                       clusters. When not provided for GCP clusters, it
+#                                       defaults to the cluster's project ID.
+#   --network_id          <NETWORK ID>  The value for topology.istio.io/network label that
+#                                       will be applied to the istio-system namespace. For GKE,
+#                                       defaults to the network name for the cluster. For other
+#                                       environments, "default" will be used.
+#   -c|--ca                <CA>         The type of certificate authority to be
+#                                       used. Defaults to "mesh_ca" for install.
+#                                       Allowed values for <CA> are {citadel|mesh_ca|gcp_cas|managed_cas}.
+#                                       managed_cas is experimental.
+#   -o|--option            <FILE NAME>  The name of a YAML file in the kpt pkg to
+#                                       apply. For options, see the
+#                                       anthos-service-mesh-package GitHub
+#                                       repo under GoogleCloudPlatform. Files
+#                                       should be in "asm/istio/options" folder,
+#                                       and shouldn't include the .yaml extension.
+#                                       (See https://git.io/JTDdi for options.)
+#                                       To add multiple files, specify them with
+#                                       multiple options one at a time.
+#   -s|--service_account   <ACCOUNT>    The name of a service account used to
+#                                       install ASM. If not specified, the gcloud
+#                                       user currently configured will be used.
+#   -k|--key_file          <FILE PATH>  The key file for a service account. This
+#                                       option can be omitted if not using a
+#                                       service account.
+#   -D|--output_dir        <DIR PATH>   The directory where this script will place
+#                                       downloaded ASM packages and configuration.
+#                                       If not specified, a temporary directory
+#                                       will be created. If specified and the
+#                                       directory already contains the necessary
+#                                       files, they will be used instead of
+#                                       downloading them again.
+#   --co|--custom_overlay  <FILE PATH>  The location of a YAML file to overlay on
+#                                       the ASM IstioOperator. This option can be
+#                                       omitted if not installing optional
+#                                       features. To add multiple files, specify
+#                                       them with multiple options one at a time.
+#   --ca_pool              <CA POOL>    Required only if --ca option is gcp_cas.
+#                                       Name of the ca pool in the GCP CAS service used to
+#                                       sign certificates in the format
+#                                       'projects/project_name/locations/ca_region/caPools/ca_pool'. If certificate template
+#                                       needs to be specified, the format is 'projects/project_name/locations/ca_region/caPools/ca_pool:projects/project_name/locations/ca_region/certificateTemplates/cert_template'.
+#   -r|--revision_name <REVISION NAME>  Custom revision label. Label needs to follow DNS
+#                                       label formats (re: RFC 1123). Not supported if
+#                                       control plane is managed. Prefixing the revision
+#                                       name with 'asm' is recommended.
+#   --platform             <PLATFORM>   The platorm or the provider of the kubernetes
+#                                       cluster. Defaults to "gcp" (for GKE clusters).
+#                                       For all other platforms use "multicloud".
+#                                       Allowed values for <PLATFORM> are {gcp|multicloud}.
+#
+#   The following four options must be passed together and are only necessary
+#   for using a custom certificate for Citadel. Users that aren't sure whether
+#   they need this probably don't.
+#
+#   --ca_cert              <FILE PATH>  The intermediate certificate
+#   --ca_key               <FILE PATH>  The key for the intermediate certificate
+#   --root_cert            <FILE PATH>  The root certificate
+#   --cert_chain           <FILE PATH>  The certificate chain
+#
+# FLAGS:
+#
+#   The following several flags all relate to allowing the script to create, set,
+#   or enable required APIs, roles, or services. These can all be performed
+#   manually before running the script if desired. To allow the script to perform
+#   every necessary action, pass the -e|--enable_all flag. All of these flags
+#   are incompatible with --only_validate.
+#
+#      --disable_ui                     Indicates that you do not wish to use the ASM UI, disabling
+#                                       some feature checks.
+#   -e|--enable_all                     Allow the script to perform all of the
+#                                       individual enable actions below. (Fleet
+#                                       registration won't happen unless necessary
+#                                       for a selected option.)
+#      --enable_cluster_roles           Allow the script to attempt to set
+#                                       the necessary cluster roles.
+#      --enable_cluster_labels          Allow the script to attempt to set
+#                                       necessary cluster labels.
+#      --enable_gcp_apis                Allow the script to enable GCP APIs on
+#                                       the user's behalf
+#      --enable_gcp_iam_roles           Allow the script to set the required GCP
+#                                       IAM permissions
+#      --enable_gcp_components          Allow the script to enable required GCP
+#                                       managed services and components
+#      --enable_meshconfig_init         Allow the script to initialize the meshconfig
+#                                       endpoint on your behalf. Implied by
+#                                       --enable_gcp_components and --managed.
+#      --enable_registration            Allow the script to register the cluster
+#                                       to a fleet
+#      --enable_namespace_creation      Allow the script to create the istio-system
+#                                       namespace for the user
+#      --use_managed_cni                Deprecated. Managed CNI now defaults to be on.
+#      --managed                        Deprecated. Provision a remote, managed control plane
+#                                       instead of installing one in-cluster.
+#                                       The channel matches with the GKE version:
+#                                         GKE Channel  |  ASM Channel
+#                                         -------------|----------------
+#                                         Rapid        |  Rapid
+#                                         Regular      |  Regular
+#                                         Stable       |  Stable
+#                                         Static       |  Regular
+#                                       Any non-GKE cluster gets the Regular
+#                                       channel.
+#      --use_vpcsc                      Provision a remote, managed control plane in
+#                                       VPCSC environment.
+#      --offline                        Perform an offline installation using the pre-downloaded
+#                                       package in the output directory. If the directory is not
+#                                       specified or does not contain the required files, the
+#                                       script will exit with error.
+#      --disable_canonical_service      DEPRECATED: This flag is now a no-operation.
+#                                       The managed Canonical Service Controller is always provisioned.
+#                                       It is required for the ASM UI to support various features.
+#                                       Adding this flag will have no effect.
+#      --managed_certificates           Enable the managed certificates, which automatically manages
+#                                       the workload certificates. When this flag is enabled,
+#                                       you should not specify the --ca option.
+#   -v|--verbose                        Print commands before and after execution.
+#      --dry_run                        Print commands, but don't execute them.
+#      --only_validate                  Run validation, but don't install.
+#      --only_enable                    Perform the specified steps to set up the
+#                                       current user/cluster but don't install
+#                                       anything.
+#   -h|--help                           Show this message and exit.
+#   --version                           Print the version of this tool and exit.
+#
+# EXAMPLE:
+# The following invocation will install ASM to a cluster named "my_cluster" in
+# project "my_project" in region "us-central1-c" using the default "mesh_ca" as
+# the certificate authority:
+#   $> asmcli \
+#       install \
+#       -n my_cluster \
+#       -p my_project \
+#       -l us-central1-c \
+#
+#   or
+#
+#   $> asmcli \
+#       install \
+#       --kubeconfig kubeconfig_file \
+#       --context kube context \
+#
+# -----------------------------------------------------------------------------
+ 
+# vim:ft=zsh:et:sts=2:sw=2
