@@ -1,0 +1,114 @@
+#compdef govulncheck
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2025, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# golang.org/x/vuln/cmd/govulncheck
+#
+# -----------------------------------------------------------------------------
+
+function _govulncheck() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+  
+  _govulncheck_args() {
+    _go_files() {
+      _alternative '*:go file:_path_files -g "*.go(-.)"'
+    }
+
+    local -a gopaths
+    gopaths=("${(s/:/)$(go env GOPATH)}")
+    gopaths+=("$(go env GOROOT)")
+    for p in $gopaths; do
+      _alternative ':go packages:_path_files -W "$p/src" -/'
+    done
+
+    _alternative _go_files -- _command
+  }
+
+  _arguments -C \
+    "-C[change to dir before running govulncheck]:dir:_directories" \
+    "-db[vulnerability database url (default \"https://vuln.go.dev\")]:url" \
+    "-format[specify format output]:format:(text json sarif openvex)" \
+    "-json[output JSON (Go compatible legacy flag, see format flag)]" \
+    "-mode[check mode (default 'source')]:mode:(source binary extract)" \
+    "-scan[set the scanning level desired (default 'symbol')]:scanning level:(module package symbol)" \
+    "-show[enable display of additional information specified by the comma separated list]:categories:(traces color version verbose)" \
+    "-tags[comma-separated list of build tags]:tags" \
+    "-test[analyze test files (only valid for source mode, default false)]" \
+    "-version[print the version information]" \
+    "1:patterns or binary:_files" \
+    && ret=0
+
+  return ret
+}
+
+_govulncheck "$*"
+
+# -----------------------------------------------------------------------------
+#
+# Govulncheck reports known vulnerabilities in dependencies.
+#
+# Usage:
+#
+# 	govulncheck [flags] [patterns]
+# 	govulncheck -mode=binary [flags] [binary]
+#
+#   -C dir
+#     	change to dir before running govulncheck
+#   -db url
+#     	vulnerability database url (default "https://vuln.go.dev")
+#   -format value
+#     	specify format output
+#     	The supported values are 'text', 'json', 'sarif', and 'openvex' (default 'text')
+#   -json
+#     	output JSON (Go compatible legacy flag, see format flag)
+#   -mode value
+#     	supports 'source', 'binary', and 'extract' (default 'source')
+#   -scan value
+#     	set the scanning level desired, one of 'module', 'package', or 'symbol' (default 'symbol')
+#   -show list
+#     	enable display of additional information specified by the comma separated list
+#     	The supported values are 'traces','color', 'version', and 'verbose'
+#   -tags list
+#     	comma-separated list of build tags
+#   -test
+#     	analyze test files (only valid for source mode, default false)
+#   -version
+#     	print the version information
+#
+# For details, see https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck.
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
