@@ -35,6 +35,9 @@
 #
 # github.com/google/yamlfmt/cmd/yamlfmt
 #
+# $ yamlfmt -version
+# yamlfmt HEAD-398e72a (Homebrew)
+#
 # -----------------------------------------------------------------------------
 
 function _yamlfmt() {
@@ -55,10 +58,12 @@ function _yamlfmt() {
     "-global_conf[Use global yamlfmt config from XDG_CONFIG_HOME]" \
     "-in[Format yaml read from stdin and output to stdout]" \
     "-lint[Check if there are any differences between source yaml and formatted yaml.]" \
+    "-match_type[The file discovery method to use.]:type:(standard doublestar gitignore)" \
     "-no_global_conf[Disabled usage of global yamlfmt config from XDG_CONFIG_HOME]" \
     "-output_format[The engine output format (default \"default\")]" \
     "-print_conf[Print config]" \
-    "-quiet[Print minimal output to stdout]" \
+    {-q,-quiet}"[Print minimal output to stdout]" \
+    {-v,-verbose}"[Print additional output to stdout.]" \
     "-version[Print yamlfmt version]" \
     \
     "*:files:_files" \
@@ -111,14 +116,20 @@ _yamlfmt "$*"
 #   -lint
 #     	Check if there are any differences between
 #     	source yaml and formatted yaml.
+#   -match_type string
+#     	The file discovery method to use. Valid values: standard, doublestar, gitignore
 #   -no_global_conf
 #     	Disabled usage of global yamlfmt config from XDG_CONFIG_HOME
 #   -output_format string
 #     	The engine output format (default "default")
 #   -print_conf
 #     	Print config
+#   -q	Print minimal output to stdout
 #   -quiet
 #     	Print minimal output to stdout
+#   -v	Print additional output to stdout.
+#   -verbose
+#     	Print additional output to stdout.
 #   -version
 #     	Print yamlfmt version
 #
