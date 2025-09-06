@@ -35,6 +35,8 @@
 #
 # https://github.com/anthropics/claude-code
 #
+# 1.0.108 (Claude Code)
+#
 # -----------------------------------------------------------------------------
 
 function _claude() {
@@ -48,16 +50,29 @@ function _claude() {
     "migrate-installer:Migrate from global npm installation to local installation"
     "doctor:Check the health of your Claude Code auto-updater"
     "update:Check for updates and install if available"
+    "install:Install Claude Code native build"
   )
 
   _arguments -C \
     {-d,--debug}"[Enable debug mode]" \
-    "(: -)--verbose[Override verbose mode setting from config]" \
+    "--verbose[Override verbose mode setting from config]" \
     {-p,--print}"[Print response and exit (useful for pipes)]" \
-    "(: -)--output-format[Output format]:format:(text json stream-json)" \
-    "(: -)--mcp-debug[Enable MCP debug mode (shows MCP server errors)]" \
-    "(: -)--dangerously-skip-permissions[Bypass all permission checks]" \
-    "(: -)--allowedTools[Comma or space-separated list of tool names to allow (e.g. \"Bash(git*) Edit Replace\")]" \
+    "--output-format[Output format (only works with --print)]:format:(text json stream-json)" \
+    "--input-format[Input format (only works with --print)]:format:(text stream-json)" \
+    "--dangerously-skip-permissions[Bypass all permission checks. Recommended only for sandboxes with no internet access.]" \
+    "--replay-user-messages[Re-emit user messages from stdin back on stdout for acknowledgment (only works with --input-format=stream-json and --output-format=stream-json)]" \
+    {--allowedTools,--allowed-tools}"[Comma or space-separated list of tool names to allow (e.g. \"Bash(git:*) Edit\")]:allowed tools" \
+    {--disallowedTools,--disallowed-tools}"[Comma or space-separated list of tool names to deny (e.g. \"Bash(git:*) Edit\")]:disallowed tools" \
+    "--mcp-config[Load MCP servers from a JSON file or string]:mcp config json:_files" \
+    "--append-system-prompt[Append a system prompt to the default system prompt]:prompt" \
+    "--permission-mode[Permission mode to use for the session]:mode:(acceptEdits bypassPermissions default plan)" \
+    {-c,--continue}"[Continue the most recent conversation]" \
+    {-r,--resume}"[Resume a conversation - provide a session ID or interactively select a conversation to resume]:sessionId" \
+    "--model[Model for the current session. Provide an alias for the latest model's or a models full name]:model:->model" \
+    "--fallback-model[Enable automatic fallback to specified model when default model is overloaded (only works with --print)]:model:->model" \
+    "--ide[Automatically connect to IDE on startup if exactly one valid IDE is available]" \
+    "--strict-mcp-config[Only use MCP servers from --mcp-config, ignoring all other MCP configurations]" \
+    "--session-id[Use a specific session ID for the conversation (must be a valid UUID)]:session id" \
     {-v,--version}"[output the version number]" \
     {-h,--help}"[display help for command]" \
     \
@@ -66,6 +81,22 @@ function _claude() {
     && ret=0
 
   case $state in
+    model)
+      local -a _models
+      _models=(
+      "claude-opus-4-1-20250805:Uses the most capable Opus model (currently Opus 4.1) for complex reasoning"
+      "claude-sonnet-4-20250514:Uses the latest Sonnet model (currently Sonnet 4) for daily coding tasks"
+      "claude-sonnet-4-20250514[1m]:Uses Sonnet with a 1 million token context window window for long sessions"
+      "sonnet:Uses the latest Sonnet model (currently Sonnet 4) for daily coding tasks"
+      "opus:Uses the most capable Opus model (currently Opus 4.1) for complex reasoning"
+      "haiku:Uses the fast and efficient Haiku model for simple tasks"
+      "sonnet[1m]:Uses Sonnet with a 1 million token context window window for long sessions"
+      "opusplan:Special mode that uses opus during plan mode, then switches to sonnet for execution"
+      )
+      _arguments \
+        "*: :{_describe 'model' _models}"
+      ;;
+
     args)
       case $words[1] in
         (config)
@@ -231,11 +262,18 @@ function _claude() {
             {-h,--help}"[display help for command]" \
             && ret=0
           ;;
+
+        (install)
+          _arguments \
+            "--force[Force installation even if already installed]" \
+            {-h,--help}"[display help for command]" \
+            && ret=0
+          ;;
       esac
       ;;
 
     (*)
-      _arguments "*::prompt:_parameters" \
+      _arguments "*::prompt" \
       && ret=0
       ;;
   esac
@@ -249,51 +287,54 @@ _claude "$*"
 #
 # Usage: claude [options] [command] [prompt]
 #
-# Claude Code - starts an interactive session by default, use -p/--print for
-# non-interactive output
+# Claude Code - starts an interactive session by default, use -p/--print for non-interactive output
 #
 # Arguments:
-#   prompt                          Your prompt
+#   prompt                                            Your prompt
 #
 # Options:
-#   -d, --debug                     Enable debug mode
-#   --verbose                       Override verbose mode setting from config
-#   -p, --print                     Print response and exit (useful for pipes)
-#   --output-format <format>        Output format (only works with --print):
-#                                   "text" (default), "json" (single result), or
-#                                   "stream-json" (realtime streaming)
-#   --json                          [Deprecated: Use --output-format json
-#                                   instead] Output JSON in the shape {cost_usd:
-#                                   number, duration_ms: number, duration_api_ms:
-#                                   number, result: string} (only works with
-#                                   --print)
-#   --mcp-debug                     Enable MCP debug mode (shows MCP server
-#                                   errors)
-#   --dangerously-skip-permissions  Bypass all permission checks. Only works in
-#                                   Docker containers with no internet access.
-#   --allowedTools <tools...>       Comma or space-separated list of tool names
-#                                   to allow (e.g. "Bash(git*) Edit Replace")
-#   -v, --version                   output the version number
-#   -h, --help                      display help for command
+#   -d, --debug [filter]                              Enable debug mode with optional category filtering (e.g., "api,hooks" or "!statsig,!file")
+#   --verbose                                         Override verbose mode setting from config
+#   -p, --print                                       Print response and exit (useful for pipes). Note: The workspace trust dialog is skipped when Claude is run with the -p mode. Only use this flag in directories you trust.
+#   --output-format <format>                          Output format (only works with --print): "text" (default), "json" (single result), or "stream-json" (realtime streaming) (choices: "text", "json", "stream-json")
+#   --input-format <format>                           Input format (only works with --print): "text" (default), or "stream-json" (realtime streaming input) (choices: "text", "stream-json")
+#   --mcp-debug                                       [DEPRECATED. Use --debug instead] Enable MCP debug mode (shows MCP server errors)
+#   --dangerously-skip-permissions                    Bypass all permission checks. Recommended only for sandboxes with no internet access.
+#   --replay-user-messages                            Re-emit user messages from stdin back on stdout for acknowledgment (only works with --input-format=stream-json and --output-format=stream-json)
+#   --allowedTools, --allowed-tools <tools...>        Comma or space-separated list of tool names to allow (e.g. "Bash(git:*) Edit")
+#   --disallowedTools, --disallowed-tools <tools...>  Comma or space-separated list of tool names to deny (e.g. "Bash(git:*) Edit")
+#   --mcp-config <configs...>                         Load MCP servers from JSON files or strings (space-separated)
+#   --append-system-prompt <prompt>                   Append a system prompt to the default system prompt
+#   --permission-mode <mode>                          Permission mode to use for the session (choices: "acceptEdits", "bypassPermissions", "default", "plan")
+#   -c, --continue                                    Continue the most recent conversation
+#   -r, --resume [sessionId]                          Resume a conversation - provide a session ID or interactively select a conversation to resume
+#   --model <model>                                   Model for the current session. Provide an alias for the latest model (e.g. 'sonnet' or 'opus') or a model's full name (e.g. 'claude-sonnet-4-20250514').
+#   --fallback-model <model>                          Enable automatic fallback to specified model when default model is overloaded (only works with --print)
+#   --settings <file-or-json>                         Path to a settings JSON file or a JSON string to load additional settings from
+#   --add-dir <directories...>                        Additional directories to allow tool access to
+#   --ide                                             Automatically connect to IDE on startup if exactly one valid IDE is available
+#   --strict-mcp-config                               Only use MCP servers from --mcp-config, ignoring all other MCP configurations
+#   --session-id <uuid>                               Use a specific session ID for the conversation (must be a valid UUID)
+#   -v, --version                                     Output the version number
+#   -h, --help                                        Display help for command
 #
 # Commands:
-#   config                          Manage configuration (eg. claude config set
-#                                   -g theme dark)
-#   mcp                             Configure and manage MCP servers
-#   migrate-installer               Migrate from global npm installation to local
-#                                   installation
-#   doctor                          Check the health of your Claude Code
-#                                   auto-updater
-#   update                          Check for updates and install if available
+#   config                                            Manage configuration (eg. claude config set -g theme dark)
+#   mcp                                               Configure and manage MCP servers
+#   migrate-installer                                 Migrate from global npm installation to local installation
+#   setup-token                                       Set up a long-lived authentication token (requires Claude subscription)
+#   doctor                                            Check the health of your Claude Code auto-updater
+#   update                                            Check for updates and install if available
+#   install [options] [target]                        Install Claude Code native build. Use [target] to specify version (stable, latest, or specific version)
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Usage: claude config [options] [command]
 #
 # Manage configuration (eg. claude config set -g theme dark)
 #
 # Options:
-#   -h, --help                             display help for command
+#   -h, --help                             Display help for command
 #
 # Commands:
 #   get [options] <key>                    Get a config value
@@ -353,18 +394,18 @@ _claude "$*"
 #   -g, --global  Use global config
 #   -h, --help    display help for command
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Usage: claude mcp [options] [command]
 #
 # Configure and manage MCP servers
 #
 # Options:
-#   -h, --help                                     display help for command
+#   -h, --help                                     Display help for command
 #
 # Commands:
-#   serve                                          Start the Claude Code MCP server
-#   add [options] [name] [commandOrUrl] [args...]  Add a server (run without arguments for interactive wizard)
+#   serve [options]                                Start the Claude Code MCP server
+#   add [options] <name> <commandOrUrl> [args...]  Add a server
 #   remove [options] <name>                        Remove an MCP server
 #   list                                           List configured MCP servers
 #   get <name>                                     Get details about an MCP server
@@ -380,19 +421,26 @@ _claude "$*"
 # Start the Claude Code MCP server
 #
 # Options:
-#   -h, --help  display help for command
+#   -d, --debug  Enable debug mode
+#   --verbose    Override verbose mode setting from config
+#   -h, --help   Display help for command
 #
 # -----------------------------------------------------------------------------
 #
-# Usage: claude mcp add [options] [name] [commandOrUrl] [args...]
+# Usage: claude mcp add [options] <name> <commandOrUrl> [args...]
 #
-# Add a server (run without arguments for interactive wizard)
+# Add a server
 #
 # Options:
-#   -s, --scope <scope>          Configuration scope (local, user, or project) (default: "local")
-#   -t, --transport <transport>  Transport type (stdio, sse) (default: "stdio")
+#   -s, --scope <scope>          Configuration scope (local, user, or project)
+#                                (default: "local")
+#   -t, --transport <transport>  Transport type (stdio, sse, http) (default:
+#                                "stdio")
 #   -e, --env <env...>           Set environment variables (e.g. -e KEY=value)
-#   -h, --help                   display help for command
+#   -H, --header <header...>     Set HTTP headers for SSE and HTTP transports
+#                                (e.g. -H "X-Api-Key: abc123" -H "X-Custom:
+#                                value")
+#   -h, --help                   Display help for command
 #
 # -----------------------------------------------------------------------------
 #
@@ -401,8 +449,9 @@ _claude "$*"
 # Remove an MCP server
 #
 # Options:
-#   -s, --scope <scope>  Configuration scope (local, user, or project) (default: "local")
-#   -h, --help           display help for command
+#   -s, --scope <scope>  Configuration scope (local, user, or project) - if not
+#                        specified, removes from whichever scope it exists in
+#   -h, --help           Display help for command
 #
 # -----------------------------------------------------------------------------
 #
@@ -411,7 +460,7 @@ _claude "$*"
 # List configured MCP servers
 #
 # Options:
-#   -h, --help  display help for command
+#   -h, --help  Display help for command
 #
 # -----------------------------------------------------------------------------
 #
@@ -420,7 +469,7 @@ _claude "$*"
 # Get details about an MCP server
 #
 # Options:
-#   -h, --help  display help for command
+#   -h, --help  Display help for command
 #
 # -----------------------------------------------------------------------------
 #
@@ -429,8 +478,9 @@ _claude "$*"
 # Add an MCP server (stdio or SSE) with a JSON string
 #
 # Options:
-#   -s, --scope <scope>  Configuration scope (local, user, or project) (default: "local")
-#   -h, --help           display help for command
+#   -s, --scope <scope>  Configuration scope (local, user, or project) (default:
+#                        "local")
+#   -h, --help           Display help for command
 #
 # -----------------------------------------------------------------------------
 #
@@ -439,44 +489,56 @@ _claude "$*"
 # Import MCP servers from Claude Desktop (Mac and WSL only)
 #
 # Options:
-#   -s, --scope <scope>  Configuration scope (local, user, or project) (default: "local")
-#   -h, --help           display help for command
+#   -s, --scope <scope>  Configuration scope (local, user, or project) (default:
+#                        "local")
+#   -h, --help           Display help for command
 #
 # -----------------------------------------------------------------------------
 #
 # Usage: claude mcp reset-project-choices [options]
 #
-# Reset all approved and rejected project-scoped (.mcp.json) servers within this project
+# Reset all approved and rejected project-scoped (.mcp.json) servers within this
+# project
 #
 # Options:
-#   -h, --help  display help for command
+#   -h, --help  Display help for command
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Usage: claude migrate-installer [options]
 #
 # Migrate from global npm installation to local installation
 #
 # Options:
-#   -h, --help  display help for command
+#   -h, --help  Display help for command
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Usage: claude doctor [options]
 #
 # Check the health of your Claude Code auto-updater
 #
 # Options:
-#   -h, --help  display help for command
+#   -h, --help  Display help for command
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 # Usage: claude update [options]
 #
 # Check for updates and install if available
 #
 # Options:
-#   -h, --help  display help for command
+#   -h, --help  Display help for command
+#
+# ------------------------------------------------------------------------------
+#
+# Usage: claude install [options]
+#
+# Install Claude Code native build
+#
+# Options:
+#   --force     Force installation even if already installed
+#   -h, --help  Display help for command
 #
 # -----------------------------------------------------------------------------
 
