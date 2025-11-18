@@ -47,8 +47,6 @@ function _tailscale() {
   local context curcontext=$curcontext state line expl ret=1
   declare -A opt_args
 
-  local _tailscale_cmd=$(alias tailscale | cut -d'=' -f 2)
-
   # NOTE(zchee): hide bugreport subcommand
   local -a _commands
   _commands=(
@@ -174,7 +172,7 @@ function _tailscale() {
           ;;
 
         (switch)
-          local -a _ip_list=($($_tailscale_cmd switch --list | awk '{if(NR>1) print $1":"$2}'))
+          local -a _ip_list=($(tailscale switch --list | awk '{if(NR>1) print $1":"$2}'))
           _arguments \
             $global_flags \
             "--list[list of ip]" \
@@ -322,7 +320,7 @@ function _tailscale() {
           ;;
 
         (whois)
-          local _tailnet_ip="($($_tailscale_cmd ip | tr '\n' ' '))"
+          local _tailnet_ip="($(tailscale ip | tr '\n' ' '))"
           _arguments \
             $global_flags \
             "--json[output in JSON format (default false)]" \
