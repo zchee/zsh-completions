@@ -33,7 +33,7 @@
 #
 # -----------------------------------------------------------------------------
 #
-# github.com/dkorunic/betteralign
+# github.com/dkorunic/betteralign@5d744f4dd04b
 #
 # -----------------------------------------------------------------------------
 
@@ -53,8 +53,18 @@ function _betteralign() {
 
   _arguments -C \
     "-apply[apply suggested fixes]" \
+    "-cpuprofile[write CPU profile to this file]:cpuprofile out:_files" \
+    "-fix[apply all suggested fixes]" \
+    "-diff[with -fix, don't update the files, but print a unified diff]" \
+    "-exclude_dirs[exclude directories matching a pattern]:exclude directories:_directories" \
+    "-exclude_files[exclude files matching a pattern]:exclude files:_files" \
     "-test_files[also check and fix test files]" \
     "-generated_files[also check and fix generated files]" \
+    "-memprofile[write memory profile to this file]:memprofile out:_files" \
+    "-opt_in[opt-in mode on per-struct basis with 'betteralign:check' in comment]" \
+    "-test[indicates whether test files should be analyzed, too (default true)]" \
+    "-test_files[also check and fix test files]" \
+    "-trace[write trace log to this file]:trace out:_files" \
     \
     "*: :_go_packages" \
     && ret=0
@@ -117,6 +127,12 @@ _betteralign "$*"
 #     	write CPU profile to this file
 #   -debug string
 #     	debug flags, any subset of "fpstv"
+#   -diff
+#     	with -fix, don't update the files, but print a unified diff
+#   -exclude_dirs value
+#     	exclude directories matching a pattern
+#   -exclude_files value
+#     	exclude files matching a pattern
 #   -fix
 #     	apply all suggested fixes
 #   -flags
@@ -127,6 +143,8 @@ _betteralign "$*"
 #     	emit JSON output
 #   -memprofile string
 #     	write memory profile to this file
+#   -opt_in
+#     	opt-in mode on per-struct basis with 'betteralign:check' in comment
 #   -source
 #     	no effect (deprecated)
 #   -tags string
