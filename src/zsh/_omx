@@ -1,0 +1,1185 @@
+#compdef omx
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/Yeachan-Heo/oh-my-codex
+#
+# 0.11.12 (oh-my-codex)
+#
+# -----------------------------------------------------------------------------
+
+_omx__message() {
+  _message "${1:-value}"
+}
+
+_omx__shift_words() {
+  local shift_count=$1
+  local -a shifted
+  local index
+
+  shifted=()
+  for (( index = shift_count + 1; index <= ${#words}; index++ )); do
+    shifted+=("${words[index]}")
+  done
+
+  words=("${shifted[@]}")
+  (( CURRENT -= shift_count ))
+  (( CURRENT < 1 )) && CURRENT=1
+}
+
+_omx__collect_prompt_roles() {
+  local -a dirs files roles
+  local dir file
+
+  dirs=(
+    "./prompts"
+    "./.codex/prompts"
+    "${CODEX_HOME:-$HOME/.codex}/prompts"
+    "/opt/local/var/bun/install/global/node_modules/oh-my-codex/prompts"
+  )
+
+  roles=()
+  for dir in "${dirs[@]}"; do
+    [[ -d $dir ]] || continue
+    files=($dir/*.md(N))
+    for file in "${files[@]}"; do
+      roles+=("${file:t:r}")
+    done
+  done
+
+  if (( ! $#roles )); then
+    roles=(
+      analyst architect build-fixer code-simplifier critic debugger
+      default designer executor explorer planner researcher
+      security-reviewer team-executor test-engineer verifier worker
+      writer
+    )
+  fi
+
+  reply=(${(ou)roles})
+}
+
+_omx__prompt_roles() {
+  local -a roles
+
+  _omx__collect_prompt_roles
+  roles=("${reply[@]}")
+  _describe 'role' roles
+}
+
+_omx__collect_native_agent_names() {
+  local -a dirs files names
+  local dir file
+
+  dirs=(
+    "./.codex/agents"
+    "${CODEX_HOME:-$HOME/.codex}/agents"
+  )
+
+  names=()
+  for dir in "${dirs[@]}"; do
+    [[ -d $dir ]] || continue
+    files=($dir/*.toml(N))
+    for file in "${files[@]}"; do
+      names+=("${file:t:r}")
+    done
+  done
+
+  reply=(${(ou)names})
+}
+
+_omx__native_agent_names() {
+  local -a names
+
+  _omx__collect_native_agent_names
+  names=("${reply[@]}")
+
+  if (( $#names )); then
+    _describe 'native agent' names
+  else
+    _message 'native agent name'
+  fi
+}
+
+_omx__collect_team_names() {
+  local -a paths names
+  local path
+
+  paths=(.omx/state/team/*(/N))
+  names=()
+  for path in "${paths[@]}"; do
+    names+=("${path:t}")
+  done
+
+  reply=(${(ou)names})
+}
+
+_omx__team_names() {
+  local -a names
+
+  _omx__collect_team_names
+  names=("${reply[@]}")
+
+  if (( $#names )); then
+    _describe 'team' names
+  else
+    _message 'team name'
+  fi
+}
+
+_omx__collect_mission_dirs() {
+  local -a paths names
+  local path
+
+  paths=(missions/*(/N))
+  names=()
+  for path in "${paths[@]}"; do
+    [[ -f $path/mission.md && -f $path/sandbox.md ]] || continue
+    names+=("${path:t}")
+  done
+
+  reply=(${(ou)names})
+}
+
+_omx__mission_dirs() {
+  local -a names
+
+  _omx__collect_mission_dirs
+  names=("${reply[@]}")
+
+  if (( $#names )); then
+    _describe 'mission' names
+  else
+    _message 'mission directory'
+  fi
+}
+
+_omx__collect_autoresearch_run_ids() {
+  local -a manifests run_ids
+  local manifest
+
+  manifests=(
+    .omx/logs/autoresearch/*/manifest.json(N)
+    .omx/logs/autoresearch/*/*/manifest.json(N)
+  )
+
+  run_ids=()
+  for manifest in "${manifests[@]}"; do
+    run_ids+=("${manifest:h:t}")
+  done
+
+  reply=(${(ou)run_ids})
+}
+
+_omx__autoresearch_run_ids() {
+  local -a run_ids
+
+  _omx__collect_autoresearch_run_ids
+  run_ids=("${reply[@]}")
+
+  if (( $#run_ids )); then
+    _describe 'autoresearch run id' run_ids
+  else
+    _message 'run id'
+  fi
+}
+
+_omx__team_allocation() {
+  local -a roles suggestions
+  local role count
+
+  _omx__collect_prompt_roles
+  roles=("${reply[@]}")
+
+  if [[ $PREFIX == <->:* ]]; then
+    count="${PREFIX%%:*}"
+    suggestions=()
+    for role in "${roles[@]}"; do
+      suggestions+=("${count}:${role}")
+    done
+    compadd -Q -S '' -- "${suggestions[@]}"
+    return
+  fi
+
+  suggestions=(
+    "1:executor"
+    "2:executor"
+    "3:executor"
+    "3:test-engineer"
+    "4:architect"
+  )
+  _describe 'worker-count:agent-type' suggestions
+}
+
+_omx__top_commands() {
+  local -a commands
+
+  commands=(
+    "launch:Launch Codex CLI with OMX overlays"
+    "exec:Run Codex exec with OMX overlays"
+    "setup:Install skills, prompts, MCP servers, and AGENTS scaffolding"
+    "agents:Manage Codex native agent TOML files"
+    "agents-init:Bootstrap lightweight AGENTS.md files"
+    "deepinit:Alias for agents-init"
+    "uninstall:Remove OMX configuration and installed artifacts"
+    "doctor:Check installation health"
+    "cleanup:Kill orphaned OMX MCP servers and stale tmp directories"
+    "ask:Ask a local provider CLI and write an artifact"
+    "autoresearch:Run the autoresearch thin supervisor flow"
+    "explore:Run read-only exploration prompts"
+    "sparkshell:Run the native sparkshell sidecar"
+    "team:Spawn tmux-backed worker teams"
+    "ralph:Launch Codex with Ralph persistence mode"
+    "session:Search prior local session history"
+    "resume:Resume a previous interactive Codex session"
+    "version:Show version information"
+    "tmux-hook:Manage tmux prompt injection hooks"
+    "hooks:Manage hook plugins"
+    "hud:Show or watch the HUD statusline"
+    "status:Show active execution modes"
+    "cancel:Cancel active execution modes"
+    "reasoning:Show or set model reasoning effort"
+    "help:Show help"
+  )
+
+  _describe 'omx command' commands
+}
+
+_omx__team_subcommands() {
+  local -a commands
+
+  commands=(
+    "status:Show team status"
+    "await:Wait for the next wakeable team event"
+    "resume:Resume a stopped or detached team"
+    "shutdown:Shut down a running team"
+    "api:Call the team API interop surface"
+    "help:Show team help"
+  )
+
+  _describe 'team subcommand' commands
+}
+
+_omx__team_api_operations() {
+  local -a operations
+
+  operations=(
+    "send-message:Send a direct mailbox message"
+    "broadcast:Broadcast a message to workers"
+    "mailbox-list:List mailbox messages"
+    "mailbox-mark-delivered:Mark a mailbox message delivered"
+    "mailbox-mark-notified:Mark a mailbox message notified"
+    "create-task:Create a team task"
+    "read-task:Read a task"
+    "list-tasks:List tasks"
+    "update-task:Update task metadata"
+    "claim-task:Claim a task"
+    "transition-task-status:Transition a task lifecycle state"
+    "release-task-claim:Release a task claim"
+    "read-config:Read team config"
+    "read-manifest:Read team manifest"
+    "read-worker-status:Read worker status"
+    "read-worker-heartbeat:Read worker heartbeat"
+    "update-worker-heartbeat:Update worker heartbeat"
+    "write-worker-inbox:Write worker inbox content"
+    "write-worker-identity:Write worker identity"
+    "append-event:Append a team event"
+    "read-events:Read team events"
+    "await-event:Wait for a matching team event"
+    "read-idle-state:Read idle state summary"
+    "read-stall-state:Read stall state summary"
+    "get-summary:Get a team summary"
+    "cleanup:Run normal team cleanup"
+    "orphan-cleanup:Run orphan cleanup"
+    "write-shutdown-request:Write a shutdown request"
+    "read-shutdown-ack:Read a shutdown acknowledgement"
+    "read-monitor-snapshot:Read monitor snapshot"
+    "write-monitor-snapshot:Write monitor snapshot"
+    "read-task-approval:Read task approval state"
+    "write-task-approval:Write task approval state"
+  )
+
+  _describe 'team api operation' operations
+}
+
+_omx__agents_subcommands() {
+  local -a commands
+
+  commands=(
+    "list:List native agents"
+    "add:Add a native agent"
+    "edit:Edit a native agent"
+    "remove:Remove a native agent"
+  )
+
+  _describe 'agents subcommand' commands
+}
+
+_omx__scope_values() {
+  _values 'scope' user project
+}
+
+_omx__skill_target_values() {
+  _values 'skill target' codex-home
+}
+
+_omx__local_provider_values() {
+  _values 'provider' lmstudio ollama
+}
+
+_omx__sandbox_modes() {
+  _values 'sandbox mode' read-only workspace-write danger-full-access
+}
+
+_omx__approval_policies() {
+  _values 'approval policy' untrusted on-failure on-request never
+}
+
+_omx__color_modes() {
+  _values 'color mode' always never auto
+}
+
+_omx__reasoning_modes() {
+  _values 'reasoning mode' low medium high xhigh
+}
+
+_omx__hud_presets() {
+  _values 'hud preset' minimal focused full
+}
+
+_omx__keep_policies() {
+  _values 'keep policy' score_improvement pass_only
+}
+
+_omx__session_project_values() {
+  _values 'project scope' current all
+}
+
+_omx__team_tail_lines() {
+  _values 'tail lines' 100 200 400 600 800 1000
+}
+
+_omx__tmux_hook_subcommands() {
+  _values 'tmux-hook command' init status validate test
+}
+
+_omx__hooks_subcommands() {
+  _values 'hooks command' init status validate test
+}
+
+_omx__config_value() {
+  _message 'key=value'
+}
+
+_omx__feature_name() {
+  _message 'feature name'
+}
+
+_omx__model_name() {
+  _message 'model name'
+}
+
+_omx__profile_name() {
+  _message 'profile name'
+}
+
+_omx__session_id() {
+  _message 'session id'
+}
+
+_omx__query_text() {
+  _message 'query text'
+}
+
+_omx__prompt_text() {
+  _message 'prompt text'
+}
+
+_omx__prompt_file() {
+  _files
+}
+
+_omx__json_input() {
+  _message 'JSON object'
+}
+
+_omx__remote_address() {
+  _message 'ws://host:port or wss://host:port'
+}
+
+_omx__env_var_name() {
+  _message 'environment variable name'
+}
+
+_omx__custom_provider_name() {
+  _message 'custom provider name'
+}
+
+_omx__worktree_name() {
+  _message 'worktree name'
+}
+
+_omx__codex_launch_option_specs() {
+  reply=(
+    '(-c --config)'{-c,--config}'[override a Codex config value]:key=value:_omx__config_value'
+    '--enable[enable a feature]:feature:_omx__feature_name'
+    '--disable[disable a feature]:feature:_omx__feature_name'
+    '--remote[connect the TUI to a remote app server]:address:_omx__remote_address'
+    '--remote-auth-token-env[name of the environment variable containing the remote auth token]:environment variable:_omx__env_var_name'
+    '(-i --image)'{-i,--image}'[attach an image to the initial prompt]:image file:_files'
+    '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
+    '--oss[select the local open source provider]'
+    '--local-provider[select the local OSS provider]:provider:_omx__local_provider_values'
+    '(-p --profile)'{-p,--profile}'[select a config profile]:profile:_omx__profile_name'
+    '(-s --sandbox)'{-s,--sandbox}'[select the sandbox policy]:sandbox mode:_omx__sandbox_modes'
+    '(-a --ask-for-approval)'{-a,--ask-for-approval}'[configure approval policy]:approval policy:_omx__approval_policies'
+    '--full-auto[enable low-friction sandboxed automatic execution]'
+    '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
+    '(-C --cd)'{-C,--cd}'[set the working root directory]:directory:_files -/'
+    '--search[enable live web search]'
+    '--add-dir[allow an additional writable directory]:directory:_files -/'
+    '--no-alt-screen[disable alternate screen mode]'
+    '(-h --help)'{-h,--help}'[show help]'
+    '(-V --version)'{-V,--version}'[show version]'
+  )
+}
+
+_omx__codex_resume_option_specs() {
+  reply=(
+    '(-c --config)'{-c,--config}'[override a Codex config value]:key=value:_omx__config_value'
+    '--last[continue the most recent session]'
+    '--all[show all sessions in the resume picker]'
+    '--enable[enable a feature]:feature:_omx__feature_name'
+    '--disable[disable a feature]:feature:_omx__feature_name'
+    '--include-non-interactive[include non-interactive sessions]'
+    '--remote[connect the TUI to a remote app server]:address:_omx__remote_address'
+    '--remote-auth-token-env[name of the environment variable containing the remote auth token]:environment variable:_omx__env_var_name'
+    '(-i --image)'{-i,--image}'[attach an image to the initial prompt]:image file:_files'
+    '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
+    '--oss[select the local open source provider]'
+    '--local-provider[select the local OSS provider]:provider:_omx__local_provider_values'
+    '(-p --profile)'{-p,--profile}'[select a config profile]:profile:_omx__profile_name'
+    '(-s --sandbox)'{-s,--sandbox}'[select the sandbox policy]:sandbox mode:_omx__sandbox_modes'
+    '(-a --ask-for-approval)'{-a,--ask-for-approval}'[configure approval policy]:approval policy:_omx__approval_policies'
+    '--full-auto[enable low-friction sandboxed automatic execution]'
+    '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
+    '(-C --cd)'{-C,--cd}'[set the working root directory]:directory:_files -/'
+    '--search[enable live web search]'
+    '--add-dir[allow an additional writable directory]:directory:_files -/'
+    '--no-alt-screen[disable alternate screen mode]'
+    '(-h --help)'{-h,--help}'[show help]'
+    '(-V --version)'{-V,--version}'[show version]'
+  )
+}
+
+_omx__codex_exec_option_specs() {
+  reply=(
+    '(-c --config)'{-c,--config}'[override a Codex config value]:key=value:_omx__config_value'
+    '--enable[enable a feature]:feature:_omx__feature_name'
+    '--disable[disable a feature]:feature:_omx__feature_name'
+    '(-i --image)'{-i,--image}'[attach an image to the initial prompt]:image file:_files'
+    '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
+    '--oss[select the local open source provider]'
+    '--local-provider[select the local OSS provider]:provider:_omx__local_provider_values'
+    '(-s --sandbox)'{-s,--sandbox}'[select the sandbox policy]:sandbox mode:_omx__sandbox_modes'
+    '(-p --profile)'{-p,--profile}'[select a config profile]:profile:_omx__profile_name'
+    '--full-auto[enable low-friction sandboxed automatic execution]'
+    '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
+    '(-C --cd)'{-C,--cd}'[set the working root directory]:directory:_files -/'
+    '--skip-git-repo-check[allow running outside a git repository]'
+    '--add-dir[allow an additional writable directory]:directory:_files -/'
+    '--ephemeral[run without persisting session files]'
+    '--output-schema[path to a JSON Schema file]:schema file:_files'
+    '--color[color mode]:color:_omx__color_modes'
+    '--json[emit JSONL events]'
+    '(-o --output-last-message)'{-o,--output-last-message}'[write the last message to a file]:output file:_files'
+    '(-h --help)'{-h,--help}'[show help]'
+    '(-V --version)'{-V,--version}'[show version]'
+  )
+}
+
+_omx__omx_wrapper_option_specs() {
+  reply=(
+    '--yolo[launch in yolo mode]'
+    '--high[launch with high reasoning effort]'
+    '--xhigh[launch with xhigh reasoning effort]'
+    '--madmax[bypass approvals and sandboxing]'
+    '--spark[use the spark model for team workers]'
+    '--madmax-spark[use spark workers and bypass approvals]'
+    '--notify-temp[enable temporary notification routing]'
+    '--discord[select Discord notifications for temporary routing]'
+    '--slack[select Slack notifications for temporary routing]'
+    '--telegram[select Telegram notifications for temporary routing]'
+    '--custom[select a custom notification provider]:provider:_omx__custom_provider_name'
+    '--worktree[launch in a detached git worktree]'
+    '--worktree=[launch in a named git worktree]:worktree name:_omx__worktree_name'
+    '-w[launch in a detached git worktree]'
+    '-w+[launch in a named git worktree]:worktree name:_omx__worktree_name'
+  )
+}
+
+_omx__complete_root() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a omx_specs codex_specs
+
+  _omx__omx_wrapper_option_specs
+  omx_specs=("${reply[@]}")
+  _omx__codex_launch_option_specs
+  codex_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${omx_specs[@]} \
+    ${codex_specs[@]} \
+    '1:omx command:->command' \
+    '*::launch argument:_omx__prompt_text'
+
+  case $state in
+    command)
+      _omx__top_commands
+      ;;
+  esac
+}
+
+_omx__complete_launch_like() {
+  local shift_count=${1:-0}
+  local -a omx_specs codex_specs
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  (( shift_count > 0 )) && _omx__shift_words "$shift_count"
+
+  _omx__omx_wrapper_option_specs
+  omx_specs=("${reply[@]}")
+  _omx__codex_launch_option_specs
+  codex_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${omx_specs[@]} \
+    ${codex_specs[@]} \
+    '*::launch argument:_omx__prompt_text'
+}
+
+_omx__complete_resume() {
+  local -a omx_specs codex_specs
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+  _omx__omx_wrapper_option_specs
+  omx_specs=("${reply[@]}")
+  _omx__codex_resume_option_specs
+  codex_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${omx_specs[@]} \
+    ${codex_specs[@]} \
+    '1:session id:_omx__session_id' \
+    '*::resume prompt:_omx__prompt_text'
+}
+
+_omx__complete_exec() {
+  local -a omx_specs exec_specs exec_commands
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+  _omx__omx_wrapper_option_specs
+  omx_specs=("${reply[@]}")
+  _omx__codex_exec_option_specs
+  exec_specs=("${reply[@]}")
+  exec_commands=(
+    "resume:Resume a previous exec session"
+    "review:Run a code review against the current repository"
+    "help:Show exec help"
+  )
+
+  _arguments -C -s \
+    ${omx_specs[@]} \
+    ${exec_specs[@]} \
+    '1:exec command or prompt:->exec_target' \
+    '*::exec argument:_omx__prompt_text'
+
+  case $state in
+    exec_target)
+      _describe 'codex exec command' exec_commands
+      ;;
+  esac
+}
+
+_omx__complete_setup() {
+  _omx__shift_words 1
+  _arguments -s \
+    '--force[overwrite existing files]' \
+    '--dry-run[show planned changes without writing]' \
+    '--verbose[show detailed output]' \
+    '--scope[set installation scope]:scope:_omx__scope_values' \
+    '--skill-target[set the user-scope skill target]:target:_omx__skill_target_values' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_uninstall() {
+  _omx__shift_words 1
+  _arguments -s \
+    '--dry-run[show what would be removed without removing it]' \
+    '--keep-config[keep config.toml during uninstall]' \
+    '--verbose[show detailed output]' \
+    '--purge[remove the .omx cache directory]' \
+    '--scope[set uninstall scope]:scope:_omx__scope_values' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_doctor() {
+  _omx__shift_words 1
+  _arguments -s \
+    '--team[run team/swarm runtime diagnostics]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_cleanup() {
+  _omx__shift_words 1
+  _arguments -s \
+    '--dry-run[list cleanup targets without removing them]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_ask() {
+  local -a providers
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+  providers=(
+    "claude:Use Claude as the local provider"
+    "gemini:Use Gemini as the local provider"
+  )
+
+  _arguments -C -s \
+    '1:provider:->provider' \
+    '(-p --print --prompt)'{-p,--print,--prompt}'[set the prompt text explicitly]:prompt:_omx__prompt_text' \
+    '--agent-prompt[prepend a saved role prompt]:role:_omx__prompt_roles' \
+    '--agent-prompt=[prepend a saved role prompt]:role:_omx__prompt_roles' \
+    '(-h --help)'{-h,--help}'[show help]' \
+    '*::question or task:_omx__prompt_text'
+
+  case $state in
+    provider)
+      _describe 'provider' providers
+      ;;
+  esac
+}
+
+_omx__complete_agents() {
+  _omx__shift_words 1
+
+  if (( CURRENT == 1 )); then
+    _omx__agents_subcommands
+    return
+  fi
+
+  case $words[1] in
+    list)
+      _arguments -s \
+        '--scope[restrict to a specific scope]:scope:_omx__scope_values' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    add)
+      _arguments -s \
+        '--scope[choose the mutation scope]:scope:_omx__scope_values' \
+        '--force[overwrite an existing agent file]' \
+        '1:agent name:_omx__message "new agent name"' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    edit)
+      _arguments -s \
+        '--scope[restrict lookup to a specific scope]:scope:_omx__scope_values' \
+        '1:agent name:_omx__native_agent_names' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    remove)
+      _arguments -s \
+        '--scope[restrict lookup to a specific scope]:scope:_omx__scope_values' \
+        '--force[skip the confirmation prompt]' \
+        '1:agent name:_omx__native_agent_names' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    help|-h|--help)
+      _omx__agents_subcommands
+      ;;
+    *)
+      _omx__agents_subcommands
+      ;;
+  esac
+}
+
+_omx__complete_agents_init() {
+  _omx__shift_words 1
+  _arguments -s \
+    '1:path:_files -/' \
+    '--dry-run[show planned file updates without writing]' \
+    '--force[overwrite existing unmanaged AGENTS.md files]' \
+    '--verbose[print per-file actions and skip reasons]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_team_api() {
+  _omx__shift_words 2
+
+  if (( CURRENT == 1 )); then
+    _omx__team_api_operations
+    return
+  fi
+
+  _arguments -s \
+    '1:api operation:_omx__team_api_operations' \
+    '--input[JSON request body]:json:_omx__json_input' \
+    '--input=[JSON request body]:json:_omx__json_input' \
+    '--json[emit structured JSON]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_team() {
+  _omx__shift_words 1
+
+  if (( CURRENT == 1 )); then
+    _alternative \
+      'team-subcommands:team subcommand:_omx__team_subcommands' \
+      'allocation:worker-count and role:_omx__team_allocation'
+    return
+  fi
+
+  case $words[1] in
+    status)
+      _arguments -s \
+        '1:team name:_omx__team_names' \
+        '--json[emit structured JSON]' \
+        '--tail-lines[set pane tail capture size]:line count:_omx__team_tail_lines' \
+        '--tail-lines=[set pane tail capture size]:line count:_omx__team_tail_lines' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    await)
+      _arguments -s \
+        '1:team name:_omx__team_names' \
+        '--timeout-ms[set wait timeout in milliseconds]:milliseconds:_omx__message' \
+        '--timeout-ms=[set wait timeout in milliseconds]:milliseconds:_omx__message' \
+        '--after-event-id[resume waiting after a specific event id]:event id:_omx__message' \
+        '--after-event-id=[resume waiting after a specific event id]:event id:_omx__message' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    resume)
+      _arguments -s \
+        '1:team name:_omx__team_names' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    shutdown)
+      _arguments -s \
+        '1:team name:_omx__team_names' \
+        '--force[force the shutdown]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    api)
+      _omx__complete_team_api
+      ;;
+    help|-h|--help)
+      _omx__team_subcommands
+      ;;
+    *)
+      if [[ $words[1] == <->:* ]]; then
+        _arguments '*:task description:_omx__prompt_text'
+      else
+        _arguments \
+          '1:worker-count and role or task text:_omx__team_allocation' \
+          '*:task description:_omx__prompt_text'
+      fi
+      ;;
+  esac
+}
+
+_omx__complete_ralph() {
+  local -a omx_specs codex_specs
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+  _omx__omx_wrapper_option_specs
+  omx_specs=("${reply[@]}")
+  _omx__codex_launch_option_specs
+  codex_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${omx_specs[@]} \
+    ${codex_specs[@]} \
+    '--prd[mark the task text explicitly]:task text:_omx__prompt_text' \
+    '--prd=[mark the task text explicitly]:task text:_omx__prompt_text' \
+    '--no-deslop[skip the final ai-slop-cleaner pass]' \
+    '(-h --help)'{-h,--help}'[show help]' \
+    '*::task text:_omx__prompt_text'
+}
+
+_omx__complete_autoresearch() {
+  local -a exec_specs
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+  _omx__codex_exec_option_specs
+  exec_specs=("${reply[@]}")
+
+  if (( CURRENT == 1 )); then
+    _alternative \
+      'subcommands:autoresearch mode:(init run help)' \
+      'missions:mission directory:_omx__mission_dirs' \
+      'options:guided flags:(--resume --topic --evaluator --keep-policy --slug --help -h)'
+    return
+  fi
+
+  case $words[1] in
+    init)
+      _arguments -s \
+        '--topic[seed the research topic]:topic:_omx__prompt_text' \
+        '--topic=[seed the research topic]:topic:_omx__prompt_text' \
+        '--evaluator[seed the evaluator command]:command:_omx__prompt_text' \
+        '--evaluator=[seed the evaluator command]:command:_omx__prompt_text' \
+        '--keep-policy[set the keep policy]:policy:_omx__keep_policies' \
+        '--keep-policy=[set the keep policy]:policy:_omx__keep_policies' \
+        '--slug[set the mission slug]:slug:_omx__message' \
+        '--slug=[set the mission slug]:slug:_omx__message' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    run)
+      if (( CURRENT == 2 )); then
+        _omx__mission_dirs
+        return
+      fi
+
+      _arguments -C -s \
+        '1:mission directory:_omx__mission_dirs' \
+        ${exec_specs[@]} \
+        '*::codex exec argument:_omx__prompt_text'
+      ;;
+    help|-h|--help)
+      _values 'autoresearch mode' init run help
+      ;;
+    --resume)
+      if (( CURRENT == 2 )); then
+        _omx__autoresearch_run_ids
+        return
+      fi
+
+      _arguments -C -s \
+        '1:run id:_omx__autoresearch_run_ids' \
+        ${exec_specs[@]} \
+        '*::codex exec argument:_omx__prompt_text'
+      ;;
+    --resume=*)
+      _arguments -C -s \
+        ${exec_specs[@]} \
+        '*::codex exec argument:_omx__prompt_text'
+      ;;
+    --topic|--evaluator|--keep-policy|--slug|--topic=*|--evaluator=*|--keep-policy=*|--slug=*)
+      _arguments -s \
+        '--topic[seed the research topic]:topic:_omx__prompt_text' \
+        '--topic=[seed the research topic]:topic:_omx__prompt_text' \
+        '--evaluator[seed the evaluator command]:command:_omx__prompt_text' \
+        '--evaluator=[seed the evaluator command]:command:_omx__prompt_text' \
+        '--keep-policy[set the keep policy]:policy:_omx__keep_policies' \
+        '--keep-policy=[set the keep policy]:policy:_omx__keep_policies' \
+        '--slug[set the mission slug]:slug:_omx__message' \
+        '--slug=[set the mission slug]:slug:_omx__message' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    *)
+      if (( CURRENT == 1 )); then
+        _omx__mission_dirs
+        return
+      fi
+
+      _arguments -C -s \
+        '1:mission directory:_omx__mission_dirs' \
+        ${exec_specs[@]} \
+        '*::codex exec argument:_omx__prompt_text'
+      ;;
+  esac
+}
+
+_omx__complete_explore() {
+  _omx__shift_words 1
+  _arguments -s \
+    '--prompt[set the exploration prompt text]:prompt:_omx__prompt_text' \
+    '--prompt=[set the exploration prompt text]:prompt:_omx__prompt_text' \
+    '--prompt-file[read the exploration prompt from a file]:prompt file:_omx__prompt_file' \
+    '--prompt-file=[read the exploration prompt from a file]:prompt file:_omx__prompt_file' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_sparkshell() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+
+  if (( CURRENT == 1 )); then
+    _alternative \
+      'options:tmux pane mode:(--tmux-pane)' \
+      'commands:command:_command_names -e'
+    return
+  fi
+
+  if [[ $words[1] == --tmux-pane || $words[1] == --tmux-pane=* || $words[1] == --tail-lines || $words[1] == --tail-lines=* ]]; then
+    _arguments -s \
+      '--tmux-pane[read from a tmux pane id]:pane id:_omx__message' \
+      '--tmux-pane=[read from a tmux pane id]:pane id:_omx__message' \
+      '--tail-lines[capture between 100 and 1000 lines]:line count:_omx__team_tail_lines' \
+      '--tail-lines=[capture between 100 and 1000 lines]:line count:_omx__team_tail_lines' \
+      '(-h --help)'{-h,--help}'[show help]'
+    return
+  fi
+
+  if (( CURRENT == 1 )); then
+    _command_names -e
+    return
+  fi
+
+  _default
+}
+
+_omx__complete_session() {
+  _omx__shift_words 1
+
+  if (( CURRENT == 1 )); then
+    _values 'session subcommand' search help
+    return
+  fi
+
+  case $words[1] in
+    search)
+      _arguments -s \
+        '1:query:_omx__query_text' \
+        '--limit[maximum result count]:count:_omx__message' \
+        '--limit=[maximum result count]:count:_omx__message' \
+        '--session[restrict to a specific session id or fragment]:session id:_omx__session_id' \
+        '--session=[restrict to a specific session id or fragment]:session id:_omx__session_id' \
+        '--since[restrict by recency]:time spec:_omx__message' \
+        '--since=[restrict by recency]:time spec:_omx__message' \
+        '--project[restrict by project context]:project scope:_omx__session_project_values' \
+        '--project=[restrict by project context]:project scope:_omx__session_project_values' \
+        '--context[set snippet context character count]:character count:_omx__message' \
+        '--context=[set snippet context character count]:character count:_omx__message' \
+        '--case-sensitive[match with exact case]' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]' \
+        '*::query text:_omx__query_text'
+      ;;
+    help|-h|--help)
+      _values 'session subcommand' search help
+      ;;
+    *)
+      _values 'session subcommand' search help
+      ;;
+  esac
+}
+
+_omx__complete_tmux_hook() {
+  _omx__shift_words 1
+
+  if (( CURRENT == 1 )); then
+    _omx__tmux_hook_subcommands
+    return
+  fi
+
+  _arguments -s \
+    '1:tmux-hook command:_omx__tmux_hook_subcommands' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_hooks() {
+  _omx__shift_words 1
+
+  if (( CURRENT == 1 )); then
+    _omx__hooks_subcommands
+    return
+  fi
+
+  _arguments -s \
+    '1:hooks command:_omx__hooks_subcommands' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_hud() {
+  _omx__shift_words 1
+  _arguments -s \
+    '--watch[poll every second with terminal clear]' \
+    '--json[output raw HUD state as JSON]' \
+    '--preset[use a named HUD preset]:preset:_omx__hud_presets' \
+    '--preset=[use a named HUD preset]:preset:_omx__hud_presets' \
+    '--tmux[open the HUD in a tmux split pane]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_reasoning() {
+  _omx__shift_words 1
+  _arguments \
+    '1:reasoning mode:_omx__reasoning_modes' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_help() {
+  _omx__shift_words 1
+  _arguments \
+    '1:omx command:_omx__top_commands'
+}
+
+function _omx() {
+  case $words[2] in
+    '')
+      _omx__complete_root
+      ;;
+    launch)
+      _omx__complete_launch_like 1
+      ;;
+    exec)
+      _omx__complete_exec
+      ;;
+    setup)
+      _omx__complete_setup
+      ;;
+    agents)
+      _omx__complete_agents
+      ;;
+    agents-init|deepinit)
+      _omx__complete_agents_init
+      ;;
+    uninstall)
+      _omx__complete_uninstall
+      ;;
+    doctor)
+      _omx__complete_doctor
+      ;;
+    cleanup)
+      _omx__complete_cleanup
+      ;;
+    ask)
+      _omx__complete_ask
+      ;;
+    autoresearch)
+      _omx__complete_autoresearch
+      ;;
+    explore)
+      _omx__complete_explore
+      ;;
+    sparkshell)
+      _omx__complete_sparkshell
+      ;;
+    team)
+      _omx__complete_team
+      ;;
+    ralph)
+      _omx__complete_ralph
+      ;;
+    session)
+      _omx__complete_session
+      ;;
+    resume)
+      _omx__complete_resume
+      ;;
+    version)
+      _arguments '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    tmux-hook)
+      _omx__complete_tmux_hook
+      ;;
+    hooks)
+      _omx__complete_hooks
+      ;;
+    hud)
+      _omx__complete_hud
+      ;;
+    status|cancel)
+      _arguments '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    reasoning)
+      _omx__complete_reasoning
+      ;;
+    help|-h|--help)
+      _omx__complete_help
+      ;;
+    *)
+      _omx__complete_root
+      ;;
+  esac
+}
+
+_omx "$@"
+
+# -----------------------------------------------------------------------------
+#
+# oh-my-codex (omx) - Multi-agent orchestration for Codex CLI
+#
+# Usage:
+#   omx           Launch Codex CLI (HUD auto-attaches only when already inside tmux)
+#   omx exec      Run codex exec non-interactively with OMX AGENTS/overlay injection
+#   omx setup     Install skills, prompts, MCP servers, and scope-specific AGENTS.md
+#   omx uninstall Remove OMX configuration and clean up installed artifacts
+#   omx doctor    Check installation health
+#   omx cleanup   Kill orphaned OMX MCP server processes and remove stale OMX /tmp directories
+#   omx doctor --team  Check team/swarm runtime health diagnostics
+#   omx ask       Ask local provider CLI (claude|gemini) and write artifact output
+#   omx resume    Resume a previous interactive Codex session
+#   omx explore   Default read-only exploration entrypoint (may adaptively use sparkshell backend)
+#   omx session   Search prior local session transcripts and history artifacts
+#   omx agents-init [path]
+#                 Bootstrap lightweight AGENTS.md files for a repo/subtree
+#   omx agents    Manage Codex native agent TOML files
+#   omx deepinit [path]
+#                 Alias for agents-init (lightweight AGENTS bootstrap only)
+#   omx team      Spawn parallel worker panes in tmux and bootstrap inbox/task state
+#   omx ralph     Launch Codex with ralph persistence mode active
+#   omx autoresearch Launch thin-supervisor autoresearch with keep/discard/reset parity
+#   omx version   Show version information
+#   omx tmux-hook Manage tmux prompt injection workaround (init|status|validate|test)
+#   omx hooks     Manage hook plugins (init|status|validate|test)
+#   omx hud       Show HUD statusline (--watch, --json, --preset=NAME)
+#   omx sparkshell <command> [args...]
+#   omx sparkshell --tmux-pane <pane-id> [--tail-lines <100-1000>]
+#                 Run native sparkshell sidecar for direct command execution or explicit tmux-pane summarization
+#                 (also used as an adaptive backend for qualifying read-only explore tasks)
+#   omx help      Show this help message
+#   omx status    Show active modes and state
+#   omx cancel    Cancel active execution modes
+#   omx reasoning Show or set model reasoning effort (low|medium|high|xhigh)
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
