@@ -53,9 +53,9 @@ _omx__shift_words() {
     shifted+=("${words[index]}")
   done
 
-  words=("${shifted[@]}")
-  (( CURRENT -= shift_count ))
-  (( CURRENT < 1 )) && CURRENT=1
+  reply=("${shifted[@]}")
+  REPLY=$(( CURRENT - shift_count ))
+  (( REPLY < 1 )) && REPLY=1
 }
 
 _omx__collect_prompt_roles() {
@@ -210,6 +210,196 @@ _omx__autoresearch_run_ids() {
 
   if (( $#run_ids )); then
     _describe 'autoresearch run id' run_ids
+  else
+    _message 'run id'
+  fi
+}
+
+_omx__git_branches() {
+  local current_branch line name desc
+  local -a lines branches
+
+  command git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    _message 'git branch'
+    return
+  }
+
+  current_branch=$(command git symbolic-ref --quiet --short HEAD 2>/dev/null)
+  lines=("${(@f)$(command git for-each-ref --format='%(refname:short)%09%(refname)' refs/heads refs/remotes 2>/dev/null)}")
+  branches=()
+
+  for line in "${lines[@]}"; do
+    name="${line%%$'\t'*}"
+    [[ -n $name && $name != */HEAD ]] || continue
+
+    if [[ ${line#*$'\t'} == refs/heads/* ]]; then
+      desc='local branch'
+      [[ $name == $current_branch ]] && desc='current branch'
+    else
+      desc='remote branch'
+    fi
+
+    branches+=("${name}:${desc}")
+  done
+
+  if (( $#branches )); then
+    _describe 'git branch' branches
+  else
+    _message 'git branch'
+  fi
+}
+
+_omx__git_commits() {
+  local line sha subject
+  local -a lines commits
+
+  command git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    _message 'commit SHA'
+    return
+  }
+
+  lines=("${(@f)$(command git log --pretty=format:'%h%x09%s' -n 30 --no-show-signature 2>/dev/null)}")
+  commits=()
+
+  for line in "${lines[@]}"; do
+    sha="${line%%$'\t'*}"
+    subject="${line#*$'\t'}"
+    [[ -n $sha ]] || continue
+    subject="${subject//:/ - }"
+    commits+=("${sha}:${subject}")
+  done
+
+  if (( $#commits )); then
+    _describe 'commit SHA' commits
+  else
+    _message 'commit SHA'
+  fi
+}
+
+_omx__team_api_current_operation() {
+  local word
+
+  for word in "${words[@]}"; do
+    [[ -n $word && $word != -* ]] || continue
+    REPLY=$word
+    return
+  done
+
+  REPLY=''
+}
+
+_omx__team_api_json_input() {
+  local operation skeleton
+
+  _omx__team_api_current_operation
+  operation=$REPLY
+
+  case $operation in
+    send-message)
+      skeleton='{"team_name":"my-team","from_worker":"worker-1","to_worker":"leader-fixed","body":"ACK"}'
+      ;;
+    broadcast)
+      skeleton='{"team_name":"my-team","from_worker":"leader-fixed","body":"status update","workers":["worker-1","worker-2"]}'
+      ;;
+    mailbox-list)
+      skeleton='{"team_name":"my-team","worker":"worker-1"}'
+      ;;
+    mailbox-mark-delivered|mailbox-mark-notified)
+      skeleton='{"team_name":"my-team","worker":"worker-1","message_id":"msg-123"}'
+      ;;
+    create-task)
+      skeleton='{"team_name":"my-team","title":"Investigate failure","summary":"...","status":"pending"}'
+      ;;
+    read-task)
+      skeleton='{"team_name":"my-team","task_id":"1"}'
+      ;;
+    list-tasks|get-summary|cleanup|orphan-cleanup|read-config|read-manifest|read-idle-state|read-stall-state)
+      skeleton='{"team_name":"my-team"}'
+      ;;
+    update-task)
+      skeleton='{"team_name":"my-team","task_id":"1","patch":{"summary":"..."}}'
+      ;;
+    claim-task)
+      skeleton='{"team_name":"my-team","task_id":"1","worker":"worker-1"}'
+      ;;
+    transition-task-status)
+      skeleton='{"team_name":"my-team","task_id":"1","from":"in_progress","to":"completed","claim_token":"claim-token"}'
+      ;;
+    release-task-claim)
+      skeleton='{"team_name":"my-team","task_id":"1","claim_token":"claim-token"}'
+      ;;
+    read-worker-status|read-worker-heartbeat|write-worker-inbox|write-worker-identity|read-shutdown-ack)
+      skeleton='{"team_name":"my-team","worker":"worker-1"}'
+      ;;
+    update-worker-heartbeat)
+      skeleton='{"team_name":"my-team","worker":"worker-1","state":"busy"}'
+      ;;
+    append-event)
+      skeleton='{"team_name":"my-team","event":{"type":"note","message":"..."}}'
+      ;;
+    read-events)
+      skeleton='{"team_name":"my-team","limit":20}'
+      ;;
+    await-event)
+      skeleton='{"team_name":"my-team","after_event_id":"evt-123","timeout_ms":30000}'
+      ;;
+    write-shutdown-request)
+      skeleton='{"team_name":"my-team","from_worker":"leader-fixed","reason":"completed"}'
+      ;;
+    read-monitor-snapshot)
+      skeleton='{"team_name":"my-team"}'
+      ;;
+    write-monitor-snapshot)
+      skeleton='{"team_name":"my-team","snapshot":{"status":"ok"}}'
+      ;;
+    read-task-approval)
+      skeleton='{"team_name":"my-team","task_id":"1"}'
+      ;;
+    write-task-approval)
+      skeleton='{"team_name":"my-team","task_id":"1","approved":true}'
+      ;;
+    *)
+      _message 'JSON object'
+      return
+      ;;
+  esac
+
+  compadd -Q -S '' -- "$skeleton"
+}
+
+_omx__collect_autoresearch_run_entries() {
+  local -A seen
+  local -a manifests entries
+  local manifest run_id desc rel
+
+  manifests=(
+    .omx/logs/autoresearch/*/manifest.json(N)
+    .omx/logs/autoresearch/*/*/manifest.json(N)
+  )
+
+  entries=()
+  for manifest in "${manifests[@]}"; do
+    run_id="${manifest:h:t}"
+    [[ -n $run_id && -z ${seen[$run_id]} ]] || continue
+
+    rel="${manifest#./.omx/logs/autoresearch/}"
+    rel="${rel#.omx/logs/autoresearch/}"
+    desc="${rel%/manifest.json}"
+    entries+=("${run_id}:${desc}")
+    seen[$run_id]=1
+  done
+
+  reply=("${entries[@]}")
+}
+
+_omx__autoresearch_run_entries() {
+  local -a entries
+
+  _omx__collect_autoresearch_run_entries
+  entries=("${reply[@]}")
+
+  if (( $#entries )); then
+    _describe 'autoresearch run id' entries
   else
     _message 'run id'
   fi
@@ -529,6 +719,48 @@ _omx__codex_exec_option_specs() {
   )
 }
 
+_omx__exec_resume_option_specs() {
+  reply=(
+    '(-c --config)'{-c,--config}'[override a Codex config value]:key=value:_omx__config_value'
+    '--last[resume the most recent recorded session]'
+    '--all[show all sessions instead of cwd-filtered sessions]'
+    '--enable[enable a feature]:feature:_omx__feature_name'
+    '--disable[disable a feature]:feature:_omx__feature_name'
+    '(-i --image)'{-i,--image}'[attach image files to the resumed prompt]:image file:_files'
+    '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
+    '--full-auto[enable low-friction sandboxed automatic execution]'
+    '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
+    '--skip-git-repo-check[allow running outside a git repository]'
+    '--ephemeral[run without persisting session files]'
+    '--json[emit JSONL events]'
+    '(-o --output-last-message)'{-o,--output-last-message}'[write the last message to a file]:output file:_files'
+    '(-h --help)'{-h,--help}'[show help]'
+  )
+}
+
+_omx__exec_review_option_specs() {
+  reply=(
+    '(-c --config)'{-c,--config}'[override a Codex config value]:key=value:_omx__config_value'
+    '--uncommitted[review staged, unstaged, and untracked changes]'
+    '--base[review changes against a base branch]:branch:_omx__git_branches'
+    '--base=[review changes against a base branch]:branch:_omx__git_branches'
+    '--enable[enable a feature]:feature:_omx__feature_name'
+    '--commit[review the changes introduced by a commit]:commit:_omx__git_commits'
+    '--commit=[review the changes introduced by a commit]:commit:_omx__git_commits'
+    '--disable[disable a feature]:feature:_omx__feature_name'
+    '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
+    '--title[set the review title]:title:_omx__message'
+    '--title=[set the review title]:title:_omx__message'
+    '--full-auto[enable low-friction sandboxed automatic execution]'
+    '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
+    '--skip-git-repo-check[allow running outside a git repository]'
+    '--ephemeral[run without persisting session files]'
+    '--json[emit JSONL events]'
+    '(-o --output-last-message)'{-o,--output-last-message}'[write the last message to a file]:output file:_files'
+    '(-h --help)'{-h,--help}'[show help]'
+  )
+}
+
 _omx__omx_wrapper_option_specs() {
   reply=(
     '--yolo[launch in yolo mode]'
@@ -578,7 +810,11 @@ _omx__complete_launch_like() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
 
-  (( shift_count > 0 )) && _omx__shift_words "$shift_count"
+  if (( shift_count > 0 )); then
+    _omx__shift_words "$shift_count"
+    words=("${reply[@]}")
+    CURRENT=$REPLY
+  fi
 
   _omx__omx_wrapper_option_specs
   omx_specs=("${reply[@]}")
@@ -597,6 +833,8 @@ _omx__complete_resume() {
   typeset -A opt_args
 
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _omx__omx_wrapper_option_specs
   omx_specs=("${reply[@]}")
   _omx__codex_resume_option_specs
@@ -610,11 +848,13 @@ _omx__complete_resume() {
 }
 
 _omx__complete_exec() {
-  local -a omx_specs exec_specs exec_commands
+  local -a omx_specs exec_specs exec_resume_specs exec_review_specs exec_commands
   local curcontext="$curcontext" state line
   typeset -A opt_args
 
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _omx__omx_wrapper_option_specs
   omx_specs=("${reply[@]}")
   _omx__codex_exec_option_specs
@@ -624,6 +864,38 @@ _omx__complete_exec() {
     "review:Run a code review against the current repository"
     "help:Show exec help"
   )
+
+  case $words[2] in
+    resume)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _omx__exec_resume_option_specs
+      exec_resume_specs=("${reply[@]}")
+
+      _arguments -C -s \
+        ${exec_resume_specs[@]} \
+        '1:session id:_omx__session_id' \
+        '*::resume prompt:_omx__prompt_text'
+      return
+      ;;
+    review)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _omx__exec_review_option_specs
+      exec_review_specs=("${reply[@]}")
+
+      _arguments -C -s \
+        ${exec_review_specs[@]} \
+        '*::review prompt:_omx__prompt_text'
+      return
+      ;;
+    help|-h|--help)
+      _describe 'codex exec command' exec_commands
+      return
+      ;;
+  esac
 
   _arguments -C -s \
     ${omx_specs[@]} \
@@ -640,6 +912,8 @@ _omx__complete_exec() {
 
 _omx__complete_setup() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '--force[overwrite existing files]' \
     '--dry-run[show planned changes without writing]' \
@@ -651,6 +925,8 @@ _omx__complete_setup() {
 
 _omx__complete_uninstall() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '--dry-run[show what would be removed without removing it]' \
     '--keep-config[keep config.toml during uninstall]' \
@@ -662,6 +938,8 @@ _omx__complete_uninstall() {
 
 _omx__complete_doctor() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '--team[run team/swarm runtime diagnostics]' \
     '(-h --help)'{-h,--help}'[show help]'
@@ -669,6 +947,8 @@ _omx__complete_doctor() {
 
 _omx__complete_cleanup() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '--dry-run[list cleanup targets without removing them]' \
     '(-h --help)'{-h,--help}'[show help]'
@@ -680,6 +960,8 @@ _omx__complete_ask() {
   typeset -A opt_args
 
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   providers=(
     "claude:Use Claude as the local provider"
     "gemini:Use Gemini as the local provider"
@@ -702,19 +984,27 @@ _omx__complete_ask() {
 
 _omx__complete_agents() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
   if (( CURRENT == 1 )); then
     _omx__agents_subcommands
     return
   fi
 
-  case $words[1] in
+  case $words[2] in
     list)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '--scope[restrict to a specific scope]:scope:_omx__scope_values' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     add)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '--scope[choose the mutation scope]:scope:_omx__scope_values' \
         '--force[overwrite an existing agent file]' \
@@ -722,12 +1012,18 @@ _omx__complete_agents() {
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     edit)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '--scope[restrict lookup to a specific scope]:scope:_omx__scope_values' \
         '1:agent name:_omx__native_agent_names' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     remove)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '--scope[restrict lookup to a specific scope]:scope:_omx__scope_values' \
         '--force[skip the confirmation prompt]' \
@@ -745,6 +1041,8 @@ _omx__complete_agents() {
 
 _omx__complete_agents_init() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '1:path:_files -/' \
     '--dry-run[show planned file updates without writing]' \
@@ -755,6 +1053,8 @@ _omx__complete_agents_init() {
 
 _omx__complete_team_api() {
   _omx__shift_words 2
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
   if (( CURRENT == 1 )); then
     _omx__team_api_operations
@@ -763,24 +1063,29 @@ _omx__complete_team_api() {
 
   _arguments -s \
     '1:api operation:_omx__team_api_operations' \
-    '--input[JSON request body]:json:_omx__json_input' \
-    '--input=[JSON request body]:json:_omx__json_input' \
+    '--input[JSON request body]:json:_omx__team_api_json_input' \
+    '--input=[JSON request body]:json:_omx__team_api_json_input' \
     '--json[emit structured JSON]' \
     '(-h --help)'{-h,--help}'[show help]'
 }
 
 _omx__complete_team() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
-  if (( CURRENT == 1 )); then
+  if (( CURRENT <= 2 )); then
     _alternative \
       'team-subcommands:team subcommand:_omx__team_subcommands' \
       'allocation:worker-count and role:_omx__team_allocation'
     return
   fi
 
-  case $words[1] in
+  case $words[2] in
     status)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '1:team name:_omx__team_names' \
         '--json[emit structured JSON]' \
@@ -789,6 +1094,9 @@ _omx__complete_team() {
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     await)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '1:team name:_omx__team_names' \
         '--timeout-ms[set wait timeout in milliseconds]:milliseconds:_omx__message' \
@@ -799,11 +1107,17 @@ _omx__complete_team() {
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     resume)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '1:team name:_omx__team_names' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     shutdown)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '1:team name:_omx__team_names' \
         '--force[force the shutdown]' \
@@ -816,7 +1130,10 @@ _omx__complete_team() {
       _omx__team_subcommands
       ;;
     *)
-      if [[ $words[1] == <->:* ]]; then
+      if [[ $words[2] == <->:* ]]; then
+        _omx__shift_words 1
+        words=("${reply[@]}")
+        CURRENT=$REPLY
         _arguments '*:task description:_omx__prompt_text'
       else
         _arguments \
@@ -833,6 +1150,8 @@ _omx__complete_ralph() {
   typeset -A opt_args
 
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _omx__omx_wrapper_option_specs
   omx_specs=("${reply[@]}")
   _omx__codex_launch_option_specs
@@ -854,6 +1173,8 @@ _omx__complete_autoresearch() {
   typeset -A opt_args
 
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _omx__codex_exec_option_specs
   exec_specs=("${reply[@]}")
 
@@ -865,8 +1186,25 @@ _omx__complete_autoresearch() {
     return
   fi
 
-  case $words[1] in
+  if (( CURRENT == 2 )); then
+    case $words[2] in
+      --resume|--resume=*|--topic|--topic=*|--evaluator|--evaluator=*|--keep-policy|--keep-policy=*|--slug|--slug=*)
+        ;;
+      *)
+        _alternative \
+          'subcommands:autoresearch mode:(init run help)' \
+          'missions:mission directory:_omx__mission_dirs' \
+          'options:guided flags:(--resume --topic --evaluator --keep-policy --slug --help -h)'
+        return
+        ;;
+    esac
+  fi
+
+  case $words[2] in
     init)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '--topic[seed the research topic]:topic:_omx__prompt_text' \
         '--topic=[seed the research topic]:topic:_omx__prompt_text' \
@@ -879,7 +1217,11 @@ _omx__complete_autoresearch() {
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     run)
-      if (( CURRENT == 2 )); then
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+
+      if (( CURRENT == 1 )); then
         _omx__mission_dirs
         return
       fi
@@ -893,22 +1235,28 @@ _omx__complete_autoresearch() {
       _values 'autoresearch mode' init run help
       ;;
     --resume)
-      if (( CURRENT == 2 )); then
-        _omx__autoresearch_run_ids
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+
+      if (( CURRENT == 1 )); then
+        _omx__autoresearch_run_entries
         return
       fi
 
       _arguments -C -s \
-        '1:run id:_omx__autoresearch_run_ids' \
+        '1:run id:_omx__autoresearch_run_entries' \
         ${exec_specs[@]} \
         '*::codex exec argument:_omx__prompt_text'
       ;;
     --resume=*)
-      _arguments -C -s \
-        ${exec_specs[@]} \
-        '*::codex exec argument:_omx__prompt_text'
+      compset -P '*=' 2>/dev/null
+      _omx__autoresearch_run_entries
       ;;
     --topic|--evaluator|--keep-policy|--slug|--topic=*|--evaluator=*|--keep-policy=*|--slug=*)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '--topic[seed the research topic]:topic:_omx__prompt_text' \
         '--topic=[seed the research topic]:topic:_omx__prompt_text' \
@@ -921,7 +1269,7 @@ _omx__complete_autoresearch() {
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     *)
-      if (( CURRENT == 1 )); then
+      if (( CURRENT == 2 )); then
         _omx__mission_dirs
         return
       fi
@@ -936,6 +1284,8 @@ _omx__complete_autoresearch() {
 
 _omx__complete_explore() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '--prompt[set the exploration prompt text]:prompt:_omx__prompt_text' \
     '--prompt=[set the exploration prompt text]:prompt:_omx__prompt_text' \
@@ -949,6 +1299,8 @@ _omx__complete_sparkshell() {
   typeset -A opt_args
 
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
   if (( CURRENT == 1 )); then
     _alternative \
@@ -977,14 +1329,19 @@ _omx__complete_sparkshell() {
 
 _omx__complete_session() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
   if (( CURRENT == 1 )); then
     _values 'session subcommand' search help
     return
   fi
 
-  case $words[1] in
+  case $words[2] in
     search)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
       _arguments -s \
         '1:query:_omx__query_text' \
         '--limit[maximum result count]:count:_omx__message' \
@@ -1013,6 +1370,8 @@ _omx__complete_session() {
 
 _omx__complete_tmux_hook() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
   if (( CURRENT == 1 )); then
     _omx__tmux_hook_subcommands
@@ -1026,6 +1385,8 @@ _omx__complete_tmux_hook() {
 
 _omx__complete_hooks() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
   if (( CURRENT == 1 )); then
     _omx__hooks_subcommands
@@ -1039,6 +1400,8 @@ _omx__complete_hooks() {
 
 _omx__complete_hud() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments -s \
     '--watch[poll every second with terminal clear]' \
     '--json[output raw HUD state as JSON]' \
@@ -1050,6 +1413,8 @@ _omx__complete_hud() {
 
 _omx__complete_reasoning() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments \
     '1:reasoning mode:_omx__reasoning_modes' \
     '(-h --help)'{-h,--help}'[show help]'
@@ -1057,6 +1422,8 @@ _omx__complete_reasoning() {
 
 _omx__complete_help() {
   _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
   _arguments \
     '1:omx command:_omx__top_commands'
 }
