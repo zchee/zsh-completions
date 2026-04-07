@@ -1,0 +1,924 @@
+#compdef socket
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/SocketDev/socket-cli
+#
+# -----------------------------------------------------------------------------
+
+function _socket() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'analytics:Look up analytics data'
+    'ask:Ask in plain English'
+    'audit-log:Look up the audit log for an organization'
+    'bundler:Run bundler with Socket Firewall security'
+    'cargo:Run cargo with Socket Firewall security'
+    'ci:Alias for scan create --report (creates report and exits with error if unhealthy)'
+    'config:Manage Socket CLI configuration'
+    'dependencies:Search for any dependency that is being used in your organization'
+    'fix:Fix CVEs in dependencies'
+    'gem:Run gem with Socket Firewall security'
+    'go:Run go with Socket Firewall security'
+    'install:Install Socket CLI tab completion'
+    'license:Retrieve the license policy of an organization'
+    'login:Setup Socket CLI with an API token and defaults'
+    'logout:Socket API logout'
+    'manifest:Generate a dependency manifest for certain ecosystems'
+    'npm:Run npm with Socket Firewall security'
+    'npx:Run npx with Socket Firewall security'
+    'nuget:Run nuget with Socket Firewall security'
+    'optimize:Optimize dependencies with @socketregistry overrides'
+    'organization:Manage Socket organization account details'
+    'package:Look up published package details'
+    'patch:Manage CVE patches for dependencies'
+    'pip:Run pip with Socket Firewall security'
+    'pnpm:Run pnpm with Socket Firewall security'
+    'repository:Manage registered repositories'
+    'scan:Manage Socket scans'
+    'security:Retrieve the security policy of an organization'
+    'sfw:Run Socket Firewall directly'
+    'threat-feed:View the threat-feed'
+    'uninstall:Uninstall Socket CLI tab completion'
+    'uv:Run uv with Socket Firewall security'
+    'whoami:Check Socket CLI authentication status'
+    'wrapper:Enable or disable the Socket npm/npx wrapper'
+    'yarn:Run yarn with Socket Firewall security'
+    'cdxgen:Generate manifest using cdxgen'
+    'json:Display the socket.json that would be applied for target folder'
+    'oops:Trigger an intentional error (for development)'
+    'pycli:Run Socket Python CLI (socketsecurity) directly'
+    'raw-npm:Run raw npm without Socket Firewall'
+    'raw-npx:Run raw npx without Socket Firewall'
+  )
+
+  local -a aliases
+  aliases=(
+    'audit:Look up the audit log for an organization (alias)'
+    'deps:Search for any dependency that is being used in your organization (alias)'
+    'feed:View the threat-feed (alias)'
+    'firewall:Run Socket Firewall directly (alias)'
+    'org:Manage Socket organization account details (alias)'
+    'pip3:Run pip with Socket Firewall security (alias)'
+    'pkg:Look up published package details (alias)'
+    'repo:Manage registered repositories (alias)'
+  )
+
+  local -a global_flags
+  global_flags=(
+    '(: -)'{-h,--help}'[Show help]'
+    '--dry-run[Run without uploading]'
+    {-c,--config}'[Override the local config with this JSON]:config:'
+    '--no-banner[Hide the Socket banner]'
+    '--no-spinner[Hide the console spinner]'
+    '--no-animate-header[Disable animated header shimmer effect]'
+    '--compact-header[Use compact single-line header format]'
+    '--header-theme[Header color theme]:theme:(default cyberpunk forest ocean sunset)'
+  )
+
+  _arguments -C \
+    $global_flags \
+    "1: :{_describe 'socket commands' commands -- aliases}" \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+      case $words[1] in
+        analytics)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--file[Path to store result, only valid with --json/--markdown]:file:_files' \
+            '1:scope:(org repo)' \
+            '2:time:(7 30 90)' \
+            && ret=0
+          ;;
+
+        ask)
+          _arguments \
+            $global_flags \
+            {-e,--execute}'[Execute the command directly]' \
+            '--explain[Show detailed explanation]' \
+            '1:question:' \
+            && ret=0
+          ;;
+
+        audit-log|audit|auditLog|audit-logs)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--interactive[Allow for interactive elements]' \
+            '--no-interactive[Prevent any input questions]' \
+            '--org[Force override the organization slug]:org:' \
+            '--page[Result page to fetch]:page:' \
+            '--per-page[Results per page (default 30)]:number:' \
+            '1:filter:(
+              associateLabel 
+              cancelInvitation 
+              changeMemberRole 
+              changePlanSubscriptionSeats 
+              createApiToken 
+              createLabel 
+              deleteLabel 
+              deleteLabelSetting 
+              deleteReport 
+              deleteRepository 
+              disassociateLabel 
+              joinOrganization 
+              removeMember 
+              resetInvitationLink 
+              resetOrganizationSettingToDefault 
+              rotateApiToken 
+              sendInvitation 
+              setLabelSettingToDefault 
+              syncOrganization 
+              transferOwnership 
+              updateAlertTriage 
+              updateApiTokenCommitter 
+              updateApiTokenMaxQuota 
+              updateApiTokenName 
+              updateApiTokenScopes 
+              updateApiTokenVisibility 
+              updateLabelSetting 
+              updateOrganizationSetting 
+              upgradeOrganizationPlan
+              )' \
+            && ret=0
+          ;;
+
+        bundler)
+          _arguments \
+            $global_flags \
+            '*:bundler args:' \
+            && ret=0
+          ;;
+
+        cdxgen)
+          _arguments \
+            $global_flags \
+            '*:cdxgen args:' \
+            && ret=0
+          ;;
+
+        cargo)
+          _arguments \
+            $global_flags \
+            '*:cargo args:' \
+            && ret=0
+          ;;
+
+        ci)
+          _arguments \
+            $global_flags \
+            '--auto-manifest[Auto generate manifest files where detected]' \
+            && ret=0
+          ;;
+
+        config)
+          local -a config_commands
+          config_commands=(
+            'auto:Automatically discover and set the correct value config item'
+            'get:Get the value of a local CLI config item'
+            'list:Show all local CLI config items and their values'
+            'set:Update the value of a local CLI config item'
+            'unset:Clear the value of a local CLI config item'
+          )
+          _arguments -C \
+            "1: :{_describe 'config commands' config_commands}" \
+            '*:: :->config_args' \
+            && ret=0
+
+          case $state in
+            config_args)
+              local -a config_keys
+              config_keys=(
+                'apiBaseUrl:API base URL'
+                'apiProxy:API proxy URL'
+                'apiToken:API token'
+                'defaultOrg:Default organization slug'
+                'enforcedOrgs:Enforced organizations'
+              )
+              case $words[1] in
+                auto)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    "1: :{_describe 'config key' config_keys}" \
+                    && ret=0
+                  ;;
+                get)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    "1: :{_describe 'config key' config_keys}" \
+                    && ret=0
+                  ;;
+                list)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--full[Show full tokens in plaintext]' \
+                    && ret=0
+                  ;;
+                set)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    "1: :{_describe 'config key' config_keys}" \
+                    '2:value:' \
+                    && ret=0
+                  ;;
+                unset)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    "1: :{_describe 'config key' config_keys}" \
+                    && ret=0
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        dependencies|deps)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--limit[Maximum number of dependencies returned]:number:' \
+            '--offset[Page number]:number:' \
+            && ret=0
+          ;;
+
+        fix)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--all[Process all discovered vulnerabilities in local mode]' \
+            '--autopilot[Enable auto-merge for pull requests]' \
+            '--no-apply-fixes[Compute fixes only, do not apply them]' \
+            '--no-major-updates[Do not suggest fixes that require major version updates]' \
+            {-d,--debug}'[Enable debug logging in the Coana-based Socket Fix CLI invocation]' \
+            '--ecosystems[Limit fix analysis to specific ecosystems]:ecosystem:' \
+            '--fix-version[Override the version of @coana-tech/cli]:version:' \
+            '--id[Vulnerability identifiers to compute fixes for]:id:' \
+            '--pr-limit[Maximum number of pull requests to create in CI mode]:number:' \
+            '--range-style[How dependency version ranges are updated]:style:(pin preserve)' \
+            '--output-file[Path to store upgrades as a JSON file]:file:_files' \
+            '--minimum-release-age[Minimum age requirement for upgrade versions]:age:' \
+            '--show-affected-direct-dependencies[List direct dependencies responsible for transitive vulnerabilities]' \
+            '--silence[Silence all output except the final result]' \
+            '--exclude[Exclude workspaces matching glob patterns]:pattern:' \
+            '--include[Include workspaces matching glob patterns]:pattern:' \
+            '1:cwd:_directories' \
+            && ret=0
+          ;;
+
+        gem)
+          if (( $+functions[_gem] )); then
+            _gem && ret=0
+          else
+            _arguments \
+              $global_flags \
+              '*:gem args:' \
+              && ret=0
+          fi
+          ;;
+
+        go)
+          if (( $+functions[_go] )); then
+            _go && ret=0
+          else
+            _arguments \
+              $global_flags \
+              '*:go args:' \
+              && ret=0
+          fi
+          ;;
+
+        json)
+          _arguments \
+            $global_flags \
+            '1:cwd:_directories' \
+            && ret=0
+          ;;
+
+        install)
+          local -a install_commands
+          install_commands=(
+            'completion:Install tab completion for the current shell'
+          )
+          _arguments -C \
+            "1: :{_describe 'install commands' install_commands}" \
+            '*:: :->install_args' \
+            && ret=0
+          ;;
+
+        license)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--interactive[Allow for interactive elements]' \
+            '--no-interactive[Prevent any input questions]' \
+            '--org[Force override the organization slug]:org:' \
+            && ret=0
+          ;;
+
+        login)
+          _arguments \
+            $global_flags \
+            '--api-base-url[API server to connect to for login]:url:' \
+            '--api-proxy[Proxy to use when making connection to API server]:url:' \
+            && ret=0
+          ;;
+
+        logout)
+          _arguments \
+            $global_flags \
+            && ret=0
+          ;;
+
+        manifest)
+          local -a manifest_commands
+          manifest_commands=(
+            'auto:Auto-detect and attempt to generate manifests'
+            'cdxgen:Generate manifest using cdxgen'
+            'conda:Generate manifest from conda environment'
+            'gradle:Generate manifest from Gradle project'
+            'kotlin:Generate manifest from Kotlin project'
+            'scala:Generate manifest from Scala sbt project'
+            'setup:Interactive setup for manifest generation'
+          )
+          _arguments -C \
+            $global_flags \
+            "1: :{_describe 'manifest commands' manifest_commands}" \
+            '*:: :->manifest_args' \
+            && ret=0
+
+          case $state in
+            manifest_args)
+              case $words[1] in
+                auto|cdxgen|conda|gradle|kotlin|scala)
+                  _arguments \
+                    $global_flags \
+                    '1:target:_directories' \
+                    && ret=0
+                  ;;
+                setup)
+                  _arguments \
+                    $global_flags \
+                    '1:target:_directories' \
+                    && ret=0
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        npm|raw-npm)
+          _arguments \
+            $global_flags \
+            '*:npm args:' \
+            && ret=0
+          ;;
+
+        npx|raw-npx)
+          _arguments \
+            $global_flags \
+            '1:package:' \
+            '*:args:' \
+            && ret=0
+          ;;
+
+        nuget)
+          _arguments \
+            $global_flags \
+            '*:nuget args:' \
+            && ret=0
+          ;;
+
+        oops)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--throw[Throw an explicit error even if --json or --markdown are set]' \
+            && ret=0
+          ;;
+
+        optimize)
+          _arguments \
+            $global_flags \
+            '--pin[Pin overrides to latest version]' \
+            '--prod[Add overrides for production dependencies only]' \
+            '1:cwd:_directories' \
+            && ret=0
+          ;;
+
+        organization|org|orgs|organisations|organisations)
+          local -a org_commands
+          org_commands=(
+            'dependencies:Search for any dependency that is being used in your organization'
+            'list:List organizations associated with the Socket API token'
+            'quota:List organizations associated with the Socket API token'
+            'policy:Organization policy details'
+          )
+          _arguments -C \
+            "1: :{_describe 'organization commands' org_commands}" \
+            '*:: :->org_args' \
+            && ret=0
+
+          case $state in
+            org_args)
+              case $words[1] in
+                dependencies)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--limit[Maximum number of dependencies returned]:number:' \
+                    '--offset[Page number]:number:' \
+                    && ret=0
+                  ;;
+                list)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    && ret=0
+                  ;;
+                quota)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    && ret=0
+                  ;;
+                policy)
+                  local -a policy_commands
+                  policy_commands=(
+                    'security:Retrieve the security policy of an organization'
+                    'license:Retrieve the license policy of an organization'
+                  )
+                  _arguments -C \
+                    "1: :{_describe 'policy commands' policy_commands}" \
+                    '*:: :->policy_args' \
+                    && ret=0
+
+                  case $state in
+                    policy_args)
+                      case $words[1] in
+                        security|license)
+                          _arguments \
+                            $global_flags \
+                            {-j,--json}'[Output as JSON]' \
+                            {-m,--markdown}'[Output as Markdown]' \
+                            '--interactive[Allow for interactive elements]' \
+                            '--no-interactive[Prevent any input questions]' \
+                            '--org[Force override the organization slug]:org:' \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        package|pkg)
+          local -a package_commands
+          package_commands=(
+            'score:Look up score for one package including transitive dependencies'
+            'shallow:Look up info regarding one or more packages but not their transitives'
+          )
+          _arguments -C \
+            "1: :{_describe 'package commands' package_commands}" \
+            '*:: :->package_args' \
+            && ret=0
+
+          case $state in
+            package_args)
+              case $words[1] in
+                score)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '1:ecosystem:' \
+                    '2:package name:' \
+                    && ret=0
+                  ;;
+                shallow)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '1:ecosystem:' \
+                    '*:package name:' \
+                    && ret=0
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        patch)
+          _arguments \
+            $global_flags \
+            '*:patch args:' \
+            && ret=0
+          ;;
+
+        pip|pip3)
+          if (( $+functions[_pip] )); then
+            _pip && ret=0
+          else
+            _arguments \
+              $global_flags \
+              '*:pip args:' \
+              && ret=0
+          fi
+          ;;
+
+        pnpm)
+          _arguments \
+            $global_flags \
+            '*:pnpm args:' \
+            && ret=0
+          ;;
+
+        pycli)
+          _arguments \
+            $global_flags \
+            '*:pycli args:' \
+            && ret=0
+          ;;
+
+        repository|repo|repos|repositories)
+          local -a repo_commands
+          repo_commands=(
+            'create:Create a repository in an organization'
+            'view:View repositories in an organization'
+            'list:List repositories in an organization'
+            'del:Delete a repository in an organization'
+            'update:Update a repository in an organization'
+          )
+          _arguments -C \
+            "1: :{_describe 'repository commands' repo_commands}" \
+            '*:: :->repo_args' \
+            && ret=0
+
+          case $state in
+            repo_args)
+              case $words[1] in
+                create)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '--default-branch[Repository default branch (default main)]:branch:' \
+                    '--homepage[Repository URL]:url:' \
+                    '--repo-description[Repository description]:desc:' \
+                    '--visibility[Repository visibility]:visibility:(private public)' \
+                    '1:repo name:' \
+                    && ret=0
+                  ;;
+                view)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '1:repo name:' \
+                    && ret=0
+                  ;;
+                list)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--all[Fetch the entire list of repos]' \
+                    '--direction[Direction option]:direction:(asc desc)' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    {-pp,--per-page}'[Number of results per page]:number:' \
+                    {-p,--page}'[Page number]:number:' \
+                    {-s,--sort}'[Sorting option]:sort:' \
+                    && ret=0
+                  ;;
+                del)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '1:repo name:' \
+                    && ret=0
+                  ;;
+                update)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    {-b,--default-branch}'[Repository default branch]:branch:' \
+                    {-h,--homepage}'[Repository URL]:url:' \
+                    {-d,--repo-description}'[Repository description]:desc:' \
+                    {-v,--visibility}'[Repository visibility]:visibility:(private public)' \
+                    '1:repo name:' \
+                    && ret=0
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        scan)
+          local -a scan_commands
+          scan_commands=(
+            'create:Create a scan'
+            'del:Delete a scan'
+            'diff:See what changed between two scans'
+            'list:List the scans for an organization'
+            'metadata:Get a scan metadata'
+            'reach:Compute tier 1 reachability'
+            'report:Check whether a scan result passes organizational policies'
+            'setup:Start interactive configurator for scan defaults'
+            'view:View the raw results of a scan'
+          )
+          _arguments -C \
+            "1: :{_describe 'scan commands' scan_commands}" \
+            '*:: :->scan_args' \
+            && ret=0
+
+          case $state in
+            scan_args)
+              case $words[1] in
+                create)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--auto-manifest[Auto generate manifest files]' \
+                    '--branch[Override the branch name]:branch:' \
+                    '--commit-hash[Override the commit hash]:hash:' \
+                    '--commit-message[Override the commit message]:message:' \
+                    '--committers[Override the committers]:committers:' \
+                    '--default-branch[Indicate this scan is the default branch]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '--pull-request[PR number]:number:' \
+                    '--reach[Enable reachability analysis]' \
+                    '--read-only[Do not persist the scan]' \
+                    '--repo[Override the repo name]:repo:' \
+                    '--report[Generate a scan report]' \
+                    '--report-level[Report level]:level:(ignore warn error)' \
+                    '--set-as-alerts-page[Set scan as alerts page]' \
+                    '--tmp[Use a temporary directory]' \
+                    '*:target:_directories' \
+                    && ret=0
+                  ;;
+                del)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '1:scan id:' \
+                    && ret=0
+                  ;;
+                diff)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--depth[Max depth of JSON to display]:number:' \
+                    {-f,--file}'[Path to save output]:file:_files' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '1:before scan id:' \
+                    '2:after scan id:' \
+                    && ret=0
+                  ;;
+                list)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--branch[Filter by branch name]:branch:' \
+                    {-d,--direction}'[Direction option]:direction:(asc desc)' \
+                    {-f,--from-time}'[From time as unix timestamp]:timestamp:' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    {-p,--page}'[Page number]:number:' \
+                    {-pp,--per-page}'[Results per page]:number:' \
+                    '--sort[Sorting option]:sort:(created_at)' \
+                    && ret=0
+                  ;;
+                metadata|meta)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '1:scan id:' \
+                    && ret=0
+                  ;;
+                reach|reachability)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--cwd[Working directory]:dir:_directories' \
+                    '--org[Force override the organization slug]:org:' \
+                    {-o,--output}'[Path to write reachability report]:file:_files' \
+                    && ret=0
+                  ;;
+                report)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--fold[Fold reported alerts to some degree]:fold:' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '--report-level[Which policy level alerts should be reported]:level:(ignore warn error)' \
+                    '--short[Short output]' \
+                    '1:scan id:' \
+                    && ret=0
+                  ;;
+                setup)
+                  _arguments \
+                    $global_flags \
+                    '--default-on-read-error[Use default config if reading fails]' \
+                    '1:cwd:_directories' \
+                    && ret=0
+                  ;;
+                view)
+                  _arguments \
+                    $global_flags \
+                    {-j,--json}'[Output as JSON]' \
+                    {-m,--markdown}'[Output as Markdown]' \
+                    '--stream[Stream response as ndjson (only with --json)]' \
+                    '--interactive[Allow for interactive elements]' \
+                    '--no-interactive[Prevent any input questions]' \
+                    '--org[Force override the organization slug]:org:' \
+                    '1:scan id:' \
+                    '2::output file:_files' \
+                    && ret=0
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+
+        security)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--interactive[Allow for interactive elements]' \
+            '--no-interactive[Prevent any input questions]' \
+            '--org[Force override the organization slug]:org:' \
+            && ret=0
+          ;;
+
+        sfw|firewall)
+          _arguments \
+            $global_flags \
+            '1:package manager:(npm npx pnpm yarn pip pip3 uv cargo go gem bundler nuget)' \
+            '*:args:' \
+            && ret=0
+          ;;
+
+        threat-feed|feed)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            {-m,--markdown}'[Output as Markdown]' \
+            '--direction[Order asc or desc by createdAt]:direction:(asc desc)' \
+            '--eco[Only show threats for a particular ecosystem]:ecosystem:(gem golang maven npm nuget pypi)' \
+            '--filter[Filter what type of threats to return]:type:(anom c fp joke mal secret spy tp typo u vuln)' \
+            '--interactive[Allow for interactive elements]' \
+            '--no-interactive[Prevent any input questions]' \
+            '--org[Force override the organization slug]:org:' \
+            '--page[Page token]:page:' \
+            {-pp,--per-page}'[Number of items per page]:number:' \
+            '--pkg[Filter by package name]:package:' \
+            '--version[Filter by package version]:version:' \
+            && ret=0
+          ;;
+
+        uninstall)
+          local -a uninstall_commands
+          uninstall_commands=(
+            'completion:Uninstall tab completion for the current shell'
+          )
+          _arguments -C \
+            "1: :{_describe 'uninstall commands' uninstall_commands}" \
+            '*:: :->uninstall_args' \
+            && ret=0
+          ;;
+
+        whoami)
+          _arguments \
+            $global_flags \
+            {-j,--json}'[Output as JSON]' \
+            && ret=0
+          ;;
+
+        uv)
+          _arguments \
+            $global_flags \
+            '*:uv args:' \
+            && ret=0
+          ;;
+
+        wrapper)
+          _arguments \
+            $global_flags \
+            '1:action:(on off)' \
+            && ret=0
+          ;;
+
+        yarn)
+          _arguments \
+            $global_flags \
+            '*:yarn args:' \
+            && ret=0
+          ;;
+
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_socket "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
