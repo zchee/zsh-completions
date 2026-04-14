@@ -1,9 +1,8 @@
 #compdef gopls
 
 # -----------------------------------------------------------------------------
-# The BSD-3-Clause License
 #
-# Copyright (c) 2018, Koichi Shiraishi
+# Copyright 2018, The zsh-completions Authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,209 +30,491 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#
 # -----------------------------------------------------------------------------
 #
-# github.com/golang/tools/gopls
+# golang.org/x/tools/gopls
 #
-# https://github.com/golang/tools/tree/fe932b4680bd/internal/lsp
+# Source: gopls help
+# Version: golang.org/x/tools/gopls v0.1.8-0.20260413120158-b28dc7b55de1
 #
 # -----------------------------------------------------------------------------
 
 function _gopls() {
-  local context curcontext=$curcontext state line expl ret=1
-  declare -A opt_args
+  local curcontext="$curcontext" context state line ret=1
+  typeset -A opt_args
 
-  local -a main_commands feature_commands
+  local -a main_commands feature_commands all_commands help_subjects remote_commands
+  local -a common_flags serve_flags edit_flags
+
   main_commands=(
-    "serve[run a server for Go code using the Language Server Protocol]"
-    "version[print the gopls version information]"
-    "bug[report a bug in gopls]"
-    "api-json[print json describing gopls API]"
+    "serve:run a server for Go code using the Language Server Protocol"
+    "version:print the gopls version information"
+    "bug:report a bug in gopls"
+    "help:print usage information for subcommands"
+    "api-json:print JSON describing gopls API"
+    "licenses:print licenses of included software"
   )
 
   feature_commands=(
-    "call_hierarchy[display selected identifier's call hierarchy]"
-    "check[show diagnostic results for the specified file]"
-    "definition[show declaration of selected identifier]"
-    "folding_ranges[display selected file's folding ranges]"
-    "format[format the code according to the go standard]"
-    "highlight[display selected identifier's highlights]"
-    "implementation[display selected identifier's implementation]"
-    "imports[updates import statements]"
-    "remote[interact with the gopls daemon]"
-    "inspect[interact with the gopls daemon (deprecated: use 'remote')]"
-    "links[list links in a file]"
-    "prepare_rename[test validity of a rename operation at location]"
-    "references[display selected identifier's references]"
-    "rename[rename selected identifier]"
-    "semtok[show semantic tokens for the specified file]"
-    "signature[display selected identifier's signature]"
-    "fix[apply suggested fixes]"
-    "symbols[display selected file's symbols]"
-    "workspace[manage the gopls workspace (experimental: under development)]"
-    "workspace_symbol[search symbols in workspace]"
-    "vulncheck[run experimental vulncheck analysis (experimental: under development)]"
+    "call_hierarchy:display selected identifier's call hierarchy"
+    "check:show diagnostic results for the specified file"
+    "codeaction:list or execute code actions"
+    "codelens:List or execute code lenses for a file"
+    "definition:show declaration of selected identifier"
+    "execute:Execute a gopls custom LSP command"
+    "fix:apply suggested fixes (obsolete)"
+    "folding_ranges:display selected file's folding ranges"
+    "format:format the code according to the go standard"
+    "mcp:start the gopls MCP server in headless mode"
+    "highlight:display selected identifier's highlights"
+    "implementation:display selected identifier's implementation"
+    "imports:updates import statements"
+    "remote:interact with the gopls daemon"
+    "inspect:interact with the gopls daemon (deprecated: use 'remote')"
+    "links:list links in a file"
+    "prepare_rename:test validity of a rename operation at location"
+    "references:display selected identifier's references"
+    "rename:rename selected identifier"
+    "semtok:show semantic tokens for the specified file"
+    "signature:display selected identifier's signature"
+    "stats:print workspace statistics"
+    "symbols:display selected file's symbols"
+    "workspace_symbol:search symbols in workspace"
   )
 
-  function _commands() {
-    _alternative ': :{_values "gopls commands" $main_commands $feature_commands}'
+  all_commands=(
+    "${main_commands[@]}"
+    "${feature_commands[@]}"
+  )
+
+  help_subjects=(
+    "${all_commands[@]}"
+  )
+
+  remote_commands=(
+    "sessions:print information about current gopls sessions"
+    "debug:start the debug server"
+  )
+
+  common_flags=(
+    "-debug=[serve debug information on the supplied address]:debug address:_gopls_address"
+    "-listen=[address on which to listen for remote connections]:listen address:_gopls_address"
+    "-listen.timeout=[when used with -listen, shut down the server when there are no connected clients for this duration]:duration"
+    "-logfile=[filename to log to; if value is \"auto\", logging to a default output file is enabled]:log file:_files"
+    "-mcp.listen=[experimental: address on which to listen for model context protocol connections]:MCP listen address:_gopls_address"
+    "-mode=[no effect]:mode"
+    "-otel=[export telemetry to the specified OpenTelemetry collector address]:collector address:_gopls_address"
+    "-port=[port on which to run gopls for debugging purposes]:port:_ports"
+    "-profile.alloc=[write alloc profile to this file]:alloc profile:_files"
+    "-profile.block=[write block profile to this file]:block profile:_files"
+    "-profile.cpu=[write CPU profile to this file]:CPU profile:_files"
+    "-profile.mem=[write memory profile to this file]:memory profile:_files"
+    "-profile.trace=[write trace log to this file]:trace log:_files"
+    "-remote=[forward all commands to a remote LSP]:remote address:_gopls_address"
+    "-remote.debug=[when used with -remote=auto, the -debug value used to start the daemon]:debug address:_gopls_address"
+    "-remote.listen.timeout=[when used with -remote=auto, the -listen.timeout value used to start the daemon]:duration"
+    "-remote.logfile=[when used with -remote=auto, the -logfile value used to start the daemon]:log file:_files"
+    "-rpc.trace[print the full rpc trace in LSP inspector format]"
+    "(-v -verbose)"{-v,-verbose}"[verbose output]"
+    "(-vv -veryverbose)"{-vv,-veryverbose}"[very verbose output]"
+  )
+
+  serve_flags=(
+    "-debug=[serve debug information on the supplied address]:debug address:_gopls_address"
+    "-listen=[address on which to listen for remote connections]:listen address:_gopls_address"
+    "-listen.timeout=[when used with -listen, shut down the server when there are no connected clients for this duration]:duration"
+    "-logfile=[filename to log to; if value is \"auto\", logging to a default output file is enabled]:log file:_files"
+    "-mcp.listen=[experimental: address on which to listen for model context protocol connections]:MCP listen address:_gopls_address"
+    "-mode=[no effect]:mode"
+    "-port=[port on which to run gopls for debugging purposes]:port:_ports"
+    "-remote.debug=[when used with -remote=auto, the -debug value used to start the daemon]:debug address:_gopls_address"
+    "-remote.listen.timeout=[when used with -remote=auto, the -listen.timeout value used to start the daemon]:duration"
+    "-remote.logfile=[when used with -remote=auto, the -logfile value used to start the daemon]:log file:_files"
+    "-rpc.trace[print the full rpc trace in LSP inspector format]"
+  )
+
+  edit_flags=(
+    "(-d -diff)"{-d,-diff}"[display diffs instead of edited file content]"
+    "(-l -list)"{-l,-list}"[display names of edited files]"
+    "-preserve[with -write, make copies of original files]"
+    "(-w -write)"{-w,-write}"[write edited content to source files]"
+  )
+
+  _gopls_commands() {
+    _describe -t commands "gopls command" all_commands
   }
 
-    # '-remote[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address:_hosts' \
-  _arguments -C \
-    "-debug=[serve debug information on the supplied address]:debug server address:_hosts" \
-    "-listen=[address on which to listen for remote connections. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. Otherwise, TCP is used.]:listen address:_hosts" \
-    "-listen.timeout=[when used with -listen, shut down the server when there are no connected clients for this duration]:timeout (duration)" \
-    "-logfile=[filename to log to. if value is \"auto\", then logging to a default output file is enabled]:log file:_files" \
-    "-ocagent=[the address of the ocagent (e.g. http://localhost:55678), or off (default \"off\")]:ocagent adderss:_hosts" \
-    "-port=[port on which to run gopls for debugging purposes]:gopls run port:_port" \
-    "-profile.cpu=[write CPU profile to this file]:CPU profile output:_files" \
-    "-profile.mem=[write memory profile to this file]:Memory profile output:_files" \
-    "-profile.trace=[write trace log to this file]:Trace profile output:_files" \
-    "-remote=string[forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address.]:remote address" \
-    "-remote.debug=string[when used with -remote=auto, the -debug value used to start the daemon]:debug server address:_hosts" \
-    "-remote.listen.timeout=duration[when used with -remote=auto, the -listen.timeout value used to start the daemon (default 1m0s)]:timeout (duration)" \
-    "-remote.logfile=string[when used with -remote=auto, the -logfile value used to start the daemon]:log file:_files" \
-    "-rpc.trace[print the full rpc trace in lsp inspector format]" \
-    {-v,-verbose}"[verbose output]" \
-    {-vv,-veryverbose}"[very verbose output]" \
-    "1: :_commands" \
-    '*:: :->args' \
-    && ret=0
+  _gopls_help_subjects() {
+    _describe -t help-subjects "gopls help subject" help_subjects
+  }
 
-  # case $words[1] in
-  #   serve)
-  #     ;;
-  #
-  #   version)
-  #     ;;
-  #
-  #   bug)
-  #     ;;
-  #
-  #   check)
-  #     ;;
-  #
-  #   folding_ranges)
-  #     ;;
-  #
-  #   format)
-  #     ;;
-  #
-  #   highlight)
-  #     ;;
-  #
-  #   implementation)
-  #     ;;
-  #
-  #   imports)
-  #     ;;
-  #
-  #   links)
-  #     ;;
-  #
-  #   query)
-  #     ;;
-  #
-  #   references)
-  #     ;;
-  #
-  #   rename)
-  #     ;;
-  #
-  #   signature)
-  #     ;;
-  #
-  #   fix)
-  #     ;;
-  #
-  #   symbols)
-  #     ;;
-  # esac
+  _gopls_remote_commands() {
+    _describe -t remote-commands "gopls daemon subcommand" remote_commands
+  }
+
+  _gopls_address() {
+    if compset -P 'unix\\;' || compset -P 'unix;'; then
+      if [[ -z $PREFIX ]]; then
+        _files -/ && return
+      fi
+      _files && return
+      _message -r "unix socket path"
+      return
+    fi
+
+    if [[ $PREFIX == *:* || $IPREFIX == *:* ]]; then
+      _message -r "port"
+      return
+    fi
+
+    compadd -Q -S : -- localhost 127.0.0.1 && return
+    _hosts -S : && return
+    _message -r "address (host:port or unix;socket)"
+  }
+
+  _gopls_host_port() {
+    local -a host_ports
+
+    if compset -P 'unix\\;' || compset -P 'unix;'; then
+      if [[ -z $PREFIX ]]; then
+        _files -/ && return
+      fi
+      _files && return
+      _message -r "unix socket path"
+      return
+    fi
+
+    if [[ $PREFIX == *:* || $IPREFIX == *:* ]]; then
+      _message -r "port"
+      return
+    fi
+
+    host_ports=(
+      "localhost:loopback host"
+      "127.0.0.1:loopback IPv4 address"
+    )
+
+    _describe -t host-ports "host" host_ports && return
+    _gopls_address
+  }
+
+  _gopls_file_line_count() {
+    local file=$1 count
+
+    count=$(command wc -l < "$file" 2>/dev/null)
+    [[ $count == <-> ]] || count=1
+    (( count < 1 )) && count=1
+    REPLY=$count
+  }
+
+  _gopls_file_size() {
+    local file=$1 size
+
+    size=$(command wc -c < "$file" 2>/dev/null)
+    [[ $size == <-> ]] || size=0
+    (( size < 0 )) && size=0
+    REPLY=$size
+  }
+
+  _gopls_file_column_count() {
+    local file=$1 line_no=$2 line_text
+
+    line_text=$(command sed -n "${line_no}p" -- "$file" 2>/dev/null)
+    REPLY=$(( ${#line_text} + 1 ))
+    (( REPLY < 1 )) && REPLY=1
+  }
+
+  _gopls_complete_integer_range() {
+    local min=$1 max=$2 description=$3 min_prefix_digits=${4:-1} max_candidates=${5:-100} prefix=$PREFIX n
+    local -a matches
+
+    if [[ -z $prefix ]]; then
+      _message -r "$description"
+      return
+    fi
+
+    if [[ $prefix != <-> ]]; then
+      _guard '[0-9]#' "$description" && return
+      _message -r "$description"
+      return
+    fi
+
+    if (( ${#prefix} < min_prefix_digits )); then
+      _message -r "$description"
+      return
+    fi
+
+    for (( n = min; n <= max; ++n )); do
+      [[ $n == ${prefix}* ]] || continue
+      matches+=($n)
+      if (( ${#matches} > max_candidates )); then
+        _message -r "$description"
+        return
+      fi
+    done
+
+    (( ${#matches} )) && compadd -Q -- $matches && return
+    _message -r "$description"
+  }
+
+  _gopls_position() {
+    local spec=$PREFIX file rest line_no
+
+    if [[ $spec == *:\#* ]]; then
+      file=${spec%%:\#*}
+      compset -P '*:\#'
+      if [[ -r $file ]]; then
+        _gopls_file_size "$file"
+        _gopls_complete_integer_range 0 "$REPLY" 'byte offset' 3 100
+        return
+      fi
+      _guard '[0-9]#' 'byte offset' && return
+      _message -r "byte offset"
+      return
+    fi
+
+    if [[ $spec == *:*:* ]]; then
+      file=${spec%%:*:*}
+      rest=${spec#${file}:}
+      line_no=${rest%%:*}
+      compset -P '*:'
+      if [[ $line_no == <-> && -r $file ]]; then
+        _gopls_file_column_count "$file" "$line_no"
+        _gopls_complete_integer_range 1 "$REPLY" 'column number' 1 100
+        return
+      fi
+      _guard '[0-9]#' 'column number' && return
+      _message -r "column number"
+      return
+    fi
+
+    if [[ $spec == *:* ]]; then
+      file=${spec%:*}
+      compset -P '*:'
+      if [[ -r $file ]]; then
+        if [[ -z $PREFIX ]]; then
+          compadd -Q -- '#' && _message -r 'line number'
+          return
+        fi
+        _gopls_file_line_count "$file"
+        _gopls_complete_integer_range 1 "$REPLY" 'line number' 2 100
+        return
+      fi
+      compadd -Q -- '#' && return
+      _guard '[0-9]#' 'line number' && return
+      _message -r "line number or #offset"
+      return
+    fi
+
+    _files -g '*.(go|mod|sum|work)(-.N)' && return
+    _message -r "position (file:line:column or file:#offset)"
+  }
+
+  _gopls_range() {
+    local spec=$PREFIX file rest line_no
+
+    if [[ $spec == *:\#* ]]; then
+      file=${spec%%:\#*}
+      compset -P '*:\#'
+      if [[ -r $file ]]; then
+        _gopls_file_size "$file"
+        _gopls_complete_integer_range 0 "$REPLY" 'byte offset' 3 100
+        return
+      fi
+      _guard '[0-9]#' 'byte offset' && return
+      _message -r "byte offset or range suffix"
+      return
+    fi
+
+    if [[ $spec == *:*:* ]]; then
+      file=${spec%%:*:*}
+      rest=${spec#${file}:}
+      line_no=${rest%%:*}
+      compset -P '*:'
+      if [[ $line_no == <-> && -r $file ]]; then
+        _gopls_file_column_count "$file" "$line_no"
+        _gopls_complete_integer_range 1 "$REPLY" 'column number' 1 100
+        return
+      fi
+      _guard '[0-9]#' 'column number' && return
+      _message -r "column number or range suffix"
+      return
+    fi
+
+    if [[ $spec == *:* ]]; then
+      file=${spec%:*}
+      compset -P '*:'
+      if [[ -r $file ]]; then
+        if [[ -z $PREFIX ]]; then
+          compadd -Q -- '#' && _message -r 'line number'
+          return
+        fi
+        _gopls_file_line_count "$file"
+        _gopls_complete_integer_range 1 "$REPLY" 'line number' 2 100
+        return
+      fi
+      compadd -Q -- '#' && return
+      _guard '[0-9]#' 'line number' && return
+      _message -r "line number or #offset"
+      return
+    fi
+
+    _files -g '*.(go|mod|sum|work)(-.N)' && return
+    _message -r "file or file range"
+  }
+
+  _arguments -C \
+    ${common_flags[@]} \
+    "1:command:_gopls_commands" \
+    "*::arg:->args" && ret=0
+
+  case $state in
+    args)
+      case $line[1] in
+        (bug|api-json|licenses|fix)
+          ret=0
+          ;;
+
+        (serve)
+          _arguments -C ${serve_flags[@]} && ret=0
+          ;;
+
+        (version)
+          _arguments -C \
+            "-json[output in JSON format]" && ret=0
+          ;;
+
+        (call_hierarchy|highlight|implementation|prepare_rename|signature)
+          _arguments -C \
+            "1:position:_gopls_position" && ret=0
+          ;;
+
+        (check)
+          _arguments -C \
+            "-severity=[minimum diagnostic severity]:severity:(hint info warning error)" \
+            "1:filename:_files" && ret=0
+          ;;
+
+        (codeaction)
+          _arguments -C \
+            ${edit_flags[@]} \
+            "-exec[execute the first matching code action]" \
+            "-kind=[comma-separated list of code action kinds to filter]:code action kinds" \
+            "-title=[regular expression to match title]:title regex" \
+            "1:file or position:_gopls_range" && ret=0
+          ;;
+
+        (codelens)
+          _arguments -C \
+            ${edit_flags[@]} \
+            "-exec[execute the first matching code lens]" \
+            "1:file or position:_gopls_range" \
+            "2:title" && ret=0
+          ;;
+
+        (definition)
+          _arguments -C \
+            "-json[emit output in JSON format]" \
+            "-markdown[support markdown in responses]" \
+            "1:position:_gopls_position" && ret=0
+          ;;
+
+        (execute)
+          _arguments -C \
+            ${edit_flags[@]} \
+            "1:command name" \
+            "*:JSON argument" && ret=0
+          ;;
+
+        (folding_ranges|semtok|symbols)
+          _arguments -C \
+            "1:filename:_files" && ret=0
+          ;;
+
+        (format)
+          _arguments -C \
+            ${edit_flags[@]} \
+            "1:file or range:_gopls_range" && ret=0
+          ;;
+
+        (mcp)
+          _arguments -C \
+            "-instructions[print gopls MCP instructions and exit]" \
+            "-listen=[address on which to run the MCP server]:listen address:_gopls_address" \
+            "-logfile=[filename to log to; if unset, logs to stderr]:log file:_files" \
+            "-rpc.trace[print MCP rpc traces; cannot be used with -listen]" && ret=0
+          ;;
+
+        (imports)
+          _arguments -C \
+            ${edit_flags[@]} \
+            "1:filename:_files" && ret=0
+          ;;
+
+        (remote|inspect)
+          case $line[2] in
+            ("")
+              _gopls_remote_commands && ret=0
+              ;;
+            (sessions)
+              ret=0
+              ;;
+            (debug)
+              _gopls_host_port && ret=0
+              ;;
+          esac
+          ;;
+
+        (links)
+          _arguments -C \
+            "-json[emit document links in JSON format]" \
+            "1:filename:_files" && ret=0
+          ;;
+
+        (references)
+          _arguments -C \
+            "(-d -declaration)"{-d,-declaration}"[include the declaration of the specified identifier in the results]" \
+            "1:position:_gopls_position" && ret=0
+          ;;
+
+        (rename)
+          _arguments -C \
+            ${edit_flags[@]} \
+            "1:position:_gopls_position" \
+            "2:new name" && ret=0
+          ;;
+
+        (stats)
+          _arguments -C \
+            "-anon[hide any fields that may contain user names, file names, or source code]" && ret=0
+          ;;
+
+        (workspace_symbol)
+          _arguments -C \
+            "-matcher=[specifies the type of matcher]:matcher:(fuzzy fastfuzzy casesensitive caseinsensitive)" \
+            "1:query" && ret=0
+          ;;
+
+        (help)
+          if [[ $words[2] == (remote|inspect) ]] && { (( CURRENT >= 3 )) || [[ $BUFFER == *" " ]]; }; then
+            _gopls_remote_commands && ret=0
+          elif (( CURRENT == 2 )); then
+            _gopls_help_subjects && ret=0
+          elif [[ $line[2] == (remote|inspect) && CURRENT == 3 ]]; then
+            _gopls_remote_commands && ret=0
+          else
+            ret=0
+          fi
+          ;;
+      esac
+      ;;
+  esac
 
   return ret
 }
 
-_gopls "$*"
+_gopls "$@"
 
-# -----------------------------------------------------------------------------
-#
-# gopls is a Go language server.
-#
-# It is typically used with an editor to provide language features. When no
-# command is specified, gopls will default to the 'serve' command. The language
-# features can also be accessed via the gopls command-line interface.
-#
-# Usage:
-#   gopls help [<subject>]
-#
-# Command:
-#
-# Main
-#   serve             run a server for Go code using the Language Server Protocol
-#   version           print the gopls version information
-#   bug               report a bug in gopls
-#   api-json          print json describing gopls API
-#   licenses          print licenses of included software
-#
-# Features
-#   call_hierarchy    display selected identifier's call hierarchy
-#   check             show diagnostic results for the specified file
-#   definition        show declaration of selected identifier
-#   folding_ranges    display selected file's folding ranges
-#   format            format the code according to the go standard
-#   highlight         display selected identifier's highlights
-#   implementation    display selected identifier's implementation
-#   imports           updates import statements
-#   remote            interact with the gopls daemon
-#   inspect           interact with the gopls daemon (deprecated: use 'remote')
-#   links             list links in a file
-#   prepare_rename    test validity of a rename operation at location
-#   references        display selected identifier's references
-#   rename            rename selected identifier
-#   semtok            show semantic tokens for the specified file
-#   signature         display selected identifier's signature
-#   fix               apply suggested fixes
-#   symbols           display selected file's symbols
-#   workspace         manage the gopls workspace (experimental: under development)
-#   workspace_symbol  search symbols in workspace
-#   vulncheck         run experimental vulncheck analysis (experimental: under development)
-#
-# flags:
-#   -debug=string
-#     	serve debug information on the supplied address
-#   -listen=string
-#     	address on which to listen for remote connections. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. Otherwise, TCP is used.
-#   -listen.timeout=duration
-#     	when used with -listen, shut down the server when there are no connected clients for this duration
-#   -logfile=string
-#     	filename to log to. if value is "auto", then logging to a default output file is enabled
-#   -mode=string
-#     	no effect
-#   -ocagent=string
-#     	the address of the ocagent (e.g. http://localhost:55678), or off (default "off")
-#   -port=int
-#     	port on which to run gopls for debugging purposes
-#   -profile.cpu=string
-#     	write CPU profile to this file
-#   -profile.mem=string
-#     	write memory profile to this file
-#   -profile.trace=string
-#     	write trace log to this file
-#   -remote=string
-#     	forward all commands to a remote lsp specified by this flag. With no special prefix, this is assumed to be a TCP address. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. If 'auto', or prefixed by 'auto;', the remote address is automatically resolved based on the executing environment.
-#   -remote.debug=string
-#     	when used with -remote=auto, the -debug value used to start the daemon
-#   -remote.listen.timeout=duration
-#     	when used with -remote=auto, the -listen.timeout value used to start the daemon (default 1m0s)
-#   -remote.logfile=string
-#     	when used with -remote=auto, the -logfile value used to start the daemon
-#   -rpc.trace
-#     	print the full rpc trace in lsp inspector format
-#   -v,-verbose
-#     	verbose output
-#   -vv,-veryverbose
-#     	very verbose output
-#
 # -----------------------------------------------------------------------------
 # vim:ft=zsh:et:sts=2:sw=2
