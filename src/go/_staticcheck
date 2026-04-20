@@ -33,58 +33,234 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # -----------------------------------------------------------------------------
 #
-# honnef.co/go/tools/cmd/staticcheck
-#
-# Usage of staticcheck:
-#         staticcheck [flags] # runs on package in current directory
-#         staticcheck [flags] packages
-#         staticcheck [flags] directory
-#         staticcheck [flags] files... # must be a single package
-# Flags:
-#   -generated
-#         Check generated code
-#   -go version
-#         Target Go version in the format '1.x' (default 1.9)
-#   -ignore string
-#         Space separated list of checks to ignore, in the following format: 'import/path/file.go:Check1,Check2,...' Both the import path and file name sections support globbing, e.g. 'os/exec/*_test.go'
-#   -min_confidence float
-#         Deprecated; use -ignore instead
-#   -tags build tags
-#         List of build tags
-#   -tests
-#         Include tests (default true)
+# github.com/dominikh/go-tools/tree/master/cmd/staticcheck
+# Ref: honnef.co/go/tools/lintcmd/cmd.go
+# Verified against upstream source and local help output on 2026-04-20.
 #
 # -----------------------------------------------------------------------------
 
 function _staticcheck() {
-  local context curcontext=$curcontext state line ret=1
-  declare -A opt_args
+  local context curcontext=$curcontext state line expl ret=1
+  typeset -A opt_args
 
-  __go_packages() {
-    local gopaths
-    declare -a gopaths
-    gopaths=("${(s/:/)$(go env GOPATH)}")
-    for p in $gopaths; do
-      _alternative ':go packages:_path_files -W "$p/src" -/'
+  _staticcheck_available_checks() {
+    local line check description
+
+    reply=()
+    (( $+commands[staticcheck] )) || return 1
+
+    while IFS= read -r line; do
+      check=${line%% *}
+      description=${line#* }
+      [[ -n $check && $description != $line ]] || continue
+      reply+=("$check:$description")
+    done < <(staticcheck -list-checks 2>/dev/null)
+
+    (( $#reply ))
+  }
+
+  _staticcheck_check_values() {
+    local entry name
+    local -a static_selectors live_checks unique
+    typeset -A seen
+
+    static_selectors=(
+      'all:all checks'
+      'inherit:inherit checks from configuration'
+      'S*:all simplification checks'
+      'SA*:all static analysis checks'
+      'ST*:all style checks'
+      'QF*:all quickfix checks'
+      'U1000:unused code checks'
+    )
+    reply=("${static_selectors[@]}")
+
+    if _staticcheck_available_checks; then
+      live_checks=("${reply[@]}")
+      reply=("${static_selectors[@]}" "${live_checks[@]}")
+    fi
+
+    unique=()
+    for entry in "${reply[@]}"; do
+      name=${entry%%:*}
+      (( $+seen[$name] )) && continue
+      seen[$name]=1
+      unique+=("$entry")
+    done
+    reply=("${unique[@]}")
+  }
+
+  _staticcheck_check_list() {
+    local prefix
+    local entry
+    local -a values candidate_names
+
+    _staticcheck_check_values
+    values=("${reply[@]}")
+    prefix=${PREFIX##*,}
+
+    [[ $PREFIX == *,* ]] && compset -P '*,'
+
+    if [[ $prefix == -* ]]; then
+      candidate_names=()
+      for entry in "${values[@]}"; do
+        candidate_names+=("-${entry%%:*}")
+      done
+      compadd -Q -S '' -- "${candidate_names[@]}"
+      return
+    fi
+
+    _describe -t check-selectors 'check selector' values
+  }
+
+  _staticcheck_single_check() {
+    if _staticcheck_available_checks; then
+      _describe -t checks 'staticcheck check' reply
+    else
+      _message 'staticcheck check ID'
+    fi
+  }
+
+  _staticcheck_go_versions() {
+    local minor
+
+    reply=("module:use the module's Go version")
+    for minor in {0..30}; do
+      reply+=("1.$minor:target Go 1.$minor")
     done
   }
 
-  _alternative ':go packages:__go_packages'
-  _alternative ':directory:_path_files -W -/'
-  _alternative ':go files:_path_files -g "*.go"'
+  _staticcheck_go_version() {
+    _staticcheck_go_versions
+    _describe -t go-versions 'Go version' reply
+  }
+
+  _staticcheck_formats() {
+    local word
+    local has_merge=0
+
+    for word in "${words[@]}"; do
+      [[ $word == -merge ]] && has_merge=1 && break
+    done
+
+    reply=(
+      'stylish:pretty human-readable output'
+      'text:plain text output'
+      'json:JSON diagnostics output'
+      'sarif:SARIF output'
+      'null:suppress diagnostics output'
+    )
+    (( has_merge )) || reply+=('binary:binary run output for later merging')
+
+    _describe -t formats 'output format' reply
+  }
+
+  _staticcheck_gopath_packages() {
+    local gopath
+    local -a gopaths
+
+    gopaths=("${(@s/:/)$(go env GOPATH 2>/dev/null)}")
+    for gopath in "${gopaths[@]}"; do
+      [[ -d $gopath/src ]] || continue
+      _path_files -W "$gopath/src" -/
+    done
+  }
+
+  _staticcheck_package_patterns() {
+    local expl
+    local -a package_patterns
+
+    package_patterns=(
+      './'
+      './...'
+      'all'
+      'std'
+      'cmd'
+    )
+
+    _wanted package-patterns expl 'package pattern' compadd -a package_patterns
+  }
+
+  _staticcheck_targets() {
+    _alternative \
+      'package-patterns:package pattern:_staticcheck_package_patterns' \
+      'directories:directory:_directories' \
+      'go-files:Go file:_files -g "*.go(-.)"' \
+      'gopath-packages:GOPATH package:_staticcheck_gopath_packages'
+  }
 
   _arguments -C \
-    '-generated[Check generated code]' \
-    "-go[Target Go version in the format '1.x' (default 1.9)]:go version]" \
-    "-ignore[Space separated list of checks to ignore]:ignore pattern (example\: import/path/file.go:Check1,Check2,... | 'os/exec/*_test.go')]" \
-    '-min_confidence[Deprecated; use -ignore instead]:confidence level' \
-    '-tags[List of build tags]:tag' \
-    '-tests[Include tests (default true)]' \
+    '(-h -help --help)'{-h,-help,--help}'[show help]' \
+    '-checks[comma-separated list of checks to enable]:checks:_staticcheck_check_list' \
+    '-explain[print description of check]:check:_staticcheck_single_check' \
+    '-f[output format]:format:_staticcheck_formats' \
+    '-fail[comma-separated list of checks that can fail the run]:checks:_staticcheck_check_list' \
+    '-go[target Go version or module]:go version:_staticcheck_go_version' \
+    '-list-checks[list all available checks]' \
+    '-matrix[read a build config matrix from stdin]' \
+    '-merge[merge results of multiple staticcheck runs]' \
+    "-show-ignored[don't filter ignored diagnostics]" \
+    '-tags[list of build tags]:build tags' \
+    '-tests[include tests]' \
+    '-version[print version and exit]' \
+    '-debug.cpuprofile[write CPU profile to file]:profile output:_files' \
+    '-debug.memprofile[write memory profile to file]:profile output:_files' \
+    '-debug.version[print detailed version information]' \
+    "-debug.no-compile-errors[don't print compile errors]" \
+    '-debug.measure-analyzers[write analyzer timing measurements to file]:measurements output:_files' \
+    '-debug.trace[write trace to file]:trace output:_files' \
+    "-debug.unused-graph[write unused analyzer's object graph to file]:graph output:_files" \
+    '-debug.run-quickfix-analyzers[run quickfix analyzers]' \
+    '*:package, directory, file, or merge input:->target' \
     && ret=0
+
+  case $state in
+    target)
+      if (( $+opt_args[-merge] )); then
+        _files && ret=0
+      elif (( $+opt_args[-explain] || $+opt_args[-list-checks] || $+opt_args[-version] || $+opt_args[-debug.version] )); then
+        _message 'no more arguments' && ret=0
+      else
+        _staticcheck_targets && ret=0
+      fi
+      ;;
+  esac
 
   return ret
 }
 
-_staticcheck "$*"
+_staticcheck "$@"
+
+# -----------------------------------------------------------------------------
+# Usage: staticcheck [flags] [packages]
+#
+# Public flags from help:
+#   -checks
+#   -explain
+#   -f
+#   -fail
+#   -go
+#   -list-checks
+#   -matrix
+#   -merge
+#   -show-ignored
+#   -tags
+#   -tests
+#   -version
+#
+# Additional source-level debug flags:
+#   -debug.cpuprofile
+#   -debug.memprofile
+#   -debug.version
+#   -debug.no-compile-errors
+#   -debug.measure-analyzers
+#   -debug.trace
+#   -debug.unused-graph
+#   -debug.run-quickfix-analyzers
+#
+# For package pattern syntax, see:
+#   https://pkg.go.dev/cmd/go#hdr-Package_lists_and_patterns
+#
+# -----------------------------------------------------------------------------
 
 # vim:ft=zsh:et:sts=2:sw=2
