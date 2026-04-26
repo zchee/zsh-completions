@@ -1,0 +1,326 @@
+#compdef ajv
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/jirutka/ajv-cli
+# https://www.npmjs.com/package/@jirutka/ajv-cli
+#
+# @jirutka/ajv-cli 6.0.0
+#
+# -----------------------------------------------------------------------------
+
+_ajv__schema_files() {
+  _alternative \
+    'json-schema-files:JSON schema file:_files -g "*.(json|json5|yaml|yml)(-.)"' \
+    'files:file:_files'
+}
+
+_ajv__data_files() {
+  _alternative \
+    'json-yaml-files:JSON or YAML data file:_files -g "*.(json|json5|yaml|yml)(-.)"' \
+    'files:file:_files'
+}
+
+_ajv__module_files() {
+  _alternative \
+    'module-files:JavaScript module file:_files -g "*.(js|cjs|mjs|ts)(-.)"' \
+    'packages:package name:_message "package name"'
+}
+
+_ajv__bool_values() {
+  local -a values
+  values=(
+    'true:enable option'
+    'false:disable option'
+  )
+  _describe 'boolean value' values
+}
+
+_ajv__strict_values() {
+  local -a values
+  values=(
+    'true:throw on violation'
+    'false:ignore violations'
+    'log:log warning on violation'
+  )
+  _describe 'strict mode value' values
+}
+
+_ajv__schema_specs() {
+  local -a specs
+  specs=(
+    'draft7:JSON Schema draft-07'
+    'draft2019:JSON Schema draft 2019-09'
+    'draft2020:JSON Schema draft 2020-12'
+    'jtd:JSON Type Definition'
+  )
+  _describe 'JSON schema specification' specs
+}
+
+_ajv__error_formats() {
+  local -a formats
+  formats=(
+    'code-climate:Code Climate Issue format'
+    'js:JavaScript object'
+    'json:formatted JSON'
+    'json-oneline:single-line JSON'
+    'jsonpath:message preceded by JSON Path'
+    'line:file line and column message'
+    'pretty:human-friendly code span'
+    'no:do not log errors'
+  )
+  _describe 'error format' formats
+}
+
+_ajv__change_formats() {
+  local -a formats
+  formats=(
+    'true:log changes using JavaScript object format'
+    'false:do not log changes'
+    'js:JavaScript object'
+    'json:formatted JSON'
+    'json-oneline:single-line JSON'
+  )
+  _describe 'change format' formats
+}
+
+_ajv__coerce_types_values() {
+  local -a values
+  values=(
+    'false:no type coercion'
+    'true:coerce scalar data types'
+    'array:also coerce scalars to arrays and arrays to scalars'
+  )
+  _describe 'coerce-types value' values
+}
+
+_ajv__remove_additional_values() {
+  local -a values
+  values=(
+    'false:do not remove additional properties'
+    'true:remove properties where additionalProperties is false'
+    'all:remove all additional properties'
+    'failing:remove additional properties that fail validation'
+  )
+  _describe 'remove-additional value' values
+}
+
+_ajv__use_defaults_values() {
+  local -a values
+  values=(
+    'false:do not use defaults'
+    'true:insert defaults by value'
+    'empty:use defaults for missing null or empty string values'
+  )
+  _describe 'use-defaults value' values
+}
+
+_ajv__uint() {
+  local -a values
+  values=(
+    '0:zero'
+    '1:one'
+    '2:two'
+    '4:four'
+    '8:eight'
+    '16:sixteen'
+  )
+  _describe 'unsigned integer' values || _guard '[0-9]##' 'unsigned integer'
+}
+
+_ajv__bool_uint_values() {
+  local -a values
+  values=(
+    'false:disable option'
+    'true:enable option'
+    '0:zero'
+    '1:one'
+    '2:two'
+    '4:four'
+    '8:eight'
+    '16:sixteen'
+  )
+  _describe 'boolean or unsigned integer' values || _guard '[0-9]##' 'unsigned integer'
+}
+
+_ajv__commands() {
+  local -a commands
+  commands=(
+    'validate:validate data files against a JSON schema'
+    'compile:compile JSON schemas to JavaScript'
+  )
+  _describe 'ajv command' commands
+}
+
+_ajv__root_options() {
+  local -a options
+  options=(
+    '(-h --help)'{-h,--help}'[show help]'
+    '(-V --version)'{-V,--version}'[show version number]'
+  )
+  print -rl -- "${options[@]}"
+}
+
+_ajv__common_options() {
+  local -a options
+  options=(
+    '*-s[path to JSON schema file, supports globbing]:schema file:_ajv__schema_files'
+    '*--schema=[path to JSON schema file, supports globbing]:schema file:_ajv__schema_files'
+    '*-r[path to referenced schema file, supports globbing]:referenced schema file:_ajv__schema_files'
+    '*--ref-schema=[path to referenced schema file, supports globbing]:referenced schema file:_ajv__schema_files'
+    '*-m[path to meta schema file, supports globbing]:meta schema file:_ajv__schema_files'
+    '*--meta-schema=[path to meta schema file, supports globbing]:meta schema file:_ajv__schema_files'
+    '*-c[JS module with custom keywords or formats]:module file or package:_ajv__module_files'
+    '*--keywords=[JS module with custom keywords or formats]:module file or package:_ajv__module_files'
+    '--spec=[JSON schema specification to use]:specification:_ajv__schema_specs'
+    '--allow-matching-properties=[allow overlap between properties and patternProperties]:boolean:_ajv__bool_values'
+    '--allow-union-types=[allow multiple non-null types in type keyword]:boolean:_ajv__bool_values'
+    '--strict=[strict mode behavior]:strict mode:_ajv__strict_values'
+    '--strict-numbers=[whether to accept NaN and Infinity as numbers]:strict mode:_ajv__strict_values'
+    '--strict-required=[strict required-property behavior]:strict mode:_ajv__strict_values'
+    '--strict-schema=[strict schema behavior for unknown keywords and formats]:strict mode:_ajv__strict_values'
+    '--strict-tuples=[strict tuple behavior]:strict mode:_ajv__strict_values'
+    '--strict-types=[strict type behavior]:strict mode:_ajv__strict_values'
+    '--validate-formats=[enable or disable format validation]:boolean:_ajv__bool_values'
+    '--all-errors=[check all rules and collect all errors]:boolean:_ajv__bool_values'
+    '--comment=[log schema $comment values]:boolean:_ajv__bool_values'
+    '--data=[use $data references]:boolean:_ajv__bool_values'
+    '--verbose=[include schema and data details in errors]:boolean:_ajv__bool_values'
+    '--coerce-types=[coerce data types to match type keyword]:mode:_ajv__coerce_types_values'
+    '--remove-additional=[remove additional properties from validated data]:mode:_ajv__remove_additional_values'
+    '--use-defaults=[replace missing or empty values with defaults]:mode:_ajv__use_defaults_values'
+    '--code-es5=[generate ES5 code]:boolean:_ajv__bool_values'
+    '--code-esm=[export validate functions as ES modules]:boolean:_ajv__bool_values'
+    '--code-formats=[code snippet containing format definitions]:code snippet:'
+    '--code-lines=[add line breaks to generated code]:boolean:_ajv__bool_values'
+    '--code-optimize=[code optimization flag or number of passes]:value:_ajv__bool_uint_values'
+    '--inline-refs=[referenced-schema compilation mode]:value:_ajv__bool_uint_values'
+    '--loop-required=[number of properties above which required uses a loop]:number:_ajv__uint'
+    '--loop-enum=[number of enum values above which enum uses a loop]:number:_ajv__uint'
+    '--messages=[include text messages in errors]:boolean:_ajv__bool_values'
+    '--multiple-of-precision=[precision for fractional multipleOf]:value:_ajv__bool_uint_values'
+    '--own-properties=[only validate own properties]:boolean:_ajv__bool_values'
+  )
+  print -rl -- "${options[@]}"
+}
+
+_ajv__validate() {
+  local context curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  local -a common_options validate_options
+  common_options=( ${(f)"$(_ajv__common_options)"} )
+  validate_options=(
+    '(-h --help)'{-h,--help}'[show help for validate]'
+    "${common_options[@]}"
+    '--merge-errors=[merge related errors per instance path]:boolean:_ajv__bool_values'
+    '--errors-location[include data filename line and column in errors]'
+    '--errors=[error reporting format]:format:_ajv__error_formats'
+    '--changes=[log changes in data after validation]:format:_ajv__change_formats'
+  )
+
+  _arguments -C \
+    "${validate_options[@]}" \
+    '*:data file:_ajv__data_files' \
+    && ret=0
+
+  return ret
+}
+
+_ajv__compile() {
+  local context curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  local -a common_options compile_options
+  common_options=( ${(f)"$(_ajv__common_options)"} )
+  compile_options=(
+    '(-h --help)'{-h,--help}'[show help for compile]'
+    "${common_options[@]}"
+    '(-o --output)-o[write generated JavaScript to file]:output file:_files'
+    '(-o --output)--output=[write generated JavaScript to file]:output file:_files'
+  )
+
+  _arguments -C \
+    "${compile_options[@]}" \
+    && ret=0
+
+  return ret
+}
+
+function _ajv() {
+  local context curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  local -a root_options
+  root_options=( ${(f)"$(_ajv__root_options)"} )
+
+  _arguments -C \
+    "${root_options[@]}" \
+    '1:command:_ajv__commands' \
+    '*::argument:->argument' \
+    && ret=0
+
+  case $state in
+    argument)
+      case $words[1] in
+        validate)
+          _ajv__validate && ret=0
+          ;;
+        compile)
+          _ajv__compile && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_ajv "$*"
+
+# -----------------------------------------------------------------------------
+#
+# Usage:
+#   ajv validate [options] -s <schema-file> [--] <data-file>...
+#   ajv compile [options] -s <schema-file>
+#   ajv (--help | --version)
+#
+# Source of truth:
+#   /opt/local/var/bun/bin/ajv --help
+#   /opt/local/var/bun/bin/ajv validate --help
+#   /opt/local/var/bun/bin/ajv compile --help
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
