@@ -1,0 +1,135 @@
+#compdef skills-ref
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/agentskills/agentskills/tree/main/skills-ref
+#
+# Source: skills-ref --help and skills_ref/cli.py
+# Version: skills-ref 0.1.0
+#
+# -----------------------------------------------------------------------------
+
+_skills-ref__commands() {
+  local -a commands
+  commands=(
+    'read-properties:read and print skill properties as JSON'
+    'to-prompt:generate <available_skills> XML for agent prompts'
+    'validate:validate a skill directory'
+  )
+
+  _describe -t commands 'skills-ref command' commands
+}
+
+_skills-ref__skill_path() {
+  setopt localoptions extendedglob
+
+  _alternative \
+    'skill-directories:skill directory:_path_files -/' \
+    'skill-files:SKILL.md file:_path_files -g "(#i)skill.md(.)"'
+}
+
+_skills-ref__command_arguments() {
+  local command=$1
+  local curcontext="${curcontext%:*:*}:skills-ref-${command}:"
+  local ret=1
+
+  words=("${(@)words[2,-1]}")
+  (( CURRENT-- ))
+
+  case $command in
+    validate)
+      _arguments -C \
+        '--help[show this message and exit]' \
+        '1:skill path:_skills-ref__skill_path' \
+        && ret=0
+      ;;
+
+    read-properties)
+      _arguments -C \
+        '--help[show this message and exit]' \
+        '1:skill path:_skills-ref__skill_path' \
+        && ret=0
+      ;;
+
+    to-prompt)
+      _arguments -C \
+        '--help[show this message and exit]' \
+        '*:skill path:_skills-ref__skill_path' \
+        && ret=0
+      ;;
+
+    *)
+      _message -r 'skills-ref command'
+      ;;
+  esac
+
+  return ret
+}
+
+function _skills-ref() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  if (( CURRENT > 2 )); then
+    case $words[2] in
+      read-properties|to-prompt|validate)
+        _skills-ref__command_arguments $words[2]
+        return
+        ;;
+    esac
+  fi
+
+  _arguments -C \
+    '--version[show the version and exit]' \
+    '--help[show this message and exit]' \
+    '1:command:_skills-ref__commands' \
+    '*::argument:->argument' \
+    && ret=0
+
+  case $state in
+    argument)
+      case $words[2] in
+        read-properties|to-prompt|validate)
+          _skills-ref__command_arguments $words[2] && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_skills-ref "$*"
+
+# vim:ft=zsh:et:sts=2:sw=2
