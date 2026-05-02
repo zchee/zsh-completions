@@ -1,0 +1,1119 @@
+#compdef rustup
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/rust-lang/rustup
+# rustup 1.29.0 (28d1352db 2026-03-05)
+#
+# -----------------------------------------------------------------------------
+
+function _rustup() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  local -a _rustup_global_options
+  _rustup_global_options=(
+    '(-q --quiet)'{-v,--verbose}'[set log level to DEBUG if RUSTUP_LOG is unset]'
+    '(-v --verbose)'{-q,--quiet}'[disable progress output and set log level to WARN if RUSTUP_LOG is unset]'
+    '(-h --help)'{-h,--help}'[print help]'
+    '(-V --version)'{-V,--version}'[print version]'
+  )
+
+  _rustup_toolchains() {
+    local -a toolchains fallback
+    fallback=(stable beta nightly none)
+    toolchains=(${${(M)${(f)"$(_call_program toolchains rustup toolchain list 2>/dev/null)"}:#*}%%[[:space:]]*})
+    toolchains=(${toolchains:#})
+
+    if (( $#toolchains )); then
+      _alternative \
+        'installed-toolchains:installed toolchain:compadd -a toolchains' \
+        'release-channels:release channel:compadd stable beta nightly' \
+        'special-toolchains:special toolchain:compadd none'
+    else
+      _describe -t toolchains 'toolchain' fallback
+    fi
+  }
+
+  _rustup_plus_toolchains() {
+    local -a toolchains fallback
+    fallback=(stable beta nightly)
+    toolchains=(${${(M)${(f)"$(_call_program toolchains rustup toolchain list 2>/dev/null)"}:#*}%%[[:space:]]*})
+    toolchains=(${toolchains:#})
+
+    if (( $#toolchains )); then
+      compadd -P + -a toolchains
+      compadd -P + stable beta nightly
+    else
+      compadd -P + -a fallback
+    fi
+  }
+
+  _rustup_targets() {
+    local -a targets
+    targets=(${${(M)${(f)"$(_call_program targets rustup target list 2>/dev/null)"}:#*}%%[[:space:]]*})
+    targets=(${targets:#})
+    compadd all
+    (( $#targets )) && compadd -a targets
+  }
+
+  _rustup_installed_targets() {
+    local -a targets
+    targets=(${${(M)${(f)"$(_call_program targets rustup target list --installed 2>/dev/null)"}:#*}%%[[:space:]]*})
+    targets=(${targets:#})
+    if (( $#targets )); then
+      compadd -a targets
+    else
+      _rustup_targets
+    fi
+  }
+
+  _rustup_components() {
+    local -a components
+    components=(${${(M)${(f)"$(_call_program components rustup component list 2>/dev/null)"}:#*}%%[[:space:]]*})
+    components=(${components:#})
+    (( $#components )) && compadd -a components
+  }
+
+  _rustup_installed_components() {
+    local -a components
+    components=(${${(M)${(f)"$(_call_program components rustup component list --installed 2>/dev/null)"}:#*}%%[[:space:]]*})
+    components=(${components:#})
+    if (( $#components )); then
+      compadd -a components
+    else
+      _rustup_components
+    fi
+  }
+
+  _rustup_profiles() {
+    _values 'profile' minimal default complete
+  }
+
+  _rustup_auto_self_update_modes() {
+    _values 'auto self update mode' enable disable check-only
+  }
+
+  _rustup_auto_install_modes() {
+    _values 'auto install mode' enable disable
+  }
+
+  _rustup_shells() {
+    _values 'shell' bash elvish fish powershell zsh
+  }
+
+  _rustup_completion_commands() {
+    _values 'command' rustup cargo
+  }
+
+  _rustup_doc_topics() {
+    local -a topics
+    topics=(
+      'alloc:allocation and collections library'
+      'book:The Rust Programming Language book'
+      'cargo:The Cargo Book'
+      'clippy:Clippy documentation'
+      'core:Rust core library'
+      'edition-guide:Rust Edition Guide'
+      'embedded-book:Embedded Rust Book'
+      'error-codes:Rust error code index'
+      'nomicon:The Rustonomicon'
+      'proc_macro:macro author support library'
+      'reference:The Rust Reference'
+      'releases:Rust release notes'
+      'rust-by-example:Rust By Example'
+      'rustc:Rust compiler documentation'
+      'rustc-docs:rustc and toolchain component API documentation'
+      'rustdoc:documentation generator'
+      'std:standard library API documentation'
+      'style-guide:Rust Style Guide'
+      'test:built-in test and benchmark support'
+      'unstable-book:The Unstable Book'
+    )
+    _describe -t doc-topics 'documentation topic' topics
+  }
+
+  _rustup_binaries() {
+    _alternative \
+      'rust-binaries:Rust proxy command:compadd cargo cargo-clippy cargo-fmt clippy-driver rustc rustdoc rustfmt' \
+      'commands:command:_path_commands'
+  }
+
+  _rustup_commands() {
+    local -a commands
+    commands=(
+      'install:install or update toolchains'
+      'uninstall:uninstall toolchains'
+      'toolchain:install, uninstall, link, or list toolchains'
+      'default:set the default toolchain'
+      'show:show active and installed toolchains or profiles'
+      'update:update Rust toolchains and rustup'
+      'check:check for updates to Rust toolchains and rustup'
+      'target:modify a toolchain supported targets'
+      'component:modify a toolchain installed components'
+      'override:modify directory toolchain overrides'
+      'run:run a command with an environment for a toolchain'
+      'which:display which binary will be run for a command'
+      'doc:open documentation for the current toolchain'
+      'man:view the man page for a command'
+      'self:modify the rustup installation'
+      'set:alter rustup settings'
+      'completions:generate tab-completion scripts'
+      'help:print help for rustup or a subcommand'
+      'dump-testament:print rustup build testament'
+    )
+    _describe -t commands 'rustup command' commands
+  }
+
+  _rustup_toolchain_commands() {
+    local -a commands
+    commands=(
+      'list:list installed toolchains'
+      'install:install or update toolchains'
+      'uninstall:uninstall toolchains'
+      'link:create a custom toolchain by symlinking to a directory'
+      'help:print help for a toolchain command'
+    )
+    _describe -t commands 'rustup toolchain command' commands
+  }
+
+  _rustup_show_commands() {
+    local -a commands
+    commands=(
+      'active-toolchain:show the active toolchain'
+      'home:display the computed value of RUSTUP_HOME'
+      'profile:show the default profile for rustup install'
+      'help:print help for a show command'
+    )
+    _describe -t commands 'rustup show command' commands
+  }
+
+  _rustup_target_commands() {
+    local -a commands
+    commands=(
+      'list:list installed and available targets'
+      'add:add targets to a Rust toolchain'
+      'remove:remove targets from a Rust toolchain'
+      'help:print help for a target command'
+    )
+    _describe -t commands 'rustup target command' commands
+  }
+
+  _rustup_component_commands() {
+    local -a commands
+    commands=(
+      'list:list installed and available components'
+      'add:add components to a Rust toolchain'
+      'remove:remove components from a Rust toolchain'
+      'help:print help for a component command'
+    )
+    _describe -t commands 'rustup component command' commands
+  }
+
+  _rustup_override_commands() {
+    local -a commands
+    commands=(
+      'list:list directory toolchain overrides'
+      'set:set a directory override toolchain'
+      'unset:remove a directory override toolchain'
+      'help:print help for an override command'
+    )
+    _describe -t commands 'rustup override command' commands
+  }
+
+  _rustup_self_commands() {
+    local -a commands
+    commands=(
+      'update:download and install updates to rustup'
+      'uninstall:uninstall rustup'
+      'upgrade-data:upgrade the internal data format'
+      'help:print help for a self command'
+    )
+    _describe -t commands 'rustup self command' commands
+  }
+
+  _rustup_set_commands() {
+    local -a commands
+    commands=(
+      'default-host:set the default host triple'
+      'profile:set the default toolchain installation profile'
+      'auto-self-update:set the rustup auto self update mode'
+      'auto-install:set the auto toolchain install mode'
+      'help:print help for a set command'
+    )
+    _describe -t commands 'rustup set command' commands
+  }
+
+  _rustup_help_commands() {
+    local -a commands
+    commands=(
+      install uninstall toolchain default show update check target component
+      override run which doc man self set completions help dump-testament
+    )
+    _describe -t commands 'rustup help topic' commands
+  }
+
+  _rustup_help_arguments() {
+    if (( CURRENT >= 2 )); then
+      case $words[2] in
+        toolchain)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:toolchain command:_rustup_toolchain_commands'
+          return
+          ;;
+        show)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:show command:_rustup_show_commands'
+          return
+          ;;
+        target)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:target command:_rustup_target_commands'
+          return
+          ;;
+        component)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:component command:_rustup_component_commands'
+          return
+          ;;
+        override)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:override command:_rustup_override_commands'
+          return
+          ;;
+        self)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:self command:_rustup_self_commands'
+          return
+          ;;
+        set)
+          words=("${(@)words[2,-1]}")
+          (( CURRENT = CURRENT - 1 ))
+          (( CURRENT < 2 )) && CURRENT=2
+          _arguments -C '1:set command:_rustup_set_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '1:command:_rustup_help_commands' \
+      '2:subcommand:_rustup_help_commands' \
+      '3:subcommand:_rustup_help_commands'
+  }
+
+  _rustup_has_subcommand() {
+    local command
+    command=$1
+    shift
+    [[ " $* " == *" $command "* ]]
+  }
+
+  _rustup_install_arguments() {
+    _arguments -C \
+      '--profile=[select the installation profile]:profile:_rustup_profiles' \
+      '*'{-c+,--component=}'[add a comma-separated component list on installation]:component:_rustup_components' \
+      '*'{-t+,--target=}'[add a comma-separated target list on installation]:target:_rustup_targets' \
+      '--no-self-update[do not perform self update]' \
+      '--no-update[do not try to update the installed toolchain]' \
+      '--force[force an update even if some components are missing]' \
+      '--allow-downgrade[allow downgrading to satisfy component choices]' \
+      '--force-non-host[install toolchains that require an emulator]' \
+      '--override[set installed toolchain as override for the current directory]' \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '*:toolchain:_rustup_toolchains'
+  }
+
+  _rustup_toolchain() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" list install uninstall link help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        list)
+          _arguments -C \
+            '(-q --quiet)'{-v,--verbose}'[enable verbose output with toolchain information]' \
+            '(-v --verbose)'{-q,--quiet}'[force output to a single column]' \
+            '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        install)
+          _rustup_install_arguments
+          return
+          ;;
+        uninstall)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:toolchain:_rustup_toolchains'
+          return
+          ;;
+        link)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:custom toolchain name:' \
+            '2:toolchain directory:_files -/'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_toolchain_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_toolchain_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          list)
+            _arguments -C \
+              '(-q --quiet)'{-v,--verbose}'[enable verbose output with toolchain information]' \
+              '(-v --verbose)'{-q,--quiet}'[force output to a single column]' \
+              '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          install)
+            _rustup_install_arguments && ret=0
+            ;;
+          uninstall)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:toolchain:_rustup_toolchains' && ret=0
+            ;;
+          link)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:custom toolchain name:' \
+              '2:toolchain directory:_files -/' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_toolchain_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  _rustup_show() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" active-toolchain home profile help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        active-toolchain)
+          _arguments -C \
+            '(-v --verbose)'{-v,--verbose}'[enable verbose output with rustc information]' \
+            '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        home|profile)
+          _arguments -C '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_show_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-v --verbose)'{-v,--verbose}'[enable verbose output with rustc information]' \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_show_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          active-toolchain)
+            _arguments -C \
+              '(-v --verbose)'{-v,--verbose}'[enable verbose output with rustc information]' \
+              '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          home|profile)
+            _arguments -C '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_show_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  _rustup_target() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" list add remove help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        list)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '--installed[list only installed targets]' \
+            '(-q --quiet)'{-q,--quiet}'[force output to a single column]' \
+            '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        add)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:target:_rustup_targets'
+          return
+          ;;
+        remove)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:target:_rustup_installed_targets'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_target_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_target_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          list)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '--installed[list only installed targets]' \
+              '(-q --quiet)'{-q,--quiet}'[force output to a single column]' \
+              '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          add)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:target:_rustup_targets' && ret=0
+            ;;
+          remove)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:target:_rustup_installed_targets' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_target_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  _rustup_component() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" list add remove help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        list)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '--installed[list only installed components]' \
+            '(-q --quiet)'{-q,--quiet}'[force output to a single column]' \
+            '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        add)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '--target=[select a target]:target:_rustup_targets' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:component:_rustup_components'
+          return
+          ;;
+        remove)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '--target=[select a target]:target:_rustup_targets' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:component:_rustup_installed_components'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_component_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_component_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          list)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '--installed[list only installed components]' \
+              '(-q --quiet)'{-q,--quiet}'[force output to a single column]' \
+              '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          add)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '--target=[select a target]:target:_rustup_targets' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:component:_rustup_components' && ret=0
+            ;;
+          remove)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '--target=[select a target]:target:_rustup_targets' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:component:_rustup_installed_components' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_component_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  _rustup_override() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" list set unset help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        list)
+          _arguments -C '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        set)
+          _arguments -C \
+            '--path=[set override for a directory]:directory:_files -/' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:toolchain:_rustup_toolchains'
+          return
+          ;;
+        unset)
+          _arguments -C \
+            '--path=[remove override for a directory]:directory:_files -/' \
+            '--nonexistent[remove overrides for all nonexistent directories]' \
+            '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_override_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_override_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          list)
+            _arguments -C '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          set)
+            _arguments -C \
+              '--path=[set override for a directory]:directory:_files -/' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:toolchain:_rustup_toolchains' && ret=0
+            ;;
+          unset)
+            _arguments -C \
+              '--path=[remove override for a directory]:directory:_files -/' \
+              '--nonexistent[remove overrides for all nonexistent directories]' \
+              '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_override_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  _rustup_self() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" update uninstall upgrade-data help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        update|upgrade-data)
+          _arguments -C '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        uninstall)
+          _arguments -C \
+            '-y[disable confirmation prompt]' \
+            '--no-modify-path[do not clean up the PATH environment variable]' \
+            '(-h --help)'{-h,--help}'[print help]'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_self_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_self_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          update|upgrade-data)
+            _arguments -C '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          uninstall)
+            _arguments -C \
+              '-y[disable confirmation prompt]' \
+              '--no-modify-path[do not clean up the PATH environment variable]' \
+              '(-h --help)'{-h,--help}'[print help]' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_self_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  _rustup_set() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    if (( CURRENT >= 2 )) && _rustup_has_subcommand "$words[2]" default-host profile auto-self-update auto-install help; then
+      words=("${(@)words[2,-1]}")
+      (( CURRENT = CURRENT - 1 ))
+      (( CURRENT < 2 )) && CURRENT=2
+      case $words[1] in
+        default-host)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:host triple:_rustup_targets'
+          return
+          ;;
+        profile)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:profile:_rustup_profiles'
+          return
+          ;;
+        auto-self-update)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:auto self update mode:_rustup_auto_self_update_modes'
+          return
+          ;;
+        auto-install)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:auto install mode:_rustup_auto_install_modes'
+          return
+          ;;
+        help)
+          _arguments -C '1:command:_rustup_set_commands'
+          return
+          ;;
+      esac
+    fi
+
+    _arguments -C \
+      '(-h --help)'{-h,--help}'[print help]' \
+      '1:command:_rustup_set_commands' \
+      '*::argument:->argument' && ret=0
+
+    case $state in
+      argument)
+        case $line[1] in
+          default-host)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:host triple:_rustup_targets' && ret=0
+            ;;
+          profile)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:profile:_rustup_profiles' && ret=0
+            ;;
+          auto-self-update)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:auto self update mode:_rustup_auto_self_update_modes' && ret=0
+            ;;
+          auto-install)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:auto install mode:_rustup_auto_install_modes' && ret=0
+            ;;
+          help)
+            _arguments -C '1:command:_rustup_set_commands' && ret=0
+            ;;
+        esac
+        ;;
+    esac
+
+    return ret
+  }
+
+  local word_index
+  for (( word_index = 2; word_index <= CURRENT; word_index++ )); do
+    case $words[word_index] in
+      install|uninstall|toolchain|default|show|update|check|target|component|override|run|which|doc|man|self|set|completions|help|dump-testament)
+        words=("${(@)words[$word_index,-1]}")
+        (( CURRENT = CURRENT - word_index + 1 ))
+        (( CURRENT < 2 )) && CURRENT=2
+        case $words[1] in
+          install)
+            _rustup_install_arguments
+            return
+            ;;
+          uninstall)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:toolchain:_rustup_toolchains'
+            return
+            ;;
+          toolchain)
+            _rustup_toolchain
+            return
+            ;;
+          default)
+            _arguments -C \
+              '--force-non-host[install toolchains that require an emulator]' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:toolchain:_rustup_toolchains'
+            return
+            ;;
+          show)
+            _rustup_show
+            return
+            ;;
+          update)
+            _arguments -C \
+              '--no-self-update[do not perform self update]' \
+              '--force[force an update even if some components are missing]' \
+              '--force-non-host[install toolchains that require an emulator]' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '*:toolchain:_rustup_toolchains'
+            return
+            ;;
+          check)
+            _arguments -C \
+              '--no-self-update[do not check for self update]' \
+              '(-h --help)'{-h,--help}'[print help]'
+            return
+            ;;
+          target)
+            _rustup_target
+            return
+            ;;
+          component)
+            _rustup_component
+            return
+            ;;
+          override)
+            _rustup_override
+            return
+            ;;
+          run)
+            _arguments -C \
+              '--install[install the requested toolchain if needed]' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:toolchain:_rustup_toolchains' \
+              '2:command:_path_commands' \
+              '*::argument:_normal'
+            return
+            ;;
+          which)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:command:_rustup_binaries'
+            return
+            ;;
+          doc)
+            _arguments -C \
+              '--path[only print the path to the documentation]' \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '--alloc[open allocation and collections library docs]' \
+              '--book[open The Rust Programming Language book]' \
+              '--cargo[open The Cargo Book]' \
+              '--clippy[open Clippy documentation]' \
+              '--core[open the Rust core library docs]' \
+              '--edition-guide[open the Rust Edition Guide]' \
+              '--embedded-book[open the Embedded Rust Book]' \
+              '--error-codes[open the Rust error code index]' \
+              '--nomicon[open the Rustonomicon]' \
+              '--proc_macro[open proc_macro support library docs]' \
+              '--reference[open The Rust Reference]' \
+              '--releases[open Rust release notes]' \
+              '--rust-by-example[open Rust By Example]' \
+              '--rustc[open rustc documentation]' \
+              '--rustc-docs[open rustc and toolchain API documentation]' \
+              '--rustdoc[open rustdoc documentation]' \
+              '--std[open standard library API documentation]' \
+              '--style-guide[open the Rust Style Guide]' \
+              '--test[open built-in test support docs]' \
+              '--unstable-book[open The Unstable Book]' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:topic:_rustup_doc_topics'
+            return
+            ;;
+          man)
+            _arguments -C \
+              '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:command:_rustup_binaries'
+            return
+            ;;
+          self)
+            _rustup_self
+            return
+            ;;
+          set)
+            _rustup_set
+            return
+            ;;
+          completions)
+            _arguments -C \
+              '(-h --help)'{-h,--help}'[print help]' \
+              '1:shell:_rustup_shells' \
+              '2:command:_rustup_completion_commands'
+            return
+            ;;
+          help)
+            _rustup_help_arguments
+            return
+            ;;
+          dump-testament)
+            _arguments -C '(-h --help)'{-h,--help}'[print help]'
+            return
+            ;;
+        esac
+        ;;
+    esac
+  done
+
+  _arguments -C \
+    $_rustup_global_options \
+    '::+toolchain:_rustup_plus_toolchains' \
+    '::command:_rustup_commands' \
+    '*::argument:->argument' && ret=0
+
+  case $state in
+    argument)
+      case $line[2] in
+        install)
+          _rustup_install_arguments && ret=0
+          ;;
+        uninstall)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:toolchain:_rustup_toolchains' && ret=0
+          ;;
+        toolchain)
+          _rustup_toolchain && ret=0
+          ;;
+        default)
+          _arguments -C \
+            '--force-non-host[install toolchains that require an emulator]' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:toolchain:_rustup_toolchains' && ret=0
+          ;;
+        show)
+          _rustup_show && ret=0
+          ;;
+        update)
+          _arguments -C \
+            '--no-self-update[do not perform self update]' \
+            '--force[force an update even if some components are missing]' \
+            '--force-non-host[install toolchains that require an emulator]' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '*:toolchain:_rustup_toolchains' && ret=0
+          ;;
+        check)
+          _arguments -C \
+            '--no-self-update[do not check for self update]' \
+            '(-h --help)'{-h,--help}'[print help]' && ret=0
+          ;;
+        target)
+          _rustup_target && ret=0
+          ;;
+        component)
+          _rustup_component && ret=0
+          ;;
+        override)
+          _rustup_override && ret=0
+          ;;
+        run)
+          _arguments -C \
+            '--install[install the requested toolchain if needed]' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:toolchain:_rustup_toolchains' \
+            '2:command:_path_commands' \
+            '*::argument:_normal' && ret=0
+          ;;
+        which)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:command:_rustup_binaries' && ret=0
+          ;;
+        doc)
+          _arguments -C \
+            '--path[only print the path to the documentation]' \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '--alloc[open allocation and collections library docs]' \
+            '--book[open The Rust Programming Language book]' \
+            '--cargo[open The Cargo Book]' \
+            '--clippy[open Clippy documentation]' \
+            '--core[open the Rust core library docs]' \
+            '--edition-guide[open the Rust Edition Guide]' \
+            '--embedded-book[open the Embedded Rust Book]' \
+            '--error-codes[open the Rust error code index]' \
+            '--nomicon[open the Rustonomicon]' \
+            '--proc_macro[open proc_macro support library docs]' \
+            '--reference[open The Rust Reference]' \
+            '--releases[open Rust release notes]' \
+            '--rust-by-example[open Rust By Example]' \
+            '--rustc[open rustc documentation]' \
+            '--rustc-docs[open rustc and toolchain API documentation]' \
+            '--rustdoc[open rustdoc documentation]' \
+            '--std[open standard library API documentation]' \
+            '--style-guide[open the Rust Style Guide]' \
+            '--test[open built-in test support docs]' \
+            '--unstable-book[open The Unstable Book]' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:topic:_rustup_doc_topics' && ret=0
+          ;;
+        man)
+          _arguments -C \
+            '--toolchain=[select a toolchain]:toolchain:_rustup_toolchains' \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:command:_rustup_binaries' && ret=0
+          ;;
+        self)
+          _rustup_self && ret=0
+          ;;
+        set)
+          _rustup_set && ret=0
+          ;;
+        completions)
+          _arguments -C \
+            '(-h --help)'{-h,--help}'[print help]' \
+            '1:shell:_rustup_shells' \
+            '2:command:_rustup_completion_commands' && ret=0
+          ;;
+        help)
+          _rustup_help_arguments && ret=0
+          ;;
+        dump-testament)
+          _arguments -C '(-h --help)'{-h,--help}'[print help]' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_rustup "$@"
+
+# -----------------------------------------------------------------------------
+# vim:ft=zsh:et:sts=2:sw=2
