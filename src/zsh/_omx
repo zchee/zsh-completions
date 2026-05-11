@@ -35,7 +35,7 @@
 #
 # https://github.com/Yeachan-Heo/oh-my-codex
 #
-# 0.11.12 (oh-my-codex)
+# 0.16.4 (oh-my-codex)
 #
 # -----------------------------------------------------------------------------
 
@@ -158,63 +158,6 @@ _omx__team_names() {
   fi
 }
 
-_omx__collect_mission_dirs() {
-  local -a paths names
-  local path
-
-  paths=(missions/*(/N))
-  names=()
-  for path in "${paths[@]}"; do
-    [[ -f $path/mission.md && -f $path/sandbox.md ]] || continue
-    names+=("${path:t}")
-  done
-
-  reply=(${(ou)names})
-}
-
-_omx__mission_dirs() {
-  local -a names
-
-  _omx__collect_mission_dirs
-  names=("${reply[@]}")
-
-  if (( $#names )); then
-    _describe 'mission' names
-  else
-    _message 'mission directory'
-  fi
-}
-
-_omx__collect_autoresearch_run_ids() {
-  local -a manifests run_ids
-  local manifest
-
-  manifests=(
-    .omx/logs/autoresearch/*/manifest.json(N)
-    .omx/logs/autoresearch/*/*/manifest.json(N)
-  )
-
-  run_ids=()
-  for manifest in "${manifests[@]}"; do
-    run_ids+=("${manifest:h:t}")
-  done
-
-  reply=(${(ou)run_ids})
-}
-
-_omx__autoresearch_run_ids() {
-  local -a run_ids
-
-  _omx__collect_autoresearch_run_ids
-  run_ids=("${reply[@]}")
-
-  if (( $#run_ids )); then
-    _describe 'autoresearch run id' run_ids
-  else
-    _message 'run id'
-  fi
-}
-
 _omx__git_branches() {
   local current_branch line name desc
   local -a lines branches
@@ -308,7 +251,7 @@ _omx__team_api_json_input() {
       skeleton='{"team_name":"my-team","worker":"worker-1","message_id":"msg-123"}'
       ;;
     create-task)
-      skeleton='{"team_name":"my-team","title":"Investigate failure","summary":"...","status":"pending"}'
+      skeleton='{"team_name":"my-team","subject":"Investigate failure","description":"..."}'
       ;;
     read-task)
       skeleton='{"team_name":"my-team","task_id":"1"}'
@@ -367,44 +310,6 @@ _omx__team_api_json_input() {
   compadd -Q -S '' -- "$skeleton"
 }
 
-_omx__collect_autoresearch_run_entries() {
-  local -A seen
-  local -a manifests entries
-  local manifest run_id desc rel
-
-  manifests=(
-    .omx/logs/autoresearch/*/manifest.json(N)
-    .omx/logs/autoresearch/*/*/manifest.json(N)
-  )
-
-  entries=()
-  for manifest in "${manifests[@]}"; do
-    run_id="${manifest:h:t}"
-    [[ -n $run_id && -z ${seen[$run_id]} ]] || continue
-
-    rel="${manifest#./.omx/logs/autoresearch/}"
-    rel="${rel#.omx/logs/autoresearch/}"
-    desc="${rel%/manifest.json}"
-    entries+=("${run_id}:${desc}")
-    seen[$run_id]=1
-  done
-
-  reply=("${entries[@]}")
-}
-
-_omx__autoresearch_run_entries() {
-  local -a entries
-
-  _omx__collect_autoresearch_run_entries
-  entries=("${reply[@]}")
-
-  if (( $#entries )); then
-    _describe 'autoresearch run id' entries
-  else
-    _message 'run id'
-  fi
-}
-
 _omx__team_allocation() {
   local -a roles suggestions
   local role count
@@ -438,25 +343,41 @@ _omx__top_commands() {
   commands=(
     "launch:Launch Codex CLI with OMX overlays"
     "exec:Run Codex exec with OMX overlays"
-    "setup:Install skills, prompts, MCP servers, and AGENTS scaffolding"
+    "setup:Install skills, prompts, CLI-first config, and AGENTS scaffolding"
+    "update:Update the global OMX install and refresh setup"
     "agents:Manage Codex native agent TOML files"
     "agents-init:Bootstrap lightweight AGENTS.md files"
     "deepinit:Alias for agents-init"
     "uninstall:Remove OMX configuration and installed artifacts"
     "doctor:Check installation health"
+    "list:List packaged OMX skills and native agent prompts"
     "cleanup:Kill orphaned OMX MCP servers and stale tmp directories"
     "ask:Ask a local provider CLI and write an artifact"
-    "autoresearch:Run the autoresearch thin supervisor flow"
+    "question:Ask a blocking OMX-owned user question"
+    "adapt:Scaffold OMX-owned adapter foundations"
+    "imagegen:Queue built-in image generation continuations"
+    "autoresearch:Show deprecated autoresearch migration guidance"
+    "autoresearch-goal:Manage professor-critic research goals"
     "explore:Run read-only exploration prompts"
     "sparkshell:Run the native sparkshell sidecar"
     "team:Spawn tmux-backed worker teams"
     "ralph:Launch Codex with Ralph persistence mode"
+    "ultragoal:Manage durable multi-goal plans"
+    "performance-goal:Manage evaluator-gated performance goals"
     "session:Search prior local session history"
     "resume:Resume a previous interactive Codex session"
     "version:Show version information"
     "tmux-hook:Manage tmux prompt injection hooks"
     "hooks:Manage hook plugins"
     "hud:Show or watch the HUD statusline"
+    "sidecar:Show read-only team visualization"
+    "state:Read and write OMX mode state"
+    "notepad:Read and write OMX notepad memory"
+    "project-memory:Read and write OMX project memory"
+    "trace:Inspect OMX trace timeline and summary"
+    "code-intel:Run OMX code intelligence tools"
+    "wiki:Read and write OMX wiki pages"
+    "mcp-serve:Launch an OMX stdio MCP server target"
     "status:Show active execution modes"
     "cancel:Cancel active execution modes"
     "reasoning:Show or set model reasoning effort"
@@ -536,12 +457,208 @@ _omx__agents_subcommands() {
   _describe 'agents subcommand' commands
 }
 
-_omx__scope_values() {
-  _values 'scope' user project
+_omx__imagegen_subcommands() {
+  local -a commands
+
+  commands=(
+    "continuation:Queue a Stop-hook image generation continuation"
+    "prepare:Alias for continuation"
+    "help:Show imagegen help"
+  )
+
+  _describe 'imagegen subcommand' commands
 }
 
-_omx__skill_target_values() {
-  _values 'skill target' codex-home
+_omx__ultragoal_subcommands() {
+  local -a commands
+
+  commands=(
+    "create-goals:Create durable multi-goal artifacts"
+    "create:Alias for create-goals"
+    "complete-goals:Print the next Codex goal handoff"
+    "complete:Alias for complete-goals"
+    "next:Alias for complete-goals"
+    "start-next:Alias for complete-goals"
+    "add-goal:Add a goal to the durable ledger"
+    "record-review-blockers:Record non-clean review blockers"
+    "checkpoint:Checkpoint an ultragoal story"
+    "status:Show ultragoal status"
+    "help:Show ultragoal help"
+  )
+
+  _describe 'ultragoal subcommand' commands
+}
+
+_omx__performance_goal_subcommands() {
+  local -a commands
+
+  commands=(
+    "create:Create an evaluator-gated performance goal"
+    "start:Print the Codex goal-mode handoff"
+    "checkpoint:Record evaluator pass, fail, or blocker evidence"
+    "complete:Complete after evaluator and Codex goal evidence"
+    "status:Show performance goal status"
+    "help:Show performance-goal help"
+  )
+
+  _describe 'performance-goal subcommand' commands
+}
+
+_omx__autoresearch_goal_subcommands() {
+  local -a commands
+
+  commands=(
+    "create:Create a professor-critic research goal"
+    "init:Create a professor-critic research goal"
+    "handoff:Print the Codex goal-mode handoff"
+    "start:Print the Codex goal-mode handoff"
+    "verdict:Record professor-critic validation"
+    "checkpoint:Record professor-critic validation"
+    "complete:Complete after passing validation and Codex goal evidence"
+    "status:Show autoresearch goal status"
+    "help:Show autoresearch-goal help"
+  )
+
+  _describe 'autoresearch-goal subcommand' commands
+}
+
+_omx__state_subcommands() {
+  local -a commands
+
+  commands=(
+    "read:Read one mode state"
+    "write:Write one mode state"
+    "clear:Clear mode state"
+    "list-active:List active mode states"
+    "get-status:Get one mode status"
+    "help:Show state help"
+  )
+
+  _describe 'state subcommand' commands
+}
+
+_omx__mcp_serve_targets() {
+  local -a targets
+
+  targets=(
+    "state:State MCP server"
+    "state-server:State MCP server"
+    "state-server.js:State MCP server entrypoint"
+    "memory:Memory MCP server"
+    "memory-server:Memory MCP server"
+    "memory-server.js:Memory MCP server entrypoint"
+    "code-intel:Code intelligence MCP server"
+    "codeintel:Code intelligence MCP server"
+    "code_intel:Code intelligence MCP server"
+    "code-intel-server:Code intelligence MCP server"
+    "code-intel-server.js:Code intelligence MCP server entrypoint"
+    "trace:Trace MCP server"
+    "trace-server:Trace MCP server"
+    "trace-server.js:Trace MCP server entrypoint"
+    "wiki:Wiki MCP server"
+    "wiki-server:Wiki MCP server"
+    "wiki-server.js:Wiki MCP server entrypoint"
+  )
+
+  _describe 'MCP target' targets
+}
+
+_omx__notepad_tools() {
+  local -a tools
+
+  tools=(
+    "read:Alias for notepad_read"
+    "write-priority:Alias for notepad_write_priority"
+    "write-working:Alias for notepad_write_working"
+    "write-manual:Alias for notepad_write_manual"
+    "prune:Alias for notepad_prune"
+    "stats:Alias for notepad_stats"
+    "notepad_read:Read notepad content"
+    "notepad_write_priority:Write priority context"
+    "notepad_write_working:Add working memory entry"
+    "notepad_write_manual:Add manual memory entry"
+    "notepad_prune:Prune old working memory entries"
+    "notepad_stats:Get notepad statistics"
+  )
+
+  _describe 'notepad tool' tools
+}
+
+_omx__project_memory_tools() {
+  local -a tools
+
+  tools=(
+    "read:Alias for project_memory_read"
+    "write:Alias for project_memory_write"
+    "add-note:Alias for project_memory_add_note"
+    "add-directive:Alias for project_memory_add_directive"
+    "project_memory_read:Read project memory"
+    "project_memory_write:Write project memory"
+    "project_memory_add_note:Add a categorized project note"
+    "project_memory_add_directive:Add a persistent directive"
+  )
+
+  _describe 'project-memory tool' tools
+}
+
+_omx__trace_tools() {
+  local -a tools
+
+  tools=(
+    "timeline:Alias for trace_timeline"
+    "summary:Alias for trace_summary"
+    "trace_timeline:Show chronological agent flow trace"
+    "trace_summary:Show aggregate trace statistics"
+  )
+
+  _describe 'trace tool' tools
+}
+
+_omx__code_intel_tools() {
+  local -a tools
+
+  tools=(
+    "lsp_diagnostics:Get diagnostics for a file"
+    "lsp_diagnostics_directory:Get project diagnostics for a directory"
+    "lsp_document_symbols:Get a file symbol outline"
+    "lsp_workspace_symbols:Search workspace symbols"
+    "lsp_hover:Get type/documentation at a position"
+    "lsp_find_references:Find symbol references"
+    "lsp_servers:List diagnostic backends"
+    "ast_grep_search:Search code with AST patterns"
+    "ast_grep_replace:Replace code with AST patterns"
+  )
+
+  _describe 'code-intel tool' tools
+}
+
+_omx__wiki_tools() {
+  local -a tools
+
+  tools=(
+    "ingest:Alias for wiki_ingest"
+    "query:Alias for wiki_query"
+    "lint:Alias for wiki_lint"
+    "add:Alias for wiki_add"
+    "list:Alias for wiki_list"
+    "read:Alias for wiki_read"
+    "delete:Alias for wiki_delete"
+    "refresh:Alias for wiki_refresh"
+    "wiki_ingest:Process knowledge into wiki pages"
+    "wiki_query:Search wiki pages"
+    "wiki_lint:Run wiki health checks"
+    "wiki_add:Quick-add a wiki page"
+    "wiki_list:List wiki pages"
+    "wiki_read:Read a wiki page"
+    "wiki_delete:Delete a wiki page"
+    "wiki_refresh:Refresh the wiki index"
+  )
+
+  _describe 'wiki tool' tools
+}
+
+_omx__scope_values() {
+  _values 'scope' user project
 }
 
 _omx__local_provider_values() {
@@ -568,8 +685,38 @@ _omx__hud_presets() {
   _values 'hud preset' minimal focused full
 }
 
-_omx__keep_policies() {
-  _values 'keep policy' score_improvement pass_only
+_omx__setup_install_modes() {
+  _values 'install mode' legacy plugin
+}
+
+_omx__setup_mcp_modes() {
+  _values 'MCP mode' none compat
+}
+
+_omx__adapt_targets() {
+  _values 'adapter target' \
+    'openclaw:OpenClaw adapter artifacts' \
+    'hermes:Hermes adapter artifacts'
+}
+
+_omx__adapt_actions() {
+  _values 'adapter action' probe status init envelope doctor
+}
+
+_omx__goal_mode_values() {
+  _values 'Codex goal mode' aggregate per-story per_story
+}
+
+_omx__ultragoal_status_values() {
+  _values 'checkpoint status' complete failed blocked
+}
+
+_omx__performance_goal_status_values() {
+  _values 'checkpoint status' pass fail blocked
+}
+
+_omx__autoresearch_goal_verdict_values() {
+  _values 'verdict' pass fail blocked
 }
 
 _omx__session_project_values() {
@@ -640,6 +787,50 @@ _omx__worktree_name() {
   _message 'worktree name'
 }
 
+_omx__slug() {
+  _message 'slug'
+}
+
+_omx__goal_id() {
+  _message 'goal id'
+}
+
+_omx__goal_title() {
+  _message 'goal title'
+}
+
+_omx__objective_text() {
+  _message 'objective text'
+}
+
+_omx__evidence_text() {
+  _message 'evidence text'
+}
+
+_omx__artifact_name() {
+  _message 'artifact name'
+}
+
+_omx__iso_or_now() {
+  _message 'ISO timestamp or now'
+}
+
+_omx__mcp_input() {
+  _message 'JSON object'
+}
+
+_omx__tmux_pane_id() {
+  _message 'tmux pane id'
+}
+
+_omx__sidecar_width() {
+  _message 'columns'
+}
+
+_omx__interval_ms() {
+  _message 'milliseconds'
+}
+
 _omx__codex_launch_option_specs() {
   reply=(
     '(-c --config)'{-c,--config}'[override a Codex config value]:key=value:_omx__config_value'
@@ -654,7 +845,6 @@ _omx__codex_launch_option_specs() {
     '(-p --profile)'{-p,--profile}'[select a config profile]:profile:_omx__profile_name'
     '(-s --sandbox)'{-s,--sandbox}'[select the sandbox policy]:sandbox mode:_omx__sandbox_modes'
     '(-a --ask-for-approval)'{-a,--ask-for-approval}'[configure approval policy]:approval policy:_omx__approval_policies'
-    '--full-auto[enable low-friction sandboxed automatic execution]'
     '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
     '(-C --cd)'{-C,--cd}'[set the working root directory]:directory:_files -/'
     '--search[enable live web search]'
@@ -682,7 +872,6 @@ _omx__codex_resume_option_specs() {
     '(-p --profile)'{-p,--profile}'[select a config profile]:profile:_omx__profile_name'
     '(-s --sandbox)'{-s,--sandbox}'[select the sandbox policy]:sandbox mode:_omx__sandbox_modes'
     '(-a --ask-for-approval)'{-a,--ask-for-approval}'[configure approval policy]:approval policy:_omx__approval_policies'
-    '--full-auto[enable low-friction sandboxed automatic execution]'
     '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
     '(-C --cd)'{-C,--cd}'[set the working root directory]:directory:_files -/'
     '--search[enable live web search]'
@@ -704,12 +893,13 @@ _omx__codex_exec_option_specs() {
     '--local-provider[select the local OSS provider]:provider:_omx__local_provider_values'
     '(-s --sandbox)'{-s,--sandbox}'[select the sandbox policy]:sandbox mode:_omx__sandbox_modes'
     '(-p --profile)'{-p,--profile}'[select a config profile]:profile:_omx__profile_name'
-    '--full-auto[enable low-friction sandboxed automatic execution]'
     '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
     '(-C --cd)'{-C,--cd}'[set the working root directory]:directory:_files -/'
     '--skip-git-repo-check[allow running outside a git repository]'
     '--add-dir[allow an additional writable directory]:directory:_files -/'
     '--ephemeral[run without persisting session files]'
+    '--ignore-user-config[do not load CODEX_HOME config.toml]'
+    '--ignore-rules[do not load execpolicy rules files]'
     '--output-schema[path to a JSON Schema file]:schema file:_files'
     '--color[color mode]:color:_omx__color_modes'
     '--json[emit JSONL events]'
@@ -728,10 +918,11 @@ _omx__exec_resume_option_specs() {
     '--disable[disable a feature]:feature:_omx__feature_name'
     '(-i --image)'{-i,--image}'[attach image files to the resumed prompt]:image file:_files'
     '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
-    '--full-auto[enable low-friction sandboxed automatic execution]'
     '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
     '--skip-git-repo-check[allow running outside a git repository]'
     '--ephemeral[run without persisting session files]'
+    '--ignore-user-config[do not load CODEX_HOME config.toml]'
+    '--ignore-rules[do not load execpolicy rules files]'
     '--json[emit JSONL events]'
     '(-o --output-last-message)'{-o,--output-last-message}'[write the last message to a file]:output file:_files'
     '(-h --help)'{-h,--help}'[show help]'
@@ -751,10 +942,11 @@ _omx__exec_review_option_specs() {
     '(-m --model)'{-m,--model}'[select the model]:model:_omx__model_name'
     '--title[set the review title]:title:_omx__message'
     '--title=[set the review title]:title:_omx__message'
-    '--full-auto[enable low-friction sandboxed automatic execution]'
     '--dangerously-bypass-approvals-and-sandbox[skip confirmations and sandboxing]'
     '--skip-git-repo-check[allow running outside a git repository]'
     '--ephemeral[run without persisting session files]'
+    '--ignore-user-config[do not load CODEX_HOME config.toml]'
+    '--ignore-rules[do not load execpolicy rules files]'
     '--json[emit JSONL events]'
     '(-o --output-last-message)'{-o,--output-last-message}'[write the last message to a file]:output file:_files'
     '(-h --help)'{-h,--help}'[show help]'
@@ -770,6 +962,8 @@ _omx__omx_wrapper_option_specs() {
     '--spark[use the spark model for team workers]'
     '--madmax-spark[use spark workers and bypass approvals]'
     '--notify-temp[enable temporary notification routing]'
+    '--direct[launch without OMX tmux/HUD management]'
+    '--tmux[launch in a detached tmux session]'
     '--discord[select Discord notifications for temporary routing]'
     '--slack[select Slack notifications for temporary routing]'
     '--telegram[select Telegram notifications for temporary routing]'
@@ -781,12 +975,39 @@ _omx__omx_wrapper_option_specs() {
   )
 }
 
+_omx__omx_root_option_specs() {
+  local -a wrapper_specs
+
+  _omx__omx_wrapper_option_specs
+  wrapper_specs=("${reply[@]}")
+
+  reply=(
+    ${wrapper_specs[@]}
+    '--force[force setup or reinstall operations]'
+    '--merge-agents[merge OMX-managed AGENTS sections]'
+    '--dry-run[show planned changes without writing]'
+    '--plugin[use Codex plugin delivery for setup]'
+    '--legacy[use legacy setup delivery]'
+    '--install-mode[choose setup install mode]:install mode:_omx__setup_install_modes'
+    '--install-mode=[choose setup install mode]:install mode:_omx__setup_install_modes'
+    '--mcp[choose setup MCP mode]:MCP mode:_omx__setup_mcp_modes'
+    '--mcp=[choose setup MCP mode]:MCP mode:_omx__setup_mcp_modes'
+    '--no-mcp[disable first-party MCP compatibility]'
+    '--with-mcp[enable first-party MCP compatibility]'
+    '--keep-config[keep config.toml during uninstall]'
+    '--purge[remove the .omx cache directory]'
+    '--verbose[show detailed output]'
+    '--scope[set setup scope]:scope:_omx__scope_values'
+    '--scope=[set setup scope]:scope:_omx__scope_values'
+  )
+}
+
 _omx__complete_root() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
   local -a omx_specs codex_specs
 
-  _omx__omx_wrapper_option_specs
+  _omx__omx_root_option_specs
   omx_specs=("${reply[@]}")
   _omx__codex_launch_option_specs
   codex_specs=("${reply[@]}")
@@ -862,10 +1083,28 @@ _omx__complete_exec() {
   exec_commands=(
     "resume:Resume a previous exec session"
     "review:Run a code review against the current repository"
+    "inject:Queue a Stop-hook follow-up for a non-interactive exec job"
     "help:Show exec help"
   )
 
   case $words[2] in
+    inject)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+
+      _arguments -C -s \
+        '1:session id:_omx__session_id' \
+        '--prompt[set follow-up prompt text]:prompt:_omx__prompt_text' \
+        '--prompt=[set follow-up prompt text]:prompt:_omx__prompt_text' \
+        '--prompt-file[read follow-up prompt from a file]:prompt file:_omx__prompt_file' \
+        '--prompt-file=[read follow-up prompt from a file]:prompt file:_omx__prompt_file' \
+        '--actor[set audit actor name]:actor:_omx__message' \
+        '--actor=[set audit actor name]:actor:_omx__message' \
+        '--json[emit structured JSON]' \
+        '*::prompt text:_omx__prompt_text'
+      return
+      ;;
     resume)
       _omx__shift_words 1
       words=("${reply[@]}")
@@ -919,7 +1158,16 @@ _omx__complete_setup() {
     '--dry-run[show planned changes without writing]' \
     '--verbose[show detailed output]' \
     '--scope[set installation scope]:scope:_omx__scope_values' \
-    '--skill-target[set the user-scope skill target]:target:_omx__skill_target_values' \
+    '--scope=[set installation scope]:scope:_omx__scope_values' \
+    '--merge-agents[merge OMX-managed AGENTS sections]' \
+    '--plugin[use Codex plugin delivery]' \
+    '--legacy[use legacy setup delivery]' \
+    '--install-mode[choose setup install mode]:install mode:_omx__setup_install_modes' \
+    '--install-mode=[choose setup install mode]:install mode:_omx__setup_install_modes' \
+    '--mcp[choose setup MCP mode]:MCP mode:_omx__setup_mcp_modes' \
+    '--mcp=[choose setup MCP mode]:MCP mode:_omx__setup_mcp_modes' \
+    '--no-mcp[disable first-party MCP compatibility]' \
+    '--with-mcp[enable first-party MCP compatibility]' \
     '(-h --help)'{-h,--help}'[show help]'
 }
 
@@ -933,6 +1181,7 @@ _omx__complete_uninstall() {
     '--verbose[show detailed output]' \
     '--purge[remove the .omx cache directory]' \
     '--scope[set uninstall scope]:scope:_omx__scope_values' \
+    '--scope=[set uninstall scope]:scope:_omx__scope_values' \
     '(-h --help)'{-h,--help}'[show help]'
 }
 
@@ -954,6 +1203,61 @@ _omx__complete_cleanup() {
     '(-h --help)'{-h,--help}'[show help]'
 }
 
+_omx__complete_update() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_list() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s \
+    '--json[emit structured JSON]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_question() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s \
+    '--input[JSON question/options schema]:json:_omx__json_input' \
+    '--input=[JSON question/options schema]:json:_omx__json_input' \
+    '--json[emit compact JSON]' \
+    '--ui[internal renderer mode]' \
+    '--state-path[question state record path]:state path:_files' \
+    '--state-path=[question state record path]:state path:_files' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_adapt() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -C -s \
+    '1:adapter target:->target' \
+    '2:adapter action:->action' \
+    '--json[emit compact machine-readable JSON]' \
+    '--write[write adapter artifacts; valid with init]' \
+    '(-h --help)'{-h,--help}'[show help]'
+
+  case $state in
+    target)
+      _omx__adapt_targets
+      ;;
+    action)
+      _omx__adapt_actions
+      ;;
+  esac
+}
+
 _omx__complete_ask() {
   local -a providers
   local curcontext="$curcontext" state line
@@ -970,6 +1274,9 @@ _omx__complete_ask() {
   _arguments -C -s \
     '1:provider:->provider' \
     '(-p --print --prompt)'{-p,--print,--prompt}'[set the prompt text explicitly]:prompt:_omx__prompt_text' \
+    '(-p --print --prompt)-p=[set the prompt text explicitly]:prompt:_omx__prompt_text' \
+    '(-p --print --prompt)--print=[set the prompt text explicitly]:prompt:_omx__prompt_text' \
+    '(-p --print --prompt)--prompt=[set the prompt text explicitly]:prompt:_omx__prompt_text' \
     '--agent-prompt[prepend a saved role prompt]:role:_omx__prompt_roles' \
     '--agent-prompt=[prepend a saved role prompt]:role:_omx__prompt_roles' \
     '(-h --help)'{-h,--help}'[show help]' \
@@ -999,6 +1306,7 @@ _omx__complete_agents() {
       CURRENT=$REPLY
       _arguments -s \
         '--scope[restrict to a specific scope]:scope:_omx__scope_values' \
+        '--scope=[restrict to a specific scope]:scope:_omx__scope_values' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     add)
@@ -1007,6 +1315,7 @@ _omx__complete_agents() {
       CURRENT=$REPLY
       _arguments -s \
         '--scope[choose the mutation scope]:scope:_omx__scope_values' \
+        '--scope=[choose the mutation scope]:scope:_omx__scope_values' \
         '--force[overwrite an existing agent file]' \
         '1:agent name:_omx__message "new agent name"' \
         '(-h --help)'{-h,--help}'[show help]'
@@ -1017,6 +1326,7 @@ _omx__complete_agents() {
       CURRENT=$REPLY
       _arguments -s \
         '--scope[restrict lookup to a specific scope]:scope:_omx__scope_values' \
+        '--scope=[restrict lookup to a specific scope]:scope:_omx__scope_values' \
         '1:agent name:_omx__native_agent_names' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
@@ -1026,6 +1336,7 @@ _omx__complete_agents() {
       CURRENT=$REPLY
       _arguments -s \
         '--scope[restrict lookup to a specific scope]:scope:_omx__scope_values' \
+        '--scope=[restrict lookup to a specific scope]:scope:_omx__scope_values' \
         '--force[skip the confirmation prompt]' \
         '1:agent name:_omx__native_agent_names' \
         '(-h --help)'{-h,--help}'[show help]'
@@ -1049,6 +1360,61 @@ _omx__complete_agents_init() {
     '--force[overwrite existing unmanaged AGENTS.md files]' \
     '--verbose[print per-file actions and skip reasons]' \
     '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_imagegen_continuation() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s \
+    '1:session id:_omx__session_id' \
+    '--artifact[artifact name]:artifact:_omx__artifact_name' \
+    '--artifact=[artifact name]:artifact:_omx__artifact_name' \
+    '--artifact-name[artifact name]:artifact:_omx__artifact_name' \
+    '--artifact-name=[artifact name]:artifact:_omx__artifact_name' \
+    '--generated-dir[generated images directory]:directory:_files -/' \
+    '--generated-dir=[generated images directory]:directory:_files -/' \
+    '--generated-images-dir[generated images directory]:directory:_files -/' \
+    '--generated-images-dir=[generated images directory]:directory:_files -/' \
+    '--work-dir[artifact workspace directory]:directory:_files -/' \
+    '--work-dir=[artifact workspace directory]:directory:_files -/' \
+    '--after[resume after timestamp]:timestamp:_omx__iso_or_now' \
+    '--after=[resume after timestamp]:timestamp:_omx__iso_or_now' \
+    '--prompt[custom resume instruction]:prompt:_omx__prompt_text' \
+    '--prompt=[custom resume instruction]:prompt:_omx__prompt_text' \
+    '--prompt-file[read custom resume instruction from a file]:prompt file:_omx__prompt_file' \
+    '--prompt-file=[read custom resume instruction from a file]:prompt file:_omx__prompt_file' \
+    '--resume-instruction[custom resume instruction]:prompt:_omx__prompt_text' \
+    '--resume-instruction=[custom resume instruction]:prompt:_omx__prompt_text' \
+    '--resume-instruction-file[read resume instruction from a file]:prompt file:_omx__prompt_file' \
+    '--resume-instruction-file=[read resume instruction from a file]:prompt file:_omx__prompt_file' \
+    '--actor[set audit actor name]:actor:_omx__message' \
+    '--actor=[set audit actor name]:actor:_omx__message' \
+    '--json[emit structured JSON]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_imagegen() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  if (( CURRENT <= 2 )); then
+    _omx__imagegen_subcommands
+    return
+  fi
+
+  case $words[2] in
+    continuation|prepare)
+      _omx__complete_imagegen_continuation
+      ;;
+    help|-h|--help)
+      _omx__imagegen_subcommands
+      ;;
+    *)
+      _omx__imagegen_subcommands
+      ;;
+  esac
 }
 
 _omx__complete_team_api() {
@@ -1091,6 +1457,7 @@ _omx__complete_team() {
         '--json[emit structured JSON]' \
         '--tail-lines[set pane tail capture size]:line count:_omx__team_tail_lines' \
         '--tail-lines=[set pane tail capture size]:line count:_omx__team_tail_lines' \
+        '--model-inspect[include model inspection details]' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     await)
@@ -1121,6 +1488,7 @@ _omx__complete_team() {
       _arguments -s \
         '1:team name:_omx__team_names' \
         '--force[force the shutdown]' \
+        '--confirm-issues[confirm shutdown despite reported issues]' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
     api)
@@ -1167,119 +1535,289 @@ _omx__complete_ralph() {
     '*::task text:_omx__prompt_text'
 }
 
-_omx__complete_autoresearch() {
-  local -a exec_specs
-  local curcontext="$curcontext" state line
-  typeset -A opt_args
-
+_omx__complete_ultragoal() {
   _omx__shift_words 1
   words=("${reply[@]}")
   CURRENT=$REPLY
-  _omx__codex_exec_option_specs
-  exec_specs=("${reply[@]}")
 
-  if (( CURRENT == 1 )); then
-    _alternative \
-      'subcommands:autoresearch mode:(init run help)' \
-      'missions:mission directory:_omx__mission_dirs' \
-      'options:guided flags:(--resume --topic --evaluator --keep-policy --slug --help -h)'
+  if (( CURRENT <= 2 )); then
+    _omx__ultragoal_subcommands
     return
   fi
 
-  if (( CURRENT == 2 )); then
-    case $words[2] in
-      --resume|--resume=*|--topic|--topic=*|--evaluator|--evaluator=*|--keep-policy|--keep-policy=*|--slug|--slug=*)
-        ;;
-      *)
-        _alternative \
-          'subcommands:autoresearch mode:(init run help)' \
-          'missions:mission directory:_omx__mission_dirs' \
-          'options:guided flags:(--resume --topic --evaluator --keep-policy --slug --help -h)'
-        return
-        ;;
-    esac
+  case $words[2] in
+    create-goals|create)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--brief[goal brief text]:brief:_omx__prompt_text' \
+        '--brief=[goal brief text]:brief:_omx__prompt_text' \
+        '--brief-file[read goal brief from a file]:brief file:_files' \
+        '--brief-file=[read goal brief from a file]:brief file:_files' \
+        '--from-stdin[read goal brief from stdin]' \
+        '--goal[add a title::objective story]:title::objective:_omx__prompt_text' \
+        '--goal=[add a title::objective story]:title::objective:_omx__prompt_text' \
+        '--codex-goal-mode[choose Codex goal mode]:mode:_omx__goal_mode_values' \
+        '--codex-goal-mode=[choose Codex goal mode]:mode:_omx__goal_mode_values' \
+        '--force[overwrite existing ultragoal artifacts]' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]' \
+        '*::brief text:_omx__prompt_text'
+      ;;
+    complete-goals|complete|next|start-next)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--retry-failed[retry failed goals]' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    add-goal)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--title[goal title]:title:_omx__goal_title' \
+        '--title=[goal title]:title:_omx__goal_title' \
+        '--objective[goal objective]:objective:_omx__objective_text' \
+        '--objective=[goal objective]:objective:_omx__objective_text' \
+        '--evidence[seed evidence text]:evidence:_omx__evidence_text' \
+        '--evidence=[seed evidence text]:evidence:_omx__evidence_text' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    record-review-blockers)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--goal-id[goal id]:goal id:_omx__goal_id' \
+        '--goal-id=[goal id]:goal id:_omx__goal_id' \
+        '--title[blocker story title]:title:_omx__goal_title' \
+        '--title=[blocker story title]:title:_omx__goal_title' \
+        '--objective[blocker story objective]:objective:_omx__objective_text' \
+        '--objective=[blocker story objective]:objective:_omx__objective_text' \
+        '--evidence[review findings]:evidence:_omx__evidence_text' \
+        '--evidence=[review findings]:evidence:_omx__evidence_text' \
+        '--codex-goal-json[active get_goal JSON or path]:json or path:_files' \
+        '--codex-goal-json=[active get_goal JSON or path]:json or path:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    checkpoint)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--goal-id[goal id]:goal id:_omx__goal_id' \
+        '--goal-id=[goal id]:goal id:_omx__goal_id' \
+        '--status[checkpoint status]:status:_omx__ultragoal_status_values' \
+        '--status=[checkpoint status]:status:_omx__ultragoal_status_values' \
+        '--evidence[evidence text]:evidence:_omx__evidence_text' \
+        '--evidence=[evidence text]:evidence:_omx__evidence_text' \
+        '--codex-goal-json[get_goal JSON or path]:json or path:_files' \
+        '--codex-goal-json=[get_goal JSON or path]:json or path:_files' \
+        '--quality-gate-json[quality gate JSON or path]:json or path:_files' \
+        '--quality-gate-json=[quality gate JSON or path]:json or path:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    status)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--codex-goal-json[get_goal JSON or path]:json or path:_files' \
+        '--codex-goal-json=[get_goal JSON or path]:json or path:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    help|-h|--help)
+      _omx__ultragoal_subcommands
+      ;;
+    *)
+      _omx__ultragoal_subcommands
+      ;;
+  esac
+}
+
+_omx__complete_performance_goal() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  if (( CURRENT <= 2 )); then
+    _omx__performance_goal_subcommands
+    return
   fi
 
   case $words[2] in
-    init)
+    create)
       _omx__shift_words 1
       words=("${reply[@]}")
       CURRENT=$REPLY
       _arguments -s \
-        '--topic[seed the research topic]:topic:_omx__prompt_text' \
-        '--topic=[seed the research topic]:topic:_omx__prompt_text' \
-        '--evaluator[seed the evaluator command]:command:_omx__prompt_text' \
-        '--evaluator=[seed the evaluator command]:command:_omx__prompt_text' \
-        '--keep-policy[set the keep policy]:policy:_omx__keep_policies' \
-        '--keep-policy=[set the keep policy]:policy:_omx__keep_policies' \
-        '--slug[set the mission slug]:slug:_omx__message' \
-        '--slug=[set the mission slug]:slug:_omx__message' \
-        '(-h --help)'{-h,--help}'[show help]'
+        '--objective[optimization objective]:objective:_omx__objective_text' \
+        '--objective=[optimization objective]:objective:_omx__objective_text' \
+        '--objective-file[read optimization objective from a file]:objective file:_files' \
+        '--objective-file=[read optimization objective from a file]:objective file:_files' \
+        '--evaluator-command[evaluator command]:command:_omx__prompt_text' \
+        '--evaluator-command=[evaluator command]:command:_omx__prompt_text' \
+        '--evaluator-contract[evaluator contract]:contract:_omx__prompt_text' \
+        '--evaluator-contract=[evaluator contract]:contract:_omx__prompt_text' \
+        '--evaluator-contract-file[read evaluator contract from a file]:contract file:_files' \
+        '--evaluator-contract-file=[read evaluator contract from a file]:contract file:_files' \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--force[overwrite existing performance goal artifacts]' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]' \
+        '*::objective text:_omx__objective_text'
       ;;
-    run)
+    start)
       _omx__shift_words 1
       words=("${reply[@]}")
       CURRENT=$REPLY
-
-      if (( CURRENT == 1 )); then
-        _omx__mission_dirs
-        return
-      fi
-
-      _arguments -C -s \
-        '1:mission directory:_omx__mission_dirs' \
-        ${exec_specs[@]} \
-        '*::codex exec argument:_omx__prompt_text'
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    checkpoint)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--status[checkpoint status]:status:_omx__performance_goal_status_values' \
+        '--status=[checkpoint status]:status:_omx__performance_goal_status_values' \
+        '--evidence[evidence text]:evidence:_omx__evidence_text' \
+        '--evidence=[evidence text]:evidence:_omx__evidence_text' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    complete)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--evidence[evidence text]:evidence:_omx__evidence_text' \
+        '--evidence=[evidence text]:evidence:_omx__evidence_text' \
+        '--codex-goal-json[get_goal JSON or path]:json or path:_files' \
+        '--codex-goal-json=[get_goal JSON or path]:json or path:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    status)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--codex-goal-json[get_goal JSON or path]:json or path:_files' \
+        '--codex-goal-json=[get_goal JSON or path]:json or path:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
       ;;
     help|-h|--help)
-      _values 'autoresearch mode' init run help
+      _omx__performance_goal_subcommands
       ;;
-    --resume)
-      _omx__shift_words 1
-      words=("${reply[@]}")
-      CURRENT=$REPLY
+    *)
+      _omx__performance_goal_subcommands
+      ;;
+  esac
+}
 
-      if (( CURRENT == 1 )); then
-        _omx__autoresearch_run_entries
-        return
-      fi
+_omx__complete_autoresearch_goal() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
 
-      _arguments -C -s \
-        '1:run id:_omx__autoresearch_run_entries' \
-        ${exec_specs[@]} \
-        '*::codex exec argument:_omx__prompt_text'
-      ;;
-    --resume=*)
-      compset -P '*=' 2>/dev/null
-      _omx__autoresearch_run_entries
-      ;;
-    --topic|--evaluator|--keep-policy|--slug|--topic=*|--evaluator=*|--keep-policy=*|--slug=*)
+  if (( CURRENT <= 2 )); then
+    _omx__autoresearch_goal_subcommands
+    return
+  fi
+
+  case $words[2] in
+    create|init)
       _omx__shift_words 1
       words=("${reply[@]}")
       CURRENT=$REPLY
       _arguments -s \
-        '--topic[seed the research topic]:topic:_omx__prompt_text' \
-        '--topic=[seed the research topic]:topic:_omx__prompt_text' \
-        '--evaluator[seed the evaluator command]:command:_omx__prompt_text' \
-        '--evaluator=[seed the evaluator command]:command:_omx__prompt_text' \
-        '--keep-policy[set the keep policy]:policy:_omx__keep_policies' \
-        '--keep-policy=[set the keep policy]:policy:_omx__keep_policies' \
-        '--slug[set the mission slug]:slug:_omx__message' \
-        '--slug=[set the mission slug]:slug:_omx__message' \
+        '--topic[research topic]:topic:_omx__prompt_text' \
+        '--topic=[research topic]:topic:_omx__prompt_text' \
+        '--rubric[rubric text or path]:rubric:_omx__prompt_text' \
+        '--rubric=[rubric text or path]:rubric:_omx__prompt_text' \
+        '--critic-command[critic command]:command:_omx__prompt_text' \
+        '--critic-command=[critic command]:command:_omx__prompt_text' \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--force[overwrite existing autoresearch goal artifacts]' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]' \
+        '*::topic text:_omx__prompt_text'
+      ;;
+    handoff|start)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--json[emit structured JSON]' \
         '(-h --help)'{-h,--help}'[show help]'
       ;;
+    complete|status)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--codex-goal-json[get_goal JSON or path]:json or path:_files' \
+        '--codex-goal-json=[get_goal JSON or path]:json or path:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    verdict|checkpoint)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--slug[goal slug]:slug:_omx__slug' \
+        '--slug=[goal slug]:slug:_omx__slug' \
+        '--verdict[validation verdict]:verdict:_omx__autoresearch_goal_verdict_values' \
+        '--verdict=[validation verdict]:verdict:_omx__autoresearch_goal_verdict_values' \
+        '--evidence[evidence text]:evidence:_omx__evidence_text' \
+        '--evidence=[evidence text]:evidence:_omx__evidence_text' \
+        '--summary[verdict summary]:summary:_omx__prompt_text' \
+        '--summary=[verdict summary]:summary:_omx__prompt_text' \
+        '--artifact[evidence artifact path]:artifact:_files' \
+        '--artifact=[evidence artifact path]:artifact:_files' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    help|-h|--help)
+      _omx__autoresearch_goal_subcommands
+      ;;
     *)
-      if (( CURRENT == 2 )); then
-        _omx__mission_dirs
-        return
-      fi
-
-      _arguments -C -s \
-        '1:mission directory:_omx__mission_dirs' \
-        ${exec_specs[@]} \
-        '*::codex exec argument:_omx__prompt_text'
+      _omx__autoresearch_goal_subcommands
       ;;
   esac
+}
+
+_omx__complete_autoresearch() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments '(-h --help)'{-h,--help}'[show deprecated autoresearch help]'
 }
 
 _omx__complete_explore() {
@@ -1311,8 +1849,8 @@ _omx__complete_sparkshell() {
 
   if [[ $words[1] == --tmux-pane || $words[1] == --tmux-pane=* || $words[1] == --tail-lines || $words[1] == --tail-lines=* ]]; then
     _arguments -s \
-      '--tmux-pane[read from a tmux pane id]:pane id:_omx__message' \
-      '--tmux-pane=[read from a tmux pane id]:pane id:_omx__message' \
+      '--tmux-pane[read from a tmux pane id]:pane id:_omx__tmux_pane_id' \
+      '--tmux-pane=[read from a tmux pane id]:pane id:_omx__tmux_pane_id' \
       '--tail-lines[capture between 100 and 1000 lines]:line count:_omx__team_tail_lines' \
       '--tail-lines=[capture between 100 and 1000 lines]:line count:_omx__team_tail_lines' \
       '(-h --help)'{-h,--help}'[show help]'
@@ -1366,6 +1904,109 @@ _omx__complete_session() {
       _values 'session subcommand' search help
       ;;
   esac
+}
+
+_omx__complete_sidecar() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s \
+    '1:team name:_omx__team_names' \
+    '--json[output normalized sidecar snapshot]' \
+    '--watch[refresh sidecar in the current terminal]' \
+    '--tmux[open a tmux pane running watch mode]' \
+    '--width[set sidecar width]:columns:_omx__sidecar_width' \
+    '--width=[set sidecar width]:columns:_omx__sidecar_width' \
+    '--interval-ms[set watch refresh interval]:milliseconds:_omx__interval_ms' \
+    '--interval-ms=[set watch refresh interval]:milliseconds:_omx__interval_ms' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_state() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  if (( CURRENT <= 2 )); then
+    _omx__state_subcommands
+    return
+  fi
+
+  case $words[2] in
+    read|write|clear|get-status)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--input[JSON request body]:json:_omx__mcp_input' \
+        '--input=[JSON request body]:json:_omx__mcp_input' \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    list-active)
+      _omx__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--json[emit structured JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      ;;
+    help|-h|--help)
+      _omx__state_subcommands
+      ;;
+    *)
+      _omx__state_subcommands
+      ;;
+  esac
+}
+
+_omx__mcp_parity_tools_for_command() {
+  case $words[1] in
+    notepad)
+      _omx__notepad_tools
+      ;;
+    project-memory)
+      _omx__project_memory_tools
+      ;;
+    trace)
+      _omx__trace_tools
+      ;;
+    code-intel)
+      _omx__code_intel_tools
+      ;;
+    wiki)
+      _omx__wiki_tools
+      ;;
+    *)
+      _message 'tool name'
+      ;;
+  esac
+}
+
+_omx__complete_mcp_parity() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  if (( CURRENT <= 2 )); then
+    _omx__mcp_parity_tools_for_command
+    return
+  fi
+
+  _arguments -s \
+    '1:tool name:_omx__mcp_parity_tools_for_command' \
+    '--input[JSON request body]:json:_omx__mcp_input' \
+    '--json[emit structured JSON]' \
+    '(-h --help)'{-h,--help}'[show help]'
+}
+
+_omx__complete_mcp_serve() {
+  _omx__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments \
+    '1:MCP server target:_omx__mcp_serve_targets' \
+    '(-h --help)'{-h,--help}'[show help]'
 }
 
 _omx__complete_tmux_hook() {
@@ -1439,8 +2080,14 @@ function _omx() {
     exec)
       _omx__complete_exec
       ;;
+    imagegen)
+      _omx__complete_imagegen
+      ;;
     setup)
       _omx__complete_setup
+      ;;
+    update)
+      _omx__complete_update
       ;;
     agents)
       _omx__complete_agents
@@ -1454,14 +2101,26 @@ function _omx() {
     doctor)
       _omx__complete_doctor
       ;;
+    list)
+      _omx__complete_list
+      ;;
     cleanup)
       _omx__complete_cleanup
       ;;
     ask)
       _omx__complete_ask
       ;;
+    question)
+      _omx__complete_question
+      ;;
+    adapt)
+      _omx__complete_adapt
+      ;;
     autoresearch)
       _omx__complete_autoresearch
+      ;;
+    autoresearch-goal)
+      _omx__complete_autoresearch_goal
       ;;
     explore)
       _omx__complete_explore
@@ -1474,6 +2133,12 @@ function _omx() {
       ;;
     ralph)
       _omx__complete_ralph
+      ;;
+    ultragoal)
+      _omx__complete_ultragoal
+      ;;
+    performance-goal)
+      _omx__complete_performance_goal
       ;;
     session)
       _omx__complete_session
@@ -1492,6 +2157,18 @@ function _omx() {
       ;;
     hud)
       _omx__complete_hud
+      ;;
+    sidecar)
+      _omx__complete_sidecar
+      ;;
+    state)
+      _omx__complete_state
+      ;;
+    notepad|project-memory|trace|code-intel|wiki)
+      _omx__complete_mcp_parity
+      ;;
+    mcp-serve)
+      _omx__complete_mcp_serve
       ;;
     status|cancel)
       _arguments '(-h --help)'{-h,--help}'[show help]'
@@ -1515,14 +2192,22 @@ _omx "$@"
 # oh-my-codex (omx) - Multi-agent orchestration for Codex CLI
 #
 # Usage:
-#   omx           Launch Codex CLI (HUD auto-attaches only when already inside tmux)
+#   omx           Launch Codex CLI (detached tmux by default on supported interactive terminals)
 #   omx exec      Run codex exec non-interactively with OMX AGENTS/overlay injection
-#   omx setup     Install skills, prompts, MCP servers, and scope-specific AGENTS.md
+#   omx exec inject <session-id> --prompt <text>
+#                 Queue audited follow-up instructions for a running non-interactive exec job
+#   omx imagegen continuation <session-id> --artifact <name>
+#                 Queue a Stop-hook continuation for built-in image generation turns
+#   omx setup     Install skills, prompts, CLI-first config, and scope-specific AGENTS.md
+#   omx update    Check npm now, update the global install immediately, then refresh setup
 #   omx uninstall Remove OMX configuration and clean up installed artifacts
 #   omx doctor    Check installation health
+#   omx list      List packaged OMX skills and native agent prompts (--json)
 #   omx cleanup   Kill orphaned OMX MCP server processes and remove stale OMX /tmp directories
 #   omx doctor --team  Check team/swarm runtime health diagnostics
 #   omx ask       Ask local provider CLI (claude|gemini) and write artifact output
+#   omx question  OMX-owned blocking question UI entrypoint for agent-invoked user questions
+#   omx adapt     Scaffold OMX-owned adapter foundations for persistent external targets
 #   omx resume    Resume a previous interactive Codex session
 #   omx explore   Default read-only exploration entrypoint (may adaptively use sparkshell backend)
 #   omx session   Search prior local session transcripts and history artifacts
@@ -1533,11 +2218,26 @@ _omx "$@"
 #                 Alias for agents-init (lightweight AGENTS bootstrap only)
 #   omx team      Spawn parallel worker panes in tmux and bootstrap inbox/task state
 #   omx ralph     Launch Codex with ralph persistence mode active
-#   omx autoresearch Launch thin-supervisor autoresearch with keep/discard/reset parity
+#   omx ultragoal Create, resume, and checkpoint durable multi-goal plans over Codex goal mode
+#   omx performance-goal
+#                 Create, hand off, and gate evaluator-backed performance goals
+#   omx autoresearch-goal
+#                 Create, hand off, and gate professor-critic research goals
+#   omx autoresearch [DEPRECATED] Use $autoresearch; direct CLI launch removed
 #   omx version   Show version information
 #   omx tmux-hook Manage tmux prompt injection workaround (init|status|validate|test)
 #   omx hooks     Manage hook plugins (init|status|validate|test)
 #   omx hud       Show HUD statusline (--watch, --json, --preset=NAME)
+#   omx sidecar   Show read-only team/multi-agent visualization (--watch, --json, --tmux)
+#   omx state     Read/write/list OMX mode state via CLI parity surface
+#   omx notepad   JSON CLI surface for OMX notepad operations
+#   omx project-memory
+#                 JSON CLI surface for OMX project-memory operations
+#   omx trace     JSON CLI surface for OMX trace operations
+#   omx code-intel
+#                 JSON CLI surface for OMX code-intel operations
+#   omx wiki      JSON CLI surface for OMX wiki operations
+#   omx mcp-serve Launch an OMX stdio MCP server target (plugin/runtime use)
 #   omx sparkshell <command> [args...]
 #   omx sparkshell --tmux-pane <pane-id> [--tail-lines <100-1000>]
 #                 Run native sparkshell sidecar for direct command execution or explicit tmux-pane summarization
