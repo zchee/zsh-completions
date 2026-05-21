@@ -1,0 +1,126 @@
+#compdef hyperfine
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/sharkdp/hyperfine
+#
+# -----------------------------------------------------------------------------
+
+function _hyperfine() {
+  local context curcontext=$curcontext state line expl ret=1
+  declare -A opt_args
+
+  _arguments -C -s -S \
+    '(- *)'{-h,--help}'[Print help]' \
+    '(- *)'{-V,--version}'[Print version]' \
+    '(-w --warmup)'{-w+,--warmup=}'[Perform NUM warmup runs before the actual benchmark]:NUM:' \
+    '(-m --min-runs)'{-m+,--min-runs=}'[Perform at least NUM runs for each command (default: 10)]:NUM:' \
+    '(-M --max-runs)'{-M+,--max-runs=}'[Perform at most NUM runs for each command]:NUM:' \
+    '(-r --runs)'{-r+,--runs=}'[Perform exactly NUM runs for each command]:NUM:' \
+    '*'{-s+,--setup=}'[Execute CMD before each set of timing runs]:CMD:_cmdstring' \
+    '--reference=[The reference command for the relative comparison of results]:CMD:_cmdstring' \
+    '--reference-name=[Give a meaningful name to the reference command]:NAME:' \
+    '*'{-p+,--prepare=}'[Execute CMD before each timing run]:CMD:_cmdstring' \
+    '*'{-C+,--conclude=}'[Execute CMD after each timing run]:CMD:_cmdstring' \
+    '*'{-c+,--cleanup=}'[Execute CMD after the completion of all benchmarking runs for each individual command]:CMD:_cmdstring' \
+    '(-P --parameter-scan)'{-P+,--parameter-scan=}'[Perform benchmark runs for each value in the range MIN..MAX]:VAR: :MIN: :MAX:' \
+    '(-D --parameter-step-size)'{-D+,--parameter-step-size=}'[Traverse the range MIN..MAX in steps of DELTA (requires --parameter-scan)]:DELTA:' \
+    '*'{-L+,--parameter-list=}'[Perform benchmark runs for each value in the comma-separated list VALUES]:VAR: :VALUES:' \
+    '(-S --shell -N)'{-S+,--shell=}'[Set the shell to use for executing benchmarked commands]:SHELL:->shells' \
+    '(-S --shell -N)-N[Alias for `--shell=none`]' \
+    '(-i --ignore-failure)'{-i-,--ignore-failure=-}'[Ignore failures of the benchmarked programs]::MODE:->ignore_failure_modes' \
+    '--style=[Set output style type (default: auto)]:TYPE:(auto basic full nocolor color none)' \
+    '--sort=[Specify the sort order of the speed comparison summary and the exported tables]:METHOD:(auto command mean-time)' \
+    '(-u --time-unit)'{-u+,--time-unit=}'[Set the time unit to be used]:UNIT:(microsecond millisecond second)' \
+    '--export-asciidoc=[Export the timing summary statistics as an AsciiDoc table to the given FILE]:FILE:_files' \
+    '--export-csv=[Export the timing summary statistics as CSV to the given FILE]:FILE:_files' \
+    '--export-json=[Export the timing summary statistics and timings of individual runs as JSON to the given FILE]:FILE:_files' \
+    '--export-markdown=[Export the timing summary statistics as a Markdown table to the given FILE]:FILE:_files' \
+    '--export-orgmode=[Export the timing summary statistics as an Emacs org-mode table to the given FILE]:FILE:_files' \
+    '--show-output[Print the stdout and stderr of the benchmark instead of suppressing it]' \
+    '*--output=[Control where the output of the benchmark is redirected]:WHERE:->output_targets' \
+    '--input=[Control where the input of the benchmark comes from]:WHERE:->input_sources' \
+    '*'{-n+,--command-name=}'[Give a meaningful name to a command]:NAME:' \
+    '*:command:_cmdstring' \
+    && ret=0
+
+  case $state in
+    shells)
+      local -a _shells
+      _shells=(
+        'default:Explicitly select the default shell on this platform'
+        'none:Disable the shell and execute commands directly'
+      )
+      if [[ -r /etc/shells ]]; then
+        local _line
+        while IFS= read -r _line; do
+          [[ $_line == \#* || -z $_line ]] && continue
+          _shells+=("$_line:System shell")
+        done < /etc/shells
+      fi
+      _describe -t shells 'shell' _shells && ret=0
+      _path_commands && ret=0
+      ;;
+    ignore_failure_modes)
+      local -a _modes
+      _modes=(
+        'all-non-zero:Ignore all non-zero exit codes (default when --ignore-failure is given without value)'
+      )
+      _describe -t modes 'mode' _modes && ret=0
+      _message -e codes 'comma-separated exit codes (e.g. 1,2)' && ret=0
+      ;;
+    output_targets)
+      local -a _targets
+      _targets=(
+        'null:Redirect output to /dev/null (the default)'
+        'pipe:Feed the output through a pipe before discarding it'
+        'inherit:Do not redirect the output at all'
+      )
+      _describe -t targets 'output target' _targets && ret=0
+      _files && ret=0
+      ;;
+    input_sources)
+      local -a _sources
+      _sources=(
+        'null:Read from /dev/null (the default)'
+      )
+      _describe -t sources 'input source' _sources && ret=0
+      _files && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_hyperfine "$@"
