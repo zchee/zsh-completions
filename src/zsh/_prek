@@ -1,0 +1,486 @@
+#compdef prek
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/j178/prek
+#
+# prek 0.4.1+4 (1b811a73c 2026-05-21)
+#
+# -----------------------------------------------------------------------------
+
+_prek__hook_stages() {
+  local -a stages
+  stages=(
+    "manual:run only when explicitly requested"
+    "commit-msg:after the commit message is written"
+    "post-checkout:after \`git checkout\`"
+    "post-commit:after a commit is created"
+    "post-merge:after \`git merge\`"
+    "post-rewrite:after history-rewriting commands"
+    "pre-commit:before a commit is created"
+    "pre-merge-commit:before a merge commit is created"
+    "pre-push:before \`git push\`"
+    "pre-rebase:before \`git rebase\`"
+    "prepare-commit-msg:before the commit message editor opens"
+  )
+  _describe -t stages "hook stage" stages
+}
+
+_prek__languages() {
+  local -a langs
+  langs=(
+    "bun:Bun JavaScript runtime"
+    "conda:Conda environment"
+    "coursier:Coursier (Scala/JVM)"
+    "dart:Dart language"
+    "deno:Deno runtime"
+    "docker:Docker container"
+    "docker-image:Existing Docker image"
+    "dotnet:.NET runtime"
+    "fail:always failing language used for blocking hooks"
+    "golang:Go language"
+    "haskell:Haskell language"
+    "julia:Julia language"
+    "lua:Lua language"
+    "node:Node.js runtime"
+    "perl:Perl language"
+    "pygrep:Python-flavoured regex grep"
+    "python:Python language"
+    "r:R language"
+    "ruby:Ruby language"
+    "rust:Rust language"
+    "script:Arbitrary script (no environment)"
+    "swift:Swift language"
+    "system:System interpreter"
+  )
+  _describe -t languages "language" langs
+}
+
+_prek__colors() {
+  local -a colors
+  colors=(
+    "auto:enable colors when output is a terminal"
+    "always:always emit colors"
+    "never:never emit colors"
+  )
+  _describe -t colors "color" colors
+}
+
+_prek__output_formats() {
+  local -a formats
+  formats=(
+    "text:human-readable text output"
+    "json:machine-readable JSON output"
+  )
+  _describe -t formats "output format" formats
+}
+
+_prek__sample_formats() {
+  local -a formats
+  formats=(
+    "yaml:.pre-commit-config.yaml format"
+    "toml:prek.toml format"
+  )
+  _describe -t formats "sample config format" formats
+}
+
+_prek__config_files() {
+  _alternative \
+    "config-files:prek/pre-commit config file:_files -g \"(prek.toml|.pre-commit-config.(yaml|yml))(-.)\"" \
+    "files:file:_files"
+}
+
+_prek__manifest_files() {
+  _alternative \
+    "manifest-files:pre-commit hooks manifest:_files -g \".pre-commit-hooks.(yaml|yml)(-.)\"" \
+    "files:file:_files"
+}
+
+_prek__yaml_files() {
+  _alternative \
+    "yaml-files:YAML config file:_files -g \"*.(yaml|yml)(-.)\"" \
+    "files:file:_files"
+}
+
+_prek__hooks_or_projects() {
+  local -a hooks
+  hooks=(${(f)"$(_call_program hooks prek list --output-format json 2>/dev/null | \
+    awk -F'"' '/"id"[[:space:]]*:/ {print $4}' | sort -u)"})
+  if (( $#hooks )); then
+    _describe -t hooks "hook or project" hooks
+  else
+    _message "hook id or project path"
+  fi
+}
+
+_prek__git_refs() {
+  local -a refs
+  refs=(${(f)"$(_call_program refs git for-each-ref --format='%(refname:short)' refs/heads refs/tags refs/remotes 2>/dev/null)"})
+  if (( $#refs )); then
+    _describe -t refs "git ref" refs
+  else
+    _message "git ref"
+  fi
+}
+
+_prek__init_options() {
+  typeset -ga _prek__global_options _prek__run_options
+
+  _prek__global_options=(
+    "(-c --config)"{-c+,--config=}"[path to alternate config file]:config:_prek__config_files"
+    "(-C --cd)"{-C+,--cd=}"[change to directory before running]:dir:_files -/"
+    "--color=[whether to use color in output]:color:_prek__colors"
+    "--refresh[refresh all cached data]"
+    "--no-progress[hide all progress outputs]"
+    "*"{-q,--quiet}"[use quiet output]"
+    "*"{-v,--verbose}"[use verbose output]"
+    "--log-file=[write trace logs to the specified file]:log file:_files"
+    "(- *)"{-h,--help}"[display the concise help for this command]"
+    "(- *)"{-V,--version}"[display the prek version]"
+  )
+
+  _prek__run_options=(
+    "*--skip=[skip the specified hooks or projects]:hook or project:_prek__hooks_or_projects"
+    "(-a --all-files)"{-a,--all-files}"[run on all files in the repo]"
+    "--files=[specific filenames to run hooks on]:*:files:_files"
+    "*"{-d+,--directory=}"[run hooks on all files in the specified directories]:dir:_files -/"
+    "(-s --from-ref)"{-s+,--from-ref=}"[the original ref in a <from_ref>...<to_ref> diff expression]:from ref:_prek__git_refs"
+    "(-o --to-ref)"{-o+,--to-ref=}"[the destination ref in a from_ref...to_ref diff expression]:to ref:_prek__git_refs"
+    "--last-commit[run hooks against the last commit]"
+    "--stage=[the stage during which the hook is fired]:stage:_prek__hook_stages"
+    "--show-diff-on-failure[when hooks fail, run \`git diff\` directly afterward]"
+    "--fail-fast[stop running hooks after the first failure]"
+    "--dry-run[print the hooks that would have been run without running them]"
+  )
+}
+
+_prek__cache_commands() {
+  local -a commands
+  commands=(
+    "dir:show the location of the prek cache"
+    "gc:remove unused cached repositories, hook environments, and other data"
+    "clean:remove all prek cached data"
+    "size:show the size of the prek cache"
+  )
+  _describe -t commands "prek cache command" commands
+}
+
+_prek__util_commands() {
+  local -a commands
+  commands=(
+    "identify:show file identification tags"
+    "list-builtins:list all built-in hooks bundled with prek"
+    "init-template-dir:install Git shims in a directory for \`git config init.templateDir\`"
+    "yaml-to-toml:convert a YAML configuration file to prek.toml"
+  )
+  _describe -t commands "prek util command" commands
+}
+
+_prek__self_commands() {
+  local -a commands
+  commands=(
+    "update:update prek"
+  )
+  _describe -t commands "prek self command" commands
+}
+
+_prek__commands() {
+  local -a commands
+  commands=(
+    "install:install prek Git shims into Git's effective hooks directory"
+    "prepare-hooks:prepare environments for all hooks used in the config file"
+    "run:run hooks"
+    "list:list hooks configured in the current workspace"
+    "uninstall:uninstall prek Git shims"
+    "validate-config:validate configuration files (prek.toml or .pre-commit-config.yaml)"
+    "validate-manifest:validate \`.pre-commit-hooks.yaml\` files"
+    "sample-config:produce a sample configuration file"
+    "auto-update:auto-update the \`rev\` field of repositories to the latest version"
+    "cache:manage the prek cache"
+    "try-repo:try the pre-commit hooks in the current repo"
+    "util:utility commands"
+    "self:prek self management"
+  )
+  _describe -t commands "prek command" commands
+}
+
+_prek__install() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "*--skip=[skip the specified hooks or projects]:hook or project:_prek__hooks_or_projects" \
+    "(-f --overwrite)"{-f,--overwrite}"[overwrite existing Git shims]" \
+    "--prepare-hooks[also prepare environments for all hooks used in the config file]" \
+    "*"{-t+,--hook-type=}"[which Git shim(s) to install]:hook type:_prek__hook_stages" \
+    "--allow-missing-config[allow a missing configuration file]" \
+    "--git-dir=[install Git shims into the \`hooks\` subdirectory of the given git directory]:git dir:_files -/" \
+    "*: :_prek__hooks_or_projects"
+}
+
+_prek__prepare_hooks() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "*--skip=[skip the specified hooks or projects]:hook or project:_prek__hooks_or_projects" \
+    "*: :_prek__hooks_or_projects"
+}
+
+_prek__run() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "${_prek__run_options[@]}" \
+    "*: :_prek__hooks_or_projects"
+}
+
+_prek__list() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "*--skip=[skip the specified hooks or projects]:hook or project:_prek__hooks_or_projects" \
+    "--hook-stage=[show only hooks that have the specified stage]:stage:_prek__hook_stages" \
+    "--language=[show only hooks that are implemented in the specified language]:language:_prek__languages" \
+    "--output-format=[the output format]:format:_prek__output_formats" \
+    "*: :_prek__hooks_or_projects"
+}
+
+_prek__uninstall() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "--all[uninstall all prek-managed Git shims]" \
+    "*"{-t+,--hook-type=}"[which Git shim(s) to uninstall]:hook type:_prek__hook_stages" \
+    "--git-dir=[uninstall Git shims from the \`hooks\` subdirectory of the given git directory]:git dir:_files -/"
+}
+
+_prek__validate_config() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "*: :_prek__config_files"
+}
+
+_prek__validate_manifest() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "*: :_prek__manifest_files"
+}
+
+_prek__sample_config() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "(-f --file)"{-f-,--file=-}"[write the sample config to a file]::file:_files" \
+    "--format=[select the sample configuration format]:format:_prek__sample_formats"
+}
+
+_prek__auto_update() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "--bleeding-edge[update to the bleeding edge of the default branch]" \
+    "--freeze[store \"frozen\" hashes in \`rev\` instead of tag names]" \
+    "*--repo=[only update this repository]:repo:" \
+    "*--exclude-repo=[do not update this repository]:repo:" \
+    "*--include-tag=[only consider tags matching this glob pattern]:pattern:" \
+    "*--exclude-tag=[ignore tags matching this glob pattern]:pattern:" \
+    "*--repo-include-tag=[only consider tags matching this glob pattern for a repository (<repo>=<pattern>)]:repo=pattern:" \
+    "*--repo-exclude-tag=[ignore tags matching this glob pattern for a repository (<repo>=<pattern>)]:repo=pattern:" \
+    "--dry-run[do not write changes to the config file, only display what would be changed]" \
+    "--exit-code[exit with status 1 if updates are available]" \
+    "--check[alias of \`--dry-run --exit-code\`]" \
+    "(-j --jobs)"{-j+,--jobs=}"[number of threads to use]:jobs:" \
+    "--cooldown-days=[minimum release age (in days) required for a version to be eligible]:days:"
+}
+
+_prek__cache() {
+  local curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "1: :->command" \
+    "*::arg:->args" && ret=0
+
+  case $state in
+    command)
+      _prek__cache_commands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:prek-cache-$line[1]:"
+      case $line[1] in
+        dir|clean)
+          _arguments -s -S "${_prek__global_options[@]}" && ret=0
+          ;;
+        gc)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "--dry-run[print what would be removed, but do not delete anything]" && ret=0
+          ;;
+        size)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "(-H --human)"{-H,--human}"[display the cache size in human-readable format]" && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_prek__try_repo() {
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "--rev=[manually select a rev to run against]:rev:" \
+    "${_prek__run_options[@]}" \
+    "1:repository:_urls" \
+    "*: :_prek__hooks_or_projects"
+}
+
+_prek__util() {
+  local curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "1: :->command" \
+    "*::arg:->args" && ret=0
+
+  case $state in
+    command)
+      _prek__util_commands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:prek-util-$line[1]:"
+      case $line[1] in
+        identify)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "--output-format=[the output format]:format:_prek__output_formats" \
+            "*:path:_files" && ret=0
+          ;;
+        list-builtins)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "--output-format=[the output format]:format:_prek__output_formats" && ret=0
+          ;;
+        init-template-dir)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "--no-allow-missing-config[assume cloned repos should have a \`pre-commit\` config]" \
+            "*"{-t+,--hook-type=}"[which Git shim(s) to install]:hook type:_prek__hook_stages" \
+            "1:directory:_files -/" && ret=0
+          ;;
+        yaml-to-toml)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "(-o --output)"{-o+,--output=}"[path to write the generated prek.toml file]:output:_files" \
+            "--force[overwrite the output file if it already exists]" \
+            "1::yaml config:_prek__yaml_files" && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_prek__self() {
+  local curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "1: :->command" \
+    "*::arg:->args" && ret=0
+
+  case $state in
+    command)
+      _prek__self_commands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:prek-self-$line[1]:"
+      case $line[1] in
+        update)
+          _arguments -s -S \
+            "${_prek__global_options[@]}" \
+            "--token=[a GitHub token for authentication]:token:" \
+            "1::target version:" && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+function _prek() {
+  local curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _prek__init_options
+
+  _arguments -C -s -S \
+    "${_prek__global_options[@]}" \
+    "${_prek__run_options[@]}" \
+    "1: :->command_or_hook" \
+    "*::arg:->args" && ret=0
+
+  case $state in
+    command_or_hook)
+      _alternative \
+        "commands:prek command:_prek__commands" \
+        "hooks:hook or project:_prek__hooks_or_projects" && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:prek-$line[1]:"
+      case $line[1] in
+        install)           _prek__install ;;
+        prepare-hooks)     _prek__prepare_hooks ;;
+        run)               _prek__run ;;
+        list)              _prek__list ;;
+        uninstall)         _prek__uninstall ;;
+        validate-config)   _prek__validate_config ;;
+        validate-manifest) _prek__validate_manifest ;;
+        sample-config)     _prek__sample_config ;;
+        auto-update)       _prek__auto_update ;;
+        cache)             _prek__cache ;;
+        try-repo)          _prek__try_repo ;;
+        util)              _prek__util ;;
+        self)              _prek__self ;;
+        *)
+          _prek__hooks_or_projects && ret=0
+          ;;
+      esac
+      ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_prek "$@"
