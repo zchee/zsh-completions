@@ -1,0 +1,130 @@
+#compdef stylua
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# github.com/JohnnyMorganz/StyLua
+#
+# -----------------------------------------------------------------------------
+#
+# stylua 2.5.2
+# A utility to format Lua code
+#
+# USAGE:
+#     stylua [OPTIONS] [FILES]...
+#
+# ARGS:
+#     <FILES>...    A list of files to format
+#
+# OPTIONS:
+#     -a, --allow-hidden                Whether to traverse hidden files/directories
+#     -c, --check                       Runs in 'check' mode
+#         --color <COLOR>               Use colored output [Always, Auto, Never]
+#     -f, --config-path <CONFIG_PATH>   Specify path to stylua.toml configuration file
+#     -g, --glob <GLOB>                 Glob patterns to test against which files to check
+#     -h, --help                        Print help information
+#         --lsp                         Run Stylua as a language server (following LSP protocol)
+#         --no-editorconfig             Disables the EditorConfig feature
+#         --no-ignore-vcs               Continue formatting files excluded from version control
+#         --num-threads <NUM_THREADS>   The number of threads to use to format files in parallel
+#         --output-format <FORMAT>      Configures the diff output [Standard, Unified, Json, Summary]
+#         --range-end <RANGE_END>       An ending range to format files (byte offset)
+#         --range-start <RANGE_START>   A starting range to format files (byte offset)
+#         --respect-ignores             Respect .styluaignore and glob matching for direct paths
+#     -s, --search-parent-directories   Search parent directories for stylua.toml
+#         --stdin-filepath <PATH>       Specify the location of the file passed into stdin
+#     -v, --verbose                     Enables verbose output
+#     -V, --version                     Print version information
+#         --verify                      Verifies the output correctness after formatting
+#
+# FORMATTING OPTIONS:
+#         --call-parentheses <VALUE>            [Always, NoSingleString, NoSingleTable, None, Input]
+#         --collapse-simple-statement <VALUE>   [Never, FunctionOnly, ConditionalOnly, Always]
+#         --column-width <COLUMN_WIDTH>         The column width to use to attempt to wrap lines
+#         --indent-type <INDENT_TYPE>           The type of indents to use [Tabs, Spaces]
+#         --indent-width <INDENT_WIDTH>         The width of a single indentation level
+#         --line-endings <LINE_ENDINGS>         The type of line endings to use [Unix, Windows]
+#         --preserve-block-newline-gaps <V>     [Never, Preserve]
+#         --quote-style <QUOTE_STYLE>           [AutoPreferDouble, AutoPreferSingle, ForceDouble, ForceSingle]
+#         --sort-requires                       Enable requires sorting
+#         --space-after-function-names <V>      [Never, Definitions, Calls, Always]
+#         --syntax <SYNTAX>                     [All, Lua51, Lua52, Lua53, Lua54, Luau, LuaJit, CfxLua]
+#
+# -----------------------------------------------------------------------------
+
+function _stylua() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  _arguments -C -s -S \
+    '(-a --allow-hidden)'{-a,--allow-hidden}'[Whether to traverse hidden files/directories]' \
+    '(-c --check)'{-c,--check}"[Runs in 'check' mode]" \
+    '--color=[Use colored output]:when:(Always Auto Never)' \
+    '(-f --config-path)'{-f+,--config-path=}'[Specify path to stylua.toml configuration file]:config file:_files -g "(|.)*.toml"' \
+    '*'{-g+,--glob=}'[Glob patterns to test against which files to check]:glob pattern: ' \
+    '--lsp[Run Stylua as a language server (following LSP protocol)]' \
+    '--no-editorconfig[Disables the EditorConfig feature]' \
+    '--no-ignore-vcs[Continue formatting files excluded from version control]' \
+    '--num-threads=[The number of threads to use to format files in parallel]:threads: ' \
+    "--output-format=[Configures the diff output when using 'check' mode]:format:(Standard Unified Json Summary)" \
+    '--range-end=[An ending range to format files, given as a byte offset]:byte offset: ' \
+    '--range-start=[A starting range to format files, given as a byte offset]:byte offset: ' \
+    '--respect-ignores[Respect .styluaignore and glob matching for file paths provided directly]' \
+    '(-s --search-parent-directories)'{-s,--search-parent-directories}'[Search parent directories for stylua.toml]' \
+    '--stdin-filepath=[Specify the location of the file that is being passed into stdin]:file:_files' \
+    '(-v --verbose)'{-v,--verbose}'[Enables verbose output]' \
+    '--verify[Verifies the output correctness after formatting]' \
+    '--call-parentheses=[Apply parentheses on function calls with single string or table arg]:value:(Always NoSingleString NoSingleTable None Input)' \
+    '--collapse-simple-statement=[Specify whether to collapse simple statements]:value:(Never FunctionOnly ConditionalOnly Always)' \
+    '--column-width=[The column width to use to attempt to wrap lines]:width: ' \
+    '--indent-type=[The type of indents to use]:type:(Tabs Spaces)' \
+    '--indent-width=[The width of a single indentation level]:width: ' \
+    '--line-endings=[The type of line endings to use]:line endings:(Unix Windows)' \
+    '--preserve-block-newline-gaps=[Preserve leading and trailing newline gaps for blocks]:value:(Never Preserve)' \
+    '--quote-style=[The style of quotes to use in string literals]:style:(AutoPreferDouble AutoPreferSingle ForceDouble ForceSingle)' \
+    '--sort-requires[Enable requires sorting]' \
+    '--space-after-function-names=[Apply spacing after function names]:value:(Never Definitions Calls Always)' \
+    '--syntax=[The type of Lua syntax to parse]:syntax:(All Lua51 Lua52 Lua53 Lua54 Luau LuaJit CfxLua)' \
+    '(: -)'{-h,--help}'[Print help information]' \
+    '(: -)'{-V,--version}'[Print version information]' \
+    '*:file:_files' \
+    && ret=0
+
+  return ret
+}
+
+_stylua "$*"
+
+# -----------------------------------------------------------------------------
+#
+# vim:ft=zsh:et:sts=2:sw=2
