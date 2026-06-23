@@ -1,0 +1,911 @@
+#compdef qwen
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/QwenLM/qwen-code
+#
+# 0.18.5 (Qwen Code)
+#
+# -----------------------------------------------------------------------------
+
+_qwen__message() {
+  _message "${1:-value}"
+}
+
+_qwen__prompt_text() {
+  _qwen__message 'prompt text'
+}
+
+# Rebuild $words/$CURRENT after consuming $1 leading words so a nested
+# _arguments can complete a subcommand leaf as if it were the command line.
+_qwen__shift_words() {
+  local shift_count=$1
+  local -a shifted
+  local index
+
+  shifted=()
+  for (( index = shift_count + 1; index <= ${#words}; index++ )); do
+    shifted+=("${words[index]}")
+  done
+
+  reply=("${shifted[@]}")
+  REPLY=$(( CURRENT - shift_count ))
+  (( REPLY < 1 )) && REPLY=1
+}
+
+_qwen__telemetry_targets() {
+  local -a targets
+  targets=(
+    'local:export telemetry locally'
+    'gcp:export telemetry to Google Cloud Platform'
+  )
+  _describe 'telemetry target' targets
+}
+
+_qwen__telemetry_protocols() {
+  local -a protocols
+  protocols=(
+    'grpc:OTLP over gRPC'
+    'http:OTLP over HTTP'
+  )
+  _describe 'telemetry protocol' protocols
+}
+
+_qwen__approval_modes() {
+  local -a modes
+  modes=(
+    'plan:plan only, no actions'
+    'default:prompt for approval'
+    'auto-edit:auto-approve edit tools'
+    'auto:LLM classifier auto-approves safe actions'
+    'yolo:auto-approve all tools'
+  )
+  _describe 'approval mode' modes
+}
+
+_qwen__channels() {
+  local -a channels
+  channels=(
+    'VSCode:VSCode channel'
+    'ACP:Agent Client Protocol channel'
+    'SDK:SDK channel'
+    'CI:continuous integration channel'
+    'desktop:desktop channel'
+  )
+  _describe 'channel' channels
+}
+
+_qwen__auth_types() {
+  local -a types
+  types=(
+    'openai:OpenAI authentication'
+    'anthropic:Anthropic authentication'
+    'qwen-oauth:Qwen OAuth authentication'
+    'gemini:Gemini authentication'
+    'vertex-ai:Vertex AI authentication'
+  )
+  _describe 'auth type' types
+}
+
+_qwen__input_formats() {
+  local -a formats
+  formats=(
+    'text:plain text input'
+    'stream-json:streaming JSON input'
+  )
+  _describe 'input format' formats
+}
+
+_qwen__output_formats() {
+  local -a formats
+  formats=(
+    'text:plain text output'
+    'json:single JSON result'
+    'stream-json:streaming JSON output'
+  )
+  _describe 'output format' formats
+}
+
+_qwen__scopes() {
+  local -a scopes
+  scopes=(
+    'user:user (global) scope'
+    'project:project (current workspace) scope'
+  )
+  _describe 'scope' scopes
+}
+
+_qwen__install_scopes() {
+  local -a scopes
+  scopes=(
+    'user:user (global) scope'
+    'project:project scope'
+    'workspace:current workspace only'
+  )
+  _describe 'scope' scopes
+}
+
+_qwen__mcp_transports() {
+  local -a transports
+  transports=(
+    'stdio:spawn a local stdio server'
+    'sse:connect to an SSE server'
+    'http:connect to an HTTP server'
+  )
+  _describe 'transport' transports
+}
+
+_qwen__mcp_budget_modes() {
+  local -a modes
+  modes=(
+    'enforce:refuse connects past the cap'
+    'warn:surface a warning at >=75% of budget'
+    'off:pure observability'
+  )
+  _describe 'budget mode' modes
+}
+
+# Global options shared by the root command and every subcommand.
+_qwen__global_option_specs() {
+  reply=(
+    '--telemetry[enable telemetry (deprecated; use telemetry.enabled setting)]'
+    '--telemetry-target=[telemetry target (deprecated)]:target:_qwen__telemetry_targets'
+    '--telemetry-otlp-endpoint=[OTLP endpoint for telemetry (deprecated)]:endpoint:_qwen__message'
+    '--telemetry-otlp-protocol=[OTLP protocol for telemetry (deprecated)]:protocol:_qwen__telemetry_protocols'
+    '--telemetry-log-prompts[log user prompts for telemetry (deprecated)]'
+    '--telemetry-outfile=[redirect telemetry output to a file (deprecated)]:file:_files'
+    '(-d --debug)'{-d,--debug}'[run in debug mode]'
+    '--bare[minimal mode, only honor explicitly provided CLI inputs]'
+    '--proxy=[proxy for Qwen Code (deprecated; use proxy setting)]:proxy:_qwen__message'
+    '--chat-recording[enable chat recording to disk]'
+    '(-h --help)'{-h,--help}'[show help]'
+  )
+}
+
+_qwen__top_commands() {
+  local -a commands
+  commands=(
+    'mcp:manage MCP servers'
+    'extensions:manage Qwen Code extensions'
+    'auth:configure authentication (removed)'
+    'hooks:manage Qwen Code hooks'
+    'hook:manage Qwen Code hooks'
+    'channel:manage messaging channels (Telegram, Discord, etc.)'
+    'review:internal helpers used by the /review skill'
+    'serve:run Qwen Code as a local HTTP daemon'
+    'sessions:manage Qwen Code sessions'
+  )
+  _describe 'qwen command' commands
+}
+
+# -- mcp ----------------------------------------------------------------------
+
+_qwen__mcp_commands() {
+  local -a commands
+  commands=(
+    'add:add a server'
+    'remove:remove a server'
+    'list:list all configured MCP servers'
+    'reconnect:reconnect MCP server(s)'
+    'approve:approve a gated MCP server'
+    'reject:reject a gated MCP server'
+  )
+  _describe 'mcp command' commands
+}
+
+_qwen__complete_mcp() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:mcp command:->command' \
+    '*::mcp argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__mcp_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        add)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '(-s --scope)'{-s,--scope}'[configuration scope]:scope:_qwen__scopes' \
+            '(-t --transport)'{-t,--transport}'[transport type]:transport:_qwen__mcp_transports' \
+            '*'{-e,--env}'[set environment variables (KEY=value)]:env:_qwen__message' \
+            '*'{-H,--header}'[set HTTP headers for SSE/HTTP transports]:header:_qwen__message' \
+            '--timeout=[connection timeout in milliseconds]:milliseconds:_qwen__message' \
+            '--trust[trust the server (bypass tool call confirmations)]' \
+            '--description=[set the description for the server]:description:_qwen__message' \
+            '--include-tools=[comma-separated list of tools to include]:tools:_qwen__message' \
+            '--exclude-tools=[comma-separated list of tools to exclude]:tools:_qwen__message' \
+            '--oauth-client-id=[OAuth client ID]:client id:_qwen__message' \
+            '--oauth-client-secret=[OAuth client secret]:client secret:_qwen__message' \
+            '--oauth-redirect-uri=[OAuth redirect URI]:uri:_qwen__message' \
+            '--oauth-authorization-url=[OAuth authorization URL]:url:_qwen__message' \
+            '--oauth-token-url=[OAuth token URL]:url:_qwen__message' \
+            '--oauth-scopes=[OAuth scopes (comma-separated)]:scopes:_qwen__message' \
+            '1:server name:_qwen__message' \
+            '2:command or URL:_qwen__message' \
+            '*::server argument:_normal' && ret=0
+          ;;
+        remove)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:server name:_qwen__message' && ret=0
+          ;;
+        reconnect|approve|reject)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '::server name:_qwen__message' && ret=0
+          ;;
+        list)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s ${specs[@]} && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+# -- extensions ---------------------------------------------------------------
+
+_qwen__extensions_commands() {
+  local -a commands
+  commands=(
+    'install:install an extension'
+    'uninstall:uninstall an extension'
+    'list:list installed extensions'
+    'update:update all or a named extension'
+    'disable:disable an extension'
+    'enable:enable an extension'
+    'link:link an extension from a local path'
+    'new:create a new extension from a boilerplate example'
+    'settings:manage extension settings'
+    'sources:manage marketplace sources for discovering extensions'
+  )
+  _describe 'extensions command' commands
+}
+
+_qwen__extensions_settings_commands() {
+  local -a commands
+  commands=(
+    'set:set a specific setting for an extension'
+    'list:list all settings for an extension'
+  )
+  _describe 'settings command' commands
+}
+
+_qwen__extensions_sources_commands() {
+  local -a commands
+  commands=(
+    'add:add a marketplace source (Claude format)'
+    'remove:remove a marketplace source'
+    'list:list configured marketplace sources'
+    'update:re-fetch a marketplace source and its plugin listing'
+  )
+  _describe 'sources command' commands
+}
+
+_qwen__complete_extensions_settings() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:settings command:->command' \
+    '*::settings argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__extensions_settings_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        set)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '--scope=[configuration scope]:scope:_qwen__scopes' \
+            '1:extension name:_qwen__message' \
+            '2:setting:_qwen__message' && ret=0
+          ;;
+        list)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:extension name:_qwen__message' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_qwen__complete_extensions_sources() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:sources command:->command' \
+    '*::sources argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__extensions_sources_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        add)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:source:_qwen__message' && ret=0
+          ;;
+        remove|update)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:source name:_qwen__message' && ret=0
+          ;;
+        list)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s ${specs[@]} && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_qwen__complete_extensions() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:extensions command:->command' \
+    '*::extensions argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__extensions_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        install)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '--ref=[the git ref to install from]:ref:_qwen__message' \
+            '--auto-update[enable auto-update for this extension]' \
+            '--pre-release[enable pre-release versions for this extension]' \
+            '--registry=[custom npm registry URL]:url:_qwen__message' \
+            '--consent[acknowledge security risks and skip confirmation]' \
+            '--scope=[scope to install the extension in]:scope:_qwen__install_scopes' \
+            '1:source:_qwen__message' && ret=0
+          ;;
+        uninstall)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:extension name:_qwen__message' && ret=0
+          ;;
+        update)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '--all[update all extensions]' \
+            '::extension name:_qwen__message' && ret=0
+          ;;
+        disable|enable)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '--scope=[configuration scope]:scope:_qwen__scopes' \
+            '1:extension name:_qwen__message' && ret=0
+          ;;
+        link|new)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:path:_files -/' \
+            '::template:_qwen__message' && ret=0
+          ;;
+        settings)
+          _qwen__complete_extensions_settings && ret=0
+          ;;
+        sources)
+          _qwen__complete_extensions_sources && ret=0
+          ;;
+        list)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s ${specs[@]} && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+# -- channel ------------------------------------------------------------------
+
+_qwen__channel_commands() {
+  local -a commands
+  commands=(
+    'start:start channels (all, or a single named channel)'
+    'stop:stop the running channel service'
+    'status:show channel service status'
+    'pairing:manage DM pairing requests'
+    'configure-weixin:configure WeChat channel (login via QR code)'
+  )
+  _describe 'channel command' commands
+}
+
+_qwen__channel_pairing_commands() {
+  local -a commands
+  commands=(
+    'list:list pending pairing requests for a channel'
+    'approve:approve a pending pairing request'
+  )
+  _describe 'pairing command' commands
+}
+
+_qwen__complete_channel_pairing() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:pairing command:->command' \
+    '*::pairing argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__channel_pairing_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        list)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:channel name:_qwen__message' && ret=0
+          ;;
+        approve)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:channel name:_qwen__message' \
+            '2:pairing code:_qwen__message' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_qwen__complete_channel() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:channel command:->command' \
+    '*::channel argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__channel_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        start)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '::channel name:_qwen__message' && ret=0
+          ;;
+        configure-weixin)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '::action:_qwen__message' && ret=0
+          ;;
+        pairing)
+          _qwen__complete_channel_pairing && ret=0
+          ;;
+        stop|status)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s ${specs[@]} && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+# -- sessions -----------------------------------------------------------------
+
+_qwen__sessions_commands() {
+  local -a commands
+  commands=(
+    'list:list sessions'
+  )
+  _describe 'sessions command' commands
+}
+
+_qwen__complete_sessions() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:sessions command:->command' \
+    '*::sessions argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__sessions_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        list)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s ${specs[@]} && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+# -- review -------------------------------------------------------------------
+
+_qwen__review_commands() {
+  local -a commands
+  commands=(
+    'fetch-pr:prepare a PR review worktree'
+    'pr-context:fetch PR metadata and emit a Markdown context file'
+    'load-rules:read project review rules from the base branch'
+    'deterministic:run deterministic typecheck/lint on changed files'
+    'presubmit:pre-submission checks for /review'
+    'cleanup:post-review cleanup of worktree, branch ref, and temp files'
+  )
+  _describe 'review command' commands
+}
+
+_qwen__complete_review() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:review command:->command' \
+    '*::review argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__review_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        fetch-pr|pr-context)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:PR number:_qwen__message' \
+            '2:owner/repo:_qwen__message' && ret=0
+          ;;
+        load-rules)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:base ref:_qwen__message' && ret=0
+          ;;
+        deterministic)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:worktree:_files -/' && ret=0
+          ;;
+        presubmit)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:PR number:_qwen__message' \
+            '2:commit SHA:_qwen__message' \
+            '3:owner/repo:_qwen__message' \
+            '4:output path:_files' && ret=0
+          ;;
+        cleanup)
+          _qwen__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            ${specs[@]} \
+            '1:target:_qwen__message' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+# -- serve --------------------------------------------------------------------
+
+_qwen__complete_serve() {
+  _qwen__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -s \
+    ${specs[@]} \
+    '--port=[TCP port to bind (0 = ephemeral)]:port:_qwen__message' \
+    '--hostname=[interface to bind]:hostname:_hosts' \
+    '--token=[bearer token required on every request]:token:_qwen__message' \
+    '--max-sessions=[cap on concurrent live sessions]:count:_qwen__message' \
+    '--max-pending-prompts-per-session=[per-session cap on accepted prompts]:count:_qwen__message' \
+    '--workspace=[absolute workspace path this daemon binds to]:path:_files -/' \
+    '--max-connections=[listener-level TCP connection cap]:count:_qwen__message' \
+    '--require-auth[refuse to start without a bearer token, even on loopback]' \
+    '--enable-session-shell[enable direct POST session shell execution]' \
+    '(--web --no-web)--web[serve the Web Shell UI at the daemon root path]' \
+    '(--web --no-web)--no-web[run an API-only daemon]' \
+    '--open[open the Web Shell in a browser once listening]' \
+    '--event-ring-size=[per-session SSE replay ring depth]:size:_qwen__message' \
+    '--http-bridge[Stage 1 mode, one qwen --acp child per daemon]' \
+    '--mcp-client-budget=[cap on live MCP clients in the ACP child]:count:_qwen__message' \
+    '--mcp-budget-mode=[how --mcp-client-budget is enforced]:mode:_qwen__mcp_budget_modes' \
+    '*--allow-origin=[cross-origin allowlist for browser webui clients]:origin:_qwen__message' \
+    '--allow-private-auth-base-url[allow localhost/private-network baseUrl values]' \
+    '--prompt-deadline-ms=[server-side wallclock cap on prompt (ms)]:milliseconds:_qwen__message' \
+    '--writer-idle-timeout-ms=[per-SSE-connection idle deadline (ms)]:milliseconds:_qwen__message' \
+    '--channel-idle-timeout-ms=[keep ACP child alive after last session closes (ms)]:milliseconds:_qwen__message' \
+    '--session-reap-interval-ms=[session reaper scan interval (ms)]:milliseconds:_qwen__message' \
+    '--session-idle-timeout-ms=[idle timeout before a disconnected session is reaped (ms)]:milliseconds:_qwen__message' \
+    '--permission-response-timeout-ms=[wall-clock timeout for a permission response (ms)]:milliseconds:_qwen__message' \
+    '--rate-limit[enable per-tier HTTP rate limiting]' \
+    '--rate-limit-prompt=[max prompt requests per window per client]:count:_qwen__message' \
+    '--rate-limit-mutation=[max mutation requests per window per client]:count:_qwen__message' \
+    '--rate-limit-read=[max read requests per window per client]:count:_qwen__message' \
+    '--rate-limit-window-ms=[rate limit window duration (ms)]:milliseconds:_qwen__message' \
+    '(-v --version)'{-v,--version}'[show version number]'
+}
+
+# -- help-only leaf (hooks, auth) ---------------------------------------------
+
+_qwen__complete_help_only_leaf() {
+  _qwen__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  local -a specs
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -s ${specs[@]}
+}
+
+# -- root ---------------------------------------------------------------------
+
+# Options accepted directly by the default `qwen [query..]` command.
+_qwen__root_option_specs() {
+  reply=(
+    '(-m --model)'{-m,--model}'=[model]:model:_qwen__message'
+    '(-p --prompt)'{-p,--prompt}'=[prompt, appended to stdin (deprecated)]:prompt:_qwen__message'
+    '(-i --prompt-interactive)'{-i,--prompt-interactive}'=[execute prompt and continue interactively]:prompt:_qwen__message'
+    '--system-prompt=[override the main session system prompt]:prompt:_qwen__message'
+    '--append-system-prompt=[append instructions to the system prompt]:prompt:_qwen__message'
+    '(-s --sandbox)'{-s,--sandbox}'[run in sandbox]'
+    '--sandbox-image=[sandbox image URI (deprecated)]:image:_qwen__message'
+    '(-y --yolo)'{-y,--yolo}'[automatically accept all actions (YOLO mode)]'
+    '--approval-mode=[set the approval mode]:mode:_qwen__approval_modes'
+    '--acp[start the agent in ACP mode]'
+    '--experimental-lsp[enable experimental LSP feature]'
+    '--channel=[channel identifier]:channel:_qwen__channels'
+    '*--allowed-mcp-server-names=[allowed MCP server names]:name:_qwen__message'
+    '--mcp-config=[MCP server configuration as JSON string or file path]:config:_files'
+    '*--allowed-tools=[tools to allow, bypassing confirmation]:tool:_qwen__message'
+    '(-e --extensions)'{-e,--extensions}'=[list of extensions to use]:extension:_qwen__message'
+    '(-l --list-extensions)'{-l,--list-extensions}'[list all available extensions and exit]'
+    '*'{--include-directories,--add-dir}'=[additional directories to include in the workspace]:directory:_files -/'
+    '--openai-logging[enable logging of OpenAI API calls]'
+    '--openai-logging-dir=[custom directory for OpenAI API logs]:directory:_files -/'
+    '--openai-api-key=[OpenAI API key]:key:_qwen__message'
+    '--openai-base-url=[OpenAI base URL for custom endpoints]:url:_qwen__message'
+    '--screen-reader[enable screen reader mode for accessibility]'
+    '--input-format=[format consumed from standard input]:format:_qwen__input_formats'
+    '(-o --output-format)'{-o,--output-format}'=[format of the CLI output]:format:_qwen__output_formats'
+    '--include-partial-messages[include partial assistant messages (stream-json)]'
+    '--json-fd=[file descriptor for structured JSON event output]:fd:_qwen__message'
+    '--json-file=[file path for structured JSON event output]:file:_files'
+    '--json-schema=[JSON Schema the final output must conform to]:schema:_qwen__message'
+    '--input-file=[file path for receiving remote input commands]:file:_files'
+    '(-c --continue)'{-c,--continue}'[resume the most recent session for the project]'
+    '(-r --resume)'{-r,--resume}'=[resume a specific session by ID]::session id:_qwen__message'
+    '--session-id=[specify a session ID for this run]:session id:_qwen__message'
+    '--fork-session[create a new forked session from the resumed session]'
+    '--worktree=[start the session inside a git worktree]::slug:_qwen__message'
+    '--max-session-turns=[maximum number of session turns]:count:_qwen__message'
+    '--max-wall-time=[run-level wall-clock budget for headless runs]:duration:_qwen__message'
+    '--max-tool-calls=[maximum cumulative tool calls during the run]:count:_qwen__message'
+    '*--core-tools=[core tool paths]:tool:_qwen__message'
+    '*--exclude-tools=[tools to exclude]:tool:_qwen__message'
+    '*--disabled-slash-commands=[slash command names to hide/disable]:command:_qwen__message'
+    '--auth-type=[authentication type]:type:_qwen__auth_types'
+    '(-v --version)'{-v,--version}'[show version number]'
+  )
+}
+
+function _qwen() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+  local -a specs root_specs
+
+  _qwen__global_option_specs
+  specs=("${reply[@]}")
+  _qwen__root_option_specs
+  root_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    ${root_specs[@]} \
+    '1:qwen command or query:->command' \
+    '*::qwen argument:->args' && ret=0
+
+  case $state in
+    command)
+      _qwen__top_commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        mcp)
+          _qwen__complete_mcp && ret=0
+          ;;
+        extensions)
+          _qwen__complete_extensions && ret=0
+          ;;
+        channel)
+          _qwen__complete_channel && ret=0
+          ;;
+        sessions)
+          _qwen__complete_sessions && ret=0
+          ;;
+        review)
+          _qwen__complete_review && ret=0
+          ;;
+        serve)
+          _qwen__complete_serve && ret=0
+          ;;
+        hooks|hook|auth)
+          _qwen__complete_help_only_leaf && ret=0
+          ;;
+        *)
+          _arguments -s \
+            ${specs[@]} \
+            ${root_specs[@]} \
+            '*:query:_qwen__prompt_text' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_qwen "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
