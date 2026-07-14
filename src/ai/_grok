@@ -1,0 +1,3409 @@
+#compdef grok
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://x.ai/cli
+#
+# 0.2.87 (Grok CLI)
+#
+# -----------------------------------------------------------------------------
+
+autoload -U is-at-least
+
+_grok() {
+  typeset -A opt_args
+  typeset -a _arguments_options
+  local ret=1
+
+  if is-at-least 5.2; then
+    _arguments_options=(-s -S -C)
+  else
+    _arguments_options=(-s -C)
+  fi
+
+  local context curcontext="$curcontext" state line
+  _arguments "${_arguments_options[@]}" : \
+    '--cwd=[Working directory]:CWD:_files' \
+    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+    '*--allow=[Permission allow rule (Claude Code\: --allowedTools)]:RULE:_default' \
+    '*--deny=[Permission deny rule (Claude Code\: --disallowedTools)]:RULE:_default' \
+    '(--prompt-json --prompt-file)-p+[Single-turn prompt. Prints the response to stdout and exits]:PROMPT:_default' \
+    '(--prompt-json --prompt-file)--single=[Single-turn prompt. Prints the response to stdout and exits]:PROMPT:_default' \
+    '(-p --single --prompt-file)--prompt-json=[Single-turn prompt as JSON content blocks]:JSON:_default' \
+    '(-p --single --prompt-json)--prompt-file=[Single-turn prompt from a file]:PATH:_files' \
+    '--output-format=[Output format for headless mode]:OUTPUT_FORMAT:(plain json streaming-json)' \
+    '--json-schema=[JSON Schema for structured output. When set, the model is constrained to produce JSON matching this schema. Implies --output-format json. Example\: --json-schema '\''{"type"\:"object","properties"\:{"name"\:{"type"\:"string"}}}'\'']:SCHEMA:_default' \
+    '-m+[Model ID to use]:MODEL:_grok_models' \
+    '--model=[Model ID to use]:MODEL:_grok_models' \
+    '--reasoning-effort=[Reasoning effort for reasoning models]:EFFORT:(none minimal low medium high xhigh)' \
+    '--rules=[Extra rules to append to the system prompt]:RULES:_default' \
+    '--compaction-mode=[Compaction mode \[summary|transcript|segments\]\: \`summary\` (default) adds no pointer; \`transcript\` points at the raw transcript; \`segments\` persists per-segment markdown to grep. Sets \`GROK_COMPACTION_MODE\`]:MODE:((summary\:"(default) adds no pointer" transcript\:"points at the raw transcript" segments\:"persists per-segment markdown to grep"))' \
+    '--compaction-detail=[Segments verbatim detail \[none|minimal|balanced|verbose\] (default \`verbose\`). Only affects \`--compaction-mode segments\`. Sets \`GROK_COMPACTION_DETAIL\`]:DETAIL:(none minimal balanced verbose)' \
+    '--system-prompt-override=[Override the agent'\''s system prompt (Claude Code\: --system-prompt)]:PROMPT:_default' \
+    '(-c --continue)-r+[Resume a session by ID, or the most recent if omitted]::SESSION_ID:_default' \
+    '(-c --continue)--resume=[Resume a session by ID, or the most recent if omitted]::SESSION_ID:_default' \
+    '(-c --continue)--load=[Resume a previous session by session ID (alias for --resume)]:SESSION_ID:_default' \
+    '-s+[Use a specific session UUID for a **new** conversation (must be a valid UUID and must not already exist under the target session directory). With \`--resume\`/\`--continue\`, only valid together with \`--fork-session\` (names the forked session). Does not resume existing sessions — use \`--resume\` / \`--continue\` instead]:SESSION_ID:_default' \
+    '--session-id=[Use a specific session UUID for a **new** conversation (must be a valid UUID and must not already exist under the target session directory). With \`--resume\`/\`--continue\`, only valid together with \`--fork-session\` (names the forked session). Does not resume existing sessions — use \`--resume\` / \`--continue\` instead]:SESSION_ID:_default' \
+    '-w+[Start the session in a new git worktree, optionally named]::WORKTREE:_default' \
+    '--worktree=[Start the session in a new git worktree, optionally named]::WORKTREE:_default' \
+    '--worktree-ref=[Branch, tag, or commit to base the worktree on (with \`--worktree\`). Defaults to the current HEAD of the source checkout when omitted]:WORKTREE_REF:_default' \
+    '--ref=[Branch, tag, or commit to base the worktree on (with \`--worktree\`). Defaults to the current HEAD of the source checkout when omitted]:WORKTREE_REF:_default' \
+    '--agent=[Agent name or definition file path]:NAME:_default' \
+    '--agents=[Inline subagent definitions as JSON]:JSON:_default' \
+    '--tools=[Built-in tools to allow (comma-separated)]:TOOLS:_default' \
+    '--disallowed-tools=[Built-in tools to remove (comma-separated)]:TOOLS:_default' \
+    '--effort=[Effort level]:LEVEL:(low medium high xhigh max)' \
+    '--max-turns=[Maximum number of agent turns]:N:_default' \
+    '--permission-mode=[Permission mode]:MODE:(default acceptEdits auto dontAsk bypassPermissions plan)' \
+    '(--no-wait-for-background)--background-wait-timeout=[Max seconds to wait for background work after the first turn ends (headless only). Applies to bash/monitor \`task_completed\`, background subagents (\`SubagentFinished\`), and any still-running non-persistent work. Persistent \`monitor(persistent\:true)\` never completes and always waits the full timeout — use \`--no-wait-for-background\` or a lower timeout for throughput. Conflicts with \`--no-wait-for-background\`]:SECS:_default' \
+    '(--no-subagents)--best-of-n=[Run the task N ways in parallel and pick the best (headless only)]:N:_default' \
+    '--sandbox=[Sandbox profile for filesystem and network access]:PROFILE:_default' \
+    '--storage-mode=[Session storage mode\: local or writeback]:MODE:(local writeback)' \
+    '--client-identifier=[Override the client identifier sent to the agent]:ID:_default' \
+    '--hunk-tracker-mode=[Hunk tracker mode\: agent_only, all_dirty, or off ("disabled" is an alias for off, which turns the hunk tracker off entirely)]:MODE:((agent_only\:"track only agent-modified hunks" all_dirty\:"track all dirty hunks" off\:"disable the hunk tracker" disabled\:"alias for off"))' \
+    '--installer=[Set the installer field in config.toml]:VALUE:_default' \
+    '-v[Print version]' \
+    '--version[Print version]' \
+    '--debug[Enable debug logging]' \
+    '--always-approve[Auto-approve all tool executions]' \
+    '--trust[Trust this folder and persist the decision to the trust store]' \
+    '--verbatim[Send the prompt exactly as given]' \
+    '(-r --resume --load)-c[Continue the most recent session for the current working directory]' \
+    '(-r --resume --load)--continue[Continue the most recent session for the current working directory]' \
+    '--fork-session[When resuming (\`--resume\` / \`--continue\`), create a new session ID instead of reusing the original (optionally set via \`--session-id\`)]' \
+    '--restore-code[Check out the original session'\''s commit when resuming]' \
+    '--no-plan[Disable plan mode]' \
+    '--no-subagents[Disable subagent spawning]' \
+    '--no-ask-user[Disable structured question prompts from the agent]' \
+    '(--no-memory)--experimental-memory[Enable cross-session memory]' \
+    '(--experimental-memory)--no-memory[Disable cross-session memory for this session]' \
+    '--disable-web-search[Disable web search and web fetch tools]' \
+    '(--no-subagents)--check[Append a self-verification loop to the prompt (headless only)]' \
+    '--no-wait-for-background[Exit as soon as the first agent turn ends, without waiting for pending background bash/monitor tasks or background subagents (headless only). Default for all \`grok -p\` runs is to wait (up to \`--background-wait-timeout\`) so eval harnesses see full task completion. Use this for fast scripts that only need the first turn'\''s text. Does not wait for server-side auto-wake output or persistent monitors (those hit the timeout)]' \
+    '--terminal[Enable terminal support for the agent]' \
+    '--fs-read[Enable client-side file reads]' \
+    '--fs-write[Enable client-side file writes]' \
+    '--no-auto-update[Disable automatic updates for this session]' \
+    '--todo-gate[Enable the runtime turn-end TodoGate for this session]' \
+    '--no-alt-screen[Run inline instead of using the terminal alternate screen]' \
+    '--minimal[Experimental\: scrollback-native rendering. Finalized blocks are printed into the terminal'\''s native scrollback (use the terminal'\''s own scroll / selection); a small pinned region holds the prompt + running turn]' \
+    '--log-sampling[Write sampling events to ~/.grok/logs/sampling.jsonl]' \
+    '--force-login[Show the login screen even when credentials are already available]' \
+    '--oauth[Use OAuth when the welcome screen starts authentication]' \
+    '(--no-leader)--leader[Connect to a shared leader process]' \
+    '(--leader)--no-leader[Run standalone even when leader mode is configured]' \
+    '(--always-approve)--yolo[(hidden) Auto-approve all tool executions (alias of --always-approve)]' \
+    '(--always-approve --yolo)--dangerously-skip-permissions[(hidden) Auto-approve all tool executions (Claude Code\: --dangerously-skip-permissions)]' \
+    '(--check)--self-verify[(hidden) Append a self-verification loop to the prompt (alias of --check)]' \
+    '(-p --single --prompt-json --prompt-file)--print=[(hidden) Single-turn prompt (Claude Code\: --print, alias of --single)]:PROMPT:_default' \
+    '*--allowedTools=[(hidden) Permission allow rule (Claude Code\: --allowedTools, alias of --allow)]:RULE:_default' \
+    '*--disallowedTools=[(hidden) Permission deny rule (Claude Code\: --disallowedTools, alias of --deny)]:RULE:_default' \
+    '(--rules)--append-system-prompt=[(hidden) Extra rules appended to the system prompt (Claude Code\: --append-system-prompt, alias of --rules)]:RULES:_default' \
+    '(--system-prompt-override)--system-prompt=[(hidden) Override the agent system prompt (Claude Code\: --system-prompt, alias of --system-prompt-override)]:PROMPT:_default' \
+    '-h[Print help]' \
+    '--help[Print help]' \
+    ":: :_grok_commands" \
+    "*::: :->grok" \
+    && ret=0
+  case $state in
+    (grok)
+      words=($line[1] "${words[@]}")
+      (( CURRENT += 1 ))
+      curcontext="${curcontext%:*:*}:grok-command-$line[1]:"
+      case $line[1] in
+        (agent)
+          _arguments "${_arguments_options[@]}" : \
+            '-m+[Model ID to use]:MODEL:_grok_models' \
+            '--model=[Model ID to use]:MODEL:_grok_models' \
+            '--reasoning-effort=[Reasoning effort for reasoning models]:EFFORT:(none minimal low medium high xhigh)' \
+            '--agent-profile=[Path to an agent profile file]:PATH:_files' \
+            '*--plugin-dir=[Load a plugin from this directory for this process only (repeatable). Highest-priority plugin scope; always trusted — hooks and MCP servers activate without a prompt. Used by the Agent SDKs to inject per-connection plugins]:DIR:_files -/' \
+            '--grok-ws-origin=[]:GROK_WS_ORIGIN:_default' \
+            '--grok-ws-url=[]:GROK_WS_URL:_default' \
+            '--cli-chat-proxy-base-url=[Override the CLI chat proxy base URL]:CLI_CHAT_PROXY_BASE_URL:_default' \
+            '--xai-api-base-url=[Override the public xAI API base URL]:XAI_API_BASE_URL:_default' \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--reauth[Run authentication before starting the agent]' \
+            '----reauthenticate[Run authentication before starting the agent]' \
+            '(--yolo)--always-approve[Auto-approve all tool executions]' \
+            '(--always-approve)--yolo[(hidden) Auto-approve all tool executions (alias of --always-approve)]' \
+            '(--no-leader)--leader[Connect to a shared leader process instead of starting a new agent. Allows multiple clients to share one backend. Defaults to \[cli\] use_leader in config.toml]' \
+            '(--leader)--no-leader[Start a new agent even when config enables leader mode]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__agent_commands" \
+            "*::: :->agent" \
+            && ret=0
+
+          case $state in
+            (agent)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-agent-command-$line[1]:"
+              case $line[1] in
+                (stdio)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (headless)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--grok-ws-origin=[]:GROK_WS_ORIGIN:_default' \
+                    '--grok-ws-url=[]:GROK_WS_URL:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (serve)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--bind=[Address for the server to listen on]:BIND:_default' \
+                    '--secret=[Secret token for client authentication (auto-generated if not provided)]:SECRET:_default' \
+                    '--remote=[Remote agent URL for proxy mode]:REMOTE:_default' \
+                    '--grok-ws-origin=[]:GROK_WS_ORIGIN:_default' \
+                    '--grok-ws-url=[]:GROK_WS_URL:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (leader)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--grok-ws-origin=[]:GROK_WS_ORIGIN:_default' \
+                    '--grok-ws-url=[]:GROK_WS_URL:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--no-exit-on-disconnect[Keep the leader running after the last client disconnects]' \
+                    '--relay-on-demand[Defer the grok.com relay WebSocket until the first headless IPC client registers. Without this flag the leader connects the relay eagerly at startup — required for bare leaders (devbox/systemd) that receive remote prompts *through* the relay. Passed by leaders auto-spawned from interactive clients (TUI/IDE), which only need the relay if a headless client appears]' \
+                    '--no-auto-update[Disable periodic auto-update checks for the leader]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__agent__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-agent-help-command-$line[1]:"
+                      case $line[1] in
+                        (stdio)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (headless)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (serve)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (leader)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (import)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--list[List available sessions without importing]' \
+            '--json[NDJSON output to stdout]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            '*::targets -- Session IDs or .jsonl paths to import. Omit to import all available sessions:_default' \
+            && ret=0
+          ;;
+        (inspect)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--json[Emit machine-readable JSON output]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (leader)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__leader_commands" \
+            "*::: :->leader" \
+            && ret=0
+
+          case $state in
+            (leader)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-leader-command-$line[1]:"
+              case $line[1] in
+                (list)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (info)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (kill)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (profile)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ":: :_grok__subcmd__leader__subcmd__profile_commands" \
+                    "*::: :->profile" \
+                    && ret=0
+
+                  case $state in
+                    (profile)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-leader-profile-command-$line[1]:"
+                      case $line[1] in
+                        (status)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--json[]' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (start)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                            '--output=[Output path for the profile]:OUTPUT:_files' \
+                            '--frequency-hz=[Sampling frequency in Hz]:FREQUENCY_HZ:_default' \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--json[]' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (stop)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--json[]' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__leader__subcmd__profile__subcmd__help_commands" \
+                            "*::: :->help" \
+                            && ret=0
+
+                          case $state in
+                            (help)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-leader-profile-help-command-$line[1]:"
+                              case $line[1] in
+                                (status)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (start)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (stop)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (help)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__leader__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-leader-help-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (info)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (kill)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (profile)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__leader__subcmd__help__subcmd__profile_commands" \
+                            "*::: :->profile" \
+                            && ret=0
+
+                          case $state in
+                            (profile)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-leader-help-profile-command-$line[1]:"
+                              case $line[1] in
+                                (status)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (start)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (stop)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (logout)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (login)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--legacy[Ignored (kept for backwards compatibility). OAuth2 is now the only auth method]' \
+            '(--device-auth --devbox)--oauth[Use Grok OAuth via auth.x.ai]' \
+            '(--oauth --devbox)--device-auth[Use device-code authentication for headless/remote environments]' \
+            '(--oauth --devbox)--device-code[Use device-code authentication for headless/remote environments]' \
+            '(--oauth --device-auth)--devbox[Mint credentials via explorer-service (devbox pods only)]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (mcp)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__mcp_commands" \
+            "*::: :->mcp" \
+            && ret=0
+
+          case $state in
+            (mcp)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-mcp-command-$line[1]:"
+              case $line[1] in
+                (list)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (add)
+                  _arguments "${_arguments_options[@]}" : \
+                    '-t+[Transport type. Defaults to stdio]:TRANSPORT:((stdio\:"Launch a local process and communicate over stdin/stdout"
+                  http\:"Connect to a remote server over streamable HTTP"
+                  sse\:"Connect to a remote server over Server-Sent Events"))' \
+                    '--transport=[Transport type. Defaults to stdio]:TRANSPORT:((stdio\:"Launch a local process and communicate over stdin/stdout"
+                  http\:"Connect to a remote server over streamable HTTP"
+                  sse\:"Connect to a remote server over Server-Sent Events"))' \
+                    '-s+[Config to write to\: user (~/.grok/config.toml) or project (./.grok/config.toml)]:SCOPE:((user\:"\`~/.grok/config.toml\`, available in all your projects"
+                  project\:"\`./.grok/config.toml\`, shared with everyone working in this directory"))' \
+                    '--scope=[Config to write to\: user (~/.grok/config.toml) or project (./.grok/config.toml)]:SCOPE:((user\:"\`~/.grok/config.toml\`, available in all your projects"
+                  project\:"\`./.grok/config.toml\`, shared with everyone working in this directory"))' \
+                    '*-e+[Environment variable for the server process (repeatable)]:KEY=value:_default' \
+                    '*--env=[Environment variable for the server process (repeatable)]:KEY=value:_default' \
+                    '*-H+[HTTP header for remote servers (repeatable)]:NAME: VALUE:_default' \
+                    '*--header=[HTTP header for remote servers (repeatable)]:NAME: VALUE:_default' \
+                    '--command=[Legacy alias for the positional command argument]:COMMAND:_default' \
+                    '*--args=[Legacy companion to --command]:LEGACY_ARGS:_default' \
+                    '--url=[Legacy alias for adding a remote server by URL]:URL:_default' \
+                    '--type=[Legacy transport type for --url servers]:TRANSPORT_TYPE:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help (see more with '\''--help'\'')]' \
+                    '--help[Print help (see more with '\''--help'\'')]' \
+                    ':name -- Server name:_default' \
+                    '::command_or_url -- Command to launch (stdio) or URL to connect to (http, sse):_default' \
+                    '*::args -- Arguments passed to the server command. Place them after `--` so flags such as `-y` are passed to the server instead of grok:_default' \
+                    && ret=0
+                  ;;
+                (remove)
+                  _arguments "${_arguments_options[@]}" : \
+                    '-s+[Config to remove from. When omitted, all scopes are searched]:SCOPE:((user\:"\`~/.grok/config.toml\`, available in all your projects"
+                  project\:"\`./.grok/config.toml\`, shared with everyone working in this directory"))' \
+                    '--scope=[Config to remove from. When omitted, all scopes are searched]:SCOPE:((user\:"\`~/.grok/config.toml\`, available in all your projects"
+                  project\:"\`./.grok/config.toml\`, shared with everyone working in this directory"))' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help (see more with '\''--help'\'')]' \
+                    '--help[Print help (see more with '\''--help'\'')]' \
+                    ':name -- Server name to remove:_default' \
+                    && ret=0
+                  ;;
+                (doctor)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    '::name -- Server name to check:_default' \
+                    && ret=0
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__mcp__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-mcp-help-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (add)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (remove)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (doctor)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (plugin)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__plugin_commands" \
+            "*::: :->plugin" \
+            && ret=0
+
+          case $state in
+            (plugin)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-plugin-command-$line[1]:"
+              case $line[1] in
+                (list)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--available[Include available plugins from marketplace sources. Requires --json]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (install)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--trust[Trust the plugin immediately (skip confirmation prompt)]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':source -- Git URL, GitHub shorthand (user/repo), or local path. Supports @ref suffix (e.g. user/repo@v1.0) and #subdir:_default' \
+                    && ret=0
+                  ;;
+                (uninstall)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--confirm[Skip confirmation for multi-plugin repos]' \
+                    '--keep-data[Preserve the plugin'\''s persistent data directory]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':name -- Plugin name (as shown by `grok plugin list`):_default' \
+                    && ret=0
+                  ;;
+                (rm)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--confirm[Skip confirmation for multi-plugin repos]' \
+                    '--keep-data[Preserve the plugin'\''s persistent data directory]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':name -- Plugin name (as shown by `grok plugin list`):_default' \
+                    && ret=0
+                  ;;
+                (remove)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--confirm[Skip confirmation for multi-plugin repos]' \
+                    '--keep-data[Preserve the plugin'\''s persistent data directory]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':name -- Plugin name (as shown by `grok plugin list`):_default' \
+                    && ret=0
+                  ;;
+                (update)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    '::name -- Plugin name to update. Omit to update all:_default' \
+                    && ret=0
+                  ;;
+                (enable)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':name -- Plugin name to enable:_default' \
+                    && ret=0
+                  ;;
+                (disable)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':name -- Plugin name to disable:_default' \
+                    && ret=0
+                  ;;
+                (details)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':name -- Plugin name:_default' \
+                    && ret=0
+                  ;;
+                (validate)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    '::path -- Path to plugin directory (default\: current directory):_default' \
+                    && ret=0
+                  ;;
+                (tag)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--push[Push the tag to the remote after creating it]' \
+                    '-f[Create the tag even if the working tree is dirty or tag exists]' \
+                    '--force[Create the tag even if the working tree is dirty or tag exists]' \
+                    '--dry-run[Print what would be tagged without creating the tag]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    '::path -- Path to plugin directory (default\: current directory):_default' \
+                    && ret=0
+                  ;;
+                (marketplace)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ":: :_grok__subcmd__plugin__subcmd__marketplace_commands" \
+                    "*::: :->marketplace" \
+                    && ret=0
+
+                  case $state in
+                    (marketplace)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-plugin-marketplace-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--json[Emit machine-readable JSON output]' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (add)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            ':url -- Git URL or GitHub shorthand (e.g. user/repo):_default' \
+                            && ret=0
+                          ;;
+                        (remove)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            ':url -- Git URL or local path of the source to remove:_default' \
+                            && ret=0
+                          ;;
+                        (update)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            '::name -- Source URL to refresh. Omit to refresh all:_default' \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__plugin__subcmd__marketplace__subcmd__help_commands" \
+                            "*::: :->help" \
+                            && ret=0
+
+                          case $state in
+                            (help)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-plugin-marketplace-help-command-$line[1]:"
+                              case $line[1] in
+                                (list)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (add)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (remove)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (update)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (help)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__plugin__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-plugin-help-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (install)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (uninstall)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (update)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (enable)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (disable)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (details)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (validate)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (tag)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (marketplace)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__plugin__subcmd__help__subcmd__marketplace_commands" \
+                            "*::: :->marketplace" \
+                            && ret=0
+
+                          case $state in
+                            (marketplace)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-plugin-help-marketplace-command-$line[1]:"
+                              case $line[1] in
+                                (list)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (add)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (remove)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (update)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (memory)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__memory_commands" \
+            "*::: :->memory" \
+            && ret=0
+
+          case $state in
+            (memory)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-memory-command-$line[1]:"
+              case $line[1] in
+                (clear)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--workspace[Clear workspace-scoped memory (MEMORY.md, sessions/, index.sqlite)]' \
+                    '--global[Clear global MEMORY.md]' \
+                    '--all[Clear both workspace and global memory]' \
+                    '-y[Skip confirmation prompt]' \
+                    '--yes[Skip confirmation prompt]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__memory__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-memory-help-command-$line[1]:"
+                      case $line[1] in
+                        (clear)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (models)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (sessions)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__sessions_commands" \
+            "*::: :->sessions" \
+            && ret=0
+
+          case $state in
+            (sessions)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-sessions-command-$line[1]:"
+              case $line[1] in
+                (list)
+                  _arguments "${_arguments_options[@]}" : \
+                    '-n+[Maximum number of sessions to show]:LIMIT:_default' \
+                    '--limit=[Maximum number of sessions to show]:LIMIT:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (search)
+                  _arguments "${_arguments_options[@]}" : \
+                    '-n+[Maximum number of sessions to show]:LIMIT:_default' \
+                    '--limit=[Maximum number of sessions to show]:LIMIT:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':query -- Search query (searches summaries and first prompts):_default' \
+                    && ret=0
+                  ;;
+                (delete)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':id -- Session id to delete:_default' \
+                    && ret=0
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__sessions__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-sessions-help-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (search)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (delete)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (setup)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (share)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ':session_id -- Session ID to share:_default' \
+            && ret=0
+          ;;
+        (wrap)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help (see more with '\''--help'\'')]' \
+            '--help[Print help (see more with '\''--help'\'')]' \
+            '*::command -- Command to run, followed by its arguments (e.g. `docker exec -it my-container bash`). On Unix a single quoted string or an aliased command runs via `$SHELL -i -c`:_default' \
+            && ret=0
+          ;;
+        (export)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '-c[Copy to clipboard instead of writing to stdout]' \
+            '--clipboard[Copy to clipboard instead of writing to stdout]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ':session_id -- Session ID to export:_default' \
+            '::output -- Output file path (default\: stdout):_files' \
+            && ret=0
+          ;;
+        (trace)
+          _arguments "${_arguments_options[@]}" : \
+            '-o+[Output path (default\: \$GROK_HOME/trace-exports/<session-id>.tar.gz)]:OUTPUT:_files' \
+            '--output=[Output path (default\: \$GROK_HOME/trace-exports/<session-id>.tar.gz)]:OUTPUT:_files' \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--local[Save locally only, skip remote upload]' \
+            '--json[Emit machine-readable JSON output]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ':session_id -- Session ID to export/upload:_default' \
+            && ret=0
+          ;;
+        (update)
+          _arguments "${_arguments_options[@]}" : \
+            '--version=[Install a specific version (e.g. 0.1.150 or 0.1.151-alpha.2)]:VERSION:_default' \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--check[Check for updates without installing]' \
+            '--json[Emit machine-readable JSON output (for --check)]' \
+            '--force-reinstall[Force re-download and install even if already up to date]' \
+            '(--stable --enterprise)--alpha[Switch to the alpha release channel (faster updates, may have bugs)]' \
+            '(--alpha --enterprise)--stable[Switch to the stable release channel (default, weekly releases)]' \
+            '(--alpha --stable)--enterprise[Switch to the enterprise release channel]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (version)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--json[Emit machine-readable JSON output]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (v)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--json[Emit machine-readable JSON output]' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            && ret=0
+          ;;
+        (completions)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ':shell -- Target shell:(bash elvish fish powershell zsh)' \
+            && ret=0
+          ;;
+        (worktree)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help]' \
+            '--help[Print help]' \
+            ":: :_grok__subcmd__worktree_commands" \
+            "*::: :->worktree" \
+            && ret=0
+
+          case $state in
+            (worktree)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-worktree-command-$line[1]:"
+              case $line[1] in
+                (list)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--repo=[]:REPO:_default' \
+                    '*--type=[]:TYPE:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[]' \
+                    '--all[]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (show)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ':id_or_path:_default' \
+                    && ret=0
+                  ;;
+                (rm)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '-f[]' \
+                    '--force[]' \
+                    '--dry-run[]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    '*::ids:_default' \
+                    && ret=0
+                  ;;
+                (gc)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--max-age=[]:MAX_AGE:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--dry-run[]' \
+                    '-f[]' \
+                    '--force[]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (db)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    ":: :_grok__subcmd__worktree__subcmd__db_commands" \
+                    "*::: :->db" \
+                    && ret=0
+
+                  case $state in
+                    (db)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-worktree-db-command-$line[1]:"
+                      case $line[1] in
+                        (rebuild)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (stats)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (path)
+                          _arguments "${_arguments_options[@]}" : \
+                            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                            '--debug[Enable debug logging]' \
+                            '-h[Print help]' \
+                            '--help[Print help]' \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__worktree__subcmd__db__subcmd__help_commands" \
+                            "*::: :->help" \
+                            && ret=0
+
+                          case $state in
+                            (help)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-worktree-db-help-command-$line[1]:"
+                              case $line[1] in
+                                (rebuild)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (stats)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (path)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (help)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__worktree__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-worktree-help-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (show)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (rm)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (gc)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (db)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__worktree__subcmd__help__subcmd__db_commands" \
+                            "*::: :->db" \
+                            && ret=0
+
+                          case $state in
+                            (db)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-worktree-help-db-command-$line[1]:"
+                              case $line[1] in
+                                (rebuild)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (stats)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (path)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (workspace)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help (see more with '\''--help'\'')]' \
+            '--help[Print help (see more with '\''--help'\'')]' \
+            ":: :_grok__subcmd__workspace_commands" \
+            "*::: :->workspace" \
+            && ret=0
+
+          case $state in
+            (workspace)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-workspace-command-$line[1]:"
+              case $line[1] in
+                (start)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--hub-url=[Computer Hub WebSocket URL (default\: \`\[hub\].url\`, then the prod hub)]:URL:_default' \
+                    '--cwd=[Workspace root directory to expose. Defaults to the current directory]:DIR:_files -/' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '(--no-leader)--leader[Force leader mode for this command, overriding config]' \
+                    '(--leader)--no-leader[Refuse to start even when config enables leader mode]' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (pause)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (resume)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (stop)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (restart)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--hub-url=[Computer Hub WebSocket URL (default\: \`\[hub\].url\`, then the prod hub)]:URL:_default' \
+                    '--cwd=[Workspace root directory to expose. Defaults to the current directory]:DIR:_files -/' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '(--no-leader)--leader[Force leader mode for this command, overriding config]' \
+                    '(--leader)--no-leader[Refuse to start even when config enables leader mode]' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (status)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (list)
+                  _arguments "${_arguments_options[@]}" : \
+                    '--pid=[Leader process ID from \`grok leader list\`]:PID:_default' \
+                    '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+                    '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+                    '--json[Emit machine-readable JSON output]' \
+                    '--debug[Enable debug logging]' \
+                    '-h[Print help]' \
+                    '--help[Print help]' \
+                    && ret=0
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__workspace__subcmd__help_commands" \
+                    "*::: :->help" \
+                    && ret=0
+
+                  case $state in
+                    (help)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-workspace-help-command-$line[1]:"
+                      case $line[1] in
+                        (start)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (pause)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (resume)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (stop)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (restart)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (status)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (help)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+        (dashboard)
+          _arguments "${_arguments_options[@]}" : \
+            '--leader-socket=[Use a custom leader socket path instead of the default \`~/.grok/leader.sock\`]:PATH:_files' \
+            '--debug-file=[Write debug logs to FILE]:FILE:_files' \
+            '--debug[Enable debug logging]' \
+            '-h[Print help (see more with '\''--help'\'')]' \
+            '--help[Print help (see more with '\''--help'\'')]' \
+            && ret=0
+          ;;
+        (help)
+          _arguments "${_arguments_options[@]}" : \
+            ":: :_grok__subcmd__help_commands" \
+            "*::: :->help" \
+            && ret=0
+
+          case $state in
+            (help)
+              words=($line[1] "${words[@]}")
+              (( CURRENT += 1 ))
+              curcontext="${curcontext%:*:*}:grok-help-command-$line[1]:"
+              case $line[1] in
+                (agent)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__agent_commands" \
+                    "*::: :->agent" \
+                    && ret=0
+
+                  case $state in
+                    (agent)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-agent-command-$line[1]:"
+                      case $line[1] in
+                        (stdio)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (headless)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (serve)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (leader)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (import)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (inspect)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (leader)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__leader_commands" \
+                    "*::: :->leader" \
+                    && ret=0
+
+                  case $state in
+                    (leader)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-leader-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (info)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (kill)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (profile)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__help__subcmd__leader__subcmd__profile_commands" \
+                            "*::: :->profile" \
+                            && ret=0
+
+                          case $state in
+                            (profile)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-help-leader-profile-command-$line[1]:"
+                              case $line[1] in
+                                (status)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (start)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (stop)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (logout)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (login)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (mcp)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__mcp_commands" \
+                    "*::: :->mcp" \
+                    && ret=0
+
+                  case $state in
+                    (mcp)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-mcp-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (add)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (remove)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (doctor)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (plugin)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__plugin_commands" \
+                    "*::: :->plugin" \
+                    && ret=0
+
+                  case $state in
+                    (plugin)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-plugin-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (install)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (uninstall)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (update)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (enable)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (disable)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (details)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (validate)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (tag)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (marketplace)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__help__subcmd__plugin__subcmd__marketplace_commands" \
+                            "*::: :->marketplace" \
+                            && ret=0
+
+                          case $state in
+                            (marketplace)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-help-plugin-marketplace-command-$line[1]:"
+                              case $line[1] in
+                                (list)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (add)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (remove)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (update)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (memory)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__memory_commands" \
+                    "*::: :->memory" \
+                    && ret=0
+
+                  case $state in
+                    (memory)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-memory-command-$line[1]:"
+                      case $line[1] in
+                        (clear)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (models)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (sessions)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__sessions_commands" \
+                    "*::: :->sessions" \
+                    && ret=0
+
+                  case $state in
+                    (sessions)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-sessions-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (search)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (delete)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (setup)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (share)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (wrap)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (export)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (trace)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (update)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (version)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (completions)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (worktree)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__worktree_commands" \
+                    "*::: :->worktree" \
+                    && ret=0
+
+                  case $state in
+                    (worktree)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-worktree-command-$line[1]:"
+                      case $line[1] in
+                        (list)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (show)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (rm)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (gc)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (db)
+                          _arguments "${_arguments_options[@]}" : \
+                            ":: :_grok__subcmd__help__subcmd__worktree__subcmd__db_commands" \
+                            "*::: :->db" \
+                            && ret=0
+
+                          case $state in
+                            (db)
+                              words=($line[1] "${words[@]}")
+                              (( CURRENT += 1 ))
+                              curcontext="${curcontext%:*:*}:grok-help-worktree-db-command-$line[1]:"
+                              case $line[1] in
+                                (rebuild)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (stats)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                                (path)
+                                  _arguments "${_arguments_options[@]}" : \
+                                    && ret=0
+                                  ;;
+                              esac
+                              ;;
+                          esac
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (workspace)
+                  _arguments "${_arguments_options[@]}" : \
+                    ":: :_grok__subcmd__help__subcmd__workspace_commands" \
+                    "*::: :->workspace" \
+                    && ret=0
+
+                  case $state in
+                    (workspace)
+                      words=($line[1] "${words[@]}")
+                      (( CURRENT += 1 ))
+                      curcontext="${curcontext%:*:*}:grok-help-workspace-command-$line[1]:"
+                      case $line[1] in
+                        (start)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (pause)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (resume)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (stop)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (restart)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                        (status)
+                          _arguments "${_arguments_options[@]}" : \
+                            && ret=0
+                          ;;
+                      esac
+                      ;;
+                  esac
+                  ;;
+                (dashboard)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+                (help)
+                  _arguments "${_arguments_options[@]}" : \
+                    && ret=0
+                  ;;
+              esac
+              ;;
+          esac
+          ;;
+      esac
+      ;;
+  esac
+}
+
+(( $+functions[_grok_models] )) ||
+_grok_models() {
+    setopt localoptions extended_glob
+    local -a models
+    local line trimmed id
+    for line in ${(f)"$(_call_program models grok models 2>/dev/null)"}; do
+        trimmed=${line##[[:space:]]#}
+        [[ $trimmed == ('* '|'- ')* ]] || continue
+        trimmed=${trimmed#[*-] }
+        id=${trimmed%% *}
+        [[ -n $id ]] || continue
+        if [[ $trimmed == *'(default)'* ]]; then
+            models+=("$id:default model")
+        else
+            models+=("$id")
+        fi
+    done
+    (( $#models )) || return 1
+    _describe -t models 'model' models "$@"
+}
+(( $+functions[_grok_commands] )) ||
+  _grok_commands() {
+    local commands; commands=(
+      'agent:Run Grok without the interactive UI' \
+        'import:Import sessions into Grok' \
+        'inspect:Show the configuration Grok discovers for this directory' \
+        'leader:Manage running leader processes' \
+        'logout:Sign out and clear cached credentials' \
+        'login:Sign in to Grok' \
+        'mcp:Manage MCP server configurations' \
+        'plugin:Manage plugins and marketplace sources' \
+        'memory:Manage cross-session memory' \
+        'models:List available models and exit' \
+        'sessions:List, search, or restore sessions' \
+        'setup:Fetch and install managed configuration' \
+        'share:(hidden) Share a session and print the share URL (internal only)' \
+        'wrap:Run any command with local clipboard support (OSC 52 → system clipboard)' \
+        'export:Export a session transcript as Markdown' \
+        'trace:Export or upload session trace data' \
+        'update:Check for updates or install a specific version' \
+        'version:Print version information' \
+        'v:Print version information' \
+        'completions:Generate shell completion scripts (bash, zsh, fish, powershell, ...)' \
+        'worktree:Manage git worktrees' \
+        'workspace:(hidden) Expose this workspace to the Computer Hub (via the leader)' \
+        'dashboard:Open the Agent Dashboard view at startup' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent_commands] )) ||
+  _grok__subcmd__agent_commands() {
+    local commands; commands=(
+      'stdio:Run the agent over stdio' \
+        'headless:Run the agent headlessly over the Grok WebSocket relay' \
+        'serve:Run the agent as a WebSocket server' \
+        'leader:Run as the shared leader process for other clients' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok agent commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__headless_commands] )) ||
+  _grok__subcmd__agent__subcmd__headless_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent headless commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__help_commands] )) ||
+  _grok__subcmd__agent__subcmd__help_commands() {
+    local commands; commands=(
+      'stdio:Run the agent over stdio' \
+        'headless:Run the agent headlessly over the Grok WebSocket relay' \
+        'serve:Run the agent as a WebSocket server' \
+        'leader:Run as the shared leader process for other clients' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok agent help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__help__subcmd__headless_commands] )) ||
+  _grok__subcmd__agent__subcmd__help__subcmd__headless_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent help headless commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__agent__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__help__subcmd__leader_commands] )) ||
+  _grok__subcmd__agent__subcmd__help__subcmd__leader_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent help leader commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__help__subcmd__serve_commands] )) ||
+  _grok__subcmd__agent__subcmd__help__subcmd__serve_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent help serve commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__help__subcmd__stdio_commands] )) ||
+  _grok__subcmd__agent__subcmd__help__subcmd__stdio_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent help stdio commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__leader_commands] )) ||
+  _grok__subcmd__agent__subcmd__leader_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent leader commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__serve_commands] )) ||
+  _grok__subcmd__agent__subcmd__serve_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent serve commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__agent__subcmd__stdio_commands] )) ||
+  _grok__subcmd__agent__subcmd__stdio_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok agent stdio commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__completions_commands] )) ||
+  _grok__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok completions commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__dashboard_commands] )) ||
+  _grok__subcmd__dashboard_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok dashboard commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__export_commands] )) ||
+  _grok__subcmd__export_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok export commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help_commands] )) ||
+  _grok__subcmd__help_commands() {
+    local commands; commands=(
+      'agent:Run Grok without the interactive UI' \
+        'import:Import sessions into Grok' \
+        'inspect:Show the configuration Grok discovers for this directory' \
+        'leader:Manage running leader processes' \
+        'logout:Sign out and clear cached credentials' \
+        'login:Sign in to Grok' \
+        'mcp:Manage MCP server configurations' \
+        'plugin:Manage plugins and marketplace sources' \
+        'memory:Manage cross-session memory' \
+        'models:List available models and exit' \
+        'sessions:List, search, or restore sessions' \
+        'setup:Fetch and install managed configuration' \
+        'share:(hidden) Share a session and print the share URL (internal only)' \
+        'wrap:Run any command with local clipboard support (OSC 52 → system clipboard)' \
+        'export:Export a session transcript as Markdown' \
+        'trace:Export or upload session trace data' \
+        'update:Check for updates or install a specific version' \
+        'version:Print version information' \
+        'completions:Generate shell completion scripts (bash, zsh, fish, powershell, ...)' \
+        'worktree:Manage git worktrees' \
+        'workspace:(hidden) Expose this workspace to the Computer Hub (via the leader)' \
+        'dashboard:Open the Agent Dashboard view at startup' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__agent_commands] )) ||
+  _grok__subcmd__help__subcmd__agent_commands() {
+    local commands; commands=(
+      'stdio:Run the agent over stdio' \
+        'headless:Run the agent headlessly over the Grok WebSocket relay' \
+        'serve:Run the agent as a WebSocket server' \
+        'leader:Run as the shared leader process for other clients' \
+      )
+      _describe -t commands 'grok help agent commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__agent__subcmd__headless_commands] )) ||
+  _grok__subcmd__help__subcmd__agent__subcmd__headless_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help agent headless commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__agent__subcmd__leader_commands] )) ||
+  _grok__subcmd__help__subcmd__agent__subcmd__leader_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help agent leader commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__agent__subcmd__serve_commands] )) ||
+  _grok__subcmd__help__subcmd__agent__subcmd__serve_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help agent serve commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__agent__subcmd__stdio_commands] )) ||
+  _grok__subcmd__help__subcmd__agent__subcmd__stdio_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help agent stdio commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__completions_commands] )) ||
+  _grok__subcmd__help__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help completions commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__dashboard_commands] )) ||
+  _grok__subcmd__help__subcmd__dashboard_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help dashboard commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__export_commands] )) ||
+  _grok__subcmd__help__subcmd__export_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help export commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__import_commands] )) ||
+  _grok__subcmd__help__subcmd__import_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help import commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__inspect_commands] )) ||
+  _grok__subcmd__help__subcmd__inspect_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help inspect commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader_commands] )) ||
+  _grok__subcmd__help__subcmd__leader_commands() {
+    local commands; commands=(
+      'list:List running leader processes' \
+        'info:Show details for a leader process' \
+        'kill:Stop all running leader processes' \
+        'profile:Manage CPU profiling for a leader process' \
+      )
+      _describe -t commands 'grok help leader commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__info_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help leader info commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__kill_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__kill_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help leader kill commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__list_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help leader list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__profile_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__profile_commands() {
+    local commands; commands=(
+      'status:Show profiling status' \
+        'start:Start CPU profiling' \
+        'stop:Stop CPU profiling' \
+      )
+      _describe -t commands 'grok help leader profile commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__profile__subcmd__start_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__profile__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help leader profile start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__profile__subcmd__status_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__profile__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help leader profile status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__leader__subcmd__profile__subcmd__stop_commands] )) ||
+  _grok__subcmd__help__subcmd__leader__subcmd__profile__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help leader profile stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__login_commands] )) ||
+  _grok__subcmd__help__subcmd__login_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help login commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__logout_commands] )) ||
+  _grok__subcmd__help__subcmd__logout_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help logout commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__mcp_commands] )) ||
+  _grok__subcmd__help__subcmd__mcp_commands() {
+    local commands; commands=(
+      'list:List configured MCP servers' \
+        'add:Add or update an MCP server' \
+        'remove:Remove an MCP server' \
+        'doctor:Diagnose MCP server configuration and connectivity' \
+      )
+      _describe -t commands 'grok help mcp commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__mcp__subcmd__add_commands] )) ||
+  _grok__subcmd__help__subcmd__mcp__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help mcp add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__mcp__subcmd__doctor_commands] )) ||
+  _grok__subcmd__help__subcmd__mcp__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help mcp doctor commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__mcp__subcmd__list_commands] )) ||
+  _grok__subcmd__help__subcmd__mcp__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help mcp list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__mcp__subcmd__remove_commands] )) ||
+  _grok__subcmd__help__subcmd__mcp__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help mcp remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__memory_commands] )) ||
+  _grok__subcmd__help__subcmd__memory_commands() {
+    local commands; commands=(
+      'clear:Clear memory files (workspace by default)' \
+    )
+      _describe -t commands 'grok help memory commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__memory__subcmd__clear_commands] )) ||
+  _grok__subcmd__help__subcmd__memory__subcmd__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help memory clear commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__models_commands] )) ||
+  _grok__subcmd__help__subcmd__models_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help models commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin_commands() {
+    local commands; commands=(
+      'list:List installed plugins' \
+        'install:Install a plugin from a git URL or local path' \
+        'uninstall:Uninstall an installed plugin by name' \
+        'update:Update installed plugin(s)' \
+        'enable:Enable a disabled plugin' \
+        'disable:Disable a plugin without uninstalling it' \
+        'details:Show a plugin'\''s component inventory' \
+        'validate:Validate a plugin manifest' \
+        'tag:Create a release git tag from the plugin'\''s manifest version' \
+        'marketplace:Manage marketplace sources' \
+      )
+      _describe -t commands 'grok help plugin commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__details_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__details_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin details commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__disable_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__disable_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin disable commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__enable_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__enable_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin enable commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__install_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__install_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin install commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__list_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__marketplace_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__marketplace_commands() {
+    local commands; commands=(
+      'list:List configured marketplace sources and their plugins' \
+        'add:Add a marketplace source (git URL or GitHub shorthand)' \
+        'remove:Remove a marketplace source and uninstall its plugins' \
+        'update:Refresh marketplace source(s) and sync git caches' \
+      )
+      _describe -t commands 'grok help plugin marketplace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__add_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin marketplace add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__list_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin marketplace list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__remove_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin marketplace remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__update_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__marketplace__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin marketplace update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__tag_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__tag_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin tag commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__uninstall_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__uninstall_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin uninstall commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__update_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__plugin__subcmd__validate_commands] )) ||
+  _grok__subcmd__help__subcmd__plugin__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help plugin validate commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__sessions_commands] )) ||
+  _grok__subcmd__help__subcmd__sessions_commands() {
+    local commands; commands=(
+      'list:List recent sessions (same as search with no query)' \
+        'search:Search sessions by keyword' \
+        'delete:Permanently delete a session from history' \
+      )
+      _describe -t commands 'grok help sessions commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__sessions__subcmd__delete_commands] )) ||
+  _grok__subcmd__help__subcmd__sessions__subcmd__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help sessions delete commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__sessions__subcmd__list_commands] )) ||
+  _grok__subcmd__help__subcmd__sessions__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help sessions list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__sessions__subcmd__search_commands] )) ||
+  _grok__subcmd__help__subcmd__sessions__subcmd__search_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help sessions search commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__setup_commands] )) ||
+  _grok__subcmd__help__subcmd__setup_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help setup commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__share_commands] )) ||
+  _grok__subcmd__help__subcmd__share_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help share commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__trace_commands] )) ||
+  _grok__subcmd__help__subcmd__trace_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help trace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__update_commands] )) ||
+  _grok__subcmd__help__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__version_commands] )) ||
+  _grok__subcmd__help__subcmd__version_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help version commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace_commands() {
+    local commands; commands=(
+      'start:Start (or update) the workspace→hub exposure' \
+        'pause:Drain and disconnect from the hub, keeping the exposure warm' \
+        'resume:Reconnect a paused exposure to the hub' \
+        'stop:Stop exposing the workspace (the leader keeps running)' \
+        'restart:Restart the exposure (stop, then start with the given options)' \
+        'status:Show the current workspace-exposure status' \
+      )
+      _describe -t commands 'grok help workspace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace__subcmd__pause_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace__subcmd__pause_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help workspace pause commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace__subcmd__restart_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace__subcmd__restart_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help workspace restart commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace__subcmd__resume_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace__subcmd__resume_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help workspace resume commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace__subcmd__start_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help workspace start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace__subcmd__status_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help workspace status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__workspace__subcmd__stop_commands] )) ||
+  _grok__subcmd__help__subcmd__workspace__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help workspace stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree_commands() {
+    local commands; commands=(
+      'list:List tracked worktrees' \
+        'show:Show details for a specific worktree' \
+        'rm:Remove worktrees' \
+        'gc:Garbage-collect orphaned/stale worktrees' \
+        'db:Database maintenance' \
+      )
+      _describe -t commands 'grok help worktree commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__db_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__db_commands() {
+    local commands; commands=(
+      'rebuild:Rebuild DB from filesystem scan' \
+        'stats:Show DB statistics' \
+        'path:Print DB file path' \
+      )
+      _describe -t commands 'grok help worktree db commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__db__subcmd__path_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__db__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree db path commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__db__subcmd__rebuild_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__db__subcmd__rebuild_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree db rebuild commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__db__subcmd__stats_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__db__subcmd__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree db stats commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__gc_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__gc_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree gc commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__list_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__rm_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__rm_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree rm commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__worktree__subcmd__show_commands] )) ||
+  _grok__subcmd__help__subcmd__worktree__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help worktree show commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__help__subcmd__wrap_commands] )) ||
+  _grok__subcmd__help__subcmd__wrap_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok help wrap commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__import_commands] )) ||
+  _grok__subcmd__import_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok import commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__inspect_commands] )) ||
+  _grok__subcmd__inspect_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok inspect commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader_commands] )) ||
+  _grok__subcmd__leader_commands() {
+    local commands; commands=(
+      'list:List running leader processes' \
+        'info:Show details for a leader process' \
+        'kill:Stop all running leader processes' \
+        'profile:Manage CPU profiling for a leader process' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok leader commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help_commands] )) ||
+  _grok__subcmd__leader__subcmd__help_commands() {
+    local commands; commands=(
+      'list:List running leader processes' \
+        'info:Show details for a leader process' \
+        'kill:Stop all running leader processes' \
+        'profile:Manage CPU profiling for a leader process' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok leader help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__info_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help info commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__kill_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__kill_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help kill commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__list_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__profile_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__profile_commands() {
+    local commands; commands=(
+      'status:Show profiling status' \
+        'start:Start CPU profiling' \
+        'stop:Stop CPU profiling' \
+      )
+      _describe -t commands 'grok leader help profile commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__profile__subcmd__start_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__profile__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help profile start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__profile__subcmd__status_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__profile__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help profile status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__help__subcmd__profile__subcmd__stop_commands] )) ||
+  _grok__subcmd__leader__subcmd__help__subcmd__profile__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader help profile stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__info_commands] )) ||
+  _grok__subcmd__leader__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader info commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__kill_commands] )) ||
+  _grok__subcmd__leader__subcmd__kill_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader kill commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__list_commands] )) ||
+  _grok__subcmd__leader__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile_commands() {
+    local commands; commands=(
+      'status:Show profiling status' \
+        'start:Start CPU profiling' \
+        'stop:Stop CPU profiling' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok leader profile commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__help_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__help_commands() {
+    local commands; commands=(
+      'status:Show profiling status' \
+        'start:Start CPU profiling' \
+        'stop:Stop CPU profiling' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok leader profile help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__start_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile help start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__status_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile help status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__stop_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__help__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile help stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__start_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__status_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__leader__subcmd__profile__subcmd__stop_commands] )) ||
+  _grok__subcmd__leader__subcmd__profile__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok leader profile stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__login_commands] )) ||
+  _grok__subcmd__login_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok login commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__logout_commands] )) ||
+  _grok__subcmd__logout_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok logout commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp_commands] )) ||
+  _grok__subcmd__mcp_commands() {
+    local commands; commands=(
+      'list:List configured MCP servers' \
+        'add:Add or update an MCP server' \
+        'remove:Remove an MCP server' \
+        'doctor:Diagnose MCP server configuration and connectivity' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok mcp commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__add_commands] )) ||
+  _grok__subcmd__mcp__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__doctor_commands] )) ||
+  _grok__subcmd__mcp__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp doctor commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__help_commands] )) ||
+  _grok__subcmd__mcp__subcmd__help_commands() {
+    local commands; commands=(
+      'list:List configured MCP servers' \
+        'add:Add or update an MCP server' \
+        'remove:Remove an MCP server' \
+        'doctor:Diagnose MCP server configuration and connectivity' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok mcp help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__help__subcmd__add_commands] )) ||
+  _grok__subcmd__mcp__subcmd__help__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp help add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__help__subcmd__doctor_commands] )) ||
+  _grok__subcmd__mcp__subcmd__help__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp help doctor commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__mcp__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__help__subcmd__list_commands] )) ||
+  _grok__subcmd__mcp__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp help list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__help__subcmd__remove_commands] )) ||
+  _grok__subcmd__mcp__subcmd__help__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp help remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__list_commands] )) ||
+  _grok__subcmd__mcp__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__mcp__subcmd__remove_commands] )) ||
+  _grok__subcmd__mcp__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok mcp remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__memory_commands] )) ||
+  _grok__subcmd__memory_commands() {
+    local commands; commands=(
+      'clear:Clear memory files (workspace by default)' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok memory commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__memory__subcmd__clear_commands] )) ||
+  _grok__subcmd__memory__subcmd__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok memory clear commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__memory__subcmd__help_commands] )) ||
+  _grok__subcmd__memory__subcmd__help_commands() {
+    local commands; commands=(
+      'clear:Clear memory files (workspace by default)' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok memory help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__memory__subcmd__help__subcmd__clear_commands] )) ||
+  _grok__subcmd__memory__subcmd__help__subcmd__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok memory help clear commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__memory__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__memory__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok memory help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__models_commands] )) ||
+  _grok__subcmd__models_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok models commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin_commands] )) ||
+  _grok__subcmd__plugin_commands() {
+    local commands; commands=(
+      'list:List installed plugins' \
+        'install:Install a plugin from a git URL or local path' \
+        'uninstall:Uninstall an installed plugin by name' \
+        'rm:Uninstall an installed plugin by name' \
+        'remove:Uninstall an installed plugin by name' \
+        'update:Update installed plugin(s)' \
+        'enable:Enable a disabled plugin' \
+        'disable:Disable a plugin without uninstalling it' \
+        'details:Show a plugin'\''s component inventory' \
+        'validate:Validate a plugin manifest' \
+        'tag:Create a release git tag from the plugin'\''s manifest version' \
+        'marketplace:Manage marketplace sources' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok plugin commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__details_commands] )) ||
+  _grok__subcmd__plugin__subcmd__details_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin details commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__disable_commands] )) ||
+  _grok__subcmd__plugin__subcmd__disable_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin disable commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__enable_commands] )) ||
+  _grok__subcmd__plugin__subcmd__enable_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin enable commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help_commands() {
+    local commands; commands=(
+      'list:List installed plugins' \
+        'install:Install a plugin from a git URL or local path' \
+        'uninstall:Uninstall an installed plugin by name' \
+        'update:Update installed plugin(s)' \
+        'enable:Enable a disabled plugin' \
+        'disable:Disable a plugin without uninstalling it' \
+        'details:Show a plugin'\''s component inventory' \
+        'validate:Validate a plugin manifest' \
+        'tag:Create a release git tag from the plugin'\''s manifest version' \
+        'marketplace:Manage marketplace sources' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok plugin help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__details_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__details_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help details commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__disable_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__disable_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help disable commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__enable_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__enable_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help enable commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__install_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__install_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help install commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__list_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__marketplace_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__marketplace_commands() {
+    local commands; commands=(
+      'list:List configured marketplace sources and their plugins' \
+        'add:Add a marketplace source (git URL or GitHub shorthand)' \
+        'remove:Remove a marketplace source and uninstall its plugins' \
+        'update:Refresh marketplace source(s) and sync git caches' \
+      )
+      _describe -t commands 'grok plugin help marketplace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__add_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help marketplace add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__list_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help marketplace list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__remove_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help marketplace remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__update_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__marketplace__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help marketplace update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__tag_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__tag_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help tag commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__uninstall_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__uninstall_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help uninstall commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__update_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__help__subcmd__validate_commands] )) ||
+  _grok__subcmd__plugin__subcmd__help__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin help validate commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__install_commands] )) ||
+  _grok__subcmd__plugin__subcmd__install_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin install commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__list_commands] )) ||
+  _grok__subcmd__plugin__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace_commands() {
+    local commands; commands=(
+      'list:List configured marketplace sources and their plugins' \
+        'add:Add a marketplace source (git URL or GitHub shorthand)' \
+        'remove:Remove a marketplace source and uninstall its plugins' \
+        'update:Refresh marketplace source(s) and sync git caches' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok plugin marketplace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__add_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__help_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__help_commands() {
+    local commands; commands=(
+      'list:List configured marketplace sources and their plugins' \
+        'add:Add a marketplace source (git URL or GitHub shorthand)' \
+        'remove:Remove a marketplace source and uninstall its plugins' \
+        'update:Refresh marketplace source(s) and sync git caches' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok plugin marketplace help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__add_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace help add commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__list_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace help list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__remove_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace help remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__update_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__help__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace help update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__list_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__remove_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace remove commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__marketplace__subcmd__update_commands] )) ||
+  _grok__subcmd__plugin__subcmd__marketplace__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin marketplace update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__tag_commands] )) ||
+  _grok__subcmd__plugin__subcmd__tag_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin tag commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__uninstall_commands] )) ||
+  _grok__subcmd__plugin__subcmd__uninstall_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin uninstall commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__update_commands] )) ||
+  _grok__subcmd__plugin__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__plugin__subcmd__validate_commands] )) ||
+  _grok__subcmd__plugin__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok plugin validate commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions_commands] )) ||
+  _grok__subcmd__sessions_commands() {
+    local commands; commands=(
+      'list:List recent sessions (same as search with no query)' \
+        'search:Search sessions by keyword' \
+        'delete:Permanently delete a session from history' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok sessions commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__delete_commands] )) ||
+  _grok__subcmd__sessions__subcmd__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions delete commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__help_commands] )) ||
+  _grok__subcmd__sessions__subcmd__help_commands() {
+    local commands; commands=(
+      'list:List recent sessions (same as search with no query)' \
+        'search:Search sessions by keyword' \
+        'delete:Permanently delete a session from history' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok sessions help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__help__subcmd__delete_commands] )) ||
+  _grok__subcmd__sessions__subcmd__help__subcmd__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions help delete commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__sessions__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__help__subcmd__list_commands] )) ||
+  _grok__subcmd__sessions__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions help list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__help__subcmd__search_commands] )) ||
+  _grok__subcmd__sessions__subcmd__help__subcmd__search_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions help search commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__list_commands] )) ||
+  _grok__subcmd__sessions__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__sessions__subcmd__search_commands] )) ||
+  _grok__subcmd__sessions__subcmd__search_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok sessions search commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__setup_commands] )) ||
+  _grok__subcmd__setup_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok setup commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__share_commands] )) ||
+  _grok__subcmd__share_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok share commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__trace_commands] )) ||
+  _grok__subcmd__trace_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok trace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__update_commands] )) ||
+  _grok__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok update commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__version_commands] )) ||
+  _grok__subcmd__version_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok version commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace_commands] )) ||
+  _grok__subcmd__workspace_commands() {
+    local commands; commands=(
+      'start:Start (or update) the workspace→hub exposure' \
+        'pause:Drain and disconnect from the hub, keeping the exposure warm' \
+        'resume:Reconnect a paused exposure to the hub' \
+        'stop:Stop exposing the workspace (the leader keeps running)' \
+        'restart:Restart the exposure (stop, then start with the given options)' \
+        'status:Show the current workspace-exposure status' \
+        'list:Show the current workspace-exposure status' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok workspace commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help_commands() {
+    local commands; commands=(
+      'start:Start (or update) the workspace→hub exposure' \
+        'pause:Drain and disconnect from the hub, keeping the exposure warm' \
+        'resume:Reconnect a paused exposure to the hub' \
+        'stop:Stop exposing the workspace (the leader keeps running)' \
+        'restart:Restart the exposure (stop, then start with the given options)' \
+        'status:Show the current workspace-exposure status' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok workspace help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__pause_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__pause_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help pause commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__restart_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__restart_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help restart commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__resume_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__resume_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help resume commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__start_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__status_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__help__subcmd__stop_commands] )) ||
+  _grok__subcmd__workspace__subcmd__help__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace help stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__pause_commands] )) ||
+  _grok__subcmd__workspace__subcmd__pause_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace pause commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__restart_commands] )) ||
+  _grok__subcmd__workspace__subcmd__restart_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace restart commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__resume_commands] )) ||
+  _grok__subcmd__workspace__subcmd__resume_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace resume commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__start_commands] )) ||
+  _grok__subcmd__workspace__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace start commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__status_commands] )) ||
+  _grok__subcmd__workspace__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace status commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__workspace__subcmd__stop_commands] )) ||
+  _grok__subcmd__workspace__subcmd__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok workspace stop commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree_commands] )) ||
+  _grok__subcmd__worktree_commands() {
+    local commands; commands=(
+      'list:List tracked worktrees' \
+        'show:Show details for a specific worktree' \
+        'rm:Remove worktrees' \
+        'gc:Garbage-collect orphaned/stale worktrees' \
+        'db:Database maintenance' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok worktree commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db_commands() {
+    local commands; commands=(
+      'rebuild:Rebuild DB from filesystem scan' \
+        'stats:Show DB statistics' \
+        'path:Print DB file path' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok worktree db commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__help_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__help_commands() {
+    local commands; commands=(
+      'rebuild:Rebuild DB from filesystem scan' \
+        'stats:Show DB statistics' \
+        'path:Print DB file path' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok worktree db help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__path_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db help path commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__rebuild_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__rebuild_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db help rebuild commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__stats_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__help__subcmd__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db help stats commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__path_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db path commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__rebuild_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__rebuild_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db rebuild commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__db__subcmd__stats_commands] )) ||
+  _grok__subcmd__worktree__subcmd__db__subcmd__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree db stats commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__gc_commands] )) ||
+  _grok__subcmd__worktree__subcmd__gc_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree gc commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help_commands() {
+    local commands; commands=(
+      'list:List tracked worktrees' \
+        'show:Show details for a specific worktree' \
+        'rm:Remove worktrees' \
+        'gc:Garbage-collect orphaned/stale worktrees' \
+        'db:Database maintenance' \
+        'help:Print this message or the help of the given subcommand(s)' \
+      )
+      _describe -t commands 'grok worktree help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__db_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__db_commands() {
+    local commands; commands=(
+      'rebuild:Rebuild DB from filesystem scan' \
+        'stats:Show DB statistics' \
+        'path:Print DB file path' \
+      )
+      _describe -t commands 'grok worktree help db commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__db__subcmd__path_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__db__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help db path commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__db__subcmd__rebuild_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__db__subcmd__rebuild_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help db rebuild commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__db__subcmd__stats_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__db__subcmd__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help db stats commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__gc_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__gc_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help gc commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__help_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help help commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__list_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__rm_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__rm_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help rm commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__help__subcmd__show_commands] )) ||
+  _grok__subcmd__worktree__subcmd__help__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree help show commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__list_commands] )) ||
+  _grok__subcmd__worktree__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree list commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__rm_commands] )) ||
+  _grok__subcmd__worktree__subcmd__rm_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree rm commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__worktree__subcmd__show_commands] )) ||
+  _grok__subcmd__worktree__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok worktree show commands' commands "$@"
+  }
+(( $+functions[_grok__subcmd__wrap_commands] )) ||
+  _grok__subcmd__wrap_commands() {
+    local commands; commands=()
+    _describe -t commands 'grok wrap commands' commands "$@"
+  }
+
+if [ "$funcstack[1]" = "_grok" ]; then
+    _grok "$@"
+else
+    compdef _grok grok
+fi
+
+# vim:ft=zsh:et:sts=2:sw=2
