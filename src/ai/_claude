@@ -35,451 +35,1153 @@
 #
 # https://github.com/anthropics/claude-code
 #
-# 2.0.0 (Claude Code)
+# 2.1.205 (Claude Code)
 #
 # -----------------------------------------------------------------------------
 
-function _claude() {
-  local context curcontext=$curcontext state line expl ret=1
-  declare -A opt_args
+_claude__message() {
+  _message "${1:-value}"
+}
 
-  local -a _commands
-  _commands=(
-    "mcp:Configure and manage MCP servers"
-    "migrate-installer:Migrate from global npm installation to local installation"
-    "doctor:Check the health of your Claude Code auto-updater"
-    "update:Check for updates and install if available"
-    "install:Install Claude Code native build"
+_claude__prompt_text() {
+  _claude__message 'prompt text'
+}
+
+_claude__shift_words() {
+  local shift_count=$1
+  local -a shifted
+  local index
+
+  shifted=()
+  for (( index = shift_count + 1; index <= ${#words}; index++ )); do
+    shifted+=("${words[index]}")
+  done
+
+  reply=("${shifted[@]}")
+  REPLY=$(( CURRENT - shift_count ))
+  (( REPLY < 1 )) && REPLY=1
+}
+
+_claude__models() {
+  local -a models
+  models=(
+    'fable:latest Fable model'
+    'sonnet:latest Sonnet model'
+    'opus:latest Opus model'
+    'haiku:fast and efficient Haiku model'
+    'opusplan:use opus for planning and sonnet for execution'
+    'claude-fable-5:full Claude model name'
+    'claude-sonnet-4-6:full Claude model name'
+    'claude-sonnet-4-20250514:full Claude model name'
+    'claude-opus-4-1-20250805:full Claude model name'
   )
+  _describe 'model' models
+}
 
-  _arguments -C \
-    {-d,--debug}"[Enable debug mode]" \
-    "--verbose[Override verbose mode setting from config]" \
-    {-p,--print}"[Print response and exit (useful for pipes)]" \
-    "--output-format[Output format (only works with --print)]:format:(text json stream-json)" \
-    "--include-partial-messages[Include partial message chunks as they arrive (only works with --print and --output-format=stream-json)]" \
-    "--input-format[Input format (only works with --print)]:format:(text stream-json)" \
-    "--dangerously-skip-permissions[Bypass all permission checks. Recommended only for sandboxes with no internet access.]" \
-    "--replay-user-messages[Re-emit user messages from stdin back on stdout for acknowledgment (only works with --input-format=stream-json and --output-format=stream-json)]" \
-    {--allowedTools,--allowed-tools}"[Comma or space-separated list of tool names to allow (e.g. \"Bash(git:*) Edit\")]:allowed tools" \
-    {--disallowedTools,--disallowed-tools}"[Comma or space-separated list of tool names to deny (e.g. \"Bash(git:*) Edit\")]:disallowed tools" \
-    "--mcp-config[Load MCP servers from a JSON file or string]:mcp config json:_files" \
-    "--append-system-prompt[Append a system prompt to the default system prompt]:prompt" \
-    "--permission-mode[Permission mode to use for the session]:mode:(acceptEdits bypassPermissions default plan)" \
-    {-c,--continue}"[Continue the most recent conversation]" \
-    {-r,--resume}"[Resume a conversation - provide a session ID or interactively select a conversation to resume]:sessionId" \
-    "--fork-session[When resuming, create a new session ID instead of reusing the original (use with --resume or --continue)]" \
-    "--model[Model for the current session. Provide an alias for the latest model's or a models full name]:model:->model" \
-    "--fallback-model[Enable automatic fallback to specified model when default model is overloaded (only works with --print)]:model:->model" \
-    "--ide[Automatically connect to IDE on startup if exactly one valid IDE is available]" \
-    "--strict-mcp-config[Only use MCP servers from --mcp-config, ignoring all other MCP configurations]" \
-    "--session-id[Use a specific session ID for the conversation (must be a valid UUID)]:session id" \
-    "--agents[JSON object defining custom agents]:json file:_files" \
-    "--setting-sources[Comma-separated list of setting sources to load.]:setting sources:(user project local)" \
-    {-v,--version}"[output the version number]" \
-    {-h,--help}"[display help for command]" \
-    \
-    "1: :{_describe 'claude commands' _commands}" \
-    "*:: :->args" \
-    && ret=0
+_claude__output_formats() {
+  local -a formats
+  formats=(
+    'text:plain text output'
+    'json:single JSON result'
+    'stream-json:streaming JSON output'
+  )
+  _describe 'output format' formats
+}
+
+_claude__input_formats() {
+  local -a formats
+  formats=(
+    'text:plain text input'
+    'stream-json:streaming JSON input'
+  )
+  _describe 'input format' formats
+}
+
+_claude__effort_levels() {
+  local -a levels
+  levels=(
+    'low:low effort'
+    'medium:medium effort'
+    'high:high effort'
+    'xhigh:extra high effort'
+    'max:maximum effort'
+  )
+  _describe 'effort level' levels
+}
+
+_claude__permission_modes() {
+  local -a modes
+  modes=(
+    'acceptEdits:accept edits automatically'
+    'auto:auto mode'
+    'bypassPermissions:bypass permissions'
+    'manual:manual permission mode'
+    'dontAsk:never ask for permissions'
+    'plan:plan mode'
+  )
+  _describe 'permission mode' modes
+}
+
+_claude__setting_sources() {
+  local -a sources
+  sources=(
+    'user:user settings'
+    'project:project settings'
+    'local:local settings'
+  )
+  _describe 'setting source' sources
+}
+
+_claude__scopes() {
+  local -a scopes
+  scopes=(
+    'local:local scope'
+    'user:user scope'
+    'project:project scope'
+  )
+  _describe 'scope' scopes
+}
+
+_claude__plugin_scopes() {
+  local -a scopes
+  scopes=(
+    'user:user scope'
+    'project:project scope'
+    'local:local scope'
+  )
+  _describe 'scope' scopes
+}
+
+_claude__plugin_update_scopes() {
+  local -a scopes
+  scopes=(
+    'user:user scope'
+    'project:project scope'
+    'local:local scope'
+    'managed:managed scope'
+  )
+  _describe 'scope' scopes
+}
+
+_claude__mcp_transports() {
+  local -a transports
+  transports=(
+    'stdio:spawn a local stdio server'
+    'sse:connect to an SSE server'
+    'http:connect to an HTTP server'
+  )
+  _describe 'transport' transports
+}
+
+_claude__install_targets() {
+  local -a targets
+  targets=(
+    'stable:stable release'
+    'latest:latest release'
+  )
+  _describe 'install target' targets
+}
+
+_claude__tool_names() {
+  local -a tools
+  tools=(
+    'Bash' 'BashOutput' 'KillShell'
+    'Read' 'Write' 'Edit' 'MultiEdit' 'NotebookEdit' 'NotebookRead'
+    'Glob' 'Grep' 'LS'
+    'Task' 'Agent' 'TodoWrite' 'Think' 'ExitPlanMode' 'SlashCommand'
+    'WebFetch' 'WebSearch'
+    'ListMcpResources' 'ReadMcpResource'
+  )
+  compadd "$@" -a tools
+}
+
+_claude__tools() {
+  _alternative \
+    'presets:tool preset:(default)' \
+    'tools:built-in tool:_claude__tool_names'
+}
+
+_claude__top_commands() {
+  local -a commands
+  commands=(
+    'agents:manage background agents'
+    'auth:manage authentication'
+    'auto-mode:inspect auto mode classifier configuration'
+    'doctor:check the health of your Claude Code installation'
+    'gateway:run the enterprise auth/telemetry gateway'
+    'import-conversations:(hidden) import sessions from an export path'
+    'install:install Claude Code native build'
+    'mcp:configure and manage MCP servers'
+    'plugin:manage Claude Code plugins'
+    'plugins:manage Claude Code plugins'
+    'project:manage Claude Code project state'
+    'rc:(hidden) alias for remote-control'
+    'remote-control:(hidden) control local sessions from claude.ai/code or mobile'
+    'setup-token:set up a long-lived authentication token'
+    'ultrareview:run a cloud-hosted multi-agent code review'
+    'update:check for updates and install if available'
+    'upgrade:check for updates and install if available'
+  )
+  _describe 'claude command' commands
+}
+
+_claude__auth_commands() {
+  local -a commands
+  commands=(
+    'login:sign in to your Anthropic account'
+    'logout:log out from your Anthropic account'
+    'status:show authentication status'
+    'help:display help for command'
+  )
+  _describe 'auth command' commands
+}
+
+_claude__auto_mode_commands() {
+  local -a commands
+  commands=(
+    'config:print the effective auto mode config as JSON'
+    'critique:get AI feedback on custom auto mode rules'
+    'defaults:print the default auto mode rules as JSON'
+    'help:display help for command'
+  )
+  _describe 'auto-mode command' commands
+}
+
+_claude__mcp_commands() {
+  local -a commands
+  commands=(
+    'add:add an MCP server to Claude Code'
+    'add-from-claude-desktop:import MCP servers from Claude Desktop'
+    'add-json:add an MCP server with a JSON string'
+    'get:get details about an MCP server'
+    'help:display help for command'
+    'list:list configured MCP servers'
+    'login:authenticate with an MCP server'
+    'logout:clear stored OAuth credentials for an MCP server'
+    'remove:remove an MCP server'
+    'reset-project-choices:reset project-scoped MCP approvals'
+    'serve:start the Claude Code MCP server'
+    'xaa:(hidden) manage the XAA (SEP-990) IdP connection'
+  )
+  _describe 'mcp command' commands
+}
+
+_claude__plugin_commands() {
+  local -a commands
+  commands=(
+    'autoremove:remove auto-installed dependencies no longer needed'
+    'details:show a plugin component inventory and token cost'
+    'disable:disable an enabled plugin'
+    'enable:enable a disabled plugin'
+    'eval:run eval cases against a plugin and report results'
+    'help:display help for command'
+    'i:install a plugin'
+    'init:scaffold a new plugin'
+    'install:install a plugin'
+    'list:list installed plugins'
+    'marketplace:manage Claude Code marketplaces'
+    'new:scaffold a new plugin'
+    'prune:remove auto-installed dependencies no longer needed'
+    'remove:uninstall an installed plugin'
+    'tag:create a git tag for a plugin release'
+    'uninstall:uninstall an installed plugin'
+    'update:update a plugin to the latest version'
+    'validate:validate a plugin or marketplace manifest'
+  )
+  _describe 'plugin command' commands
+}
+
+_claude__plugin_marketplace_commands() {
+  local -a commands
+  commands=(
+    'add:add a marketplace from a URL, path, or GitHub repo'
+    'help:display help for command'
+    'list:list configured marketplaces'
+    'remove:remove a configured marketplace'
+    'rm:remove a configured marketplace'
+    'update:update marketplace definitions'
+  )
+  _describe 'marketplace command' commands
+}
+
+_claude__top_option_specs() {
+  reply=(
+    '--add-dir=[additional directories to allow tool access to]:directory:_files -/'
+    '--agent=[agent for the current session]:agent:_claude__message'
+    '--agents=[JSON object defining custom agents]:json object:_claude__message'
+    '--allow-dangerously-skip-permissions[allow bypassing all permission checks as an option]'
+    '(--allowedTools --allowed-tools)--allowedTools=[comma- or space-separated list of allowed tools]:tools:_claude__tool_names'
+    '(--allowedTools --allowed-tools)--allowed-tools=[comma- or space-separated list of allowed tools]:tools:_claude__tool_names'
+    '--append-system-prompt=[append a system prompt to the default system prompt]:prompt:_claude__message'
+    '--ax-screen-reader[render screen-reader friendly output]'
+    '(--bg --background)'{--bg,--background}'[start the session as a background agent and return immediately]'
+    '--bare[minimal mode]'
+    '--betas=[beta headers to include in API requests]:beta header:_claude__message'
+    '--brief[enable SendUserMessage tool for agent-to-user communication]'
+    '(--chrome --no-chrome)--chrome[enable Claude in Chrome integration]'
+    '(-c --continue -r --resume --from-pr)'{-c,--continue}'[continue the most recent conversation in the current directory]'
+    '--dangerously-skip-permissions[bypass all permission checks]'
+    '(-d --debug)'{-d,--debug}'[enable debug mode with optional category filtering]::filter:_claude__message'
+    '--debug-file=[write debug logs to a specific file path]:path:_files'
+    '--disable-slash-commands[disable all skills]'
+    '(--disallowedTools --disallowed-tools)--disallowedTools=[comma- or space-separated list of denied tools]:tools:_claude__tool_names'
+    '(--disallowedTools --disallowed-tools)--disallowed-tools=[comma- or space-separated list of denied tools]:tools:_claude__tool_names'
+    '--effort=[effort level for the current session]:level:_claude__effort_levels'
+    '--exclude-dynamic-system-prompt-sections[move per-machine sections out of the system prompt]'
+    '--fallback-model=[fallback model for print mode]:model:_claude__models'
+    '--file=[startup file resource spec]:file spec:_claude__message'
+    '--fork-session[create a new session ID when resuming]'
+    '(-c --continue -r --resume --from-pr)--from-pr=[resume a session linked to a PR]::PR number or URL:_claude__message'
+    '(-h --help)'{-h,--help}'[display help for command]'
+    '--ide[automatically connect to the IDE on startup]'
+    '--include-hook-events[include all hook lifecycle events in the output stream]'
+    '--include-partial-messages[include partial message chunks as they arrive]'
+    '--input-format=[input format for print mode]:format:_claude__input_formats'
+    '--json-schema=[JSON Schema for structured output validation]:schema:_claude__message'
+    '--max-budget-usd=[maximum API budget in USD]:amount:_claude__message'
+    '--mcp-config=[MCP server config files or JSON strings]:config:_files'
+    '--mcp-debug[deprecated MCP debug mode]'
+    '--model=[model for the current session]:model:_claude__models'
+    '(-n --name)'{-n,--name}'[set a display name for the session]:name:_claude__message'
+    '(--chrome --no-chrome)--no-chrome[disable Claude in Chrome integration]'
+    '--no-session-persistence[disable session persistence]'
+    '--output-format=[output format for print mode]:format:_claude__output_formats'
+    '--permission-mode=[permission mode for the session]:mode:_claude__permission_modes'
+    '*--plugin-dir=[load plugins from a directory for this session only]:directory:_files -/'
+    '*--plugin-url=[fetch a plugin .zip from a URL for this session only]:url:_claude__message'
+    '(-p --print)'{-p,--print}'[print response and exit]'
+    '--prompt-suggestions=-[enable prompt suggestions]::value:(true false 1 0 yes no on off)'
+    '--remote-control=-[start an interactive session with Remote Control enabled]::name:_claude__message'
+    '--remote-control-session-name-prefix=[prefix for auto-generated remote-control session names]:prefix:_claude__message'
+    '--safe-mode[start with all customizations disabled for troubleshooting]'
+    '--replay-user-messages[re-emit user messages from stdin]'
+    '(-c --continue -r --resume --from-pr)'{-r,--resume}'[resume a conversation by session ID]::session id:_claude__message'
+    '--session-id=[use a specific session UUID]:uuid:_claude__message'
+    '--setting-sources=[setting sources to load]:sources:_claude__setting_sources'
+    '--settings=[settings JSON file or string]:settings:_files'
+    '--strict-mcp-config[only use MCP servers from --mcp-config]'
+    '--system-prompt=[system prompt to use for the session]:prompt:_claude__message'
+    '--tmux=-[create a tmux session for the worktree]:mode:(classic)'
+    '--tools=[list of available built-in tools]:tools:_claude__tools'
+    '--verbose[override verbose mode setting from config]'
+    '(-v --version)'{-v,--version}'[output the version number]'
+    '(-w --worktree)'{-w,--worktree}'[create a new git worktree for this session]::name:_claude__message'
+    '--advisor=[(hidden) enable the server-side advisor tool with the specified model]:model:_claude__models'
+    '--agent-color=[(hidden) teammate UI color]:color:_claude__message'
+    '--agent-id=[(hidden) teammate agent ID]:id:_claude__message'
+    '--agent-name=[(hidden) teammate display name]:name:_claude__message'
+    '--agent-type=[(hidden) custom agent type for this teammate]:type:_claude__message'
+    '--append-subagent-system-prompt=[(hidden) append a system prompt to every Task-tool subagent]:prompt:_claude__message'
+    '(--append-system-prompt --append-system-prompt-file)--append-system-prompt-file=[(hidden) read a system prompt from a file and append it]:file:_files'
+    '*--channels=[(hidden) MCP servers whose channel notifications register this session]:servers:_claude__message'
+    '(--cloud --remote)--cloud=-[(hidden) create or attach to a cloud session]::description or session id or url:_claude__message'
+    '*--dangerously-load-development-channels=[(hidden) load channel servers not on the approved allowlist]:servers:_claude__message'
+    '--debug-to-stderr[(hidden, deprecated) enable debug mode to stderr]'
+    '--deep-link-cwd-b64=[(hidden) base64url-encoded working directory for deep-link launches]:b64:_claude__message'
+    '--deep-link-last-fetch=[(hidden) deep-link last fetch timestamp]:ms:_claude__message'
+    '--deep-link-origin[(hidden) signal that this session was launched from a deep link]'
+    '--deep-link-repo=[(hidden) repo slug the deep link ?repo= parameter resolved to]:slug:_claude__message'
+    '--enable-auth-status[(hidden) enable auth status messages in SDK mode]'
+    '--enable-auto-mode[(hidden, deprecated) opt in to auto mode]'
+    '--init[(hidden) run Setup hooks with init trigger, then continue]'
+    '--init-only[(hidden) run Setup and SessionStart:startup hooks, then exit]'
+    '--maintenance[(hidden) run Setup hooks with maintenance trigger, then continue]'
+    '--managed-settings=[(hidden) policy-tier settings JSON from a spawning parent process]:json:_claude__message'
+    '--max-thinking-tokens=[(hidden, deprecated) maximum number of thinking tokens]:tokens:_claude__message'
+    '--max-turns=[(hidden) maximum number of agentic turns in non-interactive mode]:turns:_claude__message'
+    '--parent-session-id=[(hidden) parent session ID for analytics correlation]:id:_claude__message'
+    '--permission-prompt-tool=[(hidden) MCP tool to use for permission prompts]:tool:_claude__message'
+    '--plan-mode-instructions=[(hidden) custom workflow body for plan mode]:instructions:_claude__message'
+    '--plan-mode-required[(hidden) require plan mode before implementation]'
+    '*--plugin-dir-no-mcp=[(hidden) like --plugin-dir but engine will not read the plugin .mcp.json]:directory:_files -/'
+    '--prefill=[(hidden) pre-fill the prompt input with text without submitting it]:text:_claude__message'
+    '--prefill-b64=[(hidden) base64url-encoded --prefill value]:b64:_claude__message'
+    '(--rc --remote-control)--rc=-[(hidden) alias for --remote-control]::name:_claude__message'
+    '(--cloud --remote)--remote=-[(hidden, deprecated) alias for --cloud]::description or session id or url:_claude__message'
+    '--reply-on-resume[(hidden) immediately query if a resumed transcript ends in a user message]'
+    '--resume-session-at=[(hidden) when resuming, only messages up to the given assistant message id]:message id:_claude__message'
+    '--rewind-files=[(hidden) restore files to state at the specified user message and exit]:user-message-id:_claude__message'
+    '--sdk-url=[(hidden) use a remote WebSocket endpoint for SDK I/O streaming]:url:_claude__message'
+    '--session-mirror[(hidden) emit transcript_mirror frames on stdout (SDK-internal)]'
+    '(--system-prompt --system-prompt-file)--system-prompt-file=[(hidden) read the system prompt from a file]:file:_files'
+    '--task-budget=[(hidden) API-side task budget in tokens]:tokens:_claude__message'
+    '--team-name=[(hidden) team name for teammate coordination]:name:_claude__message'
+    '--teammate-mode=[(hidden) how to spawn teammates]:mode:(auto tmux iterm2 in-process)'
+    '--teleport=-[(hidden) resume a teleport session, optionally specify session ID]::session:_claude__message'
+    '--thinking=[(hidden) thinking mode]:mode:(enabled adaptive disabled)'
+    '--thinking-display=[(hidden) how thinking content appears in the response]:display:(summarized omitted)'
+    '--workload=[(hidden) workload tag for billing-header attribution]:tag:_claude__message'
+  )
+}
+
+_claude__complete_help_only_leaf() {
+  _claude__shift_words "${1:-1}"
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_claude__complete_agents() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '*--add-dir=[additional directory to allow tool access to in dispatched sessions]:directory:_files -/' \
+    '--agent=[default agent for sessions dispatched from agent view]:agent:_claude__message' \
+    '--all[with --json: include completed sessions]' \
+    '--allow-dangerously-skip-permissions[make bypass-permissions mode available to dispatched sessions]' \
+    '--cwd=[show only background sessions started under path]:path:_files -/' \
+    '--dangerously-skip-permissions[alias for --permission-mode bypassPermissions]' \
+    '--effort=[default effort level for dispatched sessions]:level:_claude__effort_levels' \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '--json[print active sessions as a JSON array and exit]' \
+    '*--mcp-config=[MCP server configuration to apply to dispatched sessions]:config:_files' \
+    '--model=[default model for dispatched sessions]:model:_claude__models' \
+    '--permission-mode=[default permission mode for dispatched sessions]:mode:_claude__permission_modes' \
+    '*--plugin-dir=[load plugins from directory for the agent view and dispatched sessions]:directory:_files -/' \
+    '*--plugin-dir-no-mcp=[(hidden) like --plugin-dir but engine will not read the plugin .mcp.json]:directory:_files -/' \
+    '--setting-sources=[comma-separated list of setting sources to load]:sources:_claude__setting_sources' \
+    '--settings=[settings file or JSON string to apply]:settings:_files' \
+    '--strict-mcp-config[only use MCP servers from --mcp-config in dispatched sessions]'
+}
+
+_claude__complete_auth() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:auth command:->command' \
+    '*::auth argument:->args'
 
   case $state in
-    model)
-      local -a _models
-      _models=(
-      "claude-opus-4-1-20250805:Uses the most capable Opus model (currently Opus 4.1) for complex reasoning"
-      "claude-sonnet-4-20250514:Uses the latest Sonnet model (currently Sonnet 4) for daily coding tasks"
-      "claude-sonnet-4-20250514[1m]:Uses Sonnet with a 1 million token context window window for long sessions"
-      "sonnet:Uses the latest Sonnet model (currently Sonnet 4) for daily coding tasks"
-      "opus:Uses the most capable Opus model (currently Opus 4.1) for complex reasoning"
-      "haiku:Uses the fast and efficient Haiku model for simple tasks"
-      "sonnet[1m]:Uses Sonnet with a 1 million token context window window for long sessions"
-      "opusplan:Special mode that uses opus during plan mode, then switches to sonnet for execution"
-      )
-      _arguments \
-        "*: :{_describe 'model' _models}"
-      ;;
-
-    args)
-      case $words[1] in
-        (config)
-          local -a _config_commands
-          _config_commands=(
-            "get:Get a config value"
-            "set:Set a config value"
-            "remove:Remove a config value or items from a config array"
-            "rm:Remove a config value or items from a config array"
-            "list:List all config values"
-            "ls:List all config values"
-            "add:Add items to a config array (space or comma separated)"
-            "help:display help for command"
-          )
-          _arguments \
-            "1: :{_describe 'claude config commands' _config_commands}" \
-            && ret=0
-
-          case $words[2] in
-            (get)
-              _arguments \
-                {-g,--global}"[Use global config]" \
-                {-h,--help}"[display help for command]" \
-                "*::key" \
-                && ret=0
-              ;;
-
-            (set)
-              _arguments \
-                {-g,--global}"[Use global config]" \
-                {-h,--help}"[display help for command]" \
-                "*::key or value" \
-                && ret=0
-              ;;
-
-            (remove|rm)
-              _arguments \
-                {-g,--global}"[Use global config]" \
-                {-h,--help}"[display help for command]" \
-                "*::key or value" \
-                && ret=0
-              ;;
-
-            (list|ls)
-              _arguments \
-                {-g,--global}"[Use global config]" \
-                {-h,--help}"[display help for command]" \
-                && ret=0
-              ;;
-
-            (add)
-              _arguments \
-                {-g,--global}"[Use global config]" \
-                {-h,--help}"[display help for command]" \
-                "*::key or value" \
-                && ret=0
-              ;;
-
-            (help)
-              _describe 'claude config commands' _config_commands \
-              && ret=0
-              ;;
-          esac
-          ;;
-
-        (mcp)
-          local -a _mcp_commands
-          _mcp_commands=(
-            "serve:Start the Claude Code MCP server"
-            "add:Add a server (run without arguments for interactive wizard)"
-            "remove:Remove an MCP server"
-            "list:List configured MCP servers"
-            "get:Get details about an MCP server"
-            "add-json:Add an MCP server (stdio or SSE) with a JSON string"
-            "add-from-claude-desktop:Import MCP servers from Claude Desktop (Mac and WSL only)"
-            "reset-project-choices:Reset all approved and rejected project-scoped (.mcp.json) servers within this project"
-            "help:display help for command"
-          )
-          _arguments \
-            "1: :{_describe 'claude mcp commands' _mcp_commands}" \
-            && ret=0
-
-          case $words[2] in
-            (serve)
-              _arguments \
-                {-h,--help}"[display help for command]" \
-                && ret=0
-              ;;
-
-            (add)
-              _arguments \
-                {-s,--scope}"[Configuration scope (default: \"local\")]:scope:(local user project)" \
-                {-t,--transport}"[Transport type (default: \"stdio\")]:transport:(stdio sse)" \
-                {-e,--env}"[Set environment variables (e.g. -e KEY=value)]:envs" \
-                {-h,--help}"[display help for command]"
-                if (( CURRENT == 3 )); then
-                  _arguments "*:name"
-                  return
-                elif (( CURRENT == 4 )); then
-                  _arguments "*:commandOrUrl"
-                  return
-                else
-                  _arguments "*:args $(( $CURRENT - 4 ))"
-                  return
-                fi
-              ;;
-
-            (remove)
-              _arguments \
-                {-s,--scope}"[Configuration scope (default: \"local\")]:scope:(local user project)" \
-                {-h,--help}"[display help for command]" \
-                && ret=0
-              ;;
-
-            (list)
-              _arguments \
-                {-h,--help}"[display help for command]" \
-                && ret=0
-              ;;
-
-            (get)
-              _arguments \
-                {-h,--help}"[display help for command]" \
-                "*::name" \
-                && ret=0
-              ;;
-
-            (add-json)
-              _arguments \
-                {-s,--scope}"[Configuration scope (default: \"local\")]:scope:(local user project)" \
-                {-h,--help}"[display help for command]"
-                if (( CURRENT == 3 )); then
-                  _arguments "*:name"
-                  return
-                elif (( CURRENT == 4 )); then
-                  _arguments "*:json"
-                  return
-                fi
-              ;;
-
-            (add-from-claude-desktop)
-              _arguments \
-                {-s,--scope}"[Configuration scope (default: \"local\")]:scope:(local user project)" \
-                {-h,--help}"[display help for command]" \
-                && ret=0
-              ;;
-
-            (reset-project-choices)
-              _arguments \
-                {-h,--help}"[display help for command]" \
-                && ret=0
-              ;;
-
-            (help)
-              _describe 'claude mcp commands' _mcp_commands \
-              && ret=0
-              ;;
-          esac
-          ;;
-
-        (migrate-installer|doctor|update)
-          _arguments \
-            {-h,--help}"[display help for command]" \
-            && ret=0
-          ;;
-
-        (install)
-          _arguments \
-            "--force[Force installation even if already installed]" \
-            {-h,--help}"[display help for command]" \
-            && ret=0
-          ;;
-      esac
-      ;;
-
-    (*)
-      _arguments "*::prompt" \
-      && ret=0
+    command)
+      _claude__auth_commands
+      return
       ;;
   esac
 
-  return ret
+  case $words[1] in
+    login)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(--claudeai --console)--claudeai[use Claude subscription]' \
+        '(--claudeai --console)--console[use Anthropic Console instead of Claude subscription]' \
+        '--email=[pre-populate email address on the login page]:email:_claude__message' \
+        '--sso[force SSO login flow]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    logout)
+      _claude__complete_help_only_leaf 1
+      ;;
+    status)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(--json --text)--json[output as JSON]' \
+        '(--json --text)--text[output as human-readable text]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:auth command:_claude__auth_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
 }
 
-_claude "$*"
+_claude__complete_auto_mode() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
 
-# -----------------------------------------------------------------------------
-#
-# Usage: claude [options] [command] [prompt]
-#
-# Claude Code - starts an interactive session by default, use -p/--print for
-# non-interactive output
-#
-# Arguments:
-#   prompt                                            Your prompt
-#
-# Options:
-#   -d, --debug [filter]                              Enable debug mode with optional category filtering (e.g., "api,hooks" or "!statsig,!file")
-#   --verbose                                         Override verbose mode setting from config
-#   -p, --print                                       Print response and exit (useful for pipes). Note: The workspace trust dialog is skipped when Claude is run with the -p mode. Only use this flag in directories you trust.
-#   --output-format <format>                          Output format (only works with --print): "text" (default), "json" (single result), or "stream-json" (realtime streaming) (choices: "text", "json", "stream-json")
-#   --include-partial-messages                        Include partial message chunks as they arrive (only works with --print and --output-format=stream-json)
-#   --input-format <format>                           Input format (only works with --print): "text" (default), or "stream-json" (realtime streaming input) (choices: "text", "stream-json")
-#   --mcp-debug                                       [DEPRECATED. Use --debug instead] Enable MCP debug mode (shows MCP server errors)
-#   --dangerously-skip-permissions                    Bypass all permission checks. Recommended only for sandboxes with no internet access.
-#   --replay-user-messages                            Re-emit user messages from stdin back on stdout for acknowledgment (only works with --input-format=stream-json and --output-format=stream-json)
-#   --allowedTools, --allowed-tools <tools...>        Comma or space-separated list of tool names to allow (e.g. "Bash(git:*) Edit")
-#   --disallowedTools, --disallowed-tools <tools...>  Comma or space-separated list of tool names to deny (e.g. "Bash(git:*) Edit")
-#   --mcp-config <configs...>                         Load MCP servers from JSON files or strings (space-separated)
-#   --append-system-prompt <prompt>                   Append a system prompt to the default system prompt
-#   --permission-mode <mode>                          Permission mode to use for the session (choices: "acceptEdits", "bypassPermissions", "default", "plan")
-#   -c, --continue                                    Continue the most recent conversation
-#   -r, --resume [sessionId]                          Resume a conversation - provide a session ID or interactively select a conversation to resume
-#   --fork-session                                    When resuming, create a new session ID instead of reusing the original (use with --resume or --continue)
-#   --model <model>                                   Model for the current session. Provide an alias for the latest model (e.g. 'sonnet' or 'opus') or a model's full name (e.g. 'claude-sonnet-4-5-20250929').
-#   --fallback-model <model>                          Enable automatic fallback to specified model when default model is overloaded (only works with --print)
-#   --settings <file-or-json>                         Path to a settings JSON file or a JSON string to load additional settings from
-#   --add-dir <directories...>                        Additional directories to allow tool access to
-#   --ide                                             Automatically connect to IDE on startup if exactly one valid IDE is available
-#   --strict-mcp-config                               Only use MCP servers from --mcp-config, ignoring all other MCP configurations
-#   --session-id <uuid>                               Use a specific session ID for the conversation (must be a valid UUID)
-#   --agents <json>                                   JSON object defining custom agents (e.g. '{"reviewer": {"description": "Reviews code", "prompt": "You are a code reviewer"}}')
-#   --setting-sources <sources>                       Comma-separated list of setting sources to load (user, project, local).
-#   -v, --version                                     Output the version number
-#   -h, --help                                        Display help for command
-#
-# Commands:
-#   mcp                                               Configure and manage MCP servers
-#   migrate-installer                                 Migrate from global npm installation to local installation
-#   setup-token                                       Set up a long-lived authentication token (requires Claude subscription)
-#   doctor                                            Check the health of your Claude Code auto-updater
-#   update                                            Check for updates and install if available
-#   install [options] [target]                        Install Claude Code native build. Use [target] to specify version (stable, latest, or specific version)
-#
-# ------------------------------------------------------------------------------
-#
-# Usage: claude mcp [options] [command]
-#
-# Configure and manage MCP servers
-#
-# Options:
-#   -h, --help                                     Display help for command
-#
-# Commands:
-#   serve [options]                                Start the Claude Code MCP server
-#   add [options] <name> <commandOrUrl> [args...]  Add a server
-#   remove [options] <name>                        Remove an MCP server
-#   list                                           List configured MCP servers
-#   get <name>                                     Get details about an MCP server
-#   add-json [options] <name> <json>               Add an MCP server (stdio or SSE) with a JSON string
-#   add-from-claude-desktop [options]              Import MCP servers from Claude Desktop (Mac and WSL only)
-#   reset-project-choices                          Reset all approved and rejected project-scoped (.mcp.json) servers within this project
-#   help [command]                                 display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp serve [options]
-#
-# Start the Claude Code MCP server
-#
-# Options:
-#   -d, --debug  Enable debug mode
-#   --verbose    Override verbose mode setting from config
-#   -h, --help   Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp add [options] <name> <commandOrUrl> [args...]
-#
-# Add a server
-#
-# Options:
-#   -s, --scope <scope>          Configuration scope (local, user, or project)
-#                                (default: "local")
-#   -t, --transport <transport>  Transport type (stdio, sse, http) (default:
-#                                "stdio")
-#   -e, --env <env...>           Set environment variables (e.g. -e KEY=value)
-#   -H, --header <header...>     Set HTTP headers for SSE and HTTP transports
-#                                (e.g. -H "X-Api-Key: abc123" -H "X-Custom:
-#                                value")
-#   -h, --help                   Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp remove [options] <name>
-#
-# Remove an MCP server
-#
-# Options:
-#   -s, --scope <scope>  Configuration scope (local, user, or project) - if not
-#                        specified, removes from whichever scope it exists in
-#   -h, --help           Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp list [options]
-#
-# List configured MCP servers
-#
-# Options:
-#   -h, --help  Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp get [options] <name>
-#
-# Get details about an MCP server
-#
-# Options:
-#   -h, --help  Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp add-json [options] <name> <json>
-#
-# Add an MCP server (stdio or SSE) with a JSON string
-#
-# Options:
-#   -s, --scope <scope>  Configuration scope (local, user, or project) (default:
-#                        "local")
-#   -h, --help           Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp add-from-claude-desktop [options]
-#
-# Import MCP servers from Claude Desktop (Mac and WSL only)
-#
-# Options:
-#   -s, --scope <scope>  Configuration scope (local, user, or project) (default:
-#                        "local")
-#   -h, --help           Display help for command
-#
-# -----------------------------------------------------------------------------
-#
-# Usage: claude mcp reset-project-choices [options]
-#
-# Reset all approved and rejected project-scoped (.mcp.json) servers within this
-# project
-#
-# Options:
-#   -h, --help  Display help for command
-#
-# ------------------------------------------------------------------------------
-#
-# Usage: claude migrate-installer [options]
-#
-# Migrate from global npm installation to local installation
-#
-# Options:
-#   -h, --help  Display help for command
-#
-# ------------------------------------------------------------------------------
-#
-# Usage: claude doctor [options]
-#
-# Check the health of your Claude Code auto-updater
-#
-# Options:
-#   -h, --help  Display help for command
-#
-# ------------------------------------------------------------------------------
-#
-# Usage: claude update [options]
-#
-# Check for updates and install if available
-#
-# Options:
-#   -h, --help  Display help for command
-#
-# ------------------------------------------------------------------------------
-#
-# Usage: claude install [options]
-#
-# Install Claude Code native build
-#
-# Options:
-#   --force     Force installation even if already installed
-#   -h, --help  Display help for command
-#
-# -----------------------------------------------------------------------------
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:auto-mode command:->command' \
+    '*::auto-mode argument:->args'
+
+  case $state in
+    command)
+      _claude__auto_mode_commands
+      return
+      ;;
+  esac
+
+  case $words[1] in
+    config|defaults)
+      _claude__complete_help_only_leaf 1
+      ;;
+    critique)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--model=[override which model is used]:model:_claude__models' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:auto-mode command:_claude__auto_mode_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
+}
+
+_claude__complete_mcp() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:mcp command:->command' \
+    '*::mcp argument:->args'
+
+  case $state in
+    command)
+      _claude__mcp_commands
+      return
+      ;;
+  esac
+
+  case $words[1] in
+    add)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      if (( CURRENT > 1 )); then
+        case $words[$(( CURRENT - 1 ))] in
+          (-t|--transport)
+            _claude__mcp_transports
+            return
+            ;;
+          (-s|--scope)
+            _claude__scopes
+            return
+            ;;
+          (--callback-port)
+            _claude__message 'port'
+            return
+            ;;
+          (--client-id)
+            _claude__message 'client id'
+            return
+            ;;
+          (--client-secret)
+            return
+            ;;
+          (-e|--env)
+            _claude__message 'env'
+            return
+            ;;
+          (-H|--header)
+            _claude__message 'header'
+            return
+            ;;
+        esac
+      fi
+      _arguments -C -s \
+        '--callback-port=[fixed port for OAuth callback]:port:_claude__message' \
+        '--client-id=[OAuth client ID for HTTP/SSE servers]:client id:_claude__message' \
+        '--client-secret[prompt for OAuth client secret]' \
+        '(-e --env)'{-e,--env}'[set environment variables]:env:_claude__message' \
+        '(-H --header)'{-H,--header}'[set WebSocket headers]:header:_claude__message' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[configuration scope]:scope:_claude__scopes' \
+        '(-t --transport)'{-t,--transport}'[transport type]:transport:_claude__mcp_transports' \
+        '--xaa[(hidden) enable XAA (SEP-990) for this server]' \
+        '1:server name:_claude__message' \
+        '2:command or URL:_claude__message' \
+        '*::server argument:_normal'
+      ;;
+    add-from-claude-desktop)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-s --scope)'{-s,--scope}'[configuration scope]:scope:_claude__scopes' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    add-json)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -C -s \
+        '--client-secret[prompt for OAuth client secret]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[configuration scope]:scope:_claude__scopes' \
+        '1:server name:_claude__message' \
+        '2:JSON string:_claude__message'
+      ;;
+    get)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:server name:_claude__message'
+      ;;
+    list|reset-project-choices)
+      _claude__complete_help_only_leaf 1
+      ;;
+    login)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--no-browser[print the authorization URL instead of opening a browser]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:server name:_claude__message'
+      ;;
+    logout)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:server name:_claude__message'
+      ;;
+    remove)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[configuration scope]:scope:_claude__scopes' \
+        '1:server name:_claude__message'
+      ;;
+    serve)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-d --debug)'{-d,--debug}'[enable debug mode]' \
+        '--verbose[override verbose mode setting from config]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    xaa)
+      _claude__complete_mcp_xaa
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:mcp command:_claude__mcp_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
+}
+
+_claude__mcp_xaa_commands() {
+  local -a commands
+  commands=(
+    'setup:configure the IdP connection (one-time setup)'
+    'login:cache an IdP id_token so XAA-enabled servers authenticate silently'
+    'show:show the current IdP connection config'
+    'clear:clear the IdP connection config and cached id_token'
+    'help:display help for command'
+  )
+  _describe 'xaa command' commands
+}
+
+_claude__complete_mcp_xaa() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:xaa command:->command' \
+    '*::xaa argument:->args'
+
+  case $state in
+    command)
+      _claude__mcp_xaa_commands
+      return
+      ;;
+  esac
+
+  case $words[1] in
+    setup)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--issuer=[IdP issuer URL (OIDC discovery)]:url:_claude__message' \
+        '--client-id=[Claude Code client_id at the IdP]:id:_claude__message' \
+        '--client-secret[read IdP client secret from MCP_XAA_IDP_CLIENT_SECRET env var]' \
+        '--callback-port=[fixed loopback callback port]:port:_claude__message' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    login)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--force[ignore any cached id_token and re-login]' \
+        '--id-token=[write a pre-obtained id_token directly to cache]:jwt:_claude__message' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    show|clear)
+      _claude__complete_help_only_leaf 1
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:xaa command:_claude__mcp_xaa_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
+}
+
+_claude__complete_plugin_marketplace() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:marketplace command:->command' \
+    '*::marketplace argument:->args'
+
+  case $state in
+    command)
+      _claude__plugin_marketplace_commands
+      return
+      ;;
+  esac
+
+  case $words[1] in
+    add)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '--scope=[where to declare the marketplace]:scope:_claude__plugin_scopes' \
+        '--sparse=[limit checkout to specific directories]:path:_files -/' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:source:_claude__message'
+      ;;
+    list)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '--json[output as JSON]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    remove|rm)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '--scope=[remove the marketplace declaration from a specific settings scope]:scope:_claude__plugin_scopes' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:marketplace name:_claude__message'
+      ;;
+    update)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '::marketplace name:_claude__message'
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:marketplace command:_claude__plugin_marketplace_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
+}
+
+_claude__complete_plugin_eval() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  if [[ $words[1] == init ]]; then
+    _claude__shift_words 1
+    words=("${reply[@]}")
+    CURRENT=$REPLY
+    _arguments -s \
+      '--bare[write a blank template instead of running the interview]' \
+      '(-i --interactive)'{-i,--interactive}'[(hidden) force the interview]' \
+      '--interview[(hidden) alias for --interactive]' \
+      '(-h --help)'{-h,--help}'[display help for command]' \
+      '1:name:_claude__message'
+    return
+  fi
+
+  _arguments -s \
+    '--ablation=[run a no-plugin baseline arm and report the score delta]:mode:(none with-without)' \
+    '*--allow-tools=[operator grant for gated tools]:tools:_claude__message' \
+    '--case=[filter cases by name glob]:glob:_claude__message' \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '--json[emit aggregate-result.json to stdout]' \
+    '--judge-model=[override LLM-grader model]:model:_claude__models' \
+    '--keep-temp[preserve scaffold dirs for debugging]' \
+    '--max-cost-usd=[optional hard cost ceiling]:usd:_claude__message' \
+    '--model=[override model for all cases]:model:_claude__models' \
+    '--no-scaffold[explicitly skip scaffold_script]' \
+    '--output-dir=[directory for aggregate-result.json]:dir:_files -/' \
+    '--runs=[override per-case runs]:n:_claude__message' \
+    '--scaffold[run each case scaffold_script]' \
+    '*--tag=[filter cases by tag]:tag:_claude__message' \
+    '--threshold=[exit 1 if any case score is below this threshold]:0..1:_claude__message' \
+    '--verbose[stream the trace as it runs]' \
+    '1:target:_files'
+}
+
+_claude__complete_plugin() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:plugin command:->command' \
+    '*::plugin argument:->args'
+
+  case $state in
+    command)
+      _claude__plugin_commands
+      return
+      ;;
+  esac
+
+  case $words[1] in
+    disable)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-a --all)'{-a,--all}'[disable all enabled plugins]' \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[installation scope]:scope:_claude__plugin_scopes' \
+        '::plugin:_claude__message'
+      ;;
+    enable)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[installation scope]:scope:_claude__plugin_scopes' \
+        '1:plugin:_claude__message'
+      ;;
+    install|i)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '*--config=[set a userConfig option declared in the plugin manifest]:key=value:_claude__message' \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[installation scope]:scope:_claude__plugin_scopes' \
+        '1:plugin:_claude__message'
+      ;;
+    details)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:plugin:_claude__message'
+      ;;
+    init|new)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--author=[author name]:name:_claude__message' \
+        '--author-email=[author email]:email:_claude__message' \
+        '--description=[manifest description]:text:_claude__message' \
+        '(-f --force)'{-f,--force}'[overwrite an existing .claude-plugin/ at the target]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '*--with=[also scaffold components]:component:(skills agents hooks mcp lsp output-style channel)' \
+        '1:plugin name:_claude__message'
+      ;;
+    prune|autoremove)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '--dry-run[list what would be removed without removing]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[prune at scope]:scope:_claude__plugin_scopes' \
+        '(-y --yes)'{-y,--yes}'[skip the confirmation prompt]'
+      ;;
+    tag)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--dry-run[print what would be tagged without creating it]' \
+        '(-f --force)'{-f,--force}'[skip dirty-working-tree and tag-already-exists checks]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-m --message)'{-m,--message}'[tag annotation message]:msg:_claude__message' \
+        '--push[push the tag to --remote after creating it]' \
+        '--remote=[remote to push to with --push]:name:_claude__message' \
+        '1:path:_files -/'
+      ;;
+    eval)
+      _claude__complete_plugin_eval
+      ;;
+    list)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--available[include available plugins from marketplaces]' \
+        '--json[output as JSON]' \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+    marketplace)
+      _claude__complete_plugin_marketplace
+      ;;
+    remove|uninstall)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '--keep-data[preserve the plugin persistent data directory]' \
+        '--prune[also remove auto-installed dependencies no longer needed]' \
+        '(-s --scope)'{-s,--scope}'[uninstall from scope]:scope:_claude__plugin_scopes' \
+        '(-y --yes)'{-y,--yes}'[skip the --prune confirmation prompt]' \
+        '1:plugin:_claude__message'
+      ;;
+    update)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '(-s --scope)'{-s,--scope}'[installation scope]:scope:_claude__plugin_update_scopes' \
+        '1:plugin:_claude__message'
+      ;;
+    validate)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--cowork[(hidden) use cowork_plugins directory]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '--strict[treat warnings as errors]' \
+        '1:path:_files'
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:plugin command:_claude__plugin_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
+}
+
+_claude__complete_install() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--force[force installation even if already installed]' \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '::target:_claude__install_targets'
+}
+
+_claude__complete_gateway() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--config=[path to gateway YAML config]:path:_files' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_claude__complete_remote_control() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_claude__complete_import_conversations() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--cwd=[archive directory the imported sessions anchor to]:dir:_files -/' \
+    '--dry-run[parse and verify manifest without writing files]' \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:export path:_files'
+}
+
+_claude__complete_ultrareview() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--json[print the raw bugs.json payload instead of formatted findings]' \
+    '--timeout=[maximum minutes to wait for the review to finish]:minutes:_claude__message' \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '::target:_claude__message'
+}
+
+_claude__project_commands() {
+  local -a commands
+  commands=(
+    'help:display help for command'
+    'purge:delete all Claude Code state for a project'
+  )
+  _describe 'project command' commands
+}
+
+_claude__complete_project() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:project command:->command' \
+    '*::project argument:->args'
+
+  case $state in
+    command)
+      _claude__project_commands
+      return
+      ;;
+  esac
+
+  case $words[1] in
+    purge)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--all[purge state for every project]' \
+        '--dry-run[list what would be deleted without deleting anything]' \
+        '(-i --interactive)'{-i,--interactive}'[prompt for each item before deleting]' \
+        '(-y --yes)'{-y,--yes}'[skip confirmation prompt]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:path:_files -/'
+      ;;
+    help)
+      _claude__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '1:project command:_claude__project_commands' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      ;;
+  esac
+}
+
+_claude__complete_top_help_leaf() {
+  _claude__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+function _claude() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a specs
+
+  _claude__top_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:claude command:->command' \
+    '*::claude argument:->args'
+
+  case $state in
+    command)
+      _claude__top_commands
+      return
+      ;;
+    args)
+      case $words[1] in
+        agents)
+          _claude__complete_agents
+          ;;
+        auth)
+          _claude__complete_auth
+          ;;
+        auto-mode)
+          _claude__complete_auto_mode
+          ;;
+        doctor|setup-token|update|upgrade)
+          _claude__complete_top_help_leaf
+          ;;
+        gateway)
+          _claude__complete_gateway
+          ;;
+        import-conversations)
+          _claude__complete_import_conversations
+          ;;
+        install)
+          _claude__complete_install
+          ;;
+        mcp)
+          _claude__complete_mcp
+          ;;
+        plugin|plugins)
+          _claude__complete_plugin
+          ;;
+        project)
+          _claude__complete_project
+          ;;
+        rc|remote-control)
+          _claude__complete_remote_control
+          ;;
+        ultrareview)
+          _claude__complete_ultrareview
+          ;;
+        *)
+          _arguments -s '*::prompt:_claude__prompt_text'
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_claude "$@"
 
 # vim:ft=zsh:et:sts=2:sw=2
