@@ -1,0 +1,1237 @@
+#compdef omc oh-my-claudecode omc-cli
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/Yeachan-Heo/oh-my-claudecode
+#
+# 4.11.6 (Oh-My-ClaudeCode)
+# Source of truth: live `omc --help`, nested `omc <command> --help`, and the
+# installed package under /opt/local/var/bun/install/global/node_modules/
+# oh-my-claude-sisyphus.
+#
+# -----------------------------------------------------------------------------
+
+_omc__message() {
+  _message "${1:-value}"
+}
+
+_omc__prompt_text() {
+  _omc__message 'prompt text'
+}
+
+_omc__shift_words() {
+  local shift_count=$1
+  local -a shifted
+  local index
+
+  shifted=()
+  for (( index = shift_count + 1; index <= ${#words}; index++ )); do
+    shifted+=("${words[index]}")
+  done
+
+  reply=("${shifted[@]}")
+  REPLY=$(( CURRENT - shift_count ))
+  (( REPLY < 1 )) && REPLY=1
+}
+
+_omc__bool_values() {
+  local -a values
+  values=(
+    'true:enable'
+    'false:disable'
+    '1:enable'
+    '0:disable'
+  )
+  _describe 'boolean' values
+}
+
+
+_omc__complete_help_only_leaf() {
+  _omc__shift_words "${1:-1}"
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_json_help_leaf() {
+  _omc__shift_words "${1:-1}"
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s \
+    '--json[output as JSON]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__describe_static_items() {
+  local description=$1
+  shift
+  local -a items
+  items=("$@")
+  _describe "$description" items
+}
+
+_omc__claude_commands() {
+  local -a commands
+  commands=(
+    'agents:list configured agents'
+    'auth:manage authentication'
+    'auto-mode:inspect auto mode classifier configuration'
+    'doctor:check the health of the Claude Code auto-updater'
+    'install:install Claude Code native build'
+    'mcp:configure and manage MCP servers'
+    'plugin:manage Claude Code plugins'
+    'plugins:manage Claude Code plugins'
+    'setup-token:set up a long-lived authentication token'
+    'update:check for updates and install if available'
+    'upgrade:check for updates and install if available'
+  )
+  _describe 'claude command' commands
+}
+
+_omc__claude_models() {
+  local -a models
+  models=(
+    'claude-haiku-4-5:The fastest model with near-frontier intelligence'
+    'claude-sonnet-5:The best combination of speed and intelligence'
+    "claude-opus-4-8:Anthropic's most capable Opus-tier model for complex reasoning and agentic coding"
+    "claude-fable-5:Anthropic's most capable widely released model, for the most demanding reasoning and long-horizon agentic work"
+    'default:Clears any model override and reverts to the recommended model for your account type. Not itself a model alias'
+    'fable:Uses Claude Fable 5 for your hardest and longest-running tasks'
+    'sonnet:latest Sonnet model'
+    'opus:latest Opus model'
+    'haiku:latest Opus model Haiku model'
+    'opusplan:Uses opus during plan mode, then switches to sonnet for execution'
+  )
+  _describe 'model' models
+}
+
+_omc__claude_output_formats() {
+  local -a formats
+  formats=(
+    'text:plain text output'
+    'json:single JSON result'
+    'stream-json:streaming JSON output'
+  )
+  _describe 'output format' formats
+}
+
+_omc__claude_input_formats() {
+  local -a formats
+  formats=(
+    'text:plain text input'
+    'stream-json:streaming JSON input'
+  )
+  _describe 'input format' formats
+}
+
+_omc__claude_effort_levels() {
+  local -a levels
+  levels=(
+    'low:low effort'
+    'medium:medium effort'
+    'high:high effort'
+    'xhigh:extra high effort'
+    'max:maximum effort'
+  )
+  _describe 'effort level' levels
+}
+
+_omc__claude_permission_modes() {
+  local -a modes
+  modes=(
+    'acceptEdits:accept edits automatically'
+    'auto:auto mode'
+    'bypassPermissions:bypass permissions'
+    'default:default permission mode'
+    'dontAsk:never ask for permissions'
+    'plan:plan mode'
+  )
+  _describe 'permission mode' modes
+}
+
+_omc__claude_setting_sources() {
+  local -a sources
+  sources=(
+    'user:user settings'
+    'project:project settings'
+    'local:local settings'
+  )
+  _describe 'setting source' sources
+}
+
+_omc__claude_option_specs() {
+  reply=(
+    '--add-dir=[additional directories to allow tool access to]:directory:_files -/'
+    '--agent=[agent for the current session]:agent:_omc__ask_agent_roles'
+    '--agents=[JSON object defining custom agents]:json file:_files'
+    '--allow-dangerously-skip-permissions[allow bypassing all permission checks as an option]'
+    '--allowedTools=[comma- or space-separated list of tools]:tools:_omc__message'
+    '--allowed-tools=[comma- or space-separated list of tools]:tools:_omc__message'
+    '--append-system-prompt=[append a system prompt to the default system prompt]:prompt:_omc__message'
+    '--bare[minimal mode]'
+    '--betas=[beta headers to include in API requests]:beta header:_omc__message'
+    '--brief[enable SendUserMessage tool for agent-to-user communication]'
+    '--chrome[enable Claude in Chrome integration]'
+    '(-c --continue)'{-c,--continue}'[continue the most recent conversation in the current directory]'
+    '--dangerously-skip-permissions[bypass all permission checks]'
+    '(-d --debug)'{-d,--debug}'[enable debug mode with optional category filtering]'
+    '--debug-file=[write debug logs to a specific file path]:path:_files'
+    '--disable-slash-commands[disable all skills]'
+    '--disallowedTools=[comma- or space-separated list of denied tools]:tools:_omc__message'
+    '--disallowed-tools=[comma- or space-separated list of denied tools]:tools:_omc__message'
+    '--effort=[effort level for the current session]:level:_omc__claude_effort_levels'
+    '--exclude-dynamic-system-prompt-sections[move per-machine sections out of the system prompt]'
+    '--fallback-model=[fallback model for print mode]:model:_omc__claude_models'
+    '--file=[startup file resource spec]:file spec:_omc__message'
+    '--fork-session[create a new session ID when resuming]'
+    '--from-pr=[resume a session linked to a PR]:PR number or URL:_omc__message'
+    '--ide[automatically connect to the IDE on startup]'
+    '--include-hook-events[include all hook lifecycle events in the output stream]'
+    '--include-partial-messages[include partial message chunks as they arrive]'
+    '--input-format=[input format for print mode]:format:_omc__claude_input_formats'
+    '--json-schema=[JSON Schema for structured output validation]:schema:_omc__message'
+    '--max-budget-usd=[maximum API budget in USD]:amount:_omc__message'
+    '--mcp-config=[MCP server config files or JSON strings]:config:_files'
+    '--mcp-debug[deprecated MCP debug mode]'
+    '--model=[model for the current session]:model:_omc__claude_models'
+    '(-n --name)'{-n,--name}'[set a display name for the session]:name:_omc__message'
+    '--no-chrome[disable Claude in Chrome integration]'
+    '--no-session-persistence[disable session persistence]'
+    '--output-format=[output format for print mode]:format:_omc__claude_output_formats'
+    '--permission-mode=[permission mode for the session]:mode:_omc__claude_permission_modes'
+    '--plugin-dir=[load plugins from a directory for this session only]:directory:_files -/'
+    '(-p --print)'{-p,--print}'[print response and exit]'
+    '--remote-control-session-name-prefix=[prefix for auto-generated remote-control session names]:prefix:_omc__message'
+    '--replay-user-messages[re-emit user messages from stdin]'
+    '(-r --resume)'{-r,--resume}'[resume a conversation by session ID]:session id:_omc__message'
+    '--session-id=[use a specific session UUID]:uuid:_omc__message'
+    '--setting-sources=[setting sources to load]:sources:_omc__claude_setting_sources'
+    '--settings=[settings JSON file or string]:settings:_files'
+    '--strict-mcp-config[only use MCP servers from --mcp-config]'
+    '--system-prompt=[system prompt to use for the session]:prompt:_omc__message'
+    '--tmux=-[create a tmux session for the worktree]:mode:(classic)'
+    '--tools=[list of available built-in tools]:tools:_omc__message'
+    '--verbose[override verbose mode setting from config]'
+    '(-w --worktree)'{-w,--worktree}'[create a new git worktree for this session]:name:_omc__message'
+  )
+}
+
+_omc__keep_policy_values() {
+  _omc__describe_static_items 'keep policy' \
+    'score_improvement:keep only when evaluator score improves' \
+    'pass_only:keep only passing candidates'
+}
+
+_omc__wait_daemon_actions() {
+  _omc__describe_static_items 'wait daemon action' \
+    'start:start the daemon' \
+    'stop:stop the daemon'
+}
+
+_omc__team_api_operations() {
+  local -a operations
+  operations=(
+    'send-message:send a message to a worker'
+    'broadcast:broadcast a message to workers'
+    'mailbox-list:list mailbox messages for a worker'
+    'mailbox-mark-delivered:mark a mailbox message as delivered'
+    'mailbox-mark-notified:mark a mailbox message as notified'
+    'create-task:create a task'
+    'read-task:read a task'
+    'list-tasks:list tasks'
+    'update-task:update a task'
+    'claim-task:claim a task for a worker'
+    'transition-task-status:transition task status'
+    'release-task-claim:release a task claim'
+    'read-config:read team config'
+    'read-manifest:read the team manifest'
+    'read-worker-status:read worker status'
+    'read-worker-heartbeat:read worker heartbeat'
+    'update-worker-heartbeat:update worker heartbeat'
+    'write-worker-inbox:write to a worker inbox'
+    'write-worker-identity:write worker identity'
+    'append-event:append a team event'
+    'get-summary:get team summary'
+    'cleanup:clean up team artifacts'
+    'write-shutdown-request:write a shutdown request'
+    'read-shutdown-ack:read a shutdown acknowledgment'
+    'read-monitor-snapshot:read the monitor snapshot'
+    'write-monitor-snapshot:write the monitor snapshot'
+    'read-task-approval:read task approval state'
+    'write-task-approval:write task approval state'
+    'orphan-cleanup:clean orphaned team state'
+  )
+  _describe 'team api operation' operations
+}
+
+_omc__collect_ask_agent_roles() {
+  local -a dirs files roles
+  local dir file
+
+  dirs=(
+    "./prompts"
+    "./.codex/prompts"
+    "${CODEX_HOME:-$HOME/.codex}/prompts"
+    "/opt/local/var/bun/install/global/node_modules/oh-my-claude-sisyphus/agents"
+  )
+
+  roles=()
+  for dir in "${dirs[@]}"; do
+    [[ -d $dir ]] || continue
+    files=($dir/*.md(N))
+    for file in "${files[@]}"; do
+      roles+=("${file:t:r}")
+    done
+  done
+
+  if (( ! $#roles )); then
+    roles=(
+      analyst architect critic debugger designer executor explorer planner
+      scientist security-reviewer test-engineer verifier writer
+    )
+  fi
+
+  reply=(${(ou)roles})
+}
+
+_omc__ask_agent_roles() {
+  local -a roles
+
+  _omc__collect_ask_agent_roles
+  roles=("${reply[@]}")
+  _describe 'agent prompt role' roles
+}
+
+_omc__collect_team_names() {
+  local -a paths names
+  local path
+
+  paths=(.omc/state/team/*(/N))
+  names=()
+  for path in "${paths[@]}"; do
+    names+=("${path:t}")
+  done
+
+  reply=(${(ou)names})
+}
+
+_omc__team_names() {
+  local -a names
+
+  _omc__collect_team_names
+  names=("${reply[@]}")
+
+  if (( $#names )); then
+    _describe 'team' names
+  else
+    _omc__message 'team name'
+  fi
+}
+
+_omc__collect_autoresearch_run_ids() {
+  local -a manifests run_ids
+  local manifest
+
+  manifests=(
+    .omc/logs/autoresearch/*/manifest.json(N)
+    .omc/logs/autoresearch/*/*/manifest.json(N)
+  )
+
+  run_ids=()
+  for manifest in "${manifests[@]}"; do
+    run_ids+=("${manifest:h:t}")
+  done
+
+  reply=(${(ou)run_ids})
+}
+
+_omc__autoresearch_run_ids() {
+  local -a run_ids
+
+  _omc__collect_autoresearch_run_ids
+  run_ids=("${reply[@]}")
+
+  if (( $#run_ids )); then
+    _describe 'autoresearch run id' run_ids
+  else
+    _omc__message 'run id'
+  fi
+}
+
+_omc__collect_mission_dirs() {
+  local -a paths names
+  local path
+
+  paths=(missions/*(/N))
+  names=()
+  for path in "${paths[@]}"; do
+    [[ -f $path/mission.md && -f $path/sandbox.md ]] || continue
+    names+=("${path:t}")
+  done
+
+  reply=(${(ou)names})
+}
+
+_omc__mission_dirs() {
+  local -a names
+
+  _omc__collect_mission_dirs
+  names=("${reply[@]}")
+
+  if (( $#names )); then
+    _describe 'mission directory' names
+  else
+    _message 'mission directory'
+  fi
+}
+
+_omc__git_branches() {
+  local current_branch line name desc
+  local -a lines branches
+
+  command git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    _message 'git branch'
+    return
+  }
+
+  current_branch=$(command git symbolic-ref --quiet --short HEAD 2>/dev/null)
+  lines=("${(@f)$(command git for-each-ref --format='%(refname:short)%09%(refname)' refs/heads refs/remotes 2>/dev/null)}")
+  branches=()
+
+  for line in "${lines[@]}"; do
+    name="${line%%$'\t'*}"
+    [[ -n $name && $name != */HEAD ]] || continue
+
+    if [[ ${line#*$'\t'} == refs/heads/* ]]; then
+      desc='local branch'
+      [[ $name == $current_branch ]] && desc='current branch'
+    else
+      desc='remote branch'
+    fi
+
+    branches+=("${name}:${desc}")
+  done
+
+  if (( $#branches )); then
+    _describe 'git branch' branches
+  else
+    _message 'git branch'
+  fi
+}
+
+_omc__top_commands() {
+  local -a commands
+
+  commands=(
+    'launch:launch Claude Code with native tmux shell integration'
+    'interop:launch split-pane tmux session with Claude Code and Codex'
+    'ask:run provider advisor prompt and write an ask artifact'
+    'config:show current configuration'
+    'config-stop-callback:configure stop hook callbacks'
+    'config-notify-profile:manage notification profiles'
+    'info:show system and agent information'
+    'test-prompt:test how a prompt would be enhanced'
+    'update:check for and install updates'
+    'update-reconcile:reconcile runtime state after update'
+    'version:show detailed version information'
+    'install:install OMC agents and commands'
+    'wait:rate limit wait and auto-resume'
+    'teleport:create git worktrees for isolated development'
+    'session:inspect prior local session history'
+    'sessions:alias for session history'
+    'doctor:diagnostic tools for troubleshooting OMC installation'
+    'setup:sync hooks, agents, and skills'
+    'hud:run the OMC HUD statusline renderer'
+    'mission-board:render the opt-in mission board snapshot'
+    'team:team CLI API for worker lifecycle operations'
+    'autoresearch:launch thin-supervisor autoresearch'
+    'ralphthon:run the autonomous hackathon lifecycle mode'
+  )
+
+  _describe 'omc command' commands
+}
+
+_omc__wait_commands() {
+  _omc__describe_static_items 'wait command' \
+    'status:show detailed rate limit and daemon status' \
+    'daemon:start or stop the auto-resume daemon' \
+    'detect:scan for blocked Claude Code sessions in tmux'
+}
+
+_omc__teleport_commands() {
+  _omc__describe_static_items 'teleport command' \
+    'list:list existing worktrees' \
+    'remove:remove a worktree' \
+    'rm:alias for remove'
+}
+
+_omc__session_commands() {
+  _omc__describe_static_items 'session command' \
+    'search:search prior local session transcripts and OMC artifacts' \
+    'help:display help for command'
+}
+
+_omc__doctor_commands() {
+  _omc__describe_static_items 'doctor command' \
+    'conflicts:check for plugin coexistence issues and configuration conflicts' \
+    'help:display help for command'
+}
+
+_omc__team_commands() {
+  _omc__describe_static_items 'team command' \
+    'status:show team status' \
+    'shutdown:shut down a team' \
+    'api:run a team API operation'
+}
+
+_omc__team_agent_spec() {
+  local cur fragment prefix count agent_type
+  cur="${words[CURRENT]}"
+  prefix=''
+  fragment="$cur"
+
+  if [[ $fragment == *,* ]]; then
+    prefix="${fragment%,*},"
+    fragment="${fragment##*,}"
+  fi
+
+  if [[ $fragment == <->: ]]; then
+    compadd -Q -S '' -- \
+      "${prefix}${fragment}claude" \
+      "${prefix}${fragment}codex" \
+      "${prefix}${fragment}gemini"
+    return
+  fi
+
+  if [[ $fragment == <->:* && $fragment != *:*:* ]]; then
+    count="${fragment%%:*}"
+    compadd -Q -S '' -- \
+      "${prefix}${count}:claude" \
+      "${prefix}${count}:codex" \
+      "${prefix}${count}:gemini"
+    return
+  fi
+
+  if [[ $fragment == <->:*:* ]]; then
+    count="${fragment%%:*}"
+    agent_type="${fragment#*:}"
+    agent_type="${agent_type%%:*}"
+    compadd -Q -S '' -- \
+      "${prefix}${count}:${agent_type}:architect" \
+      "${prefix}${count}:${agent_type}:executor" \
+      "${prefix}${count}:${agent_type}:planner" \
+      "${prefix}${count}:${agent_type}:analyst" \
+      "${prefix}${count}:${agent_type}:critic" \
+      "${prefix}${count}:${agent_type}:debugger" \
+      "${prefix}${count}:${agent_type}:verifier" \
+      "${prefix}${count}:${agent_type}:code-reviewer" \
+      "${prefix}${count}:${agent_type}:security-reviewer" \
+      "${prefix}${count}:${agent_type}:test-engineer" \
+      "${prefix}${count}:${agent_type}:designer" \
+      "${prefix}${count}:${agent_type}:writer" \
+      "${prefix}${count}:${agent_type}:scientist"
+    return
+  fi
+
+  compadd -Q -S '' -- \
+    '1:claude' '1:codex' '1:gemini' \
+    '2:claude' '2:codex' '2:gemini' \
+    '1:codex:architect' '1:codex:executor' '1:codex:planner' \
+    '1:gemini:analyst' '1:claude:critic'
+}
+
+_omc__launch_option_specs() {
+  reply=(
+    '--notify=[enable or disable CCNotifier events]:boolean:_omc__bool_values'
+    '--madmax[alias for --dangerously-skip-permissions]'
+    '--yolo[alias for --dangerously-skip-permissions]'
+    '--openclaw=-[enable or disable OpenClaw mode]:boolean:_omc__bool_values'
+    '--telegram=-[enable or disable Telegram notifications]:boolean:_omc__bool_values'
+    '--discord=-[enable or disable Discord notifications]:boolean:_omc__bool_values'
+    '--slack=-[enable or disable Slack notifications]:boolean:_omc__bool_values'
+    '--webhook=-[enable or disable webhook notifications]:boolean:_omc__bool_values'
+    '(-h --help)'{-h,--help}'[display help for command]'
+  )
+}
+
+_omc__complete_root() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a launch_specs claude_specs
+
+  _omc__launch_option_specs
+  launch_specs=("${reply[@]}")
+  _omc__claude_option_specs
+  claude_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    '(-V --version)'{-V,--version}'[output the version number]' \
+    ${launch_specs[@]} \
+    ${claude_specs[@]} \
+    '1:omc command:->command' \
+    '*::launch argument:_omc__prompt_text'
+
+  case $state in
+    command)
+      _omc__top_commands
+      ;;
+  esac
+}
+
+_omc__complete_launch_like() {
+  local shift_count=${1:-0}
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a launch_specs claude_specs
+
+  if (( shift_count > 0 )); then
+    _omc__shift_words "$shift_count"
+    words=("${reply[@]}")
+    CURRENT=$REPLY
+  fi
+
+  _omc__launch_option_specs
+  launch_specs=("${reply[@]}")
+  _omc__claude_option_specs
+  claude_specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${launch_specs[@]} \
+    ${claude_specs[@]} \
+    '1:claude command:->command' \
+    '*::claude argument:_omc__prompt_text'
+
+  case $state in
+    command)
+      _omc__claude_commands
+      ;;
+  esac
+}
+
+_omc__complete_config() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-v --validate)'{-v,--validate}'[validate configuration]' \
+    '(-p --paths)'{-p,--paths}'[show configuration file paths]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_config_stop_callback() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a callback_types
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -C -s \
+    '--enable[enable callback]' \
+    '--disable[disable callback]' \
+    '--path=[file path for the callback output]:path:_files' \
+    '--format=[file output format]:format:(markdown json)' \
+    '--token=[bot token]:token:_omc__message' \
+    '--chat=[Telegram chat ID]:chat id:_omc__message' \
+    '--webhook=[webhook URL]:webhook url:_omc__message' \
+    '--channel-id=[Discord bot channel ID]:channel id:_omc__message' \
+    '--tag-list=[comma-separated tag list]:csv:_omc__message' \
+    '--add-tag=[append one tag]:tag:_omc__message' \
+    '--remove-tag=[remove one tag]:tag:_omc__message' \
+    '--clear-tags[clear all tags]' \
+    '--profile=[named notification profile]:profile:_omc__message' \
+    '--show[show current configuration]' \
+    '1:type:->type' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    type)
+      callback_types=(
+        'file:file system callback'
+        'telegram:Telegram bot notification'
+        'discord:Discord webhook notification'
+        'slack:Slack incoming webhook'
+      )
+      if [[ -n ${opt_args[--profile]} ]]; then
+        callback_types+=(
+          'discord-bot:Discord Bot API profile type'
+          'webhook:generic webhook profile type'
+        )
+      fi
+      _describe 'callback type' callback_types
+      ;;
+  esac
+}
+
+_omc__complete_config_notify_profile() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -C -s \
+    '--list[list all profiles]' \
+    '--show[show profile configuration]' \
+    '--delete[delete a profile]' \
+    '1:profile name:_omc__message' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_info() {
+  _omc__complete_help_only_leaf 1
+}
+
+_omc__complete_test_prompt() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '*::prompt:_omc__prompt_text'
+}
+
+_omc__complete_update() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-c --check)'{-c,--check}'[only check for updates]' \
+    '(-f --force)'{-f,--force}'[force reinstall even if up to date]' \
+    '(-q --quiet)'{-q,--quiet}'[suppress output except for errors]' \
+    '--standalone[force npm update even in plugin context]' \
+    '--clean[purge old plugin cache versions immediately]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_update_reconcile() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-v --verbose)'{-v,--verbose}'[show detailed output]' \
+    '--skip-grace-period[bypass the 24 hour grace period for cache purge]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_version() {
+  _omc__complete_help_only_leaf 1
+}
+
+_omc__complete_install() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-f --force)'{-f,--force}'[overwrite existing files]' \
+    '(-q --quiet)'{-q,--quiet}'[suppress output except for errors]' \
+    '--skip-claude-check[skip checking whether Claude Code is installed]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_wait() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    status)
+      _omc__complete_json_help_leaf 1
+      return
+      ;;
+    daemon)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -C -s \
+        '(-v --verbose)'{-v,--verbose}'[enable verbose logging]' \
+        '(-f --foreground)'{-f,--foreground}'[run in the foreground]' \
+        '(-i --interval)'{-i,--interval}'[poll interval in seconds]:seconds' \
+        '1:action:_omc__wait_daemon_actions' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    detect)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--json[output as JSON]' \
+        '(-l --lines)'{-l,--lines}'[number of pane lines to analyze]:number' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '--json[output as JSON]' \
+    '--start[start the auto-resume daemon]' \
+    '--stop[stop the auto-resume daemon]' \
+    '1:wait command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__wait_commands
+      ;;
+  esac
+}
+
+_omc__complete_teleport() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    list)
+      _omc__complete_json_help_leaf 1
+      return
+      ;;
+    remove|rm)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-f --force)'{-f,--force}'[force removal even with uncommitted changes]' \
+        '--json[output as JSON]' \
+        '1:path:_files -/' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '--worktree[create a worktree explicitly]' \
+    '(-p --path)'{-p,--path}'[custom worktree path]:path:_files -/' \
+    '(-b --base)'{-b,--base}'[base branch to create from]:branch:_omc__git_branches' \
+    '--json[output as JSON]' \
+    '1:reference or command:->target' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    target)
+      _alternative \
+        'commands:teleport command:_omc__teleport_commands' \
+        'branches:git branch:_omc__git_branches'
+      ;;
+  esac
+}
+
+_omc__complete_session_like() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    search)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-l --limit)'{-l,--limit}'[maximum number of matches to return]:number' \
+        '(-s --session)'{-s,--session}'[restrict search to a specific session ID]:session id:_omc__message' \
+        '--since[only include matches since a duration or date]:duration or date:_omc__message' \
+        '--project[project scope]:scope:(current all)' \
+        '--json[output results as JSON]' \
+        '--case-sensitive[match query case-sensitively]' \
+        '--context[snippet context on each side of the match]:characters' \
+        '1:query:_omc__prompt_text' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments \
+        '1:session command:((search\:"search session history" help\:"display help for command"))'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '1:session command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__session_commands
+      ;;
+  esac
+}
+
+_omc__complete_doctor() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    conflicts)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--json[output as JSON]' \
+        '--plugin-dir=[override the OMC plugin root directory]:path:_files -/' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments \
+        '1:doctor command:((conflicts\:"check for plugin conflicts" help\:"display help for command"))'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '--plugin-dir=[override the OMC plugin root directory]:path:_files -/' \
+    '1:doctor command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__doctor_commands
+      ;;
+  esac
+}
+
+_omc__complete_setup() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '(-f --force)'{-f,--force}'[force reinstall even if already up to date]' \
+    '(-q --quiet)'{-q,--quiet}'[suppress output except for errors]' \
+    '--no-plugin[install bundled skills from the current package]' \
+    '--plugin-dir-mode[treat OMC as launched via --plugin-dir at runtime]' \
+    '--skip-hooks[skip hook installation]' \
+    '--force-hooks[force reinstall hooks even if unchanged]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_hud() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--watch[run in watch mode]' \
+    '--interval=[poll interval in milliseconds]:milliseconds' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_mission_board() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--json[print raw mission-board JSON]' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+}
+
+_omc__complete_team_api() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C -s \
+    '--input=[JSON payload]:json:_omc__message' \
+    '--json[output as JSON]' \
+    '1:operation:->operation' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    operation)
+      _omc__team_api_operations
+      ;;
+  esac
+}
+
+_omc__complete_team() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    api)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _omc__complete_team_api
+      return
+      ;;
+    status)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments \
+        '1:team name:_omc__team_names'
+      return
+      ;;
+    shutdown)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(-f --force)'{-f,--force}'[force shutdown]' \
+        '1:team name:_omc__team_names'
+      return
+      ;;
+    help|-h|--help)
+      _omc__team_commands
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '--new-window[launch the team in a new tmux window]' \
+    '1:team command or worker spec:->first' \
+    '*::team argument:->rest'
+
+  case $state in
+    first)
+      _alternative \
+        'commands:team command:_omc__team_commands' \
+        'worker specs:team worker specification:_omc__team_agent_spec'
+      ;;
+    rest)
+      if (( CURRENT <= 3 )); then
+        _omc__team_agent_spec
+      else
+        _omc__message 'task description'
+      fi
+      ;;
+  esac
+}
+
+_omc__complete_autoresearch() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    init)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--topic[seed the guided setup with a topic]:topic:_omc__message' \
+        '--eval[evaluator command]:command:_omc__message' \
+        '--keep-policy[keep policy]:policy:_omc__keep_policy_values' \
+        '--slug[custom mission slug]:slug:_omc__message' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    help|-h|--help)
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '--topic[seed the guided intake with a topic]:topic:_omc__message' \
+    '--evaluator[evaluator command for guided intake]:command:_omc__message' \
+    '--mission[bypass interview with raw mission text]:mission text:_omc__message' \
+    '--eval[bypass interview with evaluator command]:command:_omc__message' \
+    '--sandbox[backward-compatible alias for --eval]:command:_omc__message' \
+    '--keep-policy[keep policy]:policy:_omc__keep_policy_values' \
+    '--slug[custom run slug]:slug:_omc__message' \
+    '--resume[resume an existing run]:run id:_omc__autoresearch_run_ids' \
+    '1:mission directory or init:->target' \
+    '*::claude argument:_omc__message'
+
+  case $state in
+    target)
+      _alternative \
+        'subcommands:autoresearch subcommand:(init)' \
+        'mission dirs:mission directory:_omc__mission_dirs'
+      ;;
+  esac
+}
+
+_omc__complete_ralphthon() {
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  _arguments -s \
+    '--resume[resume an existing ralphthon session]' \
+    '--skip-interview[skip deep-interview and start execution directly]' \
+    '--max-waves[maximum number of hardening waves]:number' \
+    '--poll-interval[poll interval in seconds]:seconds' \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '*::task:_omc__prompt_text'
+}
+
+_omc__complete_ask() {
+  local prev
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  prev="${words[CURRENT-1]}"
+
+  if (( CURRENT == 2 )); then
+    local -a providers
+    providers=(
+      'claude:use Claude as the advisor provider'
+      'codex:use Codex as the advisor provider'
+      'gemini:use Gemini as the advisor provider'
+    )
+    _describe 'provider' providers
+    return
+  fi
+
+  case $prev in
+    --agent-prompt)
+      _omc__ask_agent_roles
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '--agent-prompt=[prepend an agent prompt role before the task]:role:_omc__ask_agent_roles' \
+    '(-p --print --prompt)'{-p,--print,--prompt}'[treat the remaining text as the prompt]:prompt text:_omc__prompt_text' \
+    '*::prompt text:_omc__prompt_text'
+}
+
+function _omc() {
+  case $words[2] in
+    ''|-*)
+      _omc__complete_root
+      ;;
+    launch)
+      _omc__complete_launch_like 2
+      ;;
+    interop)
+      _omc__complete_info
+      ;;
+    ask)
+      _omc__complete_ask
+      ;;
+    config)
+      _omc__complete_config
+      ;;
+    config-stop-callback)
+      _omc__complete_config_stop_callback
+      ;;
+    config-notify-profile)
+      _omc__complete_config_notify_profile
+      ;;
+    info)
+      _omc__complete_info
+      ;;
+    test-prompt)
+      _omc__complete_test_prompt
+      ;;
+    update)
+      _omc__complete_update
+      ;;
+    update-reconcile)
+      _omc__complete_update_reconcile
+      ;;
+    version)
+      _omc__complete_version
+      ;;
+    install)
+      _omc__complete_install
+      ;;
+    wait)
+      _omc__complete_wait
+      ;;
+    teleport)
+      _omc__complete_teleport
+      ;;
+    session|sessions)
+      _omc__complete_session_like
+      ;;
+    doctor)
+      _omc__complete_doctor
+      ;;
+    setup)
+      _omc__complete_setup
+      ;;
+    hud)
+      _omc__complete_hud
+      ;;
+    mission-board)
+      _omc__complete_mission_board
+      ;;
+    team)
+      _omc__complete_team
+      ;;
+    autoresearch)
+      _omc__complete_autoresearch
+      ;;
+    ralphthon)
+      _omc__complete_ralphthon
+      ;;
+    *)
+      _omc__complete_root
+      ;;
+  esac
+}
+
+_omc "$@"
+
+# -----------------------------------------------------------------------------
+#
+#
+# -----------------------------------------------------------------------------
+
+# vim:ft=zsh:et:sts=2:sw=2
