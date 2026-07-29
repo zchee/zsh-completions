@@ -1,0 +1,1331 @@
+#compdef gjc
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2025, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/Yeachan-Heo/gajae-code
+#
+# 0.12.0 (Gajae Code)
+#
+# Items marked "(hidden)" are accepted by the CLI but omitted from `gjc --help`.
+# They are recovered from the command registry in packages/coding-agent/src/cli.ts,
+# the root argv parser in src/cli/args.ts, and the per-command runtimes.
+#
+# -----------------------------------------------------------------------------
+
+_gjc__message() {
+  _message "${1:-value}"
+}
+
+_gjc__json_input() {
+  if compset -P '@'; then
+    _files
+    return
+  fi
+  _message 'inline JSON object, or @file'
+}
+
+# Canonical model ids plus fully-qualified provider/model ids.
+_gjc__models() {
+  local -a models
+  models=( ${(f)"$(_call_program gjc-models gjc --list-models 2>/dev/null | awk '
+    /^Canonical models$/ { section = "canonical"; next }
+    /^Provider models$/  { section = "provider";  next }
+    /^canonical[ \t]/    { next }
+    /^provider[ \t]/     { next }
+    NF == 0              { next }
+    section == "canonical" { print $1; next }
+    section == "provider"  { print $1 "/" $2; next }
+  ')"} )
+
+  if (( ${#models} )); then
+    _describe -t models 'model' models
+  else
+    _gjc__message 'model'
+  fi
+}
+
+# Comma-separated model patterns (--models / Alt+N cycling).
+_gjc__model_list() {
+  compset -P '*,'
+  _gjc__models
+}
+
+# Stored credential selector: email:<addr>, id:<n>, account:<id>, project:<id>,
+# or provider/email:<addr> (src/cli/args.ts).
+_gjc__credential() {
+  if compset -P '(|*/)(email|id|account|project):'; then
+    _message 'selector value'
+    return
+  fi
+  local -a selectors
+  selectors=(
+    'email\::match a stored credential by email address'
+    'id\::match by numeric credential id'
+    'account\::match by account id'
+    'project\::match by project id'
+  )
+  _describe -t selectors 'credential selector' selectors -S ''
+}
+
+_gjc__git_branches() {
+  local -a branches
+  # _call_program evals its arguments, so the format string needs to survive one
+  # extra round of quote stripping.
+  branches=( ${(f)"$(_call_program gjc-branches git for-each-ref "--format='%(refname:short)'" refs/heads refs/remotes 2>/dev/null)"} )
+  if (( ${#branches} )); then
+    _describe -t branches 'branch' branches
+  else
+    _gjc__message 'branch'
+  fi
+}
+
+# Built-in model profiles (config/model-profiles.ts) merged with any user
+# profiles declared under `profiles:` in ~/.gjc/agent/models.yml.
+_gjc__mpresets() {
+  local -a profiles
+  profiles=(
+    'codex-eco:GPT-5.6 Terra/Luna, low effort'
+    'codex-medium:GPT-5.6 Sol/Terra, balanced'
+    'codex-pro:GPT-5.6 Sol/Terra, high effort'
+    'opencodego:OpenCode Go (Kimi/DeepSeek/Qwen/MiMo)'
+    'claude-opus:Anthropic OAuth preset around claude-opus-5'
+    'claude-fable:Anthropic preset around Fable'
+    'glm-eco:GLM, low tier'
+    'glm-medium:GLM, balanced tier'
+    'glm-pro:GLM, high tier'
+    'kimi-coding-plan-eco:Kimi Coding Plan, low tier'
+    'kimi-coding-plan-medium:Kimi Coding Plan, balanced tier'
+    'kimi-coding-plan-pro:Kimi Coding Plan, high tier'
+    'mimo-eco:Xiaomi MiMo, low tier'
+    'grok-eco:Grok, low tier'
+    'grok-medium:Grok, balanced tier'
+    'grok-pro:Grok, high tier'
+    'grok-45-eco:Grok 4.5, low tier'
+    'grok-45-medium:Grok 4.5, balanced tier'
+    'grok-45-pro:Grok 4.5, high tier'
+    'grok-build-pro:Grok Build, high tier'
+    'cursor-eco:Cursor, low tier'
+    'cursor-medium:Cursor, balanced tier'
+    'cursor-pro:Cursor, high tier'
+    'minimax-eco:MiniMax, low tier'
+    'minimax-medium:MiniMax, balanced tier'
+    'minimax-pro:MiniMax, high tier'
+    'alibaba-token-plan-balanced:Alibaba Token Plan, balanced'
+    'alibaba-token-plan-qwenmaxxing:Alibaba Token Plan, Qwen-heavy'
+    'opus-codex:Codex medium roles with Anthropic planner'
+    'codex-opencodego:Codex default/architect with OpenCode Go'
+    'fable-opus-codex:Codex pro roles with Anthropic planner'
+  )
+  local models_yml="${GJC_CODING_AGENT_DIR:-$HOME/.gjc/agent}/models.yml"
+  if [[ -f $models_yml ]]; then
+    local -a user_profiles
+    user_profiles=( ${(f)"$(awk '
+      /^profiles:[[:space:]]*$/ { inprofiles = 1; next }
+      /^[^[:space:]#]/          { inprofiles = 0 }
+      inprofiles && /^  [A-Za-z0-9_.-]+:/ {
+        sub(/:.*/, "", $1); print $1
+      }
+    ' $models_yml 2>/dev/null)"} )
+    (( ${#user_profiles} )) && profiles+=( ${^user_profiles}':user-defined profile' )
+  fi
+  _describe -t mpresets 'model profile' profiles
+}
+
+# STATE_FIELD_ALLOWLIST (gjc-runtime/state-renderer.ts); comma-separated.
+_gjc__state_fields() {
+  _values -s , 'state field' \
+    skill phase current_phase next active status fresh fresh_until receipt \
+    artifact_path plan_path spec_path run_id stage stage_n session_id \
+    updated_at handoff_to handoff_from counts hud
+}
+
+# `--lane-verdict` values depend on the lane selected by --stage.
+_gjc__lane_verdict() {
+  local i
+  for (( i = 1; i <= ${#words}; i++ )); do
+    [[ ${words[i]} == --stage ]] && case ${words[i+1]} in
+      (architect) _values 'architect verdict' CLEAR WATCH BLOCK; return ;;
+      (critic)    _values 'critic verdict' OKAY ITERATE REJECT; return ;;
+    esac
+    [[ ${words[i]} == --stage=architect ]] && { _values 'architect verdict' CLEAR WATCH BLOCK; return }
+    [[ ${words[i]} == --stage=critic ]] && { _values 'critic verdict' OKAY ITERATE REJECT; return }
+  done
+  _values 'lane verdict' CLEAR WATCH BLOCK OKAY ITERATE REJECT
+}
+
+# SDK control + global operations (sdk/protocol/operation-registry.ts).
+_gjc__sdk_ops() {
+  local -a ops
+  ops=(
+    'turn.prompt:submit a new turn prompt' 'turn.steer:steer the active turn'
+    'turn.follow_up:queue a follow-up turn' 'turn.abort:abort the active turn'
+    'turn.abort_and_prompt:abort and submit a replacement prompt'
+    'ask.answer:answer an outstanding user question'
+    'workflow.gate_answer:answer a workflow gate'
+    'workflow.plan_approve:approve a workflow plan'
+    'skill.invoke:invoke a skill' 'mode.plan.set:set plan mode'
+    'mode.goal.operate:operate goal mode' 'todo.replace:replace the session todo list'
+    'model.set:set the active model' 'model.cycle:cycle the active model'
+    'thinking.set:set thinking level' 'thinking.cycle:cycle thinking level'
+    'permission_mode.set:set permission mode'
+    'queue.steering_mode.set:set steering queue mode'
+    'queue.follow_up_mode.set:set follow-up queue mode'
+    'queue.interrupt_mode.set:set interrupt queue mode'
+    'compaction.run:run context compaction' 'compaction.auto.set:set automatic compaction'
+    'retry.auto.set:set automatic retry' 'retry.abort:abort retry backoff'
+    'bash.execute:execute managed bash' 'bash.abort:abort managed bash'
+    'bash.background:move managed bash to the background'
+    'session.new:create a session' 'session.fork:fork a session'
+    'session.resume:resume a session' 'session.close:close a session'
+    'session.switch:switch the active session' 'session.branch:create a session branch'
+    'session.rename:rename a session' 'session.handoff:hand off a session'
+    'session.export_html:export session HTML' 'session.delete:permanently delete a session'
+    'session.cwd.move:move a session working directory'
+    'session.list:list saved sessions' 'session.create:create a saved session'
+    'session.get_endpoint:get the session endpoint credential'
+    'config.patch:patch runtime configuration'
+    'runtime.reload:reload allowlisted runtime components'
+    'auth.login:begin secure authentication login'
+    'host_tools.register:register a host-tool callback provider'
+    'host_uri.register:register a host-URI callback provider'
+    'service_tier.set:set service tier intent'
+    'tools.active.set:replace the active tool set'
+    'queue.message.remove:remove a queued message'
+    'queue.message.move:move a queued message'
+    'queue.message.update:update a queued message'
+    'extension.set_enabled:enable or disable an extension'
+    'context.clear:clear active conversation context'
+    'retry.last:retry the last interrupted or failed turn'
+    'retry.now:immediately retry pending backoff'
+    'model.profile.set:activate a model profile'
+  )
+  _describe -t operations 'SDK operation' ops
+}
+
+# SDK query operations (sdk/protocol/operation-registry.ts).
+_gjc__sdk_queries() {
+  local -a queries
+  queries=(
+    'transcript.list:list transcript entries' 'transcript.body:read transcript body'
+    'context.get:read session context' 'goal.list/get:list or get goals'
+    'todo.list:list todos' 'diff.list_files:list changed files'
+    'diff.list_hunks:list diff hunks' 'diff.read_hunk:read a diff hunk'
+    'usage.get:read usage' 'models.list/current:list models or the current model'
+    'skill.list/state:list skills or read skill state'
+    'workflow.gates.list:list workflow gates'
+    'config.list/get:list or read non-secret configuration'
+    'session.metadata:read session metadata' 'session.stats:read session statistics'
+    'session.branch_candidates:list branch candidates'
+    'session.last_assistant:read the last assistant message'
+    'runtime.capabilities:read runtime capabilities'
+    'auth.providers:list authentication provider status'
+    'tools.list:list tools' 'queue.messages.list:list queued messages'
+    'extensions.list:list extensions' 'resource.body:read a bounded resource continuation'
+    'artifact.read:read a bounded artifact range' 'runtime.jobs.list:list managed jobs'
+    'turn.prompt_status:read prompt status'
+    'models.profiles.list:list effective model profiles'
+    'skill.invoke_status:read skill invocation status'
+  )
+  _describe -t queries 'SDK query' queries
+}
+
+_gjc__search_providers() {
+  local -a providers
+  providers=(
+    auto exa brave jina perplexity kimi zai anthropic gemini codex xai
+    tavily parallel kagi synthetic searxng duckduckgo insane openai-compatible
+  )
+  _describe -t providers 'search provider' providers
+}
+
+# Root _arguments owns option matching for the whole line, so a flag that exists
+# both at the root and on a subcommand would otherwise always resolve to the root
+# value set. Resolve from the command word actually present instead.
+_gjc__subcommand() {
+  local word
+  for word in ${words[2,-1]}; do
+    case $word in
+      (-*) continue ;;
+      (*) print -r -- $word; return ;;
+    esac
+  done
+}
+
+_gjc__provider() {
+  case $(_gjc__subcommand) in
+    (web-search|q) _gjc__search_providers ;;
+    (*) _gjc__message 'provider' ;;
+  esac
+}
+
+_gjc__mode() {
+  case $(_gjc__subcommand) in
+    (ultragoal)
+      _describe -t modes 'review mode' '(
+        review-only:review\ without\ starting\ work
+        review-start:review\ then\ start\ the\ review\ workflow
+      )' ;;
+    (*)
+      _describe -t modes 'output mode' '(
+        text:human-readable\ text\ \(default\)
+        json:machine-readable\ JSON
+        acp:Agent\ Client\ Protocol
+      )' ;;
+  esac
+}
+
+_gjc__skill_names() {
+  local -a skills
+  skills=( ${(f)"$(_call_program gjc-skills gjc skills list 2>/dev/null | awk -F'\t' 'NF >= 2 { print $1 ":" $2 }')"} )
+
+  if (( ${#skills} )); then
+    _describe -t skills 'skill' skills
+  else
+    _gjc__message 'skill name'
+  fi
+}
+
+_gjc__sessions() {
+  local -a sessions
+  sessions=( ${(f)"$(_call_program gjc-sessions gjc session list --json 2>/dev/null |
+    sed -n 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"} )
+
+  if (( ${#sessions} )); then
+    _describe -t sessions 'session' sessions
+  else
+    _gjc__message 'session name'
+  fi
+}
+
+_gjc__teams() {
+  local -a teams
+  teams=( ${(f)"$(_call_program gjc-teams gjc team list 2>/dev/null | awk -F'\t' 'NF >= 2 { print $1 ":" $2 }')"} )
+
+  if (( ${#teams} )); then
+    _describe -t teams 'team' teams
+  else
+    _gjc__message 'team name'
+  fi
+}
+
+_gjc__config_keys() {
+  local -a keys
+  keys=( ${(f)"$(_call_program gjc-config gjc config list --json 2>/dev/null |
+    sed -n 's/^  "\([^"]*\)".*/\1/p')"} )
+
+  if (( ${#keys} )); then
+    _describe -t config-keys 'setting key' keys
+  else
+    _gjc__message 'setting key'
+  fi
+}
+
+_gjc__mcp_servers() {
+  local -a servers
+  servers=( ${(f)"$(_call_program gjc-mcp gjc mcp list --json 2>/dev/null |
+    sed -n 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"} )
+
+  if (( ${#servers} )); then
+    _describe -t mcp-servers 'server' servers
+  else
+    _gjc__message 'server name'
+  fi
+}
+
+_gjc__plugins() {
+  local -a plugins
+  plugins=( ${(f)"$(_call_program gjc-plugins gjc plugin list --json 2>/dev/null |
+    sed -n 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"} )
+
+  if (( ${#plugins} )); then
+    _describe -t plugins 'plugin' plugins
+  else
+    _gjc__message 'plugin name'
+  fi
+}
+
+# Root/launch flags. `launch` is the implicit command for bare `gjc <prompt>`,
+# so the same set is reused for the explicit `gjc launch` form.
+_gjc__launch_args() {
+  local -a args
+
+  args=(
+    '(- *)'{-h,--help}'[show help]'
+    '(- *)'{-v,--version}'[show version]'
+    '--model=[model to use (fuzzy match)]:model:_gjc__models'
+    '--smol=[smol/fast model for lightweight tasks]:model:_gjc__models'
+    '--slow=[slow/reasoning model for thorough analysis]:model:_gjc__models'
+    '--plan=[plan model for architectural planning]:model:_gjc__models'
+    '--mpreset=[model profile preset to activate for this session]:preset:_gjc__mpresets'
+    '--default[persist --mpreset as the default model profile]'
+    '--provider=[provider to use (legacy; prefer --model)]:provider: _gjc__provider'
+    '--api-key=[API key (defaults to env vars)]:key: _gjc__message "key"'
+    '--credential=[stored credential selector]:selector:_gjc__credential'
+    '--system-prompt=[system prompt]:prompt: _gjc__message "prompt"'
+    '--append-system-prompt=[append text or file contents to the system prompt]:text or file:_files'
+    '--mcp-config=[tools-only MCP config file (absolute path)]:file:_files'
+    '--allow-home[allow starting in ~ without auto-switching to a temp dir]'
+    '--mode=[output mode]:mode:_gjc__mode'
+    {-p,--print}'[non-interactive mode: process prompt and exit]'
+    {-c,--continue}'[continue previous session]'
+    {-r,--resume=}'[resume a session (by ID prefix, path, or picker if omitted)]::session: _gjc__message "session"'
+    '--session-dir=[explicit session storage and lookup directory]:directory:_files -/'
+    '--no-session[do not save session (ephemeral)]'
+    '--models=[comma-separated model patterns for Alt+N cycling]:patterns:_gjc__model_list'
+    '--no-tools[disable all built-in tools]'
+    '--no-lsp[disable LSP tools, formatting, and diagnostics]'
+    '--no-pty[disable PTY-based interactive bash execution]'
+    '--tmux[launch interactive startup inside tmux]'
+    '--tools=[comma-separated list of tools to enable]:tools:_gjc__tools'
+    '--thinking=[set thinking level]:level:(minimal low medium high xhigh max)'
+    '--no-rules[disable rules discovery and loading]'
+    '--export=[export session file to HTML and exit]:session file:_files'
+    '--list-models=-[list available models (with optional fuzzy search)]::pattern: _gjc__message "pattern"'
+    '--no-title[disable title auto-generation]'
+    {-w,--worktree=}'-[run in a sibling git worktree (detached when no name given)]::branch name: _gjc__message "branch name"'
+    # Advertised in `--help` but no longer read by the root parser (src/cli/args.ts).
+    '*--hook=[(no-op) load a hook/extension file]:file:_files'
+    '*'{-e,--extension=}'[(no-op) load an extension file]:file:_files'
+    '--no-extensions[(no-op) disable extension discovery]'
+    '--no-skills[(no-op) disable skills discovery and loading]'
+    '--skills=[(no-op) comma-separated glob patterns to filter skills]:patterns: _gjc__message "patterns"'
+    # Parsed by src/cli/args.ts but absent from `--help`.
+    '--session=[(hidden) alias for --resume]:session: _gjc__message "session"'
+    '--fork=[(hidden) fork an existing session by id]:session: _gjc__message "session"'
+    '--provider-session-id=[(hidden) reuse an upstream provider session id]:id: _gjc__message "id"'
+    '--acp-terminal-auth[(hidden) run terminal auth bootstrap for ACP clients]'
+    '*:message or @file:_gjc__prompt_or_file'
+  )
+
+  _arguments -s -S : $args
+}
+
+_gjc__tools() {
+  local -a tools
+  tools=(
+    'read:read file contents'
+    'bash:execute bash commands'
+    'edit:edit files with find/replace'
+    'write:write files (creates/overwrites)'
+    'grep:search file contents'
+    'find:find files by glob pattern'
+    'lsp:language server protocol (code intelligence)'
+    'python:execute Python code'
+    'notebook:edit Jupyter notebooks'
+    'browser:browser automation (Puppeteer)'
+    'task:launch sub-agents for parallel tasks'
+    'todo_write:manage todo/task lists'
+    'web_search:search the web'
+    'ask:ask user questions (interactive mode only)'
+  )
+  _values -s , 'tool' $tools
+}
+
+# Bare positionals are prompt words; an `@path` prefix attaches a file.
+_gjc__prompt_or_file() {
+  if compset -P '@'; then
+    _files
+    return
+  fi
+  _message 'message to send (prefix files with @)'
+}
+
+_gjc__setup() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-c,--check}'[check if dependencies are installed]' \
+    {-f,--force}'[overwrite existing default workflow skill files]' \
+    '--json[output status as JSON]' \
+    '--smoke[run Hermes MCP setup smoke checks]' \
+    '--install[install generated Hermes setup files]' \
+    '*--root=[allowed Hermes MCP workdir/artifact root (repeatable)]:directory:_files -/' \
+    '--repo=[Hermes MCP repo namespace]:repo: _gjc__message "repo"' \
+    '--profile=[Hermes MCP profile namespace]:profile: _gjc__message "profile"' \
+    '--session-command=[explicit GJC session command for Hermes to launch]:command: _gjc__message "command"' \
+    '--no-worktree[disable default GJC --worktree isolation for Hermes sessions]' \
+    '--worktree-name=[named GJC --worktree branch for Hermes sessions]:name: _gjc__message "name"' \
+    '--state-root=[Hermes MCP coordination state root]:directory:_files -/' \
+    '--mutation=[Hermes MCP mutation classes]:classes:_values -s , "mutation class" sessions questions reports all' \
+    '--artifact-byte-cap=[Hermes MCP artifact read byte cap]:bytes: _gjc__message "bytes"' \
+    '--server-key=[Hermes MCP server key in coordinator config]:key: _gjc__message "key"' \
+    '--gjc-command=[command used to start `gjc mcp-serve coordinator`]:command: _gjc__message "command"' \
+    '--target=[Hermes config file target for config-only install]:file:_files' \
+    '--profile-dir=[Hermes profile directory for full setup install]:directory:_files -/' \
+    '--preset=[provider preset]:preset:((minimax\:"MiniMax Coding Plan" minimax-code\:"alias of minimax" minimax-cn\:"MiniMax Coding Plan (China)" minimax-code-cn\:"alias of minimax-cn" minimaxi\:"alias of minimax-cn" glm\:"GLM / zAI" zai\:"alias of glm" z-ai\:"alias of glm" bigmodel\:"alias of glm" alibaba-token-plan\:"Alibaba Token Plan" alibaba\:"alias of alibaba-token-plan" token-plan\:"alias of alibaba-token-plan"))' \
+    '--compat=[provider compatibility]:compat:(openai anthropic)' \
+    '--base-url=[provider API base URL]:url: _gjc__message "url"' \
+    '--api-key-env=[read provider API key from this environment variable]:env var:_parameters -g "*export*"' \
+    '*--model=[model id to add (repeat or comma-separate)]:model:_gjc__models' \
+    '--models-path=[override models config path]:file:_files' \
+    {-y,--yes}'[import discovered credentials without an interactive prompt]' \
+    '--dry-run[preview discovered credentials without importing]' \
+    '*--models=[(hidden) alias for --model]:model:_gjc__models' \
+    '--keychain[(hidden) include the Claude macOS Keychain when discovering credentials]' \
+    '1:component:((claude\:"Claude Code interop assets" codex\:"Codex interop assets" credentials\:"import discovered provider credentials" defaults\:"install GJC default workflow skills" hermes\:"Hermes MCP control plane" hooks\:"native hook integration" provider\:"register an OpenAI/Anthropic-compatible provider" python\:"Python tool dependencies" stt\:"speech-to-text dependencies"))'
+}
+
+_gjc__session() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-j,--json}'[emit machine-readable JSON]' \
+    '--session-id=[expected @gjc-session-id tag for force-close]:id: _gjc__message "id"' \
+    '--state-file=[expected @gjc-session-state-file tag for force-close]:file:_files' \
+    '1:action:->action' \
+    '2:session:->session' && ret=0
+
+  case $state in
+    action)
+      local -a actions=(
+        'list:list tagged GJC-managed tmux sessions (default)'
+        'status:show status for a session'
+        'create:create a new tagged session'
+        'attach:attach to a session'
+        'remove:remove a session'
+        'force-close:(hidden) force-close a session with tag verification'
+      )
+      _describe -t actions 'action' actions && ret=0
+      ;;
+    session)
+      _gjc__sessions && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__state() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--input=[JSON payload (or @file) for the action]:json:_gjc__json_input' \
+    '--session-id=[session-scoped .gjc/_session-{id} directory]:id: _gjc__message "id"' \
+    '--thread-id=[thread id selector]:id: _gjc__message "id"' \
+    '--turn-id=[turn id selector]:id: _gjc__message "id"' \
+    '--skill=[workflow skill to target]:skill:(deep-interview ralplan ultragoal team)' \
+    '--mode=[workflow mode to target]:mode:(deep-interview ralplan ultragoal team)' \
+    '--to=[handoff target skill]:skill:(deep-interview ralplan ultragoal team)' \
+    '--fields=[project a subset of state fields]:fields:_gjc__state_fields' \
+    '--limit=[maximum records to return]:count: _gjc__message "count"' \
+    '--since=[only records at or after this ISO timestamp or age]:since:(30m 6h 7d)' \
+    '--older-than=[prune records older than this age in days]:days: _gjc__message "days"' \
+    '--status=[filter by record status]:status: _gjc__message "status"' \
+    '--format=[graph output format]:format:(ascii mermaid dot)' \
+    '--history[include the state history journal]' \
+    '--compact[emit compact output]' \
+    '--replace[replace state instead of merging]' \
+    '--force[bypass guard checks]' \
+    '--hard[perform a hard prune]' \
+    '--dry-run[preview without writing]' \
+    '--json[emit machine-readable JSON]' \
+    '1:action or skill:->first' \
+    '2:action:->second' && ret=0
+
+  case $state in
+    first)
+      local -a actions skills
+      actions=(
+        'read:print the persisted state envelope'
+        'write:merge a JSON payload into state'
+        'clear:clear state for the session'
+        'contract:print the workflow state contract'
+        'handoff:hand off to the next workflow skill'
+        'graph:render the workflow state graph'
+        'prune:prune stale state records'
+        'gc:garbage-collect state records'
+        'migrate:migrate legacy state layouts'
+        'status:summarize current workflow state'
+        'doctor:diagnose workflow state health'
+      )
+      skills=(
+        'deep-interview:scope the action to deep-interview state'
+        'ralplan:scope the action to ralplan state'
+        'ultragoal:scope the action to ultragoal state'
+        'team:scope the action to team state'
+      )
+      _describe -t actions 'action' actions
+      _describe -t skills 'skill namespace' skills
+      ret=0
+      ;;
+    second)
+      local -a actions=(
+        'read:print the persisted state envelope'
+        'write:merge a JSON payload into state'
+        'clear:clear state for the session'
+        'contract:print the workflow state contract'
+        'handoff:hand off to the next workflow skill'
+        'graph:render the workflow state graph'
+        'status:summarize current workflow state'
+        'doctor:diagnose workflow state health'
+      )
+      _describe -t actions 'action' actions && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__harness() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--input=[JSON object input for the verb]:json:_gjc__json_input' \
+    '--prompt-file=[read submit prompt text from a file (submit verb only)]:file:_files' \
+    {-s,--session=}'[session id (re-grab a session)]:id: _gjc__message "id"' \
+    '--cursor=[event cursor for events --follow (exclusive)]:cursor: _gjc__message "cursor"' \
+    '--follow[tail the owner-written event log]' \
+    {-j,--json}'[emit machine-readable JSON]' \
+    '--receipt-spool-dir=[append ReceiptEnvelope records to spool.jsonl under this directory]:directory:_files -/' \
+    '1:verb:((start\:"start a harness session" preflight\:"run preflight checks" submit\:"submit a prompt" observe\:"observe session state" classify\:"classify an observation" recover\:"recover a stranded session" validate\:"validate session evidence" finalize\:"finalize a session" retire\:"retire a session" events\:"read the event log" monitor\:"monitor a session" operate\:"run the operate control loop"))'
+}
+
+_gjc__coordinator() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-j,--json}'[emit machine-readable JSON]' \
+    '1:action:((check\:"validate coordinator MCP bridge contracts" tools\:"list coordinator MCP tools"))'
+}
+
+_gjc__team() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-j,--json}'[emit machine-readable JSON]' \
+    '--dry-run[create ephemeral team state without starting tmux panes]' \
+    '--input=[JSON object input for api operations]:json:_gjc__json_input' \
+    '1:action:->action' \
+    '2:target:->target' && ret=0
+
+  case $state in
+    action)
+      # `gjc team 3:executor "<task>"` starts a team; bare verbs manage one.
+      if compset -P '<->:'; then
+        local -a roles=(
+          'executor:implementation worker'
+          'planner:planning worker'
+          'reviewer:review worker'
+          'verifier:verification worker'
+        )
+        _describe -t roles 'role' roles && ret=0
+      else
+        local -a actions=(
+          'start:start a team (default)'
+          'status:show team status'
+          'monitor:monitor team progress'
+          'list:list known teams'
+          'shutdown:shut a team down'
+          'resume:resume a team'
+          'api:invoke a team runtime API operation'
+        )
+        _describe -t actions 'action' actions && ret=0
+        _message -e specs 'worker spec such as 3:executor'
+      fi
+      ;;
+    target)
+      case $line[1] in
+        api)
+          local -a ops=(
+            send-message broadcast mailbox-list mailbox-mark-delivered
+            mailbox-mark-notified notification-list notification-read
+            notification-replay notification-mark-pane-attempt worker-startup-ack
+            create-task read-task list-tasks update-task claim-task
+            transition-task-status transition-task release-task-claim
+            read-config read-manifest read-worker-status update-worker-status
+            read-worker-heartbeat recover-stale-claims update-worker-heartbeat
+            read-worker-memory-guard update-worker-memory-guard
+            apply-worker-memory-guard write-worker-inbox write-worker-identity
+            append-event read-events read-traces await-event
+            write-shutdown-request read-shutdown-ack read-monitor-snapshot
+            write-monitor-snapshot read-task-approval write-task-approval
+          )
+          _describe -t operations 'api operation' ops && ret=0
+          ;;
+        status|monitor|shutdown|resume)
+          _gjc__teams && ret=0
+          ;;
+        *)
+          _gjc__message 'task description' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__ultragoal() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--goal-id=[goal id to target]:id: _gjc__message "id"' \
+    '--title=[goal title]:title: _gjc__message "title"' \
+    '--objective=[goal objective text]:objective: _gjc__message "objective"' \
+    '--brief=[plan brief text]:brief: _gjc__message "brief"' \
+    '--brief-file=[read the plan brief from a file]:file:_files' \
+    '--spec=[spec markdown or path]:spec:_files' \
+    '--branch=[git branch to associate]:branch:_gjc__git_branches' \
+    '--mode=[review mode]:mode:((review-only\:"review without starting work" review-start\:"review then start the review workflow"))' \
+    '--status=[goal status]:status:(pending active complete failed blocked review_blocked superseded)' \
+    '--kind=[native steering kind]:kind:((add_subgoal\:"add a subgoal" split_subgoal\:"split a subgoal" reorder_pending\:"reorder pending goals" revise_pending_wording\:"revise pending goal wording" annotate_ledger\:"annotate the ledger" mark_blocked_superseded\:"mark a blocked goal superseded"))' \
+    '--rationale=[rationale text]:rationale: _gjc__message "rationale"' \
+    '--classification=[blocker classification]:classification:((human_blocked\:"requires a human to unblock" resolvable\:"audit note; never unblocks pause"))' \
+    '--classification-event-id=[classification event id]:id: _gjc__message "id"' \
+    '--verdict=[critic verdict]:verdict:((OKAY\:"accept" ITERATE\:"another pass needed" REJECT\:"reject"))' \
+    '--terminus=[critic verdict terminus]:terminus:((completion\:"goal completion" pause\:"plan pause"))' \
+    '--evidence=[completion evidence]:evidence: _gjc__message "evidence"' \
+    '--overlap-id=[pipeline overlap id]:id: _gjc__message "id"' \
+    '--prior-goal-id=[prior goal id in the overlap]:id: _gjc__message "id"' \
+    '--next-goal-id=[next goal id in the overlap]:id: _gjc__message "id"' \
+    '--replacements-json=[goal replacements as JSON]:json:_gjc__json_input' \
+    '--order-json=[goal ordering as JSON]:json:_gjc__json_input' \
+    '--goal-metadata-json=[goal metadata as JSON]:json:_gjc__json_input' \
+    '--quality-gate-json=[quality gate payload as JSON]:json:_gjc__json_input' \
+    '--validation-batch-json=[validation batch as JSON]:json:_gjc__json_input' \
+    '--review-handles-json=[review handles as JSON]:json:_gjc__json_input' \
+    '--qa-handles-json=[QA handles as JSON]:json:_gjc__json_input' \
+    '--implementation-handle-json=[implementation handle as JSON]:json:_gjc__json_input' \
+    '--review-result-json=[review result as JSON]:json:_gjc__json_input' \
+    '--qa-result-json=[QA result as JSON]:json:_gjc__json_input' \
+    '--target-state-json=[target state as JSON]:json:_gjc__json_input' \
+    '--blockers-json=[review blockers as JSON]:json:_gjc__json_input' \
+    '--executor-qa-json=[executor QA payload as JSON]:json:_gjc__json_input' \
+    '--executor-qa[record executor QA results]' \
+    '--from-stdin[read the payload from standard input]' \
+    '--retry-failed[retry failed goals]' \
+    '--short[emit condensed output]' \
+    '--stat[include diff statistics]' \
+    '--name-status[include changed file name/status]' \
+    '--cached[read staged changes]' \
+    '--pr[include pull-request context]' \
+    '--json[emit machine-readable JSON]' \
+    '--gjc-goal-mode[(hidden) internal goal-mode activation marker]' \
+    '1:command:((status\:"summarize plan progress" create-goals\:"create the durable goal plan" complete-goals\:"mark goals complete" checkpoint\:"record a goal checkpoint" review\:"run the review workflow" steer\:"steer the active plan" record-review-blockers\:"record review blockers" classify-blocker\:"classify a recorded blocker" record-critic-verdict\:"record a critic verdict" record-critic-gate-override\:"override the critic gate" start-pipeline-overlap\:"start a pipeline overlap" join-pipeline-overlap\:"join a pipeline overlap" rebaseline-pipeline-overlap\:"rebaseline a pipeline overlap"))' \
+    '*::arg: _gjc__message "arg"'
+}
+
+_gjc__ralplan() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--interactive[run the consensus workflow interactively]' \
+    '--deliberate[run in deliberate consensus mode]' \
+    '--write[persist a stage artifact]' \
+    '--stage=[consensus stage to write]:stage:(planner architect critic revision post-interview adr final)' \
+    '--stage_n=[stage iteration number]:number: _gjc__message "number"' \
+    '--artifact=[stage artifact markdown or path]:artifact:_files' \
+    '--artifact-env=[read the stage artifact from this environment variable]:env var: _gjc__message "env var"' \
+    '--run-id=[consensus run id]:id: _gjc__message "id"' \
+    '--session-id=[session-scoped state directory id]:id: _gjc__message "id"' \
+    '--skill=[workflow skill namespace]:skill:(deep-interview ralplan ultragoal team)' \
+    '--planner-id=[planner lane id]:id: _gjc__message "id"' \
+    '--planner-resumable=[mark the planner lane resumable]:resumable:(true false)' \
+    '--architect=[architect lane kind]:kind:(openai-code)' \
+    '--architect-id=[architect lane id]:id: _gjc__message "id"' \
+    '--architect-resumable=[mark the architect lane resumable]:resumable:(true false)' \
+    '--critic=[critic lane kind]:kind:(openai-code)' \
+    '--critic-id=[critic lane id]:id: _gjc__message "id"' \
+    '--critic-resumable=[mark the critic lane resumable]:resumable:(true false)' \
+    '--lane-verdict=[record a lane verdict (architect: CLEAR/WATCH/BLOCK, critic: OKAY/ITERATE/REJECT)]:verdict:_gjc__lane_verdict' \
+    '--fallback-reason=[reason the lane fell back]:reason:(context_unavailable not_found no_runner resume_failed process_restart missing_record)' \
+    '--fallback-attempted-id=[id of the attempted lane]:id: _gjc__message "id"' \
+    '--fallback-stage-n=[stage number of the fallback]:number: _gjc__message "number"' \
+    '--fallback-receipt-path=[path of the fallback receipt]:file:_files' \
+    '--json[emit machine-readable JSON]' \
+    '*:task description: _gjc__message "task description"'
+}
+
+_gjc__deep_interview() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--quick[seed a quick deep-interview run]' \
+    '--standard[seed a standard deep-interview run]' \
+    '--deep[seed a deep deep-interview run]' \
+    '--trace[run a bounded trace evidence pre-step before interview questions]' \
+    '--threshold=[override ambiguity threshold for kickoff]:threshold: _gjc__message "threshold"' \
+    '--threshold-source=[describe the threshold override source]:source: _gjc__message "source"' \
+    '--session-id=[session-scoped state/spec handoff directory id]:id: _gjc__message "id"' \
+    '--input=[JSON payload (or @file) for the write/stage verbs]:json:_gjc__json_input' \
+    '--for=[transition for stage]:transition:(initialize-context record-round update-facts merge-state)' \
+    '--reset[with write: replace state instead of incremental merge]' \
+    '--write[persist a final deep-interview spec]' \
+    '--stage=[spec stage for --write]:stage:(final)' \
+    '--slug=[safe slug for the persisted spec file]:slug: _gjc__message "slug"' \
+    '--spec=[final spec markdown or a path to it]:spec:_files' \
+    '--handoff=[after --write, hand off to a workflow target]:target:(ralplan)' \
+    '--deliberate[shortcut for --write handoff to ralplan in deliberate mode]' \
+    '--force[overwrite corrupt existing deep-interview state during --write]' \
+    '--json[output JSON]' \
+    '1:verb:((read\:"print the persisted envelope and any pending draft" write\:"one-shot incremental JSON merge into state" stage\:"stage one JSON transition draft" check\:"dry-run the staged draft" apply\:"commit the staged draft" discard\:"remove the pending draft" clear\:"clear deep-interview state" handoff\:"hand off to the next workflow skill"))' \
+    '*::idea: _gjc__message "idea"'
+}
+
+_gjc__skills() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--json[output JSON]' \
+    '1:action:->action' \
+    '2:name:->name' && ret=0
+
+  case $state in
+    action)
+      _describe -t actions 'action' '(
+        list:list\ bundled\ workflow\ skills
+        read:read\ an\ embedded\ workflow\ skill
+      )' && ret=0
+      ;;
+    name)
+      [[ $line[1] == read ]] && { _gjc__skill_names && ret=0 }
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__config() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--json[output JSON]' \
+    '--show-secrets[show secret-like setting values without redaction (unsafe)]' \
+    '1:action:->action' \
+    '2:key:->key' \
+    '*:value:->value' && ret=0
+
+  case $state in
+    action)
+      _describe -t actions 'action' '(
+        list:list\ all\ settings
+        get:print\ one\ setting
+        set:assign\ a\ setting
+        reset:restore\ a\ setting\ to\ its\ default
+        path:print\ the\ config\ file\ path
+        init-xdg:initialize\ an\ XDG\ config\ layout
+        doctor:diagnose\ configuration\ problems
+      )' && ret=0
+      ;;
+    key)
+      case $line[1] in
+        get|set|reset) _gjc__config_keys && ret=0 ;;
+      esac
+      ;;
+    value)
+      [[ $line[1] == set ]] && { _gjc__message 'value' && ret=0 }
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__stats() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-p,--port=}'[port for the dashboard server]:port: _gjc__message "port"' \
+    {-j,--json}'[output stats as JSON]' \
+    {-s,--summary}'[print summary to console]'
+}
+
+_gjc__notify() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--token=[Telegram bot token (non-interactive setup)]:token: _gjc__message "token"' \
+    '--chat-id=[Telegram chat id to pair (non-interactive setup)]:id: _gjc__message "id"' \
+    '--discord-bot-token=[Discord bot token]:token: _gjc__message "token"' \
+    '--discord-application-id=[Discord application id]:id: _gjc__message "id"' \
+    '--discord-guild-id=[Discord guild id]:id: _gjc__message "id"' \
+    '--discord-parent-channel-id=[Discord parent channel id]:id: _gjc__message "id"' \
+    '--slack-bot-token=[Slack bot token]:token: _gjc__message "token"' \
+    '--slack-app-token=[Slack app token]:token: _gjc__message "token"' \
+    '--slack-workspace-id=[Slack workspace id]:id: _gjc__message "id"' \
+    '--slack-channel-id=[Slack channel id]:id: _gjc__message "id"' \
+    '--slack-authorized-user-id=[Slack user id authorized for inbound replies]:id: _gjc__message "id"' \
+    '--redact[enable redaction of remote notification content]' \
+    '--probe[notify health: probe Telegram reachability (getMe)]' \
+    '--message=[notify test: custom message body]:message: _gjc__message "message"' \
+    '--smoke[run hidden daemon smoke]' \
+    '--owner-id=[internal: daemon owner id]:id: _gjc__message "id"' \
+    '--agent-dir=[internal: agent dir for the daemon]:directory:_files -/' \
+    '1:action:->action' \
+    '2:provider:->provider' && ret=0
+
+  case $state in
+    action)
+      local -a actions=(
+        'setup:configure a notification provider'
+        'status:show notification configuration status'
+        'health:check provider reachability'
+        'test:send a test notification'
+        'recovery:run notification recovery'
+        'daemon-internal:(hidden) internal daemon entry point'
+      )
+      _describe -t actions 'action' actions && ret=0
+      ;;
+    provider)
+      _describe -t providers 'provider' '(telegram discord slack)' && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__daemon() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-v,--verbose}'[show runtime detail and the full roots list]' \
+    '--all[target all registered daemon kinds]' \
+    '--json[emit JSON output]' \
+    '--force[allow hard-kill escalation when graceful stop times out]' \
+    '--graceful-timeout-ms=[cooperative stop timeout before escalation]:ms: _gjc__message "ms"' \
+    '--kill-timeout-ms=[wait for old pid death after SIGKILL]:ms: _gjc__message "ms"' \
+    '--spawn-if-stopped[on reload, spawn even when no daemon is running]' \
+    '--smoke[internal: run worker smoke without configuration or network]' \
+    '--owner-id=[internal: daemon owner id]:id: _gjc__message "id"' \
+    '--agent-dir=[internal: daemon state directory]:directory:_files -/' \
+    '--op=[SDK control or global operation]:operation:_gjc__sdk_ops' \
+    '--idempotency-key=[caller idempotency key for SDK lifecycle globals]:key: _gjc__message "key"' \
+    '--json-input=[SDK request JSON object]:json:_gjc__json_input' \
+    '--json-input-file=[read SDK request JSON from a 0600 file]:file:_files' \
+    '--json-input-stdin[read SDK request JSON from standard input]' \
+    '--confirm[confirm a destructive SDK control operation]' \
+    '--query=[SDK query name]:query:_gjc__sdk_queries' \
+    '--cursor=[SDK query continuation cursor]:cursor: _gjc__message "cursor"' \
+    '--show-endpoint-credential[allow session.get_endpoint secret output]' \
+    '--yes[confirm endpoint credential output on a TTY]' \
+    '1:action:->action' \
+    '*:kind:->kind' && ret=0
+
+  case $state in
+    action)
+      local -a actions=(
+        'status:report daemon status'
+        'restart:reload, spawning a fresh owner if none is running'
+        'reload:reload a running daemon'
+        'stop:stop a running daemon'
+        'list:list registered daemons'
+        'session:(hidden) SDK session control operations'
+        'discord-internal:(hidden) internal Discord daemon entry point'
+        'slack-internal:(hidden) internal Slack daemon entry point'
+      )
+      _describe -t actions 'action' actions && ret=0
+      ;;
+    kind)
+      _values 'daemon kind' telegram discord slack && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__mcp() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--project[use project scope (./.gjc/mcp.json) instead of user scope]' \
+    '--force[overwrite an existing server during add]' \
+    {-j,--json}'[emit machine-readable JSON with sensitive values redacted]' \
+    '--type=[server transport]:type:((stdio\:"local stdio server (default)" http\:"HTTP server" sse\:"server-sent events"))' \
+    '--command=[stdio server command for add]:command:_command_names -e' \
+    '--url=[HTTP/SSE server URL for add]:url: _gjc__message "url"' \
+    '*--arg=[stdio server argument (repeatable)]:arg: _gjc__message "arg"' \
+    '*--env=[stdio env var as KEY=VALUE (repeatable)]:env: _gjc__message "env"' \
+    '*--header=[HTTP/SSE header as KEY=VALUE (repeatable)]:header: _gjc__message "header"' \
+    '--cwd=[working directory for stdio server]:directory:_files -/' \
+    '--timeout=[connection timeout in milliseconds]:ms: _gjc__message "ms"' \
+    '1:action:->action' \
+    '2:name:->name' \
+    '*::command args:->rest' && ret=0
+
+  case $state in
+    action)
+      _describe -t actions 'action' '(
+        add:store\ an\ explicit\ MCP\ server\ definition
+        list:list\ stored\ servers\ with\ values\ redacted
+        remove:remove\ a\ stored\ server
+      )' && ret=0
+      ;;
+    name)
+      case $line[1] in
+        remove) _gjc__mcp_servers && ret=0 ;;
+        add) _gjc__message 'server name' && ret=0 ;;
+      esac
+      ;;
+    rest)
+      [[ $line[1] == add ]] && { _alternative 'commands:command:_command_names -e' 'urls:URL: _message "server URL"' && ret=0 }
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__mcp_serve() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-j,--json}'[emit machine-readable JSON]' \
+    '--check[validate server configuration and print a smoke summary]' \
+    '1:server:((sdk\:"GJC SDK MCP bridge" coordinator\:"coordinator MCP bridge" hermes\:"alias for the coordinator bridge"))' \
+    '*::arg: _gjc__message "arg"'
+}
+
+_gjc__contribute_pr() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--no-spawn[only write artifacts; do not spawn a fresh GJC worker]' \
+    '--source-session-id=[source session id to record in the manifest]:id: _gjc__message "id"' \
+    '--artifact-root=[directory where contribute-pr artifacts are written]:directory:_files -/'
+}
+
+_gjc__migrate() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '*--from=[source agent to import from (repeatable)]:source:((claude-code\:"Claude Code" codex\:"OpenAI Codex" opencode\:"OpenCode" all\:"every supported source"))' \
+    '--project[write to the project scope (./.gjc) instead of the user scope]' \
+    '--force[overwrite existing skills/MCP servers instead of skipping them]' \
+    '--dry-run[preview the migration without writing anything]' \
+    {-j,--json}'[emit a machine-readable JSON report]'
+}
+
+_gjc__rlm() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--data=[point the session at a data description]:file:_files' \
+    '*:question: _gjc__message "question"'
+}
+
+_gjc__update() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-f,--force}'[force update]' \
+    {-c,--check}'[check for updates without installing]'
+}
+
+_gjc__gc() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    {-j,--json}'[emit machine-readable JSON]' \
+    '(--repair-session-index)--prune[remove stale records (default: report only)]' \
+    '(--repair-session-index)--force[alias for --prune (eligible records only)]' \
+    '(--repair-session-index)--dry-run[force report-only mode (wins over --prune/--force)]' \
+    '(--prune --force --dry-run)--repair-session-index[quarantine a corrupt session-index suffix and retain its valid prefix]'
+}
+
+_gjc__plugin() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--json[output JSON]' \
+    '--fix[attempt to fix issues (doctor)]' \
+    '--force[force install]' \
+    '--dry-run[show actions without applying changes]' \
+    {-l,--local}'[operate on local plugin directory]' \
+    '--enable=[enable plugin features (comma-separated)]:features: _gjc__message "feature names, comma-separated"' \
+    '--disable=[disable plugin features (comma-separated)]:features: _gjc__message "feature names, comma-separated"' \
+    '--set=[replace the enabled plugin feature set (comma-separated)]:features: _gjc__message "feature names, comma-separated"' \
+    '--scope=[install scope]:scope:((user\:"user root (default)" project\:"project root"))' \
+    '--user[install GJC plugin bundle into the user root]' \
+    '--project[install GJC plugin bundle into the project root]' \
+    '1:action:->action' \
+    '*:target:->target' && ret=0
+
+  case $state in
+    action)
+      _describe -t actions 'action' '(
+        install:install\ a\ plugin
+        uninstall:uninstall\ a\ plugin
+        list:list\ installed\ plugins
+        link:link\ a\ local\ plugin\ directory
+        doctor:diagnose\ plugin\ problems
+        features:list\ plugin\ features
+        config:show\ or\ set\ plugin\ config
+        enable:enable\ a\ plugin
+        disable:disable\ a\ plugin
+        marketplace:browse\ the\ plugin\ marketplace
+        discover:discover\ installable\ plugins
+        upgrade:upgrade\ installed\ plugins
+      )' && ret=0
+      ;;
+    target)
+      case $line[1] in
+        install|link) _alternative 'packages:package: _message "package or path"' 'dirs:directory:_files -/' && ret=0 ;;
+        uninstall|enable|disable|config|features) _gjc__plugins && ret=0 ;;
+        *) _gjc__message 'plugin name' && ret=0 ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc__web_search() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--provider=[search provider]:provider: _gjc__search_providers' \
+    '--recency=[recency filter]:recency:(day week month year)' \
+    {-l,--limit=}'[max results to return]:count: _gjc__message "count"' \
+    '--xai-mode=[xAI mode]:mode:(web x web_and_x)' \
+    '--allowed-domain=[xAI web_search allowed domains, comma-separated]:domains: _gjc__message "domains"' \
+    '--allowed-domains=[xAI web_search allowed domains, comma-separated]:domains: _gjc__message "domains"' \
+    '--excluded-domain=[xAI web_search excluded domains, comma-separated]:domains: _gjc__message "domains"' \
+    '--excluded-domains=[xAI web_search excluded domains, comma-separated]:domains: _gjc__message "domains"' \
+    '--allowed-x-handle=[xAI x_search allowed handles, comma-separated]:handles: _gjc__message "handles"' \
+    '--allowed-x-handles=[xAI x_search allowed handles, comma-separated]:handles: _gjc__message "handles"' \
+    '--excluded-x-handle=[xAI x_search excluded handles, comma-separated]:handles: _gjc__message "handles"' \
+    '--excluded-x-handles=[xAI x_search excluded handles, comma-separated]:handles: _gjc__message "handles"' \
+    '--from-date=[xAI x_search start date (ISO8601)]:date: _gjc__message "date"' \
+    '--to-date=[xAI x_search end date (ISO8601)]:date: _gjc__message "date"' \
+    '--image-understanding[enable xAI image understanding]' \
+    '--image-search[enable xAI web image search]' \
+    '--video-understanding[enable xAI X video understanding]' \
+    '--no-inline-citations[disable xAI inline citation markdown]' \
+    '--compact[render condensed output]' \
+    '*:query: _gjc__message "query"'
+}
+
+_gjc__local_provider() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--model=[model id to use for smoke]:model:_gjc__models' \
+    '--models-path=[override models config path]:file:_files' \
+    '--timeout-ms=[request timeout in milliseconds]:ms: _gjc__message "ms"' \
+    '--smoke[run optional streaming chat smoke during status/diagnose]' \
+    '--json[output JSON]' \
+    '1:action:((status\:"summarize configured local providers" diagnose\:"diagnose provider reachability" discover\:"discover local endpoints" models\:"list provider models" smoke\:"run a streaming chat smoke test"))'
+}
+
+_gjc__read() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--truncation=[which end of an over-budget result to keep]:mode:((head\:"keep the beginning" last\:"keep the end" both\:"keep both ends"))' \
+    '1:path or URL:_files'
+}
+
+_gjc__completion() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--install[install the generated spec for inshellisense]' \
+    '--dir=[install directory]:directory:_files -/' \
+    '--force[overwrite an existing non-GJC inshellisense index.js]' \
+    '--json[output JSON instead of JavaScript or status text]' \
+    '1:target:((inshellisense\:"inshellisense spec" fig\:"alias for inshellisense"))'
+}
+
+_gjc__sdk() {
+  _arguments -s -S : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--stdio[serve SDK frames over standard input and output]' \
+    '--socket=[serve SDK frames over a Unix socket path]:socket:_files' \
+    '--session=[attach to a specific SDK session]:id: _gjc__message "id"' \
+    '--pending-ceiling=[maximum queued relay bytes per direction]:bytes: _gjc__message "bytes"' \
+    '1:action:((serve\:"serve the SDK protocol"))'
+}
+
+_gjc__internal() {
+  _arguments -s -S : \
+    '1:probe:((memory-guard-native-smoke\:"(hidden) native Windows job memory probe"))' \
+    '--json[emit machine-readable JSON]'
+}
+
+_gjc() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  local -a root_args
+  root_args=(
+    '(- *)'{-h,--help}'[show help]'
+    '(- *)'{-v,--version}'[show version]'
+    '--model=[model to use (fuzzy match)]:model:_gjc__models'
+    '--smol=[smol/fast model for lightweight tasks]:model:_gjc__models'
+    '--slow=[slow/reasoning model for thorough analysis]:model:_gjc__models'
+    '--plan=[plan model for architectural planning]:model:_gjc__models'
+    '--mpreset=[model profile preset to activate for this session]:preset:_gjc__mpresets'
+    '--default[persist --mpreset as the default model profile]'
+    '--provider=[provider to use (legacy; prefer --model)]:provider: _gjc__provider'
+    '--api-key=[API key (defaults to env vars)]:key: _gjc__message "key"'
+    '--credential=[stored credential selector]:selector:_gjc__credential'
+    '--system-prompt=[system prompt]:prompt: _gjc__message "prompt"'
+    '--append-system-prompt=[append text or file contents to the system prompt]:text or file:_files'
+    '--mcp-config=[tools-only MCP config file (absolute path)]:file:_files'
+    '--allow-home[allow starting in ~ without auto-switching to a temp dir]'
+    '--mode=[output mode]:mode:_gjc__mode'
+    {-p,--print}'[non-interactive mode: process prompt and exit]'
+    {-c,--continue}'[continue previous session]'
+    {-r,--resume=}'-[resume a session (by ID prefix, path, or picker if omitted)]::session: _gjc__message "session"'
+    '--session-dir=[explicit session storage and lookup directory]:directory:_files -/'
+    '--no-session[do not save session (ephemeral)]'
+    '--models=[comma-separated model patterns for Alt+N cycling]:patterns:_gjc__model_list'
+    '--no-tools[disable all built-in tools]'
+    '--no-lsp[disable LSP tools, formatting, and diagnostics]'
+    '--no-pty[disable PTY-based interactive bash execution]'
+    '--tmux[launch interactive startup inside tmux]'
+    '--tools=[comma-separated list of tools to enable]:tools:_gjc__tools'
+    '--thinking=[set thinking level]:level:(minimal low medium high xhigh max)'
+    '--no-rules[disable rules discovery and loading]'
+    '--export=[export session file to HTML and exit]:session file:_files'
+    '--list-models=-[list available models (with optional fuzzy search)]::pattern: _gjc__message "pattern"'
+    '--no-title[disable title auto-generation]'
+    {-w,--worktree=}'-[run in a sibling git worktree (detached when no name given)]::branch name: _gjc__message "branch name"'
+    # Advertised in `--help` but no longer read by the root parser (src/cli/args.ts).
+    '*--hook=[(no-op) load a hook/extension file]:file:_files'
+    '*'{-e,--extension=}'[(no-op) load an extension file]:file:_files'
+    '--no-extensions[(no-op) disable extension discovery]'
+    '--no-skills[(no-op) disable skills discovery and loading]'
+    '--skills=[(no-op) comma-separated glob patterns to filter skills]:patterns: _gjc__message "patterns"'
+    # Parsed by src/cli/args.ts but absent from `--help`.
+    '--session=[(hidden) alias for --resume]:session: _gjc__message "session"'
+    '--fork=[(hidden) fork an existing session by id]:session: _gjc__message "session"'
+    '--provider-session-id=[(hidden) reuse an upstream provider session id]:id: _gjc__message "id"'
+    '--acp-terminal-auth[(hidden) run terminal auth bootstrap for ACP clients]'
+    # Root fast paths handled before command dispatch in src/cli.ts.
+    '(- *)--smoke-test[(hidden) run the bundled worker/native smoke test]'
+    '(- *)--fixture=[(hidden) render a fixture report and exit]:fixture id: _gjc__message "fixture id"'
+    '--team[(hidden, legacy) route to `gjc team`; requires --team-size]'
+    '--team-size=[(hidden, legacy) worker count for --team]:count: _gjc__message "count"'
+    '1:command:->command'
+    '*::arg:->args'
+  )
+
+  # -A stops root option matching once a command word is seen, so a subcommand
+  # flag is never shadowed by the same-named root flag (e.g. web-search --provider).
+  _arguments -C -s -S : $root_args && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'launch:start an explicit launch/session workflow'
+        'setup:install GJC defaults or optional dependencies'
+        'session:list, inspect, create, remove, or attach sessions'
+        'state:inspect or manage persisted GJC state'
+        'harness:run harness control-plane commands'
+        'coordinator:manage coordinator/runtime coordination helpers'
+        'team:run tmux-backed coordinated execution'
+        'ultragoal:run durable goal execution workflow'
+        'ralplan:run consensus planning workflow'
+        'deep-interview:run requirements interview workflow'
+        'skills:list/read embedded workflow skills'
+        'config:list, get, and set configuration values'
+        'stats:view AI usage statistics (tokens, cost, requests)'
+        'notify:send or test notifications'
+        'daemon:manage background daemon helpers'
+        'mcp:manage MCP server registrations'
+        'mcp-serve:serve the MCP integration endpoint'
+        'contribute-pr:prepare contribution/PR workflow artifacts'
+        'migrate:run migration helpers'
+        'rlm:run RLM helpers'
+        'update:update GJC installation artifacts'
+        'plugin:install, remove, and list plugins'
+        'web-search:search the web from the CLI'
+        'q:search the web from the CLI (alias for web-search)'
+        'codex-native-hook:run Codex native hook integration'
+        'gc:run garbage-collection/cleanup helpers'
+        'acp:(hidden) run Gajae Code as an ACP server over stdio'
+        'sdk:(hidden) serve the Gajae Code SDK protocol'
+        'local-provider:(hidden) diagnose configured local OpenAI-compatible providers'
+        'read:(hidden) show what the read tool returns for a path or URL'
+        'completion:(hidden) generate shell completion specs'
+        'contribution-prep:(hidden) alias for contribute-pr'
+        'resume:(hidden) shorthand for `gjc --resume`'
+        'coordinator-mcp:(hidden, legacy) alias for `gjc mcp-serve coordinator`'
+        'internal:(hidden) internal diagnostic probes'
+      )
+      if compset -P '@'; then
+        _files && ret=0
+      else
+        _describe -t commands 'command' commands && ret=0
+      fi
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:gjc-$line[1]:"
+      case $line[1] in
+        launch)                     _gjc__launch_args && ret=0 ;;
+        setup)                      _gjc__setup && ret=0 ;;
+        session)                    _gjc__session && ret=0 ;;
+        state)                      _gjc__state && ret=0 ;;
+        harness)                    _gjc__harness && ret=0 ;;
+        coordinator)                _gjc__coordinator && ret=0 ;;
+        team)                       _gjc__team && ret=0 ;;
+        ultragoal)                  _gjc__ultragoal && ret=0 ;;
+        ralplan)                    _gjc__ralplan && ret=0 ;;
+        deep-interview)             _gjc__deep_interview && ret=0 ;;
+        skills)                     _gjc__skills && ret=0 ;;
+        config)                     _gjc__config && ret=0 ;;
+        stats)                      _gjc__stats && ret=0 ;;
+        notify)                     _gjc__notify && ret=0 ;;
+        daemon)                     _gjc__daemon && ret=0 ;;
+        mcp)                        _gjc__mcp && ret=0 ;;
+        mcp-serve|coordinator-mcp)  _gjc__mcp_serve && ret=0 ;;
+        contribute-pr|contribution-prep) _gjc__contribute_pr && ret=0 ;;
+        migrate)                    _gjc__migrate && ret=0 ;;
+        rlm)                        _gjc__rlm && ret=0 ;;
+        update)                     _gjc__update && ret=0 ;;
+        plugin)                     _gjc__plugin && ret=0 ;;
+        web-search|q)               _gjc__web_search && ret=0 ;;
+        gc)                         _gjc__gc && ret=0 ;;
+        local-provider)             _gjc__local_provider && ret=0 ;;
+        read)                       _gjc__read && ret=0 ;;
+        completion)                 _gjc__completion && ret=0 ;;
+        sdk)                        _gjc__sdk && ret=0 ;;
+        internal)                   _gjc__internal && ret=0 ;;
+        acp|codex-native-hook)
+          _arguments -s -S : '(- *)'{-h,--help}'[show help]' && ret=0 ;;
+        resume)
+          _gjc__message 'session id, path, or empty for the picker' && ret=0 ;;
+        *)
+          _gjc__launch_args && ret=0 ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_gjc "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
