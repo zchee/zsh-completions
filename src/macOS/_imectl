@@ -1,0 +1,162 @@
+#compdef imectl
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/zchee/imectl
+#
+# 0.1.0
+#
+# imectl — macOS keyboard input source CLI (Carbon-TIS-only, latency-optimized).
+#
+# Items marked "(hidden)" are accepted by the CLI but omitted from
+# `imectl --help`. They are recovered from the imectl source tree:
+# Sources/IMECore/DaemonRouting.swift dispatches the `daemon` subcommand before
+# routing get/set/list/status through Sources/IMECore/CLI.swift.
+#
+# Completion of input-source IDs is sourced from `imectl list` via
+# _call_program, so it can be overridden with, e.g.:
+#
+#   zstyle ':completion:*:imectl:*:input-sources' command 'imectl list'
+#
+# -----------------------------------------------------------------------------
+
+# --- dynamic completion helpers ----------------------------------------------
+
+(( $+functions[_imectl_input_sources] )) ||
+_imectl_input_sources() {
+  local -a sources
+  # `imectl list` emits "id<TAB>localized name" rows (bare "id" when a source
+  # has no name); escape colons, then turn the first tab into the _describe
+  # separator so the localized name becomes the candidate description.
+  sources=( ${${(f)"$(_call_program input-sources imectl list 2>/dev/null)"}//:/\\:} )
+  sources=( ${sources/$'\t'/:} )
+  _describe -t input-sources 'input source' sources "$@"
+}
+
+(( $+functions[_imectl_languages] )) ||
+_imectl_languages() {
+  # `set --language` accepts any BCP-47 tag (TISCopyInputSourceForLanguage);
+  # these are common tags, not an exhaustive or restrictive list.
+  local -a tags
+  tags=(
+    'ar:Arabic'
+    'de:German'
+    'en:English'
+    'es:Spanish'
+    'fr:French'
+    'hi:Hindi'
+    'it:Italian'
+    'ja:Japanese'
+    'ko:Korean'
+    'pt:Portuguese'
+    'ru:Russian'
+    'th:Thai'
+    'vi:Vietnamese'
+    'zh-Hans:Chinese, Simplified'
+    'zh-Hant:Chinese, Traditional'
+  )
+  _describe -t languages 'BCP-47 language tag' tags "$@"
+}
+
+# --- main ---------------------------------------------------------------------
+
+function _imectl() {
+  local context curcontext=$curcontext state line ret=1
+  declare -A opt_args
+
+  local -a commands
+  commands=(
+    'get:print the current input source (--id default, --name localized)'
+    'list:list selectable, enabled keyboard sources'
+    'set:switch input source by ID or BCP-47 language tag'
+    'status:report daemon status; exit 0 if running, 1 if not'
+    'daemon:run the resident daemon serving get/set/list over a unix socket (hidden)'
+  )
+
+  # --quiet/-q is position-independent and stripped before dispatch, so every
+  # subcommand accepts it anywhere on the line.
+  local -a quiet_flag
+  quiet_flag=(
+    '(-q --quiet)'{-q,--quiet}'[suppress success output; errors and exit codes are unaffected]'
+  )
+
+  _arguments -C \
+    $quiet_flag \
+    '(: -)'{-V,--version}'[print version]' \
+    '(: -)'{-h,--help}'[print help]' \
+    '1: :{_describe -t commands "imectl command" commands}' \
+    '*:: :->args' \
+    && ret=0
+
+  case $state in
+    args)
+      case $words[1] in
+        get)
+          _arguments \
+            $quiet_flag \
+            '(--name)--id[print the input-source ID (default)]' \
+            '(--id)--name[print the localized name]' \
+            && ret=0
+          ;;
+
+        list)
+          _arguments \
+            $quiet_flag \
+            '--json[emit the source list as a JSON array]' \
+            && ret=0
+          ;;
+
+        set)
+          _arguments \
+            $quiet_flag \
+            '(:)--language[switch by BCP-47 language tag]:language tag:_imectl_languages' \
+            '(--language)1:input source:_imectl_input_sources' \
+            && ret=0
+          ;;
+
+        status|daemon)
+          _arguments \
+            $quiet_flag \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_imectl "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
