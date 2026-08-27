@@ -1,0 +1,70 @@
+#compdef add-skill
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/vercel-labs/skills
+#
+# 1.5.22 (add-skill)
+#
+# `add-skill` is not a second CLI.  package.json declares
+#
+#     "bin": { "skills": "./bin/cli.mjs", "add-skill": "./bin/cli.mjs" }
+#
+# and src/cli.ts dispatches purely on process.argv.slice(2) without ever reading
+# argv[0], so `add-skill` accepts exactly the commands, aliases, hidden aliases
+# and flags that `skills` does.  Rather than duplicate that surface (and let the
+# two copies drift apart on the next release), this file forwards to _skills.
+#
+# _skills reads $service, so `_call_program` still shells out to `add-skill`
+# here, and the completion contexts stay named after the invoked command.
+#
+# -----------------------------------------------------------------------------
+
+_add-skill() {
+  # compinit marks every _* file in $fpath autoloadable, so _skills is normally
+  # already resolvable; the explicit autoload only covers a hand-sourced setup.
+  (( $+functions[_skills] )) || autoload -Uz +X _skills 2>/dev/null
+
+  if (( $+functions[_skills] )); then
+    _skills "$@"
+    return
+  fi
+
+  _message 'the _skills completion must be installed alongside _add-skill'
+  return 1
+}
+
+_add-skill "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2

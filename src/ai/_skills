@@ -1,0 +1,549 @@
+#compdef skills
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/vercel-labs/skills
+#
+# 1.5.22 (skills)
+#
+# `skills` and `add-skill` are two names for the same entry point: package.json
+# maps both to bin/cli.mjs and src/cli.ts never inspects argv[0], so the command
+# surface is identical.  src/ai/_add-skill delegates here.
+#
+# Items marked "(hidden)" are dispatched by the switch in src/cli.ts, or accepted
+# by a per-command argv parser, but never printed by `skills --help`.
+#
+# Two options are documented in `--help` yet do not behave as documented; both
+# are marked in place and were confirmed against the 1.5.22 binary:
+#
+#   * `remove -s/--skill` - parseRemoveOptions() has no branch for it and
+#     RemoveOptions carries no `skill` field, so the flag is dropped and its
+#     value is read as a positional skill name.  `skills remove --skill '*'`
+#     reports "No matching skills found for: *".
+#   * `remove -a/--agent '*'` and `list -a/--agent '*'` - both validate against
+#     Object.keys(agents) with no wildcard branch, so '*' exits 1 with
+#     "Invalid agents: *".  Only `add` and `experimental_sync` expand '*'.
+#
+# -----------------------------------------------------------------------------
+
+_skills__message() {
+  _message "${1:-value}"
+}
+
+# Every agent in src/agents.ts, in registry order.  "(universal)" marks agents
+# whose skillsDir is `.agents/skills`, i.e. they share the canonical directory
+# instead of receiving their own symlink.
+_skills__agent_list() {
+  agent_list=(
+    'aider-desk:AiderDesk'
+    'amp:Amp (universal)'
+    'antigravity:Antigravity (universal)'
+    'antigravity-cli:Antigravity CLI (universal)'
+    'astrbot:AstrBot'
+    'autohand-code:Autohand Code CLI'
+    'augment:Augment'
+    'bob:IBM Bob'
+    'claude-code:Claude Code'
+    'openclaw:OpenClaw'
+    'cline:Cline (universal)'
+    'codearts-agent:CodeArts Agent'
+    'codebuddy:CodeBuddy'
+    'codemaker:Codemaker'
+    'codestudio:Code Studio'
+    'codex:Codex (universal)'
+    'command-code:Command Code'
+    'continue:Continue'
+    'cortex:Cortex Code'
+    'crush:Crush'
+    'cursor:Cursor (universal)'
+    'deepagents:Deep Agents (universal)'
+    'devin:Devin for Terminal'
+    'dexto:Dexto (universal)'
+    'droid:Droid'
+    'eve:Eve'
+    'firebender:Firebender (universal)'
+    'forgecode:ForgeCode'
+    'gemini-cli:Gemini CLI (universal)'
+    'github-copilot:GitHub Copilot (universal)'
+    'goose:Goose'
+    'grok:Grok Build'
+    'hermes-agent:Hermes Agent'
+    'inference-sh:inference.sh'
+    'jazz:Jazz'
+    'junie:Junie'
+    'iflow-cli:iFlow CLI'
+    'kilo:Kilo Code'
+    'kimchi:Kimchi'
+    'kimi-code-cli:Kimi Code CLI (universal)'
+    'kiro-cli:Kiro CLI'
+    'kode:Kode'
+    'lingma:Lingma'
+    'loaf:Loaf (universal)'
+    'mcpjam:MCPJam'
+    'minimax-code:MiniMax Code'
+    'mistral-vibe:Mistral Vibe'
+    'moxby:Moxby'
+    'mux:Mux'
+    'opencode:OpenCode (universal)'
+    'openhands:OpenHands'
+    'ona:Ona'
+    'pi:Pi'
+    'qoder:Qoder'
+    'qoder-cn:Qoder CN'
+    'qwen-code:Qwen Code'
+    'replit:Replit (universal)'
+    'reasonix:Reasonix'
+    'rovodev:Rovo Dev'
+    'roo:Roo Code'
+    'tabnine-cli:Tabnine CLI'
+    'terramind:Terramind'
+    'tinycloud:Tinycloud'
+    'trae:Trae'
+    'trae-cn:Trae CN'
+    'warp:Warp (universal)'
+    'windsurf:Windsurf'
+    'zed:Zed (universal)'
+    'zcode:ZCode'
+    'zencoder:Zencoder'
+    'zenflow:Zenflow'
+    'neovate:Neovate'
+    'pochi:Pochi'
+    'promptscript:PromptScript (universal)'
+    'adal:AdaL'
+    'universal:Universal (universal)'
+  )
+}
+
+# Agent names only.  `list` and `remove` validate against Object.keys(agents)
+# with no wildcard branch, so '*' is deliberately absent here.
+_skills__agents() {
+  local -a agent_list
+  _skills__agent_list
+  _describe -t agents 'agent' agent_list
+}
+
+# Agent names plus '*'.  Only `add` (src/add.ts) and `experimental_sync`
+# (src/sync.ts) expand '*' to the full registry.
+_skills__agents_all() {
+  local -a agent_list wildcard
+  local ret=1
+  wildcard=( '*:every agent in the registry' )
+  _skills__agent_list
+  _describe -t wildcards 'agent selector' wildcard && ret=0
+  _describe -t agents 'agent' agent_list && ret=0
+  return ret
+}
+
+# `skills use --agent` starts the agent interactively, so it accepts only the
+# entries of USE_AGENT_CONFIGS in src/use.ts.  Any other registry name parses
+# but aborts with "does not support".
+_skills__use_agents() {
+  local -a use_agents
+  use_agents=(
+    'claude-code:Claude Code (spawns claude)'
+    'codex:Codex (spawns codex)'
+  )
+  _describe -t agents 'supported agent' use_agents
+}
+
+# Eve subagents live in agent/subagents/<name>/skills; 'root' and '.' both
+# select the root agent (src/add.ts).
+_skills__subagents() {
+  local -a subagent_list special
+  local ret=1
+  special=(
+    'root:the Eve root agent (agent/skills)'
+    '.:the Eve root agent (agent/skills)'
+  )
+  subagent_list=( agent/subagents/*(/N:t) )
+  _describe -t special 'root selector' special && ret=0
+  if (( ${#subagent_list} )); then
+    local -a expl
+    _wanted subagents expl 'Eve subagent' compadd -a subagent_list && ret=0
+  fi
+  (( ret )) && _skills__message 'Eve subagent name'
+  return ret
+}
+
+# Skill selector for `add --skill` / `add --all`.  Which skills exist depends on
+# the remote repository, which cannot be enumerated offline, so only the
+# wildcard is offered.
+_skills__skill_filter() {
+  local -a wildcard
+  local ret=1
+  wildcard=( '*:every skill in the repository' )
+  _describe -t wildcards 'skill selector' wildcard && ret=0
+  (( ret )) && _skills__message 'skill name'
+  return ret
+}
+
+# Installed skill names for `remove` and `update`.  `skills list --json` runs
+# the same scan those commands perform and records no telemetry event, but
+# DO_NOT_TRACK is set anyway so completion can never emit one.
+#
+# $1 is the scope to use when the line carries no scope flag: `project` for
+# remove (removeCommand defaults to the project scope) or `both` for update
+# (resolveUpdateScope checks global and project when neither -g nor -p is set).
+_skills__installed_skills() {
+  local fallback=${1:-project} scope
+  local -a scopes names expl
+
+  if (( ${+opt_args[-g]} || ${+opt_args[--global]} )); then
+    scopes=( '-g' )
+  elif (( ${+opt_args[-p]} || ${+opt_args[--project]} )); then
+    scopes=( '' )
+  elif [[ $fallback == both ]]; then
+    scopes=( '' '-g' )
+  else
+    scopes=( '' )
+  fi
+
+  for scope in "${scopes[@]}"; do
+    names+=( ${(f)"$(_call_program installed-skills \
+      "DO_NOT_TRACK=1 ${(q)service} list $scope --json" 2>/dev/null |
+      sed -n 's/^ *"name": "\(.*\)",$/\1/p')"} )
+  done
+  names=( ${(u)names} )
+
+  # Plugin skills keep a ':' in their name (see resolveSkillsToRemove), which
+  # _describe would read as a description separator, so add them with compadd.
+  if (( ${#names} )); then
+    _wanted skills expl 'installed skill' compadd -a names
+  else
+    _skills__message 'installed skill name'
+    return 1
+  fi
+}
+
+# A package source for `add` / `use`, as understood by parseSource().
+_skills__source() {
+  local -a prefixes known
+  local ret=1
+
+  if [[ $PREFIX == (git@*|ssh://*|http://*|https://*) ]]; then
+    _skills__message 'repository, archive, or .well-known URL'
+    return
+  fi
+  # The selector after '@' is resolved against the remote repository.
+  if compset -P '*@'; then
+    _skills__message 'skill name'
+    return
+  fi
+  if compset -P '(github|gitlab):'; then
+    _skills__message 'owner/repo[/subpath][#ref][@skill]'
+    return
+  fi
+  if [[ $PREFIX == [./]* ]]; then
+    _files
+    return
+  fi
+
+  prefixes=(
+    'github\::GitHub shorthand, github:owner/repo'
+    'gitlab\::GitLab shorthand, gitlab:owner/repo'
+  )
+  # SOURCE_ALIASES in src/source-parser.ts, plus the canonical target.
+  known=(
+    'vercel-labs/agent-skills:the Vercel agent skills collection'
+    'vercel-labs/vercel-skills:alias for vercel-labs/agent-skills'
+    'coinbase/agentWallet:alias for coinbase/agentic-wallet-skills'
+  )
+
+  _describe -t prefixes 'source prefix' prefixes -S '' && ret=0
+  _describe -t sources 'known source' known && ret=0
+  (( ret )) && _skills__message 'owner/repo[#ref][@skill], URL, or ./local/path'
+  return ret
+}
+
+# Replay a per-command argv scan over the words already on the line, so the
+# completion agrees with the CLI about what the current word is.
+#
+# The parsers in add.ts, remove.ts, list.ts and sync.ts implement -a/-s/--subagent
+# as "keep swallowing words until one starts with '-'", so a bare word after one
+# of them is another list value and not a positional.
+#
+# $1 is a space separated list of those multi-value flags, $2 of the flags that
+# take exactly one value.  Sets REPLY to the flag still consuming words (empty
+# when the current word is a positional) and _skills_nargs to the number of
+# positionals already seen.
+_skills__scan() {
+  local -a multi single
+  local w mode=''
+  integer i pending_single=0
+
+  multi=( ${=1} )
+  single=( ${=2} )
+  _skills_nargs=0
+
+  # (Ie) is an exact-string membership test; plain (I) would treat a word such
+  # as `-*` on the line as a pattern and match the wrong flag.
+  for (( i = 2; i < CURRENT; i++ )); do
+    w=${words[i]}
+    if [[ $w == -* ]]; then
+      mode=''
+      pending_single=0
+      (( ${multi[(Ie)$w]} )) && mode=$w
+      (( ${single[(Ie)$w]} )) && { mode=$w; pending_single=1 }
+    elif [[ -n $mode ]]; then
+      (( pending_single )) && { mode=''; pending_single=0 }
+    else
+      (( _skills_nargs++ ))
+    fi
+  done
+
+  REPLY=$mode
+}
+
+_skills__commands() {
+  local -a commands
+  commands=(
+    'add:add a skill package'
+    'a:add a skill package (documented alias for add)'
+    'install:(hidden) alias for add'
+    'i:(hidden) alias for add'
+    'use:generate a prompt for one skill without installing it'
+    'remove:remove installed skills'
+    'rm:remove installed skills (alias for remove)'
+    'r:(hidden) alias for remove'
+    'list:list installed skills'
+    'ls:list installed skills (alias for list)'
+    'find:search for skills interactively'
+    'search:(hidden) alias for find'
+    'f:(hidden) alias for find'
+    's:(hidden) alias for find'
+    'update:update skills to latest versions'
+    'upgrade:update skills to latest versions (documented alias for update)'
+    'check:(hidden) alias for update'
+    'experimental_install:restore skills from skills-lock.json'
+    'init:initialize a skill, creating <name>/SKILL.md or ./SKILL.md'
+    'experimental_sync:sync skills from node_modules into agent directories'
+  )
+  _describe -t commands 'command' commands
+}
+
+# runAdd() reads args[0] only, and parseAddOptions keeps -a/-s/--subagent
+# swallowing bare words, so a source must be given before any of those flags.
+_skills__add_rest() {
+  local REPLY
+  integer _skills_nargs
+
+  _skills__scan '-a --agent -s --skill --subagent' '--metadata'
+  case $REPLY in
+    -a|--agent) _skills__agents_all; return ;;
+    -s|--skill) _skills__skill_filter; return ;;
+    --subagent) _skills__subagents; return ;;
+  esac
+
+  (( _skills_nargs > 0 )) && {
+    _skills__message 'ignored: runAdd() reads only the first source'
+    return 1
+  }
+  _skills__source
+}
+
+_skills__add() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '(-g --global)'{-g,--global}'[install globally (user-level) instead of project-level]' \
+    '(-y --yes)'{-y,--yes}'[skip confirmation prompts]' \
+    '(-l --list)'{-l,--list}'[list available skills in the repository without installing]' \
+    '*'{-a,--agent}'[agents to install to]:agent: _skills__agents_all' \
+    '*'{-s,--skill}'[skill names to install]:skill: _skills__skill_filter' \
+    '*--subagent[install to Eve subagents]:subagent: _skills__subagents' \
+    '--metadata[attach valid JSON to the install telemetry event]:json: _skills__message "JSON object"' \
+    '--copy[copy files instead of symlinking to agent directories]' \
+    '--all[shorthand for --skill * --agent * -y]' \
+    '--full-depth[search all subdirectories even when a root SKILL.md exists]' \
+    '*:source: _skills__add_rest'
+}
+
+# parseUseOptions() rejects a second source and a second --skill/--agent value,
+# so there is nothing to complete past the first of each.
+_skills__use() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '(-s --skill)'{-s,--skill}'[skill to use]:skill: _skills__message "skill name"' \
+    '(-a --agent)'{-a,--agent}'[start one supported agent interactively]:agent: _skills__use_agents' \
+    '--full-depth[search all subdirectories even when a root SKILL.md exists]' \
+    '--dangerously-accept-openclaw-risks[allow unverified OpenClaw community skills]' \
+    '1:source: _skills__source'
+}
+
+_skills__remove_rest() {
+  local REPLY
+  integer _skills_nargs
+
+  _skills__scan '-a --agent' ''
+  [[ $REPLY == (-a|--agent) ]] && { _skills__agents; return }
+  _skills__installed_skills project
+}
+
+_skills__remove() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '(-g --global)'{-g,--global}'[remove from the global scope instead of the project scope]' \
+    '(-y --yes)'{-y,--yes}'[skip confirmation prompts]' \
+    '--all[remove every installed skill from every agent]' \
+    "*"{-a,--agent}"[remove from specific agents (rejects '*', unlike add)]:agent: _skills__agents" \
+    '*'{-s,--skill}'[documented but dropped by parseRemoveOptions; the value is read as a skill name]:skill: _skills__installed_skills project' \
+    '*:skill: _skills__remove_rest'
+}
+
+# parseListOptions() discards bare words, so nothing but an agent list can
+# follow the flags.
+_skills__list_rest() {
+  local REPLY
+  integer _skills_nargs
+
+  _skills__scan '-a --agent' ''
+  [[ $REPLY == (-a|--agent) ]] && { _skills__agents; return }
+  _skills__message 'ignored: skills list takes no positional arguments'
+  return 1
+}
+
+_skills__list() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '(-g --global)'{-g,--global}'[list global skills (default: project)]' \
+    '--json[output as JSON (machine-readable, no ANSI codes)]' \
+    "*"{-a,--agent}"[filter by specific agents (rejects '*', unlike add)]:agent: _skills__agents" \
+    '*:argument: _skills__list_rest'
+}
+
+# parseFindOptions() joins every bare word into one query string.
+_skills__find() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '--owner=[search only repositories from a GitHub owner]:owner: _skills__message "GitHub owner"' \
+    '*:query: _skills__message "search query"'
+}
+
+# -g and -p are not exclusive: resolveUpdateScope() maps both together to
+# the 'both' scope.
+_skills__update() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '(-g --global)'{-g,--global}'[update global skills only]' \
+    '(-p --project)'{-p,--project}'[update project skills only]' \
+    '(-y --yes)'{-y,--yes}'[skip the scope prompt and auto-detect the scope]' \
+    '*:skill: _skills__installed_skills both'
+}
+
+# runInit() reads args[0] only.
+_skills__init() {
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '1:name: _skills__message "skill name (default: the current directory name)"' \
+    '*:argument: _skills__message "ignored: runInit() reads only the first name"'
+}
+
+# runInstallFromLock() ignores its argument list entirely.
+_skills__experimental_install() {
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '*:argument: _skills__message "ignored: experimental_install takes no arguments"'
+}
+
+# runSync() never reads its positional arguments.
+_skills__sync_rest() {
+  local REPLY
+  integer _skills_nargs
+
+  _skills__scan '-a --agent' ''
+  [[ $REPLY == (-a|--agent) ]] && { _skills__agents_all; return }
+  _skills__message 'ignored: experimental_sync takes no positional arguments'
+  return 1
+}
+
+_skills__experimental_sync() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    '(-y --yes)'{-y,--yes}'[skip confirmation prompts]' \
+    '(-f --force)'{-f,--force}'[(hidden) reinstall every discovered skill, ignoring skills-lock.json hashes]' \
+    '*'{-a,--agent}'[agents to install to]:agent: _skills__agents_all' \
+    '*:argument: _skills__sync_rest'
+}
+
+_skills() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  # No -s: every argv parser compares whole words (arg === '-g'), so short
+  # options do not stack.  No -S either: '--' is not a recognised separator.
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show this help message]' \
+    '(- *)'{-v,--version}'[show version number]' \
+    '1:command:->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    command)
+      _skills__commands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:${service}-${words[1]}:"
+      case ${words[1]} in
+        add|a|install|i)      _skills__add && ret=0 ;;
+        use)                  _skills__use && ret=0 ;;
+        remove|rm|r)          _skills__remove && ret=0 ;;
+        list|ls)              _skills__list && ret=0 ;;
+        find|search|f|s)      _skills__find && ret=0 ;;
+        update|upgrade|check) _skills__update && ret=0 ;;
+        init)                 _skills__init && ret=0 ;;
+        experimental_install) _skills__experimental_install && ret=0 ;;
+        experimental_sync)    _skills__experimental_sync && ret=0 ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_skills "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
