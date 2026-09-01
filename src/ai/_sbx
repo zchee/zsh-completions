@@ -54,8 +54,7 @@
 #   * commands:  events, gui (+ status), settings (+ get/list/set/unset),
 #                ssh (+ setup, setup remove, known-hosts, proxy), ssh-connect,
 #                inspect, mount, umount, docker-cli-plugin-metadata,
-#                __complete, __completeNoDesc, daemon inspect,
-#                policy init set-default
+#                daemon inspect, policy init set-default
 #   * flags:     --app-name (root, marked hidden);
 #                create/run/create <agent>: --branch, --no-share-skills,
 #                --secrets, --pull, and run's --detached/--patch-settings;
@@ -76,6 +75,12 @@
 # Values for positional arguments come from the binary's own completion
 # endpoint (`sbx __complete ...`), which resolves sandbox names, MCP servers,
 # secret services, settings keys, templates, volumes and policy profiles.
+#
+# Cobra's own hidden commands -- `__complete` and `__completeNoDesc`, the RPC
+# that generated completion scripts call -- are deliberately left out: they are
+# framework plumbing for this file to call, not commands anyone types.
+# `docker-cli-plugin-metadata` is kept: it is docker/cli's plugin handshake
+# rather than Cobra machinery, and it is runnable by hand.
 #
 # -----------------------------------------------------------------------------
 
@@ -162,8 +167,6 @@ function _sbx() {
         "mount:(hidden) Bind-mount a host path into a running sandbox at runtime"
         "umount:(hidden) Revoke a previously-exposed host path"
         "docker-cli-plugin-metadata:(hidden) Print the Docker CLI plugin metadata JSON"
-        "__complete:(hidden) Cobra completion endpoint used by generated shell scripts"
-        "__completeNoDesc:(hidden) Cobra completion endpoint without descriptions"
         "delete:(alias of rm)"
         "list:(alias of ls)"
         "remove:(alias of rm)"
@@ -172,12 +175,6 @@ function _sbx() {
       ;;
     args)
       case $words[1] in
-        __complete)
-          _message "cobra completion endpoint"
-          ;;
-        __completeNoDesc)
-          _message "cobra completion endpoint"
-          ;;
         attach)
           _sbx__attach && ret=0
           ;;
