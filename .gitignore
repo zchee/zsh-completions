@@ -3,3 +3,12 @@
 
 tmp/
 .omx/
+
+# Completion files are named _<command>, and some of those names match the vim
+# swapfile pattern [._]s[a-rt-v][a-z] carried by the global core.excludesFile
+# (src/ai/_sbx, src/zsh-builtin/Darwin/_say). Un-ignore them here, where repo
+# rules outrank the global file.
+!src/**/_*
+
+# Compiled completions stay ignored.
+*.zwc
