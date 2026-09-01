@@ -1,0 +1,322 @@
+#compdef claude-replay
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/es617/claude-replay
+#
+# 0.11.0
+#
+# The CLI parses argv with node:util parseArgs, so every option is global and
+# may appear before, after, or between positionals. The authoritative option
+# table is the `options` object at the top of bin/claude-replay.mjs; the
+# `--help` text printed further down that file omits two of its entries.
+#
+# Items marked "(hidden)" are accepted by parseArgs but absent from `--help`:
+#   -v, --version   declared in `options`, never printed by the usage block
+#   --format        declared in `options`, mentioned only in the error string
+#                   emitted when `extract` is called without an input file
+#
+# Session IDs are resolved by src/resolve-session.mjs, which also searches
+# Hermes SQLite (~/.hermes/state.db) and Kimi Code (~/.kimi-code/sessions/)
+# even though `--help` lists only the Claude Code, Cursor, Codex, and Gemini
+# directories.
+#
+# -----------------------------------------------------------------------------
+
+_claude-replay__message() {
+  _message "${1:-value}"
+}
+
+_claude-replay__commands() {
+  local -a commands
+  commands=(
+    'editor:launch the web editor with a file or session ID auto-loaded'
+    'extract:extract the embedded turn data from a generated replay HTML'
+  )
+  _describe -t commands 'command' commands
+}
+
+# Built-in theme names come from src/themes.mjs, which `--list-themes` prints
+# and exits before any server is started.
+_claude-replay__themes() {
+  local -a themes
+  themes=( ${(f)"$(_call_program themes ${words[1]} --list-themes 2>/dev/null)"} )
+  (( ${#themes} )) || themes=(
+    bubbles dracula github-light monokai solarized-dark tokyo-night
+  )
+  _describe -t themes 'theme' themes
+}
+
+_claude-replay__bind_address() {
+  _alternative \
+    'addresses:bind address:(127.0.0.1 0.0.0.0 ::1 localhost)' \
+    'hosts:host:_hosts'
+}
+
+# Every directory that can hold a session, intermediate levels included: adding
+# or removing a session bumps its parent directory's mtime, and adding or
+# removing a project bumps the level above that.
+_claude-replay__sessions_dirs() {
+  reply=(
+    ${HOME}/.claude/projects(N/) ${HOME}/.claude/projects/*(N/)
+    ${HOME}/.cursor/projects(N/)
+    ${HOME}/.cursor/projects/*/agent-transcripts(N/)
+    ${HOME}/.cursor/projects/*/agent-transcripts/*(N/)
+    ${HOME}/.codex/sessions(N/) ${HOME}/.codex/sessions/*(N/)
+    ${HOME}/.codex/sessions/*/*(N/) ${HOME}/.codex/sessions/*/*/*(N/)
+    ${HOME}/.gemini/tmp(N/) ${HOME}/.gemini/tmp/*/chats(N/)
+    ${HOME}/.kimi-code/sessions(N/) ${HOME}/.kimi-code/sessions/*(N/)
+    ${HOME}/.kimi-code/sessions/*/session_*(N/)
+    ${HOME}/.hermes/state.db(N.) ${HOME}/.hermes/profiles/*/state.db(N.)
+  )
+}
+
+# REPLY becomes "<directory count>:<newest mtime>", a fingerprint that changes
+# exactly when the session list would. Computing it costs a few milliseconds
+# against roughly a hundred for a full rescan, so it is what decides whether
+# the cached list can be reused.
+_claude-replay__sessions_stamp() {
+  local -a reply mtimes
+  REPLY=
+  zmodload -F zsh/stat b:zstat 2>/dev/null || return 1
+  _claude-replay__sessions_dirs
+  (( ${#reply} )) || return 1
+  zstat -A mtimes +mtime -- ${reply} 2>/dev/null || return 1
+  # Sort in a bare array assignment: inside double quotes the (On) flag would
+  # join first and sort a single scalar, which silently yields no maximum.
+  mtimes=( ${(On)mtimes} )
+  REPLY="${#reply}:${mtimes[1]}"
+}
+
+# Cache-policy hook for _cache_invalid: rebuild once any session directory is
+# newer than the stored cache. Returning 0 means "needs rebuilding".
+_claude-replay__sessions_cache_policy() {
+  local REPLY
+  local -a cache_mtime
+  _claude-replay__sessions_stamp || return 0
+  zstat -A cache_mtime +mtime -- "$1" 2>/dev/null || return 0
+  (( ${REPLY##*:} > cache_mtime[1] ))
+}
+
+# Fills the global _claude_replay_sessions, mirroring src/resolve-session.mjs
+# directory for directory. Sorted newest first so the session in front of you
+# is the first candidate.
+_claude-replay__sessions_build() {
+  local -a ids parts
+  local f db proj
+
+  # Claude Code: ~/.claude/projects/<project>/<id>.jsonl
+  for f in ${HOME}/.claude/projects/*/*.jsonl(N.om); do
+    parts=( ${(s:-:)${f:h:t}} )
+    ids+=( "${f:t:r}:Claude Code — ${(j:-:)parts[$(( $#parts > 1 ? -2 : 1 )),-1]}" )
+  done
+
+  # Cursor: ~/.cursor/projects/<project>/agent-transcripts/<id>/*.jsonl
+  for f in ${HOME}/.cursor/projects/*/agent-transcripts/*/*.jsonl(N.om); do
+    parts=( ${(s:-:)${f:h:h:h:t}} )
+    ids+=( "${f:h:t}:Cursor — ${(j:-:)parts[$(( $#parts > 1 ? -2 : 1 )),-1]}" )
+  done
+
+  # Codex CLI: ~/.codex/sessions/<Y>/<M>/<D>/rollout-<timestamp>-<uuid>.jsonl
+  for f in ${HOME}/.codex/sessions/*/*/*/rollout-*.jsonl(N.om); do
+    ids+=( "${${f:t:r}/#rollout-????-??-??T??-??-??-/}:Codex CLI — ${f:h:h:h:t}-${f:h:h:t}-${f:h:t}" )
+  done
+
+  # Gemini CLI: ~/.gemini/tmp/<projectHash>/chats/session-<date>-<id>.json
+  for f in ${HOME}/.gemini/tmp/*/chats/*.json(N.om); do
+    ids+=( "${f:t:r}:Gemini CLI — ${${f:h:h:t}[1,12]}" )
+  done
+
+  # Kimi Code: ~/.kimi-code/sessions/<project>/session_<id>/agents/<name>/wire.jsonl
+  for f in ${HOME}/.kimi-code/sessions/*/session_*/agents/*/wire.jsonl(N.om); do
+    parts=( ${(s:_:)${f:h:h:h:h:t}##wd_} )
+    ids+=( "${${f:h:h:h:t}#session_}:Kimi Code — ${(j:-:)parts[$(( $#parts > 1 ? -2 : 1 )),-1]}" )
+  done
+
+  # Hermes keeps its sessions in SQLite, so they are only listable with sqlite3.
+  # The timestamp columns differ between Hermes versions and the ones named in
+  # src/hermes-db.mjs are absent from some live databases, so an ordering query
+  # that fails to parse falls back to the bare id list.
+  if (( $+commands[sqlite3] )); then
+    local -a hermes_ids
+    local query
+    local -a queries=(
+      'select id from sessions order by coalesce(last_activity_at, ended_at, started_at) desc'
+      'select id from sessions'
+    )
+    for db in ${HOME}/.hermes/state.db(N) ${HOME}/.hermes/profiles/*/state.db(N); do
+      proj=${${db:h:t}:#.hermes}
+      for query in $queries; do
+        hermes_ids=( ${(f)"$(_call_program -q hermes-sessions sqlite3 $db $query)"} )
+        (( ${#hermes_ids} )) && break
+      done
+      (( ${#hermes_ids} )) && ids+=( ${^hermes_ids}":Hermes — ${proj:-default}" )
+    done
+  fi
+
+  # Deliberately global: it is the in-shell memo, and _retrieve_cache restores
+  # the list under this same name.
+  _claude_replay_sessions=( ${(u)ids} )
+}
+
+# Enumerating a few thousand sessions takes about a hundred milliseconds, which
+# is far too slow to run on every keystroke, so the list is cached twice over.
+# The in-shell memo is always on and is validated against the directory stamp,
+# so it can never go stale. The on-disk cache underneath it obeys the usual
+# use-cache, cache-path, and cache-policy styles, which is what makes the first
+# completion in a fresh shell fast as well:
+#
+#   zstyle ':completion:*' use-cache on
+#
+_claude-replay__sessions() {
+  local REPLY stamp cache_policy
+
+  _claude-replay__sessions_stamp && stamp=$REPLY
+
+  if [[ -z $stamp || $stamp != ${_claude_replay_sessions_stamp-} ]]; then
+    zstyle -s ":completion:${curcontext}:" cache-policy cache_policy
+    [[ -n $cache_policy ]] ||
+      zstyle ":completion:${curcontext}:" cache-policy _claude-replay__sessions_cache_policy
+
+    if ! _retrieve_cache claude-replay-sessions; then
+      _claude-replay__sessions_build
+      _store_cache claude-replay-sessions _claude_replay_sessions
+    fi
+    typeset -g _claude_replay_sessions_stamp=$stamp
+  fi
+
+  if (( ${#_claude_replay_sessions} )); then
+    _describe -t sessions -V 'session id' _claude_replay_sessions
+  else
+    _claude-replay__message 'session id'
+  fi
+}
+
+# A bare input is a .jsonl/.json transcript path or a session ID; a Hermes
+# session may also be given as the virtual path <state.db>#session:<id>.
+_claude-replay__input() {
+  _alternative \
+    'files:transcript file:_files -g "*.(jsonl|json)(-.)"' \
+    'sessions:session id: _claude-replay__sessions'
+}
+
+_claude-replay() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S : \
+    '(- *)'{-h,--help}'[show the usage summary and exit]' \
+    '(- *)'{-v,--version}'[(hidden) print the claude-replay version and exit]' \
+    '(- *)--list-themes[list the available built-in themes and exit]' \
+    '--port=[server port; default 7331 for the editor, 7332 for --serve]:port: _claude-replay__message "port"' \
+    '--host=[bind address for the editor server; default 127.0.0.1]:address: _claude-replay__bind_address' \
+    '--no-origin-check[disable the editor CSRF origin check]' \
+    '(-o --output)'{-o+,--output=}'[write output to FILE instead of stdout]:file:_files' \
+    '--turns=[only include turns N through M]:range: _claude-replay__message "turn range N-M"' \
+    '--exclude-turns=[exclude specific turns by index]:indices: _claude-replay__message "comma-separated turn indices"' \
+    '--from=[start time filter, ISO 8601]:timestamp: _claude-replay__message "ISO 8601 timestamp"' \
+    '--to=[end time filter, ISO 8601]:timestamp: _claude-replay__message "ISO 8601 timestamp"' \
+    '--speed=[initial playback speed; default 1.0]:speed:(0.25 0.5 0.75 1 1.25 1.5 2 3 4)' \
+    '--no-thinking[hide thinking blocks by default]' \
+    '--no-tool-calls[hide tool call blocks by default]' \
+    '--theme=[built-in theme; default tokyo-night]:theme: _claude-replay__themes' \
+    '--theme-file=[custom theme JSON file, overriding --theme]:file:_files -g "*.json(-.)"' \
+    '--font-size=[font size; default normal]:size:((small\:11px normal\:13px large\:15px))' \
+    '--no-auto-redact[disable automatic secret redaction]' \
+    '*--redact=[replace text with REDACTED, or with a custom replacement]:rule: _claude-replay__message "text, or text=replacement"' \
+    '--title=[page title; default derived from the input path]:text: _claude-replay__message "title"' \
+    '--description=[meta description for link previews]:text: _claude-replay__message "description"' \
+    '--og-image=[OG image URL for link previews]:url:_urls' \
+    '--user-label=[label for user messages; default User]:label: _claude-replay__message "label"' \
+    '--assistant-label=[label for assistant messages; default auto-detected]:label: _claude-replay__message "label"' \
+    '--timing=[timestamp mode; default auto]:mode:((auto\:real\ timestamps\ when\ present\,\ otherwise\ paced real\:always\ use\ recorded\ timestamps paced\:synthesize\ an\ even\ reveal))' \
+    '--pacing=[paced reveal mode; requires --timing paced]:mode:((sections\:reveal\ section\ by\ section paced-wording\:reveal\ at\ a\ reading\ rate))' \
+    '--reading-wpm=[paced-wording rate, 80-600; default 238; requires --pacing paced-wording]:wpm: _claude-replay__message "words per minute (80-600)"' \
+    '*--mark=[add a bookmark at a turn, written as N:Label]:bookmark: _claude-replay__message "N\:Label"' \
+    '--bookmarks=[JSON file of bookmark objects with turn and label]:file:_files -g "*.json(-.)"' \
+    '--no-minify[embed the unminified player template]' \
+    '--no-compress[embed raw JSON instead of compressed, for older browsers]' \
+    '--format=[(hidden) extract output format; default jsonl]:format:((jsonl\:one\ JSON\ turn\ per\ line json\:a\ single\ JSON\ document))' \
+    '--serve[serve the replay over local HTTP instead of writing a file]' \
+    '--watch[rebuild when the inputs change; without --serve this needs --output]' \
+    '--open[open the generated HTML in the default browser]' \
+    '1: :->first' \
+    '*: :->rest' && ret=0
+
+  case $state in
+    (first)
+      _alternative \
+        'commands:command: _claude-replay__commands' \
+        'files:transcript file:_files -g "*.(jsonl|json)(-.)"' \
+        'sessions:session id: _claude-replay__sessions' && ret=0
+      ;;
+
+    (rest)
+      case ${line[1]} in
+        (extract)
+          if (( ${#line} == 2 )); then
+            local expl
+            _description files expl 'generated replay HTML'
+            _files "${expl[@]}" -g '*.html(-.)' && ret=0
+          else
+            _claude-replay__message 'no more arguments'
+          fi
+          ;;
+
+        (editor)
+          if (( ${#line} == 2 )); then
+            _claude-replay__input && ret=0
+          else
+            _claude-replay__message 'no more arguments'
+          fi
+          ;;
+
+        # Bare inputs are concatenated into one replay, up to 20 of them.
+        (*)
+          if (( ${#line} <= 20 )); then
+            _claude-replay__input && ret=0
+          else
+            _claude-replay__message 'no more inputs (maximum 20)'
+          fi
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_claude-replay "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
