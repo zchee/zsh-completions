@@ -1,0 +1,547 @@
+#compdef agy
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# agy 1.1.23 (Google Antigravity CLI)
+#
+# Source of truth: the `agy` binary itself.
+#   - visible surface: `agy --help`, `agy <cmd> --help`
+#   - hidden surface : recovered from the Go pclntab of the stripped arm64
+#     binary. Every flag is declared through
+#     `google3/base/go/flag.(*FlagSet).declareFlag`, so scanning `__text` for
+#     BL edges into that symbol enumerates the whole flag surface with no
+#     guessing. In 1.1.23 that is 64 call sites: 52 global ones from
+#     `main.init.0` (34), `google3/base/go/log.init.4` (6),
+#     `google3/base/go/log.init` (4), `main.registerHubFlags` (2, only `hub`
+#     and `hub-port`) and one each from `google3/base/go/log.init.1`,
+#     `google3/base/go/log.init.5`, `google3/base/go/flag.init.0`,
+#     `google3/base/go/toollog.init`, `google3/base/go/mlock.init` and
+#     `google3/util/task/go/status.init`; plus 12 subcommand-local ones from
+#     `main.handleMCPAdd` (6), `main.handleInstallCommand` (3),
+#     `main.parseSubcommandFlags` (2, the shared `-h`/`--help`) and
+#     `main.handleMicServeCommand` (1).
+#     `main.hideFlagsForExternal` names the 9 flags stripped from `--help` in
+#     external builds. Entries marked `(hidden)` below are accepted by the
+#     binary but appear in no `--help` output; each was confirmed at runtime
+#     with `agy --<name>=ZZINVALIDZZ --zz-sentinel`, which reports
+#     `not defined` only for names the binary does not know.
+#
+# 1.1.23 changed nothing in the command-line surface: the flag set, the flag
+# names and the subcommand tables are byte-for-byte the same set as 1.1.22.
+#
+# Top-level subcommands are a Go map consulted by `main.handleSubcommand` and
+# populated in `main.init.1` through `main.init.4`; its keys are exactly the
+# eleven names `agy --help` advertises, so there are no hidden subcommands.
+# `google3/third_party/jetski/cli/plugins/plugins.HandleCommand` likewise
+# dispatches exactly the nine verbs `agy plugin` advertises. The single hidden
+# subcommand option is `agy plugin import --force`, named only in the
+# "already imported, use --force to re-import" line.
+#
+# Where `-h`/`--help` is actually accepted differs per subcommand, and the
+# binary is unforgiving about it:
+#   - `agent`, `agents`, `changelog`, `models`, `install`, `mic-serve` and
+#     every `mcp` verb parse them through `main.parseSubcommandFlags`.
+#   - `agy plugin` and `agy mcp` accept them as aliases for their usage text.
+#   - `agy update` defines no flags at all and rejects `-h` outright.
+#   - `agy help` reads its first word as a subcommand name, so `-h` comes back
+#     as `unknown subcommand: -h`.
+#   - the `plugin` verbs parse no flags: `agy plugin uninstall -h` tries to
+#     uninstall a plugin literally named `-h`. Only `import` reads `--force`.
+# None of those four exceptions are offered below.
+#
+# -----------------------------------------------------------------------------
+
+_agy__message() {
+  _message "${1:-value}"
+}
+
+# Directory that holds agy state. `--gemini_dir` on the current command line
+# wins, otherwise the built-in default.
+_agy__gemini_dir() {
+  local -i i
+  for (( i = 1; i <= ${#words}; i++ )); do
+    case ${words[i]} in
+      --gemini_dir=*) print -r -- "${words[i]#--gemini_dir=}"; return ;;
+      --gemini_dir)   print -r -- "${words[i+1]}"; return ;;
+    esac
+  done
+  print -r -- "${HOME}/.gemini"
+}
+
+# `agy models` reaches the network and takes a few seconds, so its result is
+# kept in a small on-disk cache. Tune the lifetime (seconds) with
+#   zstyle ':completion:*:*:agy:*' agy-models-ttl 3600
+# and force a refresh by removing the cache file.
+#
+# Output is "<id>\t<display name>" on stdout; the progress note goes to stderr.
+_agy__models() {
+  local cache_file ttl
+  local -a lines models mtime
+
+  zstyle -s ":completion:${curcontext}:" agy-models-ttl ttl || ttl=86400
+  cache_file="${XDG_CACHE_HOME:-${HOME}/.cache}/zsh-completions/agy-models"
+
+  zmodload -F zsh/stat b:zstat 2>/dev/null
+  zmodload zsh/datetime 2>/dev/null
+
+  if [[ -s ${cache_file} ]]; then
+    zstat -A mtime +mtime -- ${cache_file} 2>/dev/null
+    if (( ${#mtime} && EPOCHSECONDS - mtime[1] < ttl )); then
+      models=( ${(f)"$(< ${cache_file})"} )
+    fi
+  fi
+
+  if (( ! ${#models} )); then
+    lines=( ${(f)"$(_call_program models agy models 2>/dev/null </dev/null)"} )
+    models=( ${${lines:#}//$'\t'/:} )
+    if (( ${#models} )); then
+      mkdir -p -- ${cache_file:h} 2>/dev/null &&
+        print -rl -- ${models} >| ${cache_file} 2>/dev/null
+    fi
+  fi
+
+  if (( ${#models} )); then
+    _describe -t models 'model' models
+  else
+    _agy__message 'model id'
+  fi
+}
+
+_agy__agents() {
+  local -a lines agents
+
+  lines=( ${(f)"$(_call_program agents agy agent 2>/dev/null </dev/null)"} )
+  agents=( ${${lines:#}//$'\t'/:} )
+
+  if (( ${#agents} )); then
+    _describe -t agents 'agent' agents
+  else
+    _agy__message 'agent name'
+  fi
+}
+
+_agy__projects() {
+  local projects_json
+  local -a projects
+
+  projects_json="$(_agy__gemini_dir)/projects.json"
+  if [[ -r ${projects_json} ]]; then
+    projects=( ${(f)"$(sed -n 's/^[[:space:]]*"[^"]*"[[:space:]]*:[[:space:]]*"\(.*\)",\{0,1\}$/\1/p' -- ${projects_json} 2>/dev/null)"} )
+    projects=( ${(u)projects:#} )
+  fi
+
+  if (( ${#projects} )); then
+    _describe -t projects 'project' projects
+  else
+    _agy__message 'project id or name'
+  fi
+}
+
+# Conversation stores are one SQLite file per conversation UUID, newest first.
+_agy__conversations() {
+  local dir
+  local -a ids
+
+  dir="$(_agy__gemini_dir)/antigravity-cli/conversations"
+  if [[ -d ${dir} ]]; then
+    ids=( ${dir}/*.db(Nom:t:r) )
+  fi
+
+  if (( ${#ids} )); then
+    _describe -t conversations -V 'conversation' ids
+  else
+    _agy__message 'conversation id'
+  fi
+}
+
+_agy__mcp_servers() {
+  local -a lines servers
+
+  lines=( ${(f)"$(_call_program mcp-servers agy mcp list 2>/dev/null </dev/null)"} )
+  servers=( ${${${(M)lines:#[^[:space:]]*}:#NAME[[:space:]]*}%%[[:space:]]*} )
+
+  if (( ${#servers} )); then
+    _describe -t mcp-servers 'MCP server' servers
+  else
+    _agy__message 'MCP server name'
+  fi
+}
+
+_agy__installed_plugins() {
+  local -a plugins
+
+  plugins=( ${(f)"$(_call_program plugins agy plugin list 2>/dev/null </dev/null |
+    sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\(.*\)",\{0,1\}$/\1/p')"} )
+  plugins=( ${(u)plugins:#} )
+
+  if (( ${#plugins} )); then
+    _describe -t plugins 'plugin' plugins
+  else
+    _agy__message 'plugin name'
+  fi
+}
+
+_agy__top_commands() {
+  local -a commands
+  commands=(
+    'agent:list available agents'
+    'agents:list available agents (alias for agent)'
+    'changelog:show changelog and release notes'
+    'help:show help for subcommands'
+    'install:configure environment paths and shell settings'
+    'mcp:manage MCP servers (add, remove, list, enable, disable)'
+    'mic-serve:serve this machine microphone to a CLI on another host'
+    'models:list available models'
+    'plugin:manage plugins (install, uninstall, list, enable, disable)'
+    'plugins:alias for plugin'
+    'update:update CLI'
+  )
+  _describe -t commands 'agy command' commands
+}
+
+_agy__plugin_commands() {
+  local -a commands
+  commands=(
+    'disable:disable a plugin'
+    'enable:enable a plugin'
+    'help:show plugin help'
+    'import:import plugins from gemini or claude'
+    'install:install a plugin (supports plugin@marketplace)'
+    'link:generate link to a marketplace'
+    'list:list imported plugins'
+    'uninstall:uninstall a plugin'
+    'validate:validate a plugin'
+  )
+  _describe -t plugin-commands 'plugin command' commands
+}
+
+_agy__mcp_commands() {
+  local -a commands
+  commands=(
+    'add:add or update an MCP server configuration'
+    'disable:disable an MCP server'
+    'enable:enable an MCP server'
+    'list:list all configured MCP servers'
+    'remove:remove an MCP server configuration'
+  )
+  _describe -t mcp-commands 'mcp command' commands
+}
+
+_agy__plugin_import_sources() {
+  local -a sources
+  sources=(
+    'claude:import plugins from Claude'
+    'gemini:import plugins from Gemini'
+  )
+  _alternative \
+    "sources:import source:((${(j: :)${(@q)sources}}))" \
+    'directories:plugin directory:_files -/'
+}
+
+# Help flags shared by every subcommand; registered by main.parseSubcommandFlags.
+_agy__help_flags() {
+  reply=(
+    '(- *)-h[show help]'
+    '(- *)--help[show help]'
+  )
+}
+
+_agy__top_option_specs() {
+  reply=(
+    # --- documented -------------------------------------------------------
+    '*--add-dir=[add a directory to the workspace (repeatable)]:directory:_files -/'
+    '--agent=[agent for the current CLI session]:agent:_agy__agents'
+    '(-c --continue)'{-c,--continue}'[continue the most recent conversation]'
+    '--conversation=[resume a previous conversation by ID]:conversation:_agy__conversations'
+    '--dangerously-skip-permissions[auto-approve all tool permission requests without prompting]'
+    '--disable-slash-commands[disable slash command and skill expansion in print mode]'
+    '--effort=[reasoning effort for the current CLI session]:effort:(low medium high)'
+    '--input-format=[input format for print mode; stream-json also requires --output-format stream-json]:format:(text stream-json)'
+    '--json-schema=[JSON schema string or path enforcing structured output; needs --output-format json or stream-json]:schema:_files'
+    '--log-file=[override CLI log file path]:path:_files'
+    '--mode=[agent execution mode for this session]:mode:(accept-edits plan)'
+    '--model=[model for the current CLI session]:model:_agy__models'
+    '--new-project[create a new project for this session]'
+    '--output-format=[output format for print mode]:format:(text json stream-json)'
+    '(-p --print --prompt -i --prompt-interactive)'{-p,--print,--prompt}'=[run a single prompt non-interactively and print the response]:prompt: _agy__message "prompt"'
+    '--print-timeout=[timeout for print mode wait]:duration: _agy__message "duration such as 5m0s"'
+    '--project=[project ID or project name for the current CLI session]:project:_agy__projects'
+    '(-i --prompt-interactive -p --print --prompt)'{-i,--prompt-interactive}'=[run an initial prompt interactively and continue the session]:prompt: _agy__message "prompt"'
+    '--sandbox[run in a sandbox with terminal restrictions enabled]'
+    '(- *)-h[show help]'
+    '(- *)--help=-[show help, optionally filtering flags by regexp]::pattern: _agy__message "flag name regexp"'
+
+    # --- hidden: Antigravity Hub and remote control (main.registerHubFlags) --
+    '--hub[(hidden) run in hub server mode serving the Antigravity Hub web UI on a local port]'
+    '--hub-port=[(hidden) port for the hub web UI, 0 selects the default]:port: _agy__message "port number"'
+    '--remote-control[(hidden) enable remote control mode]'
+    '--remote-control-name=[(hidden) instance name for remote control mode]:name: _agy__message "instance name"'
+
+    # --- hidden: stripped by main.hideFlagsForExternal ---------------------
+    '--app_data_dir=[(hidden) path where application data is stored, relative to the Gemini dir]:directory:_files -/'
+    '--gemini_dir=[(hidden) path where Gemini files are stored]:directory:_files -/'
+    '--bg-updater[(hidden) run as background update worker]'
+    '--cdp_port=[(hidden) port for the Chrome DevTools Protocol]:port: _agy__message "port number"'
+    '--use_local_chrome[(hidden) use a local Chrome instance]'
+    '--local_chrome_headless[(hidden) run local Chrome in headless mode]'
+    '--local_chrome_user_data_dir=[(hidden) Chrome user data directory]:directory:_files -/'
+    '--release_base_url=[(hidden) base URL of the release server for the auto-updater]:url: _agy__message "release server base url"'
+    '--csrf_token=[(hidden) CSRF token for the language server]:token: _agy__message "csrf token"'
+
+    # --- hidden: google3 base logging and runtime flags --------------------
+    '(- *)--version[(hidden) print version and build info and exit]'
+    '--logtostderr[(hidden) log to standard error instead of files]'
+    '--alsologtostderr[(hidden) log to standard error as well as files]'
+    '--stderrthreshold=[(hidden) logs at or above this severity go to stderr]:severity:((0\:INFO 1\:WARNING 2\:ERROR 3\:FATAL))'
+    '--v=[(hidden) log level for V logs]:level: _agy__message "V log level"'
+    '--vmodule=[(hidden) comma-separated pattern=N settings for file-filtered logging]:spec: _agy__message "pattern=N,pattern=N"'
+    '--log_backtrace_at=[(hidden) emit a stack trace when logging hits this location]:location: _agy__message "file.go:234"'
+    '--log_dir=[(hidden) write log files in this directory]:directory:_files -/'
+    '--log_link=[(hidden) add symbolic links to the log files in this directory]:directory:_files -/'
+    '--logbuflevel=[(hidden) buffer log messages logged at this level or lower]:level: _agy__message "level, -1 disables buffering"'
+    '--disable_log_to_disk[(hidden) disable logging to local disk]'
+    '--silent_init[(hidden) suppress the log message on initialization]'
+    '--undefok=[(hidden) comma-separated flag names accepted even when undefined]:flags: _agy__message "flag1,flag2"'
+    '--util_status_save_stack_trace[(hidden) save and display the full stack trace of non-ok util statuses]'
+    '--syslog_on_start[(hidden) write to syslog on program start-up]'
+    '--mlock_style=[(hidden) how memory will be locked]:style:(none startup all executable)'
+  )
+}
+
+_agy__complete_help_only_leaf() {
+  local -a specs
+  _agy__help_flags
+  specs=("${reply[@]}")
+
+  _arguments -s ${specs[@]}
+}
+
+# `agy update` builds a bare FlagSet, so even -h comes back as
+# "flags provided but not defined: -h". Offer nothing rather than a rejection.
+_agy__complete_update() {
+  _agy__message 'update takes no options or arguments'
+}
+
+_agy__complete_install() {
+  local -a specs
+  _agy__help_flags
+  specs=("${reply[@]}")
+
+  _arguments -s \
+    '--dir=[custom directory target to configure PATH for]:directory:_files -/' \
+    '--skip-aliases[bypass shell profile alias purging]' \
+    '--skip-path[bypass shell profile PATH appending]' \
+    ${specs[@]}
+}
+
+_agy__complete_mic_serve() {
+  local -a specs
+  _agy__help_flags
+  specs=("${reply[@]}")
+
+  _arguments -s \
+    '--addr=[address to listen on, keep it on loopback]:address: _agy__message "host:port, default 127.0.0.1:4713"' \
+    ${specs[@]}
+}
+
+_agy__complete_mcp() {
+  local curcontext="$curcontext" state line
+  local -a specs
+  typeset -A opt_args
+
+  _agy__help_flags
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:mcp command:->command' \
+    '*::mcp argument:->args'
+
+  case $state in
+    command)
+      _agy__mcp_commands
+      return
+      ;;
+  esac
+
+  curcontext="${curcontext%:*:*}:agy-mcp-$words[1]:"
+
+  case $words[1] in
+    add)
+      # Flags must precede <name>; a flag placed after it is rejected.
+      _arguments -s -S \
+        '(-t --type)'{-t,--type}'=[server type]:type:(stdio http)' \
+        '*'{-e,--env}'=[environment variable KEY=value (repeatable)]:env: _agy__message "KEY=value"' \
+        '*'{-H,--header}'=[HTTP header Key: Value (repeatable)]:header: _agy__message "Key: Value"' \
+        ${specs[@]} \
+        '1:name: _agy__message "unique name for the server"' \
+        '2:command or url:_agy__mcp_command_or_url' \
+        '*::argument:_files'
+      ;;
+    remove|enable|disable)
+      _arguments -s \
+        ${specs[@]} \
+        '1:server:_agy__mcp_servers'
+      ;;
+    list)
+      _agy__complete_help_only_leaf
+      ;;
+  esac
+}
+
+_agy__mcp_command_or_url() {
+  # http/https URLs are detected automatically, so --type is usually unneeded.
+  if [[ $PREFIX == (http|https)://* ]]; then
+    _agy__message 'MCP server url'
+    return
+  fi
+  _alternative \
+    'commands:executable:_command_names -e' \
+    'files:executable file:_files -g "*(-*)"' \
+    'urls:url: _agy__message "http:// or https:// url"'
+}
+
+_agy__complete_plugin() {
+  local curcontext="$curcontext" state line
+  local -a specs
+  typeset -A opt_args
+
+  _agy__help_flags
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:plugin command:->command' \
+    '*::plugin argument:->args'
+
+  case $state in
+    command)
+      _agy__plugin_commands
+      return
+      ;;
+  esac
+
+  curcontext="${curcontext%:*:*}:agy-plugin-$words[1]:"
+
+  # plugins.HandleCommand parses no flags for any verb: a leading -h becomes a
+  # positional, and `agy plugin uninstall -h` really does try to uninstall a
+  # plugin named "-h". Only `import` reads an option, and only --force.
+  case $words[1] in
+    import)
+      _arguments -s \
+        '--force[(hidden) re-import plugins that were already imported]' \
+        '1::source:_agy__plugin_import_sources'
+      ;;
+    install)
+      _arguments -s '1:target:_agy__plugin_install_target'
+      ;;
+    uninstall|enable|disable)
+      _arguments -s '1:plugin:_agy__installed_plugins'
+      ;;
+    validate)
+      _arguments -s '1::path:_files -/'
+      ;;
+    link)
+      _arguments -s \
+        '1:marketplace: _agy__message "marketplace name"' \
+        '2:target: _agy__message "link target"'
+      ;;
+    list|help)
+      _agy__message "agy plugin $words[1] takes no options or arguments"
+      ;;
+  esac
+}
+
+_agy__plugin_install_target() {
+  _alternative \
+    'directories:plugin directory:_files -/' \
+    'plugins:plugin or plugin@marketplace: _agy__message "plugin or plugin@marketplace"'
+}
+
+# `help` takes a bare subcommand name; -h and --help land in the same slot and
+# come back as "unknown subcommand", so they are deliberately not offered.
+_agy__complete_help() {
+  _arguments -s '1:agy command:_agy__top_commands'
+}
+
+function _agy() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a specs
+
+  _agy__top_option_specs
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:agy command:->command' \
+    '*::agy argument:->args'
+
+  case $state in
+    command)
+      _agy__top_commands
+      return
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:agy-$words[1]:"
+      case $words[1] in
+        agent|agents|changelog|models)
+          _agy__complete_help_only_leaf
+          ;;
+        update)
+          _agy__complete_update
+          ;;
+        help)
+          _agy__complete_help
+          ;;
+        install)
+          _agy__complete_install
+          ;;
+        mcp)
+          _agy__complete_mcp
+          ;;
+        mic-serve)
+          _agy__complete_mic_serve
+          ;;
+        plugin|plugins)
+          _agy__complete_plugin
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_agy "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
