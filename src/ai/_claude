@@ -35,7 +35,63 @@
 #
 # https://github.com/anthropics/claude-code
 #
-# 2.1.233 (Claude Code)
+# 2.1.252 (Claude Code)
+#
+# The shipped binary is a Bun-compiled Commander.js program. The surface is
+# recovered from the beautified bundle (`cli.unpack.js` in the claude-code
+# reverse tree, whose package.json version must match `claude --version`) with
+# a balanced-paren *method-chain* parser: locate `.name("claude")`,
+# `.command()`, `.option()`, `.addOption()` and attribute each call to the
+# chain that owns it. A regex over `new Option(...)...hideHelp()` greedily
+# spans into the next option and mislabels visible flags, so it is not used.
+# Three registration shapes need special handling: options built in a block
+# (`let P = new O(...); P.hideHelp(); prog.addOption(P)` — `--messaging-socket-path`),
+# options built by a factory (`let u = () => new O("--cowork", …).hideHelp()`,
+# added via `.addOption(u())`), and subcommands registered inside helper
+# functions whose first parameter is the parent command (`Br(mcpCmd, ctx)`
+# registers `mcp add`). `attach`/`logs`/`stop`/`respawn`/`rm` come from a
+# helper returning bare `new Command(...)` objects, not from `.command()`.
+#
+# Every item below was confirmed against the 2.1.252 binary. `--help` is not
+# an oracle here: it short-circuits before option validation, so even a bogus
+# flag prints usage. What works is `claude <FLAG> mcp list`, which answers
+# `error: unknown option '<FLAG>'` for anything unregistered, and
+# `claude <CMD> --help`, which falls back to root usage for an unknown command.
+#
+# Items marked "(hidden)" are accepted but suppressed from `--help`:
+#   * commands:  import-conversations, remote-control (alias rc), sandbox
+#                (+ its install/status subcommands)
+#   * root:      --advisor --agent-color --agent-id --agent-name --agent-type
+#                --append-subagent-system-prompt --append-system-prompt-file
+#                --channels --correlation-id
+#                --dangerously-load-development-channels --debug-to-stderr
+#                --deep-link-cwd-b64 --deep-link-last-fetch --deep-link-origin
+#                --deep-link-repo --enable-auth-status --enable-auto-mode
+#                --forward-home-settings --init --init-only --maintenance
+#                --managed-settings --max-thinking-tokens --max-turns
+#                --messaging-socket-path --on-branch --parent-session-id
+#                --permission-prompt-tool --plan-mode-instructions
+#                --plan-mode-required --plugin-dir-no-mcp --pool --prefill
+#                --prefill-b64 --rc --ref --remote --reply-on-resume
+#                --resume-drops-turn --resume-session-at --rewind-files
+#                --sdk-url --session-mirror --system-prompt-file --task-budget
+#                --team-name --teammate-mode --thinking --thinking-display
+#                --watch-artifact --watch-artifact-no-autoreact --workload
+#   * agents:    --plugin-dir-no-mcp
+#   * mcp add:   --xaa  (hideHelp(!enabled), so it is visible where XAA is on)
+#   * plugin eval init: --interview
+#   * --cowork on plugin details/disable/enable/install/list/prune/uninstall/
+#     update/validate and plugin marketplace add/list/remove/update — and only
+#     those: `plugin init`, `plugin tag` and `plugin eval` reject it.
+#
+# Scope is not uniform: root `--remote` is hidden while `plugin tag --remote`
+# is documented, and a flat flag-to-hidden map will report that as a mismatch.
+#
+# `--tmux` registers as a boolean but argv preprocessing also accepts
+# `--tmux=classic`, so it is spelled with an optional inline value here.
+#
+# Deliberately not completed: Commander's own `--help`/`--version` plumbing is
+# offered, but nothing else machine-facing exists in this CLI to leave out.
 #
 # -----------------------------------------------------------------------------
 
@@ -132,6 +188,7 @@ _claude__permission_modes() {
     'acceptEdits:accept edits automatically'
     'auto:auto mode'
     'bypassPermissions:bypass permissions'
+    'default:internal name for manual permission mode'
     'manual:manual permission mode'
     'dontAsk:never ask for permissions'
     'plan:plan mode'
@@ -282,6 +339,27 @@ _claude__mcp_add_rest() {
   esac
 }
 
+# Background sessions, for `attach`/`logs`/`stop`/`rm`/`respawn`. `claude
+# agents` needs a TTY, so ask for the JSON listing instead; --all keeps the
+# already-exited sessions that `rm` and `attach` still accept. Local, ~0.2 s.
+# Interactive sessions carry a `pid` and no `id`, so they drop out naturally.
+_claude__bg_sessions() {
+  local -a sessions
+  sessions=( ${(f)"$(_call_program bg-sessions claude agents --json --all 2>/dev/null </dev/null |
+    awk '
+      /"id"[[:space:]]*:/    { v = $0; sub(/.*"id"[[:space:]]*:[[:space:]]*"/, "", v); sub(/".*/, "", v); id = v }
+      /"name"[[:space:]]*:/  { v = $0; sub(/.*"name"[[:space:]]*:[[:space:]]*"/, "", v); sub(/".*/, "", v); nm = v }
+      /"state"[[:space:]]*:/ { v = $0; sub(/.*"state"[[:space:]]*:[[:space:]]*"/, "", v); sub(/".*/, "", v); st = v }
+      /^[[:space:]]*\}/     { if (id != "") printf "%s:%s (%s)\n", id, nm, st; id = ""; nm = ""; st = "" }
+    ')"} )
+
+  if (( ${#sessions} )); then
+    _describe -t sessions 'background session' sessions
+  else
+    _claude__message 'background session id'
+  fi
+}
+
 _claude__install_targets() {
   local -a targets
   targets=(
@@ -332,6 +410,7 @@ _claude__top_commands() {
   local -a commands
   commands=(
     'agents:manage background agents'
+    'attach:open a background session in this terminal'
     'auth:manage authentication'
     'auto-mode:inspect or reset auto mode classifier configuration'
     'doctor:check the health of your Claude Code installation'
@@ -339,14 +418,19 @@ _claude__top_commands() {
     'import:import config from another AI coding agent into Claude Code'
     'import-conversations:(hidden) import sessions from an export path'
     'install:install Claude Code native build'
+    'kill:stop a background session'
+    'logs:print a background session'\''s recent terminal output'
     'mcp:configure and manage MCP servers'
     'plugin:manage Claude Code plugins'
     'plugins:manage Claude Code plugins'
     'project:manage Claude Code project state'
     'rc:(hidden) alias for remote-control'
     'remote-control:(hidden) control local sessions from claude.ai/code or mobile'
+    'respawn:restart a background session so it runs the current version'
+    'rm:delete a background session, and its worktree when that is safe'
     'sandbox:(hidden) manage the Windows sandbox user and network filters'
     'setup-token:set up a long-lived authentication token'
+    'stop:stop a background session'
     'ultrareview:run a cloud-hosted multi-agent code review'
     'update:check for updates and install if available'
     'upgrade:check for updates and install if available'
@@ -493,6 +577,7 @@ _claude__top_option_specs() {
     '--session-id=[use a specific session UUID]:uuid: _claude__message "uuid"'
     '--setting-sources=[setting sources to load]:sources:_claude__setting_sources'
     '--settings=[settings JSON file or string]:settings:_files'
+    '--restricted[restricted mode\: removes the built-in tools that run commands or code]'
     '--strict-mcp-config[only use MCP servers from --mcp-config]'
     '--system-prompt=[system prompt to use for the session]:prompt: _claude__message "prompt"'
     '--teleport=-[resume a teleport session, optionally specify session ID]::session: _claude__message "session"'
@@ -518,6 +603,7 @@ _claude__top_option_specs() {
     '--deep-link-repo=[(hidden) repo slug the deep link ?repo= parameter resolved to]:slug: _claude__message "slug"'
     '--enable-auth-status[(hidden) enable auth status messages in SDK mode]'
     '--enable-auto-mode[(hidden, deprecated) opt in to auto mode]'
+    '--forward-home-settings=[(hidden) whether this launch sends this machine settings into the cloud session it creates or attaches to]:value:(true false 1 0)'
     '--init[(hidden) run Setup hooks with init trigger, then continue]'
     '--init-only[(hidden) run Setup and SessionStart:startup hooks, then exit]'
     '--maintenance[(hidden) run Setup hooks with maintenance trigger, then continue]'
@@ -578,7 +664,23 @@ _claude__complete_agents() {
     '*--plugin-dir-no-mcp=[(hidden) like --plugin-dir but engine will not read the plugin .mcp.json]:directory:_files -/' \
     '--setting-sources=[comma-separated list of setting sources to load]:sources:_claude__setting_sources' \
     '--settings=[settings file or JSON string to apply]:settings:_files' \
+    '--restricted[start dispatched sessions in restricted mode]' \
     '--strict-mcp-config[only use MCP servers from --mcp-config in dispatched sessions]'
+}
+
+# attach/logs/stop/rm take exactly one session id and no options but -h;
+# respawn takes an optional id, or --all instead of one.
+_claude__complete_bg_session() {
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '1:session:_claude__bg_sessions'
+}
+
+_claude__complete_respawn() {
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[display help for command]' \
+    '(1)--all[restart every running background session]' \
+    '1::session:_claude__bg_sessions'
 }
 
 _claude__complete_auth() {
@@ -873,6 +975,7 @@ _claude__complete_plugin_eval() {
     _arguments -s \
       '--bare[write a blank template instead of running the interview]' \
       '(-i --interactive)'{-i,--interactive}'[run the authoring interview (default in a terminal)]' \
+      '--eval-dir=[directory below the current directory to write cases into]:dir:_files -/' \
       '--interview[(hidden) alias for --interactive]' \
       '(-h --help)'{-h,--help}'[display help for command]' \
       '1:name: _claude__message "name"'
@@ -883,11 +986,13 @@ _claude__complete_plugin_eval() {
     '--ablation=[run a no-plugin baseline arm and report the score delta]:mode:(none with-without)' \
     '*--allow-tools=[operator grant for gated tools]:tools: _claude__message "tools"' \
     '--case=[filter cases by name glob]:glob: _claude__message "glob"' \
+    '--eval-dir=[directory below the plugin that holds the eval cases]:dir:_files -/' \
     '(-h --help)'{-h,--help}'[display help for command]' \
     '--json=-[print the full run result as JSON to stdout, or write it to a path]::path:_files' \
     '--judge-model=[override LLM-grader model]:model:_claude__models' \
     '--keep-temp[preserve scaffold dirs for debugging]' \
     '--max-cost-usd=[optional hard cost ceiling]:usd: _claude__message "usd"' \
+    '--mocks=[mock stand-ins for MCP servers from the eval dir mocks directory]:mode:(record off)' \
     '--model=[override model for all cases]:model:_claude__models' \
     '(--scaffold --no-scaffold)--no-scaffold[explicitly skip scaffold_script]' \
     '(--publish-report --no-publish)--no-publish[keep the HTML report local only]' \
@@ -1185,6 +1290,9 @@ function _claude() {
         agents)
           _claude__complete_agents
           ;;
+        attach|logs|rm|stop|kill)
+          _claude__complete_bg_session
+          ;;
         auth)
           _claude__complete_auth
           ;;
@@ -1214,6 +1322,9 @@ function _claude() {
           ;;
         project)
           _claude__complete_project
+          ;;
+        respawn)
+          _claude__complete_respawn
           ;;
         rc|remote-control)
           _claude__complete_remote_control
