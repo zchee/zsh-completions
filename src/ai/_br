@@ -1,0 +1,2408 @@
+#compdef br
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/Dicklesworthstone/beads_rust
+#
+# br 0.5.1 (beads_rust)
+#
+# Generated from the clap derive definitions in src/cli/mod.rs, then validated
+# against `br --help` for all 98 command paths (options and positionals match
+# exactly).
+#
+# Items marked "(hidden)" are accepted by the CLI but never shown by `br --help`:
+# they are clap `alias = ...` entries, which -- unlike `visible_alias` -- are
+# omitted from the generated help.
+#
+#   * top-level:  comment (comments), completion (completions),
+#                 coord (coordination), robot_docs (robot-docs),
+#                 schedule (scheduler)
+#   * doctor:     robot_docs (robot-docs)
+#   * value:      pwsh (br completions powershell)
+#
+# br 0.5.1 defines no `hide = true` command or flag; the entries above are the
+# whole hidden surface. `serve` (MCP stdio server) is gated behind the `mcp`
+# cargo feature and is absent from the Homebrew build, so it is not completed.
+#
+# -----------------------------------------------------------------------------
+
+
+typeset -ga _br_global_options
+_br_global_options=(
+  '--db[Database path (auto-discover .beads/*.db if not set)]:db:_files'
+  '--actor[Actor name for audit trail]:actor: _br__message "actor"'
+  '--json[Output as JSON]'
+  '--no-daemon[Force direct mode (no daemon) - effectively no-op in br v1]'
+  '--no-auto-flush[Skip auto JSONL export]'
+  '--no-auto-import[Skip auto import check]'
+  '--allow-stale[Allow stale DB (bypass freshness check warning)]'
+  '--lock-timeout[SQLite busy/write-lock timeout in ms]:lock-timeout: _br__message "lock-timeout (number)"'
+  '--no-db[JSONL-only mode (no DB connection)]'
+  '*'{-v,--verbose}'[Increase logging verbosity (-v, -vv)]'
+  '(-q --quiet)'{-q,--quiet}'[Quiet mode (no output except errors)]'
+  '--no-color[Disable colored output]'
+)
+
+# -----------------------------------------------------------------------------
+# Value helpers.
+#
+# Static candidate sets mirror the *_CANDIDATES tables in src/cli/mod.rs.
+# Dynamic sets are delegated to br's own clap dynamic-completion engine, which
+# reads .beads/*.jsonl directly (~10ms) instead of going through the SQLite
+# database (`br label list-all` takes ~2s and is unusable during completion).
+# -----------------------------------------------------------------------------
+
+# Ask br's clap dynamic completer what belongs at the cursor position of the
+# *original* command line, saved by _br() before _arguments rewrote $words.
+# Returns raw "value:description" lines.
+_br__clap_candidates() {
+  [[ -n $_br_clap_cmd ]] || return 1
+  COMPLETE=zsh \
+  _CLAP_IFS=$'\n' \
+  _CLAP_COMPLETE_INDEX=$_br_clap_index \
+    "$_br_clap_cmd" -- "${_br_clap_words[@]}" 2>/dev/null
+}
+
+# Feed the engine's output to _describe. $1 = tag, $2 = description.
+#
+# At a slot where options are also legal (a bare positional, say) the engine
+# returns flags alongside the values. _arguments already offers those, and they
+# are not values of this tag, so drop anything that looks like an option.
+_br__clap_describe() {
+  local tag=$1 desc=$2
+  local -a cands
+  cands=( ${${(f)"$(_br__clap_candidates)"}:#-*} )
+  (( ${#cands} )) || return 1
+  _describe -t "$tag" "$desc" cands
+}
+
+_br__issue_ids()        { _br__clap_describe issue-ids   'issue' }
+_br__open_issue_ids()   { _br__clap_describe issue-ids   'open issue' }
+_br__closed_issue_ids() { _br__clap_describe issue-ids   'closed issue' }
+_br__labels()           { _br__clap_describe labels      'label' }
+_br__assignees()        { _br__clap_describe assignees   'assignee' }
+_br__owners()           { _br__clap_describe owners      'owner' }
+_br__config_keys()      { _br__clap_describe config-keys 'config key' }
+_br__saved_queries()    { _br__clap_describe queries     'saved query' }
+
+# Comma-separated label list; complete one element at a time.
+_br__labels_delim() {
+  compset -P '*,'
+  _br__clap_describe labels 'label'
+}
+
+_br__statuses() {
+  local -a v
+  v=(
+    'open:Open issue'
+    'in_progress:In progress'
+    'blocked:Blocked'
+    'deferred:Deferred'
+    'draft:Draft'
+    'closed:Closed'
+    'tombstone:Deleted'
+    'pinned:Pinned'
+  )
+  _describe -t statuses 'status' v
+}
+
+_br__statuses_delim() { compset -P '*,'; _br__statuses }
+
+_br__statuses_all() {
+  local -a v
+  v=(
+    'all:All statuses'
+    'open:Open issue'
+    'in_progress:In progress'
+    'blocked:Blocked'
+    'deferred:Deferred'
+    'draft:Draft'
+    'closed:Closed'
+    'tombstone:Deleted'
+    'pinned:Pinned'
+  )
+  _describe -t statuses 'status' v
+}
+
+# The standard seven types, plus any custom type already present in the
+# workspace (br's issue_type_completer unions both).
+_br__issue_types_standard() {
+  local -a v
+  v=(
+    'task:Task'
+    'bug:Bug'
+    'feature:Feature'
+    'epic:Epic'
+    'chore:Chore'
+    'docs:Docs'
+    'question:Question'
+  )
+  _describe -t issue-types 'issue type' v
+}
+
+_br__issue_types() {
+  local -a dyn
+  dyn=( ${${(f)"$(_br__clap_candidates)"}:#-*} )
+  if (( ${#dyn} )); then
+    _describe -t issue-types 'issue type' dyn
+  else
+    _br__issue_types_standard
+  fi
+}
+
+_br__issue_types_delim() { compset -P '*,'; _br__issue_types }
+
+_br__priorities() {
+  local -a v
+  v=(
+    '0:Critical (P0)' '1:High (P1)' '2:Medium (P2)' '3:Low (P3)' '4:Backlog (P4)'
+    'P0:Critical (0)' 'P1:High (1)' 'P2:Medium (2)' 'P3:Low (3)' 'P4:Backlog (4)'
+  )
+  _describe -t priorities 'priority' v
+}
+
+_br__priorities_delim() { compset -P '*,'; _br__priorities }
+
+_br__priorities_numeric() {
+  local -a v
+  v=( '0:Critical (P0)' '1:High (P1)' '2:Medium (P2)' '3:Low (P3)' '4:Backlog (P4)' )
+  _describe -t priorities 'priority' v
+}
+
+_br__dep_types() {
+  local -a v
+  v=(
+    'blocks:Blocks (default)'
+    'parent-child:Parent child'
+    'conditional-blocks:Conditional blocks'
+    'waits-for:Waits for'
+    'related:Related'
+    'discovered-from:Discovered from'
+    'replies-to:Replies to'
+    'relates-to:Relates to'
+    'duplicates:Duplicates'
+    'supersedes:Supersedes'
+    'caused-by:Caused by'
+  )
+  _describe -t dep-types 'dependency type' v
+}
+
+# "type:id,type:id" — complete the type, then the issue id after the colon.
+_br__deps() {
+  compset -P '*,'
+  if compset -P '*:'; then
+    _br__issue_ids
+    return
+  fi
+  local -a v
+  v=(
+    'blocks:Blocks (default)'
+    'parent-child:Parent child'
+    'conditional-blocks:Conditional blocks'
+    'waits-for:Waits for'
+    'related:Related'
+    'discovered-from:Discovered from'
+    'replies-to:Replies to'
+    'relates-to:Relates to'
+    'duplicates:Duplicates'
+    'supersedes:Supersedes'
+    'caused-by:Caused by'
+  )
+  _describe -t dep-types 'dependency type' v -S ':'
+}
+
+_br__dep_tree_formats() {
+  local -a v
+  v=( 'text:Text output' 'mermaid:Mermaid graph' )
+  _describe -t formats 'format' v
+}
+
+_br__sort_keys() {
+  local -a v
+  v=(
+    'priority:Priority'
+    'created_at:Created at'
+    'updated_at:Updated at'
+    'title:Title'
+    'created:Alias for created_at'
+    'updated:Alias for updated_at'
+  )
+  _describe -t sort-keys 'sort key' v
+}
+
+_br__csv_fields() {
+  compset -P '*,'
+  local -a v
+  v=(
+    'id:Issue ID' 'title:Title' 'description:Description' 'status:Status'
+    'priority:Priority' 'issue_type:Issue type' 'assignee:Assignee'
+    'owner:Owner' 'created_at:Created at' 'updated_at:Updated at'
+    'closed_at:Closed at' 'due_at:Due at' 'defer_until:Defer until'
+    'notes:Notes' 'external_ref:External ref'
+  )
+  _describe -t csv-fields 'CSV field' v
+}
+
+_br__export_error_policies() {
+  local -a v
+  v=(
+    'strict:Abort export on any error (default)'
+    'best-effort:Skip problematic records, export what we can'
+    'partial:Export valid records, report failures'
+    'required-core:Only export core issues, tolerate non-core errors'
+  )
+  _describe -t policies 'export error policy' v
+}
+
+_br__orphan_modes() {
+  local -a v
+  v=(
+    'strict:Fail if any issue references a missing parent'
+    'resurrect:Attempt to resurrect missing parents if found'
+    'skip:Skip orphaned issues'
+    'allow:Allow orphans (no parent validation)'
+  )
+  _describe -t modes 'orphan mode' v
+}
+
+# "key" and "key=" both complete, mirroring config_key_assignment_completer.
+_br__config_key_assignments() {
+  local -a cands
+  cands=( ${${(f)"$(_br__clap_candidates)"}:#-*} )
+  (( ${#cands} )) || return 1
+  _describe -t config-keys 'config key' cands
+}
+
+_br__message() { _message "${1:-value}" }
+
+# ------------------------------------------------------------- enum values
+
+_br__enum_coordination_owner_kind_arg() {
+  local -a v
+  v=(
+    'swarm-agent:Treat assigned in-progress claims as swarm-agent claims'
+    'human:Treat assigned claims as human-owned'
+    'unknown:Treat assigned claims as unclear ownership'
+  )
+  _describe -t values 'owner kind' v
+}
+
+_br__enum_count_by() {
+  local -a v
+  v=(
+    'status'
+    'priority'
+    'type'
+    'assignee'
+    'label'
+  )
+  _describe -t values 'group-by field' v
+}
+
+_br__enum_dep_direction() {
+  local -a v
+  v=(
+    'down:Dependencies this issue has (what it waits on)'
+    'up:Dependents (what waits on this issue)'
+    'both:Both directions'
+  )
+  _describe -t values 'direction' v
+}
+
+_br__enum_gate_status() {
+  local -a v
+  v=(
+    'pass:The gate passed'
+    'fail:The gate failed'
+  )
+  _describe -t values 'gate status' v
+}
+
+_br__enum_output_format() {
+  local -a v
+  v=(
+    'text:Human-readable text (default)'
+    'json:JSON output'
+    'csv:CSV output with configurable fields'
+    'toon:TOON format (token-optimized object notation)'
+  )
+  _describe -t values 'output format' v
+}
+
+_br__enum_output_format_basic() {
+  local -a v
+  v=(
+    'text:Human-readable text (default)'
+    'json:JSON output'
+    'toon:TOON format (token-optimized object notation)'
+  )
+  _describe -t values 'output format' v
+}
+
+_br__enum_schema_target() {
+  local -a v
+  v=(
+    'all:Emit a bundle containing all schemas and the per-command shape map'
+    'issue:Core Issue object (used by many commands)'
+    'issue-with-counts:List/search row: Issue + dependency/dependent counts'
+    'issue-details:Show view: Issue + relations/comments/events'
+    'ready-issue:Ready list row'
+    'stale-issue:Stale list row'
+    'blocked-issue:Blocked list row'
+    'tree-node:Dependency tree node'
+    'statistics:Stats output'
+    'coordination-status:Coordination status output'
+    'additive-reconciliation:Additive reconciliation plan/apply receipt'
+    'vcs-status:Explicit VCS export-status diagnostic'
+    'error:Structured error envelope (stderr JSON when robot mode or non-TTY)'
+    'commands:Per-command JSON output envelope map (top-level shape + jq filter per command)'
+  )
+  _describe -t values 'schema' v
+}
+
+_br__enum_shell_type() {
+  local -a v
+  v=(
+    'bash:Bash shell'
+    'zsh:Zsh shell'
+    'fish:Fish shell'
+    'powershell:PowerShell'
+    'pwsh:PowerShell (hidden alias for powershell)'
+    'elvish:Elvish'
+  )
+  _describe -t values 'shell' v
+}
+
+_br__enum_sort_policy() {
+  local -a v
+  v=(
+    'hybrid:P0/P1 first by created_at, then others by created_at'
+    'priority:Sort by priority ASC, then created_at ASC'
+    'oldest:Sort by created_at ASC only'
+  )
+  _describe -t values 'sort policy' v
+}
+
+# -------------------------------------------------------------- subcommands
+
+_br__agents() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--add[Add beads workflow instructions to AGENTS.md]' \
+    '--remove[Remove beads workflow instructions from AGENTS.md]' \
+    '--update[Update beads workflow instructions to latest version]' \
+    '--check[Check status only (default behavior)]' \
+    '--dry-run[Preview changes without modifying files]' \
+    '(-f --force)'{-f,--force}'[Skip confirmation prompts]' && ret=0
+
+  return ret
+}
+
+_br__audit() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'record:Append an audit interaction entry'
+        'coordination:Record coordination status rows as bounded audit interactions'
+        'label:Append a label entry referencing an existing interaction'
+        'log:View audit log for an issue'
+        'summary:View audit summary'
+      )
+      _describe -t subcommands 'br audit subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-audit-$line[1]:"
+      case $line[1] in
+        record) _br__audit_record && ret=0 ;;
+        coordination) _br__audit_coordination && ret=0 ;;
+        label) _br__audit_label && ret=0 ;;
+        log) _br__audit_log && ret=0 ;;
+        summary) _br__audit_summary && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__blocked() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--limit[Maximum number of issues to return (default: 50, 0 = unlimited)]:limit: _br__message "limit (number)"' \
+    '--detailed[Include full blocker details in text output]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '*'{-t,--type}'[Filter by issue type (can be repeated)]:type: _br__issue_types' \
+    '*'{-p,--priority}'[Filter by priority (can be repeated, 0-4)]:priority: _br__priorities' \
+    '*'{-l,--label}'[Filter by label (AND logic, can be repeated)]:label: _br__labels' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__capabilities() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--command[Include detailed metadata for one command path, e.g]:command-path: _br__message "command-path"' \
+    '--for[Include detailed metadata for one command path, e.g (alias for --command)]:command-path: _br__message "command-path"' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' && ret=0
+
+  return ret
+}
+
+_br__capacity() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'exempt:Grant an audited issue-specific exemption from one named capacity'
+        'renew:Renew an active exemption'\''s expiry'
+        'revoke:Revoke an active exemption'
+        'exemptions:List exemption state (and optionally the append-only audit history)'
+      )
+      _describe -t subcommands 'br capacity subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-capacity-$line[1]:"
+      case $line[1] in
+        exempt) _br__capacity_exempt && ret=0 ;;
+        renew) _br__capacity_renew && ret=0 ;;
+        revoke) _br__capacity_revoke && ret=0 ;;
+        exemptions) _br__capacity_exemptions && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__changelog() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--since[Start date (RFC3339, YYYY-MM-DD, or relative like +7d)]:since: _br__message "since"' \
+    '--since-tag[Start from git tag date]:since-tag: _br__message "since-tag"' \
+    '--since-commit[Start from git commit date]:since-commit: _br__message "since-commit"' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__close() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-r --reason)'{-r,--reason}'[Close reason]:reason: _br__message "reason"' \
+    '--transition-comment[New comment committed atomically with each close transition]:comment: _br__message "comment"' \
+    '(-f --force)'{-f,--force}'[Close even if blocked by open dependencies]' \
+    '--suggest-next[After closing, return newly unblocked issues (single ID only)]' \
+    '--session[Session ID for tracking]:session: _br__message "session"' \
+    '--robot[Machine-readable output (alias for --json)]' \
+    '--agent-name[Tier 1 attribution: agent name (env: BR_AGENT_NAME)]:name: _br__message "name"' \
+    '--harness[Tier 1 attribution: harness identifier (env: BR_HARNESS)]:harness: _br__message "harness"' \
+    '--model[Tier 1 attribution: model identifier (env: BR_MODEL)]:model: _br__message "model"' \
+    '--bypass-policy[Bypass closure-time policy gates]' \
+    '--bypass-reason[Reason for bypassing policy gates]:reason: _br__message "reason"' \
+    '*:Issue IDs to close (uses last-touched if empty): _br__open_issue_ids' && ret=0
+
+  return ret
+}
+
+_br__comments() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'add:Add a comment to an issue'
+        'list:List comments on an issue'
+      )
+      _describe -t subcommands 'br comments subcommand' subcommands && ret=0
+      _br__issue_ids && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-comments-$line[1]:"
+      case $line[1] in
+        add) _br__comments_add && ret=0 ;;
+        list) _br__comments_list && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__completions() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-o --output)'{-o,--output}'[Output directory (default: stdout)]:output:_files' \
+    ':Shell to generate completions for: _br__enum_shell_type' && ret=0
+
+  return ret
+}
+
+_br__config() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'list:List all available config options'
+        'get:Get a specific config value'
+        'set:Set a config value'
+        'delete:Delete a config value'
+        'unset:Delete a config value (alias for delete)'
+        'edit:Open user config file in $EDITOR'
+        'path:Show config file paths'
+      )
+      _describe -t subcommands 'br config subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-config-$line[1]:"
+      case $line[1] in
+        list) _br__config_list && ret=0 ;;
+        get) _br__config_get && ret=0 ;;
+        set) _br__config_set && ret=0 ;;
+        delete|unset) _br__config_delete && ret=0 ;;
+        edit) _br__config_edit && ret=0 ;;
+        path) _br__config_path && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__coordination() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'status:Show hidden in-progress claims with stale-claim evidence'
+      )
+      _describe -t subcommands 'br coordination subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-coordination-$line[1]:"
+      case $line[1] in
+        status) _br__coordination_status && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__count() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--by[Group counts by field]:by: _br__enum_count_by' \
+    '--by-status[Group by status (alias for --by status)]' \
+    '--by-priority[Group by priority (alias for --by priority)]' \
+    '--by-type[Group by type (alias for --by type)]' \
+    '--by-assignee[Group by assignee (alias for --by assignee)]' \
+    '--by-label[Group by label (alias for --by label)]' \
+    '*--status[Filter by status (repeatable or comma-separated; '\''all'\'' matches every status)]:status: _br__statuses_delim' \
+    '*--type[Filter by issue type (repeatable or comma-separated)]:type: _br__issue_types_delim' \
+    '*--priority[Filter by priority (0-4 or P0-P4; repeatable or comma-separated)]:priority: _br__priorities_delim' \
+    '--assignee[Filter by assignee]:assignee: _br__assignees' \
+    '--unassigned[Only include unassigned issues]' \
+    '--include-closed[Include closed issues; tombstones require --status tombstone]' \
+    '--include-templates[Include template issues]' \
+    '--title-contains[Title contains substring]:title-contains: _br__message "title-contains"' && ret=0
+
+  return ret
+}
+
+_br__create() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--title[Issue title (alternative to positional argument)]:title: _br__message "title"' \
+    '(-t --type)'{-t,--type}'[Issue type (task, bug, feature, etc.)]:type: _br__issue_types' \
+    '--slug[Human-readable slug embedded in the generated ID]:slug: _br__message "slug"' \
+    '(-p --priority)'{-p,--priority}'[Priority (0-4 or P0-P4)]:priority: _br__priorities' \
+    '(-d --description)'{-d,--description}'[Description]:description: _br__message "description"' \
+    '--body[Description (alias for --description)]:description: _br__message "description"' \
+    '--description-file[Read the issue description verbatim from a file (or - for stdin)]:path:_files' \
+    '(-a --assignee)'{-a,--assignee}'[Assign to person]:assignee: _br__assignees' \
+    '--owner[Set owner email]:owner: _br__owners' \
+    '*'{-l,--labels}'[Labels (comma-separated)]:labels: _br__labels_delim' \
+    '--parent[Parent issue ID (creates parent-child dep)]:parent: _br__issue_ids' \
+    '*--deps[Dependencies (format: type:id,type:id)]:deps: _br__deps' \
+    '(-e --estimate)'{-e,--estimate}'[Time estimate in minutes]:estimate: _br__message "estimate (number)"' \
+    '--due[Due date (RFC3339 or relative)]:due: _br__message "due"' \
+    '--defer[Defer until date (RFC3339 or relative)]:defer: _br__message "defer"' \
+    '--external-ref[External reference]:external-ref: _br__message "external-ref"' \
+    '--ephemeral[Mark as ephemeral (not exported to JSONL)]' \
+    '(-s --status)'{-s,--status}'[Initial status (open, deferred, in_progress, closed)]:status: _br__statuses' \
+    '--acceptance-criteria[Acceptance criteria recorded on the initial issue (beads_rust#408)]:acceptance-criteria: _br__message "acceptance-criteria"' \
+    '--acceptance[Acceptance criteria recorded on the initial issue (beads_rust#408) (alias for --acceptance-criteria)]:acceptance-criteria: _br__message "acceptance-criteria"' \
+    '--agent-context[Set the initial agent_context governing-instructions JSON (beads_rust#408)]:agent-context: _br__message "agent-context"' \
+    '--dry-run[Preview without creating]' \
+    '--silent[Output only issue ID]' \
+    '(-f --file)'{-f,--file}'[Create issues from a markdown file (bulk import)]:file:_files' \
+    '--agent-name[Tier 1 attribution: agent name (env: BR_AGENT_NAME)]:name: _br__message "name"' \
+    '--harness[Tier 1 attribution: harness identifier (env: BR_HARNESS)]:harness: _br__message "harness"' \
+    '--model[Tier 1 attribution: model identifier (env: BR_MODEL)]:model: _br__message "model"' \
+    '::Issue title: _br__message "title"' && ret=0
+
+  return ret
+}
+
+_br__defer() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--until[Defer until date/time (e.g., +1h, tomorrow, 2025-01-15)]:until: _br__message "until"' \
+    '--robot[Machine-readable output (alias for --json)]' \
+    '--transition-comment[New comment committed atomically with each defer transition]:comment: _br__message "comment"' \
+    '--agent-name[Tier 1 attribution: agent name (env: BR_AGENT_NAME)]:name: _br__message "name"' \
+    '--harness[Tier 1 attribution: harness identifier (env: BR_HARNESS)]:harness: _br__message "harness"' \
+    '--model[Tier 1 attribution: model identifier (env: BR_MODEL)]:model: _br__message "model"' \
+    '*:Issue IDs to defer: _br__open_issue_ids' && ret=0
+
+  return ret
+}
+
+_br__delete() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--reason[Delete reason (default: "delete")]:reason: _br__message "reason"' \
+    '--from-file[Read IDs from file (one per line, # comments ignored)]:from-file:_files' \
+    '--cascade[Delete dependents recursively]' \
+    '--force[Bypass dependent checks (orphans dependents)]' \
+    '--hard[Prune tombstones from JSONL immediately]' \
+    '--dry-run[Preview only, no changes]' \
+    '*:Issue IDs to delete: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__dep() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'add:Add a dependency: <issue> depends on <depends-on>'
+        'import:Bulk import dependency edges from JSONL'
+        'remove:Remove a dependency'
+        'rm:Remove a dependency (alias for remove)'
+        'list:List dependencies of an issue'
+        'tree:Show dependency tree rooted at issue'
+        'cycles:Detect and report dependency cycles'
+      )
+      _describe -t subcommands 'br dep subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-dep-$line[1]:"
+      case $line[1] in
+        add) _br__dep_add && ret=0 ;;
+        import) _br__dep_import && ret=0 ;;
+        remove|rm) _br__dep_remove && ret=0 ;;
+        list) _br__dep_list && ret=0 ;;
+        tree) _br__dep_tree && ret=0 ;;
+        cycles) _br__dep_cycles && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__doctor() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--repair[Attempt to repair detected issues (rebuilds DB from JSONL)]' \
+    '--fix[Attempt to repair detected issues (rebuilds DB from JSONL) (alias for --repair)]' \
+    '--repair-indexes[REINDEX-only recovery for the partial-index stale-entry class (see beads_rust#288)]' \
+    '--allow-repeated-repair[Allow another JSONL rebuild after prior failed recovery evidence]' \
+    '--dry-run[With --repair, print the planned mutations to stderr without writing anything]' \
+    '--robot-triage[Emit the br.doctor.triage.v1 mega-envelope (summary + findings + planned actions +...]' \
+    '--quick[Fast path for pre-commit / CI: skip the slow detectors (db.recoverable_anomalies,...]' \
+    '*--only[Pass-5 cycle 1: with --repair, only run fixers whose FM identifier matches one of the...]:only: _br__message "only"' \
+    '*--skip[Pass-5 cycle 1: with --repair, skip the listed fixers even when their finding would...]:skip: _br__message "skip"' \
+    '--unsafe-auto-fix[Pass-10 cycle 62: opt-in to fixers that are normally detect-only because the fix is...]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'capabilities:Print the machine-readable br.doctor.capabilities.v1 envelope (exit codes, write...'
+        'robot-docs:Print the paste-ready agent handbook for br doctor'
+        'robot_docs:Print the paste-ready agent handbook for br doctor (hidden alias for robot-docs)'
+        'health:Cheap (<200 ms) one-line liveness summary; exit-code = liveness'
+        'ls:List runs in .doctor/runs/ with run-id, start time, exit code, and action count'
+        'undo:Restore from .doctor/runs/<run-id>/backups/ (or latest)'
+        'migrate-schema:Plan, apply, or undo an explicitly reviewed database schema migration'
+        'explain:Expand a single finding (stub in WP6; full evidence later)'
+      )
+      _describe -t subcommands 'br doctor subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-doctor-$line[1]:"
+      case $line[1] in
+        capabilities) _br__doctor_capabilities && ret=0 ;;
+        robot-docs|robot_docs) _br__doctor_robot_docs && ret=0 ;;
+        health) _br__doctor_health && ret=0 ;;
+        ls) _br__doctor_ls && ret=0 ;;
+        undo) _br__doctor_undo && ret=0 ;;
+        migrate-schema) _br__doctor_migrate_schema && ret=0 ;;
+        explain) _br__doctor_explain && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__epic() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'status:Show status of all epics (progress, eligibility)'
+        'close-eligible:Close epics that are eligible (all children closed)'
+      )
+      _describe -t subcommands 'br epic subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-epic-$line[1]:"
+      case $line[1] in
+        status) _br__epic_status && ret=0 ;;
+        close-eligible) _br__epic_close_eligible && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__gate() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'report:Record a gate result for an issue (external systems / reviewers report here)'
+        'list:List recorded gate results and required-gate status for an issue'
+      )
+      _describe -t subcommands 'br gate subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-gate-$line[1]:"
+      case $line[1] in
+        report) _br__gate_report && ret=0 ;;
+        list) _br__gate_list && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__graph() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--all[Show graph for all open/in_progress/blocked issues (connected components)]' \
+    '--dependencies[Walk dependencies instead of dependents: what is blocking this issue]' \
+    '--compact[One line per issue (compact output)]' \
+    '--dot[Emit Graphviz DOT notation (pipe to dot -Tsvg); overrides text/JSON rendering]' \
+    '::Issue ID (root of the dependents graph): _br__open_issue_ids' && ret=0
+
+  return ret
+}
+
+_br__history() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'list:List history backups'
+        'diff:Diff backup against current JSONL'
+        'restore:Restore from backup'
+        'prune:Prune old backups'
+      )
+      _describe -t subcommands 'br history subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-history-$line[1]:"
+      case $line[1] in
+        list) _br__history_list && ret=0 ;;
+        diff) _br__history_diff && ret=0 ;;
+        restore) _br__history_restore && ret=0 ;;
+        prune) _br__history_prune && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__info() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--schema[Include schema details]' \
+    '--projections[Include graph projection/cache health details]' \
+    '--whats-new[Show recent changes and exit]' \
+    '--thanks[Show acknowledgements and exit]' && ret=0
+
+  return ret
+}
+
+_br__init() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--prefix[Issue ID prefix (e.g., "bd")]:prefix: _br__message "prefix"' \
+    '--force[Overwrite existing DB]' \
+    '--backend[Backend type (ignored, always sqlite)]:backend: _br__message "backend"' && ret=0
+
+  return ret
+}
+
+_br__label() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'add:Add label(s) to issue(s)'
+        'remove:Remove label(s) from issue(s)'
+        'list:List labels for an issue or all unique labels'
+        'list-all:List all unique labels with counts'
+        'rename:Rename a label across all issues'
+      )
+      _describe -t subcommands 'br label subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-label-$line[1]:"
+      case $line[1] in
+        add) _br__label_add && ret=0 ;;
+        remove) _br__label_remove && ret=0 ;;
+        list) _br__label_list && ret=0 ;;
+        list-all) _br__label_list_all && ret=0 ;;
+        rename) _br__label_rename && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__lint() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-t --type)'{-t,--type}'[Filter by issue type (bug, task, feature, epic)]:type: _br__issue_types_standard' \
+    '(-s --status)'{-s,--status}'[Filter by status (default: open, use '\''all'\'' for all)]:status: _br__statuses_all' \
+    '*:Issue IDs to lint (defaults to open issues): _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '*'{-s,--status}'[Filter by status (can be repeated; '\''all'\'' matches every status)]:status: _br__statuses' \
+    '*'{-t,--type}'[Filter by issue type (can be repeated)]:type: _br__issue_types' \
+    '--assignee[Filter by assignee]:assignee: _br__assignees' \
+    '--unassigned[Filter for unassigned issues only]' \
+    '*--id[Filter by specific IDs (can be repeated)]:id: _br__issue_ids' \
+    '*'{-l,--label}'[Filter by label (AND logic, can be repeated)]:label: _br__labels' \
+    '*--label-any[Filter by label (OR logic, can be repeated)]:label-any: _br__labels' \
+    '*'{-p,--priority}'[Filter by priority (can be repeated)]:priority: _br__priorities' \
+    '--priority-min[Filter by minimum priority (0=critical, 4=backlog)]:priority-min: _br__priorities_numeric' \
+    '--priority-max[Filter by maximum priority]:priority-max: _br__priorities_numeric' \
+    '--title-contains[Title contains substring]:title-contains: _br__message "title-contains"' \
+    '--desc-contains[Description contains substring]:desc-contains: _br__message "desc-contains"' \
+    '--notes-contains[Notes contains substring]:notes-contains: _br__message "notes-contains"' \
+    '(-a --all)'{-a,--all}'[Include closed issues (default excludes closed)]' \
+    '--limit[Maximum number of results (0 = unlimited; default: unlimited — the full work surface)]:limit: _br__message "limit (number)"' \
+    '--offset[Number of results to skip (for pagination, default: 0)]:offset: _br__message "offset (number)"' \
+    '--sort[Sort field (priority, created_at, updated_at, title)]:sort: _br__sort_keys' \
+    '(-r --reverse)'{-r,--reverse}'[Reverse sort order]' \
+    '--deferred[Include deferred issues]' \
+    '--overdue[Filter for overdue issues]' \
+    '--long[Use long output format]' \
+    '--pretty[Use tree/pretty output format]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '--format[Output format (text, json, csv, toon)]:format: _br__enum_output_format' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--fields[CSV fields to include (comma-separated)]:fields: _br__csv_fields' && ret=0
+
+  return ret
+}
+
+_br__orphans() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--details[Show detailed commit info]' \
+    '--fix[Prompt to fix orphans]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__q() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-p --priority)'{-p,--priority}'[Priority (0-4 or P0-P4)]:priority: _br__priorities' \
+    '(-t --type)'{-t,--type}'[Issue type (task, bug, feature, etc.)]:type: _br__issue_types' \
+    '*'{-l,--labels}'[Labels to apply (repeatable, comma-separated allowed)]:labels: _br__labels' \
+    '(-d --description)'{-d,--description}'[Description]:description: _br__message "description"' \
+    '--body[Description (alias for --description)]:description: _br__message "description"' \
+    '--parent[Parent issue ID (creates parent-child dep)]:parent: _br__issue_ids' \
+    '(-e --estimate)'{-e,--estimate}'[Time estimate in minutes]:estimate: _br__message "estimate (number)"' \
+    '*:Issue title words: _br__message "title"' && ret=0
+
+  return ret
+}
+
+_br__query() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'save:Save current filter set as a named query'
+        'run:Run a saved query'
+        'list:List all saved queries'
+        'delete:Delete a saved query'
+      )
+      _describe -t subcommands 'br query subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-query-$line[1]:"
+      case $line[1] in
+        save) _br__query_save && ret=0 ;;
+        run) _br__query_run && ret=0 ;;
+        list) _br__query_list && ret=0 ;;
+        delete) _br__query_delete && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__ready() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--limit[Maximum number of issues to return (0 = unlimited; default: unlimited — the full ready...]:limit: _br__message "limit (number)"' \
+    '--assignee[Filter by assignee (no value = current actor)]:assignee: _br__assignees' \
+    '--unassigned[Show only unassigned issues]' \
+    '*'{-l,--label}'[Filter by label (AND logic, can be repeated)]:label: _br__labels' \
+    '*--label-any[Filter by label (OR logic, can be repeated)]:label-any: _br__labels' \
+    '*'{-t,--type}'[Filter by issue type (can be repeated)]:type: _br__issue_types' \
+    '*'{-p,--priority}'[Filter by priority (can be repeated, 0-4)]:priority: _br__priorities' \
+    '--sort[Sort policy: hybrid (default), priority, oldest]:sort: _br__enum_sort_policy' \
+    '--include-deferred[Include deferred issues]' \
+    '--parent[Filter to children of this parent issue ID]:parent: _br__issue_ids' \
+    '(-r --recursive)'{-r,--recursive}'[Include all descendants (grandchildren, etc.) with --parent]' \
+    '--epic[Scope to an epic: ready issues anywhere beneath the given epic/parent ID (sugar for...]:epic: _br__issue_ids' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__reopen() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-r --reason)'{-r,--reason}'[Reason for reopening (stored as a comment)]:reason: _br__message "reason"' \
+    '--robot[Machine-readable output (alias for --json)]' \
+    '--agent-name[Tier 1 attribution: agent name (env: BR_AGENT_NAME)]:name: _br__message "name"' \
+    '--harness[Tier 1 attribution: harness identifier (env: BR_HARNESS)]:harness: _br__message "harness"' \
+    '--model[Tier 1 attribution: model identifier (env: BR_MODEL)]:model: _br__message "model"' \
+    '*:Issue IDs to reopen (uses last-touched if empty): _br__closed_issue_ids' && ret=0
+
+  return ret
+}
+
+_br__robot_docs() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'guide:Print the concise agent guide'
+      )
+      _describe -t subcommands 'br robot-docs subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-robot-docs-$line[1]:"
+      case $line[1] in
+        guide) _br__robot_docs_guide && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__scheduler() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--limit[Maximum recommendations to return (0 = unlimited; default: unlimited — every scored...]:limit: _br__message "limit (number)"' \
+    '--candidate-limit[Maximum ready candidates to score before truncating (default: 512, 0 = unlimited)]:candidate-limit: _br__message "candidate-limit (number)"' \
+    '--stale-claim-hours[Non-negative claim age threshold, in hours, for stale-claim evidence]:stale-claim-hours: _br__message "stale-claim-hours (number)"' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__schema() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    ':Which schema to emit: _br__enum_schema_target' && ret=0
+
+  return ret
+}
+
+_br__search() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '*'{-s,--status}'[Filter by status (can be repeated; '\''all'\'' matches every status)]:status: _br__statuses' \
+    '*'{-t,--type}'[Filter by issue type (can be repeated)]:type: _br__issue_types' \
+    '--assignee[Filter by assignee]:assignee: _br__assignees' \
+    '--unassigned[Filter for unassigned issues only]' \
+    '*--id[Filter by specific IDs (can be repeated)]:id: _br__issue_ids' \
+    '*'{-l,--label}'[Filter by label (AND logic, can be repeated)]:label: _br__labels' \
+    '*--label-any[Filter by label (OR logic, can be repeated)]:label-any: _br__labels' \
+    '*'{-p,--priority}'[Filter by priority (can be repeated)]:priority: _br__priorities' \
+    '--priority-min[Filter by minimum priority (0=critical, 4=backlog)]:priority-min: _br__priorities_numeric' \
+    '--priority-max[Filter by maximum priority]:priority-max: _br__priorities_numeric' \
+    '--title-contains[Title contains substring]:title-contains: _br__message "title-contains"' \
+    '--desc-contains[Description contains substring]:desc-contains: _br__message "desc-contains"' \
+    '--notes-contains[Notes contains substring]:notes-contains: _br__message "notes-contains"' \
+    '(-a --all)'{-a,--all}'[Include closed issues (default excludes closed)]' \
+    '--limit[Maximum number of results (0 = unlimited; default: unlimited — the full work surface)]:limit: _br__message "limit (number)"' \
+    '--offset[Number of results to skip (for pagination, default: 0)]:offset: _br__message "offset (number)"' \
+    '--sort[Sort field (priority, created_at, updated_at, title)]:sort: _br__sort_keys' \
+    '(-r --reverse)'{-r,--reverse}'[Reverse sort order]' \
+    '--deferred[Include deferred issues]' \
+    '--overdue[Filter for overdue issues]' \
+    '--long[Use long output format]' \
+    '--pretty[Use tree/pretty output format]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '--format[Output format (text, json, csv, toon)]:format: _br__enum_output_format' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--fields[CSV fields to include (comma-separated)]:fields: _br__csv_fields' \
+    ':Search query: _br__message "query"' && ret=0
+
+  return ret
+}
+
+_br__show() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--wrap[Soft-wrap long lines to the terminal width in text output]' \
+    '--no-wrap[Disable soft-wrapping; let long description/comment lines extend past the panel width...]' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '*:Issue IDs: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__stale() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--days[Minimum days since last update]:days: _br__message "days (number)"' \
+    '*--status[Filter by status (repeatable or comma-separated)]:status: _br__statuses_delim' && ret=0
+
+  return ret
+}
+
+_br__stats() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--by-type[Show breakdown by issue type]' \
+    '--by-priority[Show breakdown by priority]' \
+    '--by-assignee[Show breakdown by assignee]' \
+    '--by-label[Show breakdown by label]' \
+    '--activity[Include recent activity stats explicitly (default unless --no-activity)]' \
+    '--no-activity[Skip recent activity stats (for performance)]' \
+    '--activity-hours[Activity window in hours (default: 24)]:activity-hours: _br__message "activity-hours (number)"' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__status() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--by-type[Show breakdown by issue type]' \
+    '--by-priority[Show breakdown by priority]' \
+    '--by-assignee[Show breakdown by assignee]' \
+    '--by-label[Show breakdown by label]' \
+    '--activity[Include recent activity stats explicitly (default unless --no-activity)]' \
+    '--no-activity[Skip recent activity stats (for performance)]' \
+    '--activity-hours[Activity window in hours (default: 24)]:activity-hours: _br__message "activity-hours (number)"' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__sync() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--flush-only[Export database to JSONL (DB → .beads/issues.jsonl)]' \
+    '--import-only[Import JSONL to database (JSONL → DB)]' \
+    '--merge[Perform a 3-way merge (Base + Local DB + Remote JSONL)]' \
+    '--reconcile[Additively reconcile JSONL into the database (JSONL → DB, lossless)]' \
+    '--dry-run[Preview the reconcile plan without mutating anything]' \
+    '--status[Show sync status (read-only)]' \
+    '--witness[Emit deterministic JSONL chunk witness (read-only)]' \
+    '--reconcile-additive[Plan a lossless additive JSONL-to-database reconciliation]' \
+    '--apply[Apply a conflict-free additive reconciliation plan transactionally]' \
+    '--expect-plan-sha256[SHA-256 from the reviewed additive-reconciliation dry-run receipt]:sha256: _br__message "sha256"' \
+    '*--resolve-source-id[Resolve one reviewed shared scalar-row conflict in favor of JSONL]:issue-id: _br__message "issue-id"' \
+    '--witness-chunk-lines[Lines per JSONL witness chunk]:lines: _br__message "lines (number)"' \
+    '--witness-parallelism[Parallel worker cap for read-only JSONL witness hashing and work planning]:workers: _br__message "workers (number)"' \
+    '--export-parallelism[Parallel worker cap for JSONL export line preparation]:workers: _br__message "workers (number)"' \
+    '(-f --force)'{-f,--force}'[Override safety guards (use with caution!)]' \
+    '--force-db[Resolve sync --merge conflicts by keeping the local SQLite database version]' \
+    '--force-jsonl[Resolve sync --merge conflicts by keeping the JSONL file version]' \
+    '--allow-external-jsonl[Allow using a JSONL path outside the .beads directory]' \
+    '--manifest[Write manifest file with export summary]' \
+    '--error-policy[Export error policy: strict (default), best-effort, partial, required-core]:error-policy: _br__export_error_policies' \
+    '--orphans[Orphan handling mode: strict (default), resurrect, skip, allow]:orphans: _br__orphan_modes' \
+    '--rename-prefix[Rename issues with wrong prefix to expected prefix during import]' \
+    '--rebuild[Rebuild the database from JSONL (removes orphaned DB entries)]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__undefer() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--robot[Machine-readable output (alias for --json)]' \
+    '--transition-comment[New comment committed atomically with each undefer transition]:comment: _br__message "comment"' \
+    '--agent-name[Tier 1 attribution: agent name (env: BR_AGENT_NAME)]:name: _br__message "name"' \
+    '--harness[Tier 1 attribution: harness identifier (env: BR_HARNESS)]:harness: _br__message "harness"' \
+    '--model[Tier 1 attribution: model identifier (env: BR_MODEL)]:model: _br__message "model"' \
+    '*:Issue IDs to undefer: _br__open_issue_ids' && ret=0
+
+  return ret
+}
+
+_br__update() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--title[Update title]:title: _br__message "title"' \
+    '(-d --description)'{-d,--description}'[Update description]:description: _br__message "description"' \
+    '--body[Update description (alias for --description)]:description: _br__message "description"' \
+    '--description-file[Set the issue description verbatim from a file (or - for stdin), replacing the...]:path:_files' \
+    '--design[Update design notes]:design: _br__message "design"' \
+    '--acceptance-criteria[Update acceptance criteria]:acceptance-criteria: _br__message "acceptance-criteria"' \
+    '--acceptance[Update acceptance criteria (alias for --acceptance-criteria)]:acceptance-criteria: _br__message "acceptance-criteria"' \
+    '--notes[Update additional notes]:notes: _br__message "notes"' \
+    '--transition-comment[New comment bound atomically to the requested status transition]:comment: _br__message "comment"' \
+    '(-s --status)'{-s,--status}'[Change status]:status: _br__statuses' \
+    '(-p --priority)'{-p,--priority}'[Change priority (0-4 or P0-P4)]:priority: _br__priorities' \
+    '(-t --type)'{-t,--type}'[Change issue type]:type: _br__issue_types' \
+    '--assignee[Assign to user (empty string clears)]:assignee: _br__assignees' \
+    '--owner[Set owner (empty string clears)]:owner: _br__owners' \
+    '--claim[Atomic claim (assignee=actor + status=in_progress)]' \
+    '--force[Force update even if issue is blocked]' \
+    '--due[Set due date (empty string clears)]:due: _br__message "due"' \
+    '--defer[Set defer until date (empty string clears)]:defer: _br__message "defer"' \
+    '--estimate[Set time estimate]:estimate: _br__message "estimate (number)"' \
+    '*--add-label[Add label(s)]:add-label: _br__labels' \
+    '*--remove-label[Remove label(s)]:remove-label: _br__labels' \
+    '*--set-labels[Set label(s) (replaces all) - repeatable like bd]:set-labels: _br__labels_delim' \
+    '--labels[Set label(s) (replaces all) - repeatable like bd (alias for --set-labels)]:set-labels: _br__labels_delim' \
+    '--parent[Reparent to new parent (empty string removes parent)]:parent: _br__issue_ids' \
+    '--external-ref[Set external reference]:external-ref: _br__message "external-ref"' \
+    '--source-repo[Override source_repo (display name; usually the repo'\''s basename, e.g]:source-repo: _br__message "source-repo"' \
+    '--source-repo-path[Override source_repo_path (absolute path to the directory containing the .beads...]:source-repo-path: _br__message "source-repo-path"' \
+    '--agent-context[Set the agent_context governing-instructions JSON (beads_rust#297)]:agent-context: _br__message "agent-context"' \
+    '--session[Set closed_by_session when closing]:session: _br__message "session"' \
+    '--agent-name[Tier 1 attribution: agent name (env: BR_AGENT_NAME)]:name: _br__message "name"' \
+    '--harness[Tier 1 attribution: harness identifier (env: BR_HARNESS)]:harness: _br__message "harness"' \
+    '--model[Tier 1 attribution: model identifier (env: BR_MODEL)]:model: _br__message "model"' \
+    '*:Issue IDs to update: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__upgrade() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--check[Check only, don'\''t install]' \
+    '--force[Force reinstall current version]' \
+    '--version[Install specific version (e.g., "0.2.0")]:version: _br__message "version"' \
+    '--dry-run[Show what would happen without making changes]' && ret=0
+
+  return ret
+}
+
+_br__vcs_status() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--jsonl[Inspect this JSONL instead of the configured workspace export]:path:_files' \
+    '--allow-external-jsonl[Permit an explicitly selected JSONL outside the workspace metadata directory]' \
+    '--timeout-ms[Shared execution budget for source capture, Git probes, and raw hashing]:milliseconds: _br__message "milliseconds (number)"' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__version() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-c --check)'{-c,--check}'[Check if a newer version is available (exit 0=up-to-date, 1=update-available)]' \
+    '(-s --short)'{-s,--short}'[Output only the version number (for scripts)]' && ret=0
+
+  return ret
+}
+
+_br__where() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' && ret=0
+
+  return ret
+}
+
+_br__audit_coordination() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--stdin[Read a coordination status JSON object or JSONL stream from stdin]' \
+    '--command[Command that produced the coordination snapshot]:command: _br__message "command"' && ret=0
+
+  return ret
+}
+
+_br__audit_label() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--label[Label value (e.g]:label: _br__labels' \
+    '--reason[Reason for label]:reason: _br__message "reason"' \
+    ':Parent entry ID: _br__message "entry-id"' && ret=0
+
+  return ret
+}
+
+_br__audit_log() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Issue ID: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__audit_record() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--kind[Entry kind (e.g]:kind: _br__message "kind"' \
+    '--issue-id[Related issue ID (bd-...)]:issue-id: _br__issue_ids' \
+    '--model[Model name (llm_call)]:model: _br__message "model"' \
+    '--prompt[Prompt text (llm_call)]:prompt: _br__message "prompt"' \
+    '--response[Response text (llm_call)]:response: _br__message "response"' \
+    '--tool-name[Tool name (tool_call)]:tool-name: _br__message "tool-name"' \
+    '--exit-code[Exit code (tool_call)]:exit-code: _br__message "exit-code (number)"' \
+    '--error[Error string (llm_call/tool_call)]:error: _br__message "error"' \
+    '--stdin[Read a JSON object from stdin (must match audit.Entry schema)]' && ret=0
+
+  return ret
+}
+
+_br__audit_summary() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--days[Show summary for last N days (default: 30)]:days: _br__message "days (number)"' && ret=0
+
+  return ret
+}
+
+_br__capacity_exempt() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--status[Named status capacity to exempt the issue from (e.g]:status: _br__statuses' \
+    '--group[Named capacity group to exempt the issue from]:group: _br__message "group"' \
+    '--provider[Approving provider; must be listed in workflow.capacity.exemptions.providers]:provider: _br__message "provider"' \
+    '--reason[Mandatory rationale recorded with the grant]:reason: _br__message "reason"' \
+    '--expires[Expiration: RFC3339, YYYY-MM-DD, or relative (+7d)]:when: _br__message "when"' \
+    '--robot[Emit machine-readable JSON]' \
+    ':Issue the exemption applies to (one issue, one named capacity): _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__capacity_exemptions() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--history[Include the append-only audit history]' \
+    '--robot[Emit machine-readable JSON]' \
+    '::Restrict to one issue (all exemptions when omitted): _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__capacity_renew() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--status[Named status capacity of the exemption]:status: _br__statuses' \
+    '--group[Named capacity group of the exemption]:group: _br__message "group"' \
+    '--provider[Approving provider; must be listed in workflow.capacity.exemptions.providers]:provider: _br__message "provider"' \
+    '--expires[New expiration: RFC3339, YYYY-MM-DD, or relative (+7d)]:when: _br__message "when"' \
+    '--reason[Optional note recorded with the renewal]:reason: _br__message "reason"' \
+    '--robot[Emit machine-readable JSON]' \
+    ':Issue whose exemption to renew: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__capacity_revoke() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--status[Named status capacity of the exemption]:status: _br__statuses' \
+    '--group[Named capacity group of the exemption]:group: _br__message "group"' \
+    '--provider[Revoking provider, recorded for audit (not required to be authorized)]:provider: _br__message "provider"' \
+    '--reason[Optional note recorded with the revocation]:reason: _br__message "reason"' \
+    '--robot[Emit machine-readable JSON]' \
+    ':Issue whose exemption to revoke: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__comments_add() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-f --file)'{-f,--file}'[Read comment text from file]:file:_files' \
+    '--author[Override author (defaults to actor/env/user)]:author: _br__message "author"' \
+    '(-m --message)'{-m,--message}'[Comment text (alternative flag)]:message: _br__message "message"' \
+    '--content[Comment text (alternative flag) (alias for --message)]:message: _br__message "message"' \
+    ':Issue ID: _br__issue_ids' \
+    '*:Comment text: _br__message "text"' && ret=0
+
+  return ret
+}
+
+_br__comments_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    ':Issue ID: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__config_delete() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Config key: _br__config_keys' && ret=0
+
+  return ret
+}
+
+_br__config_edit() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' && ret=0
+
+  return ret
+}
+
+_br__config_get() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Config key: _br__config_keys' && ret=0
+
+  return ret
+}
+
+_br__config_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--project[Show only project config]' \
+    '--user[Show only user config]' && ret=0
+
+  return ret
+}
+
+_br__config_path() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' && ret=0
+
+  return ret
+}
+
+_br__config_set() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '*:Config key=value pair (or key value): _br__config_key_assignments' && ret=0
+
+  return ret
+}
+
+_br__coordination_status() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--owner-kind[Assumed owner kind for current claims when no snapshot supplies owner metadata]:owner-kind: _br__enum_coordination_owner_kind_arg' \
+    '--comments[Number of latest comments to include per claim]:comments: _br__message "comments (number)"' \
+    '--reservations[Offline Agent Mail reservation snapshot file (JSON array, wrapper object, or JSONL)]:reservations:_files' \
+    '--agents[Offline Agent Mail agent snapshot file (JSON array, wrapper object, or JSONL)]:agents:_files' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--robot[Machine-readable output (alias for --json)]' && ret=0
+
+  return ret
+}
+
+_br__dep_add() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-t --type)'{-t,--type}'[Dependency type (blocks, parent-child, related, etc.)]:type: _br__dep_types' \
+    '--metadata[Optional JSON metadata]:metadata: _br__message "metadata"' \
+    ':Issue ID (the one that will depend on something): _br__issue_ids' \
+    ':Target issue ID (the one being depended on): _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__dep_cycles() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--blocking-only[Only check blocking dependency types]' \
+    '--include-closed[Include archived cycles where every issue is closed or tombstoned]' && ret=0
+
+  return ret
+}
+
+_br__dep_import() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--robot[Machine-readable output (alias for --json)]' \
+    ':JSONL file containing edge objects or issue records with dependencies:_files' && ret=0
+
+  return ret
+}
+
+_br__dep_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--direction[Direction: down (what issue depends on), up (what depends on issue), both]:direction: _br__enum_dep_direction' \
+    '(-t --type)'{-t,--type}'[Filter by dependency type]:type: _br__dep_types' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' \
+    ':Issue ID: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__dep_remove() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Issue ID: _br__issue_ids' \
+    ':Target issue ID to remove dependency to: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__dep_tree() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-d --direction)'{-d,--direction}'[Tree direction (default: down)]:direction: _br__enum_dep_direction' \
+    '--max-depth[Maximum depth (default: 10)]:max-depth: _br__message "max-depth (number)"' \
+    '--format[Output format: text, mermaid]:format: _br__dep_tree_formats' \
+    ':Issue ID (root of tree): _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__doctor_capabilities() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--format[Output format: json (default for machine readers) or text]:format: _br__enum_output_format_basic' \
+    '--command[Optional fixer/detector id filter — reserved for future extension; currently a passthrough]:command: _br__message "command"' && ret=0
+
+  return ret
+}
+
+_br__doctor_explain() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--json[Emit JSON instead of text]' \
+    ':Finding id (e.g: _br__message "finding-id"' && ret=0
+
+  return ret
+}
+
+_br__doctor_health() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--json[Emit JSON instead of the one-line text summary]' && ret=0
+
+  return ret
+}
+
+_br__doctor_ls() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--json[Emit a JSON array (br.doctor.runs_list.v1) instead of a text table]' && ret=0
+
+  return ret
+}
+
+_br__doctor_migrate_schema() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '1:subcommand:->subcommand' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    subcommand)
+      local -a subcommands
+      subcommands=(
+        'plan:Inspect the live database and emit a token bound to its exact file-family state'
+        'apply:Apply the reviewed migration only when the live state still matches a plan token'
+        'undo:Restore the exact pre-migration database family from a completed run'
+      )
+      _describe -t subcommands 'br doctor migrate-schema subcommand' subcommands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-doctor-migrate-schema-$line[1]:"
+      case $line[1] in
+        plan) _br__doctor_migrate_schema_plan && ret=0 ;;
+        apply) _br__doctor_migrate_schema_apply && ret=0 ;;
+        undo) _br__doctor_migrate_schema_undo && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br__doctor_robot_docs() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--format[Output format: text (Markdown) is default; json wraps the handbook in an envelope for...]:format: _br__enum_output_format_basic' && ret=0
+
+  return ret
+}
+
+_br__doctor_undo() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--dry-run[Print the restore plan; do not touch disk]' \
+    '--json[Emit a JSON envelope describing the restore]' \
+    ':Run identifier to restore: _br__message "run-id"' && ret=0
+
+  return ret
+}
+
+_br__epic_close_eligible() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--dry-run[Preview only, no changes]' \
+    '--transition-comment[New comment committed atomically with every eligible epic close]:comment: _br__message "comment"' && ret=0
+
+  return ret
+}
+
+_br__epic_status() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--eligible-only[Only show epics eligible for closure]' && ret=0
+
+  return ret
+}
+
+_br__gate_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--robot[Emit machine-readable JSON]' \
+    ':Issue ID whose gate results to show: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__gate_report() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--gate[Gate name (e.g]:gate: _br__message "gate"' \
+    '--provider[Reporting provider (e.g]:provider: _br__message "provider"' \
+    '--status[Result status: pass or fail]:status: _br__enum_gate_status' \
+    '--to[Target status this verdict is intended to authorize]:status: _br__statuses' \
+    '--note[Optional free-form note recorded with the result]:note: _br__message "note"' \
+    '--robot[Emit machine-readable JSON]' \
+    ':Issue ID to record the gate result against: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__history_diff() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Backup filename (e.g: _br__message "file"' && ret=0
+
+  return ret
+}
+
+_br__history_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' && ret=0
+
+  return ret
+}
+
+_br__history_prune() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--keep[Number of backups to keep (default: 100)]:keep: _br__message "keep (number)"' \
+    '--older-than[Remove backups older than N days]:older-than: _br__message "older-than (number)"' && ret=0
+
+  return ret
+}
+
+_br__history_restore() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-f --force)'{-f,--force}'[Force overwrite]' \
+    ':Backup filename: _br__message "file"' && ret=0
+
+  return ret
+}
+
+_br__label_add() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-l --label)'{-l,--label}'[Label to add]:label: _br__labels' \
+    '*:Issue ID(s) to add label to: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__label_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '::Issue ID (optional - if omitted, lists all unique labels): _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__label_list_all() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' && ret=0
+
+  return ret
+}
+
+_br__label_remove() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-l --label)'{-l,--label}'[Label to remove]:label: _br__labels' \
+    '*:Issue ID(s) to remove label from: _br__issue_ids' && ret=0
+
+  return ret
+}
+
+_br__label_rename() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Current label name: _br__labels' \
+    ':New label name: _br__message "new-name"' && ret=0
+
+  return ret
+}
+
+_br__query_delete() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    ':Name of the saved query to delete: _br__saved_queries' && ret=0
+
+  return ret
+}
+
+_br__query_list() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' && ret=0
+
+  return ret
+}
+
+_br__query_run() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '*'{-s,--status}'[Filter by status (can be repeated; '\''all'\'' matches every status)]:status: _br__statuses' \
+    '*'{-t,--type}'[Filter by issue type (can be repeated)]:type: _br__issue_types' \
+    '--assignee[Filter by assignee]:assignee: _br__assignees' \
+    '--unassigned[Filter for unassigned issues only]' \
+    '*--id[Filter by specific IDs (can be repeated)]:id: _br__issue_ids' \
+    '*'{-l,--label}'[Filter by label (AND logic, can be repeated)]:label: _br__labels' \
+    '*--label-any[Filter by label (OR logic, can be repeated)]:label-any: _br__labels' \
+    '*'{-p,--priority}'[Filter by priority (can be repeated)]:priority: _br__priorities' \
+    '--priority-min[Filter by minimum priority (0=critical, 4=backlog)]:priority-min: _br__priorities_numeric' \
+    '--priority-max[Filter by maximum priority]:priority-max: _br__priorities_numeric' \
+    '--title-contains[Title contains substring]:title-contains: _br__message "title-contains"' \
+    '--desc-contains[Description contains substring]:desc-contains: _br__message "desc-contains"' \
+    '--notes-contains[Notes contains substring]:notes-contains: _br__message "notes-contains"' \
+    '(-a --all)'{-a,--all}'[Include closed issues (default excludes closed)]' \
+    '--limit[Maximum number of results (0 = unlimited; default: unlimited — the full work surface)]:limit: _br__message "limit (number)"' \
+    '--offset[Number of results to skip (for pagination, default: 0)]:offset: _br__message "offset (number)"' \
+    '--sort[Sort field (priority, created_at, updated_at, title)]:sort: _br__sort_keys' \
+    '(-r --reverse)'{-r,--reverse}'[Reverse sort order]' \
+    '--deferred[Include deferred issues]' \
+    '--overdue[Filter for overdue issues]' \
+    '--long[Use long output format]' \
+    '--pretty[Use tree/pretty output format]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '--format[Output format (text, json, csv, toon)]:format: _br__enum_output_format' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--fields[CSV fields to include (comma-separated)]:fields: _br__csv_fields' \
+    ':Name of the saved query to run: _br__saved_queries' && ret=0
+
+  return ret
+}
+
+_br__query_save() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(-d --description)'{-d,--description}'[Optional description]:description: _br__message "description"' \
+    '*'{-s,--status}'[Filter by status (can be repeated; '\''all'\'' matches every status)]:status: _br__statuses' \
+    '*'{-t,--type}'[Filter by issue type (can be repeated)]:type: _br__issue_types' \
+    '--assignee[Filter by assignee]:assignee: _br__assignees' \
+    '--unassigned[Filter for unassigned issues only]' \
+    '*--id[Filter by specific IDs (can be repeated)]:id: _br__issue_ids' \
+    '*'{-l,--label}'[Filter by label (AND logic, can be repeated)]:label: _br__labels' \
+    '*--label-any[Filter by label (OR logic, can be repeated)]:label-any: _br__labels' \
+    '*'{-p,--priority}'[Filter by priority (can be repeated)]:priority: _br__priorities' \
+    '--priority-min[Filter by minimum priority (0=critical, 4=backlog)]:priority-min: _br__priorities_numeric' \
+    '--priority-max[Filter by maximum priority]:priority-max: _br__priorities_numeric' \
+    '--title-contains[Title contains substring]:title-contains: _br__message "title-contains"' \
+    '--desc-contains[Description contains substring]:desc-contains: _br__message "desc-contains"' \
+    '--notes-contains[Notes contains substring]:notes-contains: _br__message "notes-contains"' \
+    '(-a --all)'{-a,--all}'[Include closed issues (default excludes closed)]' \
+    '--limit[Maximum number of results (0 = unlimited; default: unlimited — the full work surface)]:limit: _br__message "limit (number)"' \
+    '--offset[Number of results to skip (for pagination, default: 0)]:offset: _br__message "offset (number)"' \
+    '--sort[Sort field (priority, created_at, updated_at, title)]:sort: _br__sort_keys' \
+    '(-r --reverse)'{-r,--reverse}'[Reverse sort order]' \
+    '--deferred[Include deferred issues]' \
+    '--overdue[Filter for overdue issues]' \
+    '--long[Use long output format]' \
+    '--pretty[Use tree/pretty output format]' \
+    '--wrap[Wrap long lines instead of truncating in text output]' \
+    '--format[Output format (text, json, csv, toon)]:format: _br__enum_output_format' \
+    '--stats[Show token savings stats when using TOON output]' \
+    '--fields[CSV fields to include (comma-separated)]:fields: _br__csv_fields' \
+    ':Name for the saved query: _br__message "name"' && ret=0
+
+  return ret
+}
+
+_br__robot_docs_guide() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--format[Output format (text, json, toon)]:format: _br__enum_output_format_basic' \
+    '--stats[Show token savings stats when using TOON output]' && ret=0
+
+  return ret
+}
+
+_br__doctor_migrate_schema_apply() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--plan-token[Exact token emitted by migrate-schema plan]:plan-token: _br__message "plan-token"' \
+    '--json[Emit the machine-readable completion receipt]' && ret=0
+
+  return ret
+}
+
+_br__doctor_migrate_schema_plan() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--json[Emit the machine-readable receipt]' && ret=0
+
+  return ret
+}
+
+_br__doctor_migrate_schema_undo() {
+  local ret=1
+
+  _arguments -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '--dry-run[Verify and print the restore plan without touching the database family]' \
+    '--json[Emit the machine-readable restore receipt]' \
+    ':Migration run identifier emitted by migrate-schema apply: _br__message "run-id"' && ret=0
+
+  return ret
+}
+
+_br() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  # Snapshot the untouched command line before _arguments rewrites $words,
+  # so _br__clap_candidates can ask br what belongs at the real cursor slot.
+  local -a _br_clap_words
+  local _br_clap_index _br_clap_cmd
+  _br_clap_words=( "${words[@]}" )
+  _br_clap_index=$(( CURRENT - 1 ))
+  _br_clap_cmd=${words[1]:-br}
+
+  _arguments -C -s -S \
+    "${_br_global_options[@]}" \
+    '(- : *)'{-h,--help}'[Print help]' \
+    '(- : *)'{-V,--version}'[Print version]' \
+    '1:command:->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'agents:Manage AGENTS.md workflow instructions'
+        'audit:Record and label agent interactions (append-only JSONL)'
+        'blocked:List blocked issues'
+        'capabilities:Describe br'\''s machine-readable contracts and safety guarantees'
+        'capacity:Workflow capacity management: audited issue-specific exemptions (GitHub #384)'
+        'changelog:Generate changelog from closed issues'
+        'close:Close an issue'
+        'comments:Manage comments'
+        'comment:Manage comments (hidden alias for comments)'
+        'completions:Generate shell completions'
+        'completion:Generate shell completions (hidden alias for completions)'
+        'config:Configuration management'
+        'coordination:Diagnose swarm coordination state without mutating claims'
+        'coord:Diagnose swarm coordination state without mutating claims (hidden alias for coordination)'
+        'count:Count issues with optional grouping'
+        'create:Create a new issue'
+        'defer:Defer issues (schedule for later)'
+        'delete:Delete an issue (creates tombstone)'
+        'dep:Manage dependencies'
+        'doctor:Run diagnostics and optionally repair issues'
+        'epic:Epic management commands'
+        'gate:Workflow gate engine: record and inspect gate results (issue #312)'
+        'graph:Visualize the dependents graph: what an issue unblocks'
+        'history:Manage local history backups'
+        'info:Show diagnostic metadata about the workspace'
+        'init:Initialize a beads workspace'
+        'label:Manage labels'
+        'lint:Check issues for missing template sections'
+        'list:List issues'
+        'orphans:List orphan issues (referenced in commits but open)'
+        'q:Quick capture (create issue, print ID only)'
+        'query:Manage saved queries'
+        'ready:List ready issues (open, unblocked, not deferred)'
+        'reopen:Reopen an issue'
+        'robot-docs:Print concise in-tool docs for automation agents'
+        'robot_docs:Print concise in-tool docs for automation agents (hidden alias for robot-docs)'
+        'scheduler:Rank ready work for agent swarms with explainable evidence'
+        'schedule:Rank ready work for agent swarms with explainable evidence (hidden alias for scheduler)'
+        'schema:Emit JSON Schemas and per-command output envelope shapes (for agent/tooling...'
+        'search:Search issues (matches title, description, id, and comment text)'
+        'show:Show issue details'
+        'stale:List stale issues'
+        'stats:Show project statistics'
+        'status:Alias for stats'
+        'sync:Sync database with JSONL file (export or import) IMPORTANT: br sync NEVER executes git...'
+        'undefer:Undefer issues (make ready again)'
+        'update:Update an issue'
+        'vcs-status:Explicitly inspect Git visibility for the configured JSONL export This diagnostic is...'
+        'upgrade:Upgrade br to the latest version'
+        'version:Show version information'
+        'where:Show the active .beads directory'
+        'help:Print this message or the help of the given subcommand(s)'
+      )
+      _describe -t commands 'br command' commands && ret=0
+      ;;
+    args)
+      curcontext="${curcontext%:*:*}:br-$line[1]:"
+      case $line[1] in
+        agents) _br__agents && ret=0 ;;
+        audit) _br__audit && ret=0 ;;
+        blocked) _br__blocked && ret=0 ;;
+        capabilities) _br__capabilities && ret=0 ;;
+        capacity) _br__capacity && ret=0 ;;
+        changelog) _br__changelog && ret=0 ;;
+        close) _br__close && ret=0 ;;
+        comments|comment) _br__comments && ret=0 ;;
+        completions|completion) _br__completions && ret=0 ;;
+        config) _br__config && ret=0 ;;
+        coordination|coord) _br__coordination && ret=0 ;;
+        count) _br__count && ret=0 ;;
+        create) _br__create && ret=0 ;;
+        defer) _br__defer && ret=0 ;;
+        delete) _br__delete && ret=0 ;;
+        dep) _br__dep && ret=0 ;;
+        doctor) _br__doctor && ret=0 ;;
+        epic) _br__epic && ret=0 ;;
+        gate) _br__gate && ret=0 ;;
+        graph) _br__graph && ret=0 ;;
+        history) _br__history && ret=0 ;;
+        info) _br__info && ret=0 ;;
+        init) _br__init && ret=0 ;;
+        label) _br__label && ret=0 ;;
+        lint) _br__lint && ret=0 ;;
+        list) _br__list && ret=0 ;;
+        orphans) _br__orphans && ret=0 ;;
+        q) _br__q && ret=0 ;;
+        query) _br__query && ret=0 ;;
+        ready) _br__ready && ret=0 ;;
+        reopen) _br__reopen && ret=0 ;;
+        robot-docs|robot_docs) _br__robot_docs && ret=0 ;;
+        scheduler|schedule) _br__scheduler && ret=0 ;;
+        schema) _br__schema && ret=0 ;;
+        search) _br__search && ret=0 ;;
+        show) _br__show && ret=0 ;;
+        stale) _br__stale && ret=0 ;;
+        stats) _br__stats && ret=0 ;;
+        status) _br__status && ret=0 ;;
+        sync) _br__sync && ret=0 ;;
+        undefer) _br__undefer && ret=0 ;;
+        update) _br__update && ret=0 ;;
+        vcs-status) _br__vcs_status && ret=0 ;;
+        upgrade) _br__upgrade && ret=0 ;;
+        version) _br__version && ret=0 ;;
+        where) _br__where && ret=0 ;;
+        help)
+          local -a helptopics
+          helptopics=(
+            'agents:Manage AGENTS.md workflow instructions'
+            'audit:Record and label agent interactions (append-only JSONL)'
+            'blocked:List blocked issues'
+            'capabilities:Describe br'\''s machine-readable contracts and safety guarantees'
+            'capacity:Workflow capacity management: audited issue-specific exemptions (GitHub #384)'
+            'changelog:Generate changelog from closed issues'
+            'close:Close an issue'
+            'comments:Manage comments'
+            'completions:Generate shell completions'
+            'config:Configuration management'
+            'coordination:Diagnose swarm coordination state without mutating claims'
+            'count:Count issues with optional grouping'
+            'create:Create a new issue'
+            'defer:Defer issues (schedule for later)'
+            'delete:Delete an issue (creates tombstone)'
+            'dep:Manage dependencies'
+            'doctor:Run diagnostics and optionally repair issues'
+            'epic:Epic management commands'
+            'gate:Workflow gate engine: record and inspect gate results (issue #312)'
+            'graph:Visualize the dependents graph: what an issue unblocks'
+            'history:Manage local history backups'
+            'info:Show diagnostic metadata about the workspace'
+            'init:Initialize a beads workspace'
+            'label:Manage labels'
+            'lint:Check issues for missing template sections'
+            'list:List issues'
+            'orphans:List orphan issues (referenced in commits but open)'
+            'q:Quick capture (create issue, print ID only)'
+            'query:Manage saved queries'
+            'ready:List ready issues (open, unblocked, not deferred)'
+            'reopen:Reopen an issue'
+            'robot-docs:Print concise in-tool docs for automation agents'
+            'scheduler:Rank ready work for agent swarms with explainable evidence'
+            'schema:Emit JSON Schemas and per-command output envelope shapes (for agent/tooling...'
+            'search:Search issues (matches title, description, id, and comment text)'
+            'show:Show issue details'
+            'stale:List stale issues'
+            'stats:Show project statistics'
+            'status:Alias for stats'
+            'sync:Sync database with JSONL file (export or import) IMPORTANT: br sync NEVER executes git...'
+            'undefer:Undefer issues (make ready again)'
+            'update:Update an issue'
+            'vcs-status:Explicitly inspect Git visibility for the configured JSONL export This diagnostic is...'
+            'upgrade:Upgrade br to the latest version'
+            'version:Show version information'
+            'where:Show the active .beads directory'
+          )
+          _describe -t commands 'br command' helptopics && ret=0
+          ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+_br "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
