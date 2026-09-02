@@ -35,43 +35,22 @@
 #
 # agy 1.1.23 (Google Antigravity CLI)
 #
-# Source of truth: the `agy` binary itself.
-#   - visible surface: `agy --help`, `agy <cmd> --help`
-#   - hidden surface : recovered from the Go pclntab of the stripped arm64
-#     binary. Every flag is declared through
-#     `google3/base/go/flag.(*FlagSet).declareFlag`, so scanning `__text` for
-#     BL edges into that symbol enumerates the whole flag surface with no
-#     guessing. In 1.1.23 that is 64 call sites: 52 global ones from
-#     `main.init.0` (34), `google3/base/go/log.init.4` (6),
-#     `google3/base/go/log.init` (4), `main.registerHubFlags` (2, only `hub`
-#     and `hub-port`) and one each from `google3/base/go/log.init.1`,
-#     `google3/base/go/log.init.5`, `google3/base/go/flag.init.0`,
-#     `google3/base/go/toollog.init`, `google3/base/go/mlock.init` and
-#     `google3/util/task/go/status.init`; plus 12 subcommand-local ones from
-#     `main.handleMCPAdd` (6), `main.handleInstallCommand` (3),
-#     `main.parseSubcommandFlags` (2, the shared `-h`/`--help`) and
-#     `main.handleMicServeCommand` (1).
-#     `main.hideFlagsForExternal` names the 9 flags stripped from `--help` in
-#     external builds. Entries marked `(hidden)` below are accepted by the
-#     binary but appear in no `--help` output; each was confirmed at runtime
-#     with `agy --<name>=ZZINVALIDZZ --zz-sentinel`, which reports
-#     `not defined` only for names the binary does not know.
+# Source of truth: `agy --help` and `agy <cmd> --help`, plus the flags those
+# never print. Entries marked `(hidden)` are accepted by agy 1.1.23 but appear
+# in no `--help` output.
 #
 # 1.1.23 changed nothing in the command-line surface: the flag set, the flag
-# names and the subcommand tables are byte-for-byte the same set as 1.1.22.
+# names and the subcommand tables are the same as 1.1.22.
 #
-# Top-level subcommands are a Go map consulted by `main.handleSubcommand` and
-# populated in `main.init.1` through `main.init.4`; its keys are exactly the
-# eleven names `agy --help` advertises, so there are no hidden subcommands.
-# `google3/third_party/jetski/cli/plugins/plugins.HandleCommand` likewise
-# dispatches exactly the nine verbs `agy plugin` advertises. The single hidden
+# `agy --help` lists all eleven top-level subcommands and `agy plugin` all
+# nine of its verbs, so there are no hidden subcommands. The single hidden
 # subcommand option is `agy plugin import --force`, named only in the
 # "already imported, use --force to re-import" line.
 #
-# Where `-h`/`--help` is actually accepted differs per subcommand, and the
-# binary is unforgiving about it:
+# Where `-h`/`--help` is actually accepted differs per subcommand, and agy is
+# unforgiving about it:
 #   - `agent`, `agents`, `changelog`, `models`, `install`, `mic-serve` and
-#     every `mcp` verb parse them through `main.parseSubcommandFlags`.
+#     every `mcp` verb accept them.
 #   - `agy plugin` and `agy mcp` accept them as aliases for their usage text.
 #   - `agy update` defines no flags at all and rejects `-h` outright.
 #   - `agy help` reads its first word as a subcommand name, so `-h` comes back
@@ -269,7 +248,7 @@ _agy__plugin_import_sources() {
     'directories:plugin directory:_files -/'
 }
 
-# Help flags shared by every subcommand; registered by main.parseSubcommandFlags.
+# Help flags shared by every subcommand.
 _agy__help_flags() {
   reply=(
     '(- *)-h[show help]'
@@ -302,13 +281,13 @@ _agy__top_option_specs() {
     '(- *)-h[show help]'
     '(- *)--help=-[show help, optionally filtering flags by regexp]::pattern: _agy__message "flag name regexp"'
 
-    # --- hidden: Antigravity Hub and remote control (main.registerHubFlags) --
+    # --- hidden: Antigravity Hub and remote control -------------------------
     '--hub[(hidden) run in hub server mode serving the Antigravity Hub web UI on a local port]'
     '--hub-port=[(hidden) port for the hub web UI, 0 selects the default]:port: _agy__message "port number"'
     '--remote-control[(hidden) enable remote control mode]'
     '--remote-control-name=[(hidden) instance name for remote control mode]:name: _agy__message "instance name"'
 
-    # --- hidden: stripped by main.hideFlagsForExternal ---------------------
+    # --- hidden: stripped from --help in external builds -------------------
     '--app_data_dir=[(hidden) path where application data is stored, relative to the Gemini dir]:directory:_files -/'
     '--gemini_dir=[(hidden) path where Gemini files are stored]:directory:_files -/'
     '--bg-updater[(hidden) run as background update worker]'
@@ -319,7 +298,7 @@ _agy__top_option_specs() {
     '--release_base_url=[(hidden) base URL of the release server for the auto-updater]:url: _agy__message "release server base url"'
     '--csrf_token=[(hidden) CSRF token for the language server]:token: _agy__message "csrf token"'
 
-    # --- hidden: google3 base logging and runtime flags --------------------
+    # --- hidden: base logging and runtime flags ----------------------------
     '(- *)--version[(hidden) print version and build info and exit]'
     '--logtostderr[(hidden) log to standard error instead of files]'
     '--alsologtostderr[(hidden) log to standard error as well as files]'
@@ -347,7 +326,7 @@ _agy__complete_help_only_leaf() {
   _arguments -s ${specs[@]}
 }
 
-# `agy update` builds a bare FlagSet, so even -h comes back as
+# `agy update` defines no flags at all, so even -h comes back as
 # "flags provided but not defined: -h". Offer nothing rather than a rejection.
 _agy__complete_update() {
   _agy__message 'update takes no options or arguments'
@@ -454,9 +433,9 @@ _agy__complete_plugin() {
 
   curcontext="${curcontext%:*:*}:agy-plugin-$words[1]:"
 
-  # plugins.HandleCommand parses no flags for any verb: a leading -h becomes a
-  # positional, and `agy plugin uninstall -h` really does try to uninstall a
-  # plugin named "-h". Only `import` reads an option, and only --force.
+  # The plugin verbs parse no flags: a leading -h becomes a positional, and
+  # `agy plugin uninstall -h` really does try to uninstall a plugin named "-h".
+  # Only `import` reads an option, and only --force.
   case $words[1] in
     import)
       _arguments -s \
