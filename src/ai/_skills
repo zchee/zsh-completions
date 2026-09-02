@@ -37,23 +37,22 @@
 #
 # 1.5.22 (skills)
 #
-# `skills` and `add-skill` are two names for the same entry point: package.json
-# maps both to bin/cli.mjs and src/cli.ts never inspects argv[0], so the command
-# surface is identical.  src/ai/_add-skill delegates here.
+# `skills` and `add-skill` are two names for the same entry point and ignore
+# argv[0], so their command surface is identical.  src/ai/_add-skill delegates
+# here.
 #
-# Items marked "(hidden)" are dispatched by the switch in src/cli.ts, or accepted
-# by a per-command argv parser, but never printed by `skills --help`.
+# Items marked "(hidden)" are accepted by the CLI but never printed by
+# `skills --help`.
 #
 # Two options are documented in `--help` yet do not behave as documented; both
-# are marked in place and were confirmed against the 1.5.22 binary:
+# are marked in place and were confirmed against 1.5.22:
 #
-#   * `remove -s/--skill` - parseRemoveOptions() has no branch for it and
-#     RemoveOptions carries no `skill` field, so the flag is dropped and its
-#     value is read as a positional skill name.  `skills remove --skill '*'`
-#     reports "No matching skills found for: *".
-#   * `remove -a/--agent '*'` and `list -a/--agent '*'` - both validate against
-#     Object.keys(agents) with no wildcard branch, so '*' exits 1 with
-#     "Invalid agents: *".  Only `add` and `experimental_sync` expand '*'.
+#   * `remove -s/--skill` - the flag is dropped and its value is read as a
+#     positional skill name, so `skills remove --skill '*'` reports
+#     "No matching skills found for: *".
+#   * `remove -a/--agent '*'` and `list -a/--agent '*'` - neither expands the
+#     wildcard, so '*' exits 1 with "Invalid agents: *".  Only `add` and
+#     `experimental_sync` expand '*'.
 #
 # -----------------------------------------------------------------------------
 
@@ -61,9 +60,9 @@ _skills__message() {
   _message "${1:-value}"
 }
 
-# Every agent in src/agents.ts, in registry order.  "(universal)" marks agents
-# whose skillsDir is `.agents/skills`, i.e. they share the canonical directory
-# instead of receiving their own symlink.
+# Every known agent, in registry order.  "(universal)" marks agents that share
+# the canonical `.agents/skills` directory instead of receiving their own
+# symlink.
 _skills__agent_list() {
   agent_list=(
     'aider-desk:AiderDesk'
@@ -145,16 +144,16 @@ _skills__agent_list() {
   )
 }
 
-# Agent names only.  `list` and `remove` validate against Object.keys(agents)
-# with no wildcard branch, so '*' is deliberately absent here.
+# Agent names only.  `list` and `remove` reject a wildcard, so '*' is
+# deliberately absent here.
 _skills__agents() {
   local -a agent_list
   _skills__agent_list
   _describe -t agents 'agent' agent_list
 }
 
-# Agent names plus '*'.  Only `add` (src/add.ts) and `experimental_sync`
-# (src/sync.ts) expand '*' to the full registry.
+# Agent names plus '*'.  Only `add` and `experimental_sync` expand '*' to the
+# full registry.
 _skills__agents_all() {
   local -a agent_list wildcard
   local ret=1
@@ -166,8 +165,8 @@ _skills__agents_all() {
 }
 
 # `skills use --agent` starts the agent interactively, so it accepts only the
-# entries of USE_AGENT_CONFIGS in src/use.ts.  Any other registry name parses
-# but aborts with "does not support".
+# agents it knows how to launch.  Any other registry name parses but aborts
+# with "does not support".
 _skills__use_agents() {
   local -a use_agents
   use_agents=(
@@ -178,7 +177,7 @@ _skills__use_agents() {
 }
 
 # Eve subagents live in agent/subagents/<name>/skills; 'root' and '.' both
-# select the root agent (src/add.ts).
+# select the root agent.
 _skills__subagents() {
   local -a subagent_list special
   local ret=1
@@ -213,8 +212,8 @@ _skills__skill_filter() {
 # DO_NOT_TRACK is set anyway so completion can never emit one.
 #
 # $1 is the scope to use when the line carries no scope flag: `project` for
-# remove (removeCommand defaults to the project scope) or `both` for update
-# (resolveUpdateScope checks global and project when neither -g nor -p is set).
+# remove, which defaults to the project scope, or `both` for update, which
+# checks global and project when neither -g nor -p is given.
 _skills__installed_skills() {
   local fallback=${1:-project} scope
   local -a scopes names expl
@@ -236,8 +235,8 @@ _skills__installed_skills() {
   done
   names=( ${(u)names} )
 
-  # Plugin skills keep a ':' in their name (see resolveSkillsToRemove), which
-  # _describe would read as a description separator, so add them with compadd.
+  # Plugin skills keep a ':' in their name, which _describe would read as a
+  # description separator, so add them with compadd.
   if (( ${#names} )); then
     _wanted skills expl 'installed skill' compadd -a names
   else
@@ -246,7 +245,7 @@ _skills__installed_skills() {
   fi
 }
 
-# A package source for `add` / `use`, as understood by parseSource().
+# A package source for `add` / `use`.
 _skills__source() {
   local -a prefixes known
   local ret=1
@@ -273,7 +272,7 @@ _skills__source() {
     'github\::GitHub shorthand, github:owner/repo'
     'gitlab\::GitLab shorthand, gitlab:owner/repo'
   )
-  # SOURCE_ALIASES in src/source-parser.ts, plus the canonical target.
+  # The recognised source aliases, plus the canonical target.
   known=(
     'vercel-labs/agent-skills:the Vercel agent skills collection'
     'vercel-labs/vercel-skills:alias for vercel-labs/agent-skills'
@@ -289,9 +288,9 @@ _skills__source() {
 # Replay a per-command argv scan over the words already on the line, so the
 # completion agrees with the CLI about what the current word is.
 #
-# The parsers in add.ts, remove.ts, list.ts and sync.ts implement -a/-s/--subagent
-# as "keep swallowing words until one starts with '-'", so a bare word after one
-# of them is another list value and not a positional.
+# `add`, `remove`, `list` and `sync` treat -a/-s/--subagent as "keep swallowing
+# words until one starts with '-'", so a bare word after one of them is another
+# list value and not a positional.
 #
 # $1 is a space separated list of those multi-value flags, $2 of the flags that
 # take exactly one value.  Sets REPLY to the flag still consuming words (empty
@@ -352,8 +351,8 @@ _skills__commands() {
   _describe -t commands 'command' commands
 }
 
-# runAdd() reads args[0] only, and parseAddOptions keeps -a/-s/--subagent
-# swallowing bare words, so a source must be given before any of those flags.
+# `add` reads only the first bare word, and -a/-s/--subagent keep swallowing
+# bare words, so a source must be given before any of those flags.
 _skills__add_rest() {
   local REPLY
   integer _skills_nargs
@@ -390,8 +389,8 @@ _skills__add() {
     '*:source: _skills__add_rest'
 }
 
-# parseUseOptions() rejects a second source and a second --skill/--agent value,
-# so there is nothing to complete past the first of each.
+# `use` rejects a second source and a second --skill/--agent value, so there is
+# nothing to complete past the first of each.
 _skills__use() {
   local -A opt_args
 
@@ -422,12 +421,11 @@ _skills__remove() {
     '(-y --yes)'{-y,--yes}'[skip confirmation prompts]' \
     '--all[remove every installed skill from every agent]' \
     "*"{-a,--agent}"[remove from specific agents (rejects '*', unlike add)]:agent: _skills__agents" \
-    '*'{-s,--skill}'[documented but dropped by parseRemoveOptions; the value is read as a skill name]:skill: _skills__installed_skills project' \
+    '*'{-s,--skill}'[documented but dropped; the value is read as a skill name]:skill: _skills__installed_skills project' \
     '*:skill: _skills__remove_rest'
 }
 
-# parseListOptions() discards bare words, so nothing but an agent list can
-# follow the flags.
+# `list` discards bare words, so nothing but an agent list can follow the flags.
 _skills__list_rest() {
   local REPLY
   integer _skills_nargs
@@ -449,7 +447,7 @@ _skills__list() {
     '*:argument: _skills__list_rest'
 }
 
-# parseFindOptions() joins every bare word into one query string.
+# `find` joins every bare word into one query string.
 _skills__find() {
   local -A opt_args
 
@@ -459,8 +457,7 @@ _skills__find() {
     '*:query: _skills__message "search query"'
 }
 
-# -g and -p are not exclusive: resolveUpdateScope() maps both together to
-# the 'both' scope.
+# -g and -p are not exclusive: given together they select the 'both' scope.
 _skills__update() {
   local -A opt_args
 
@@ -472,22 +469,22 @@ _skills__update() {
     '*:skill: _skills__installed_skills both'
 }
 
-# runInit() reads args[0] only.
+# `init` reads only the first bare word.
 _skills__init() {
   _arguments -C : \
     '(- *)'{-h,--help}'[show help]' \
     '1:name: _skills__message "skill name (default: the current directory name)"' \
-    '*:argument: _skills__message "ignored: runInit() reads only the first name"'
+    '*:argument: _skills__message "ignored: only the first name is read"'
 }
 
-# runInstallFromLock() ignores its argument list entirely.
+# `experimental_install` ignores its argument list entirely.
 _skills__experimental_install() {
   _arguments -C : \
     '(- *)'{-h,--help}'[show help]' \
     '*:argument: _skills__message "ignored: experimental_install takes no arguments"'
 }
 
-# runSync() never reads its positional arguments.
+# `experimental_sync` never reads its positional arguments.
 _skills__sync_rest() {
   local REPLY
   integer _skills_nargs
@@ -513,8 +510,8 @@ _skills() {
   local curcontext="$curcontext" state line ret=1
   typeset -A opt_args
 
-  # No -s: every argv parser compares whole words (arg === '-g'), so short
-  # options do not stack.  No -S either: '--' is not a recognised separator.
+  # No -s: every argv parser compares whole words, so short options do not
+  # stack.  No -S either: '--' is not a recognised separator.
   _arguments -C : \
     '(- *)'{-h,--help}'[show this help message]' \
     '(- *)'{-v,--version}'[show version number]' \
