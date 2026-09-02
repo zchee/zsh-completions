@@ -36,9 +36,7 @@
 # https://github.com/Yeachan-Heo/oh-my-claudecode
 #
 # 4.11.6 (Oh-My-ClaudeCode)
-# Source of truth: live `omc --help`, nested `omc <command> --help`, and the
-# installed package under /opt/local/var/bun/install/global/node_modules/
-# oh-my-claude-sisyphus.
+# Source of truth: `omc --help` and nested `omc <command> --help`.
 #
 # -----------------------------------------------------------------------------
 
