@@ -37,26 +37,9 @@
 #
 # 2.1.252 (Claude Code)
 #
-# The shipped binary is a Bun-compiled Commander.js program. The surface is
-# recovered from the beautified bundle (`cli.unpack.js` in the claude-code
-# reverse tree, whose package.json version must match `claude --version`) with
-# a balanced-paren *method-chain* parser: locate `.name("claude")`,
-# `.command()`, `.option()`, `.addOption()` and attribute each call to the
-# chain that owns it. A regex over `new Option(...)...hideHelp()` greedily
-# spans into the next option and mislabels visible flags, so it is not used.
-# Three registration shapes need special handling: options built in a block
-# (`let P = new O(...); P.hideHelp(); prog.addOption(P)` — `--messaging-socket-path`),
-# options built by a factory (`let u = () => new O("--cowork", …).hideHelp()`,
-# added via `.addOption(u())`), and subcommands registered inside helper
-# functions whose first parameter is the parent command (`Br(mcpCmd, ctx)`
-# registers `mcp add`). `attach`/`logs`/`stop`/`respawn`/`rm` come from a
-# helper returning bare `new Command(...)` objects, not from `.command()`.
-#
-# Every item below was confirmed against the 2.1.252 binary. `--help` is not
-# an oracle here: it short-circuits before option validation, so even a bogus
-# flag prints usage. What works is `claude <FLAG> mcp list`, which answers
-# `error: unknown option '<FLAG>'` for anything unregistered, and
-# `claude <CMD> --help`, which falls back to root usage for an unknown command.
+# `--help` is not authoritative here: it short-circuits before option
+# validation, so even a bogus flag prints usage. Every item below was verified
+# against 2.1.252 instead.
 #
 # Items marked "(hidden)" are accepted but suppressed from `--help`:
 #   * commands:  import-conversations, remote-control (alias rc), sandbox
@@ -78,7 +61,7 @@
 #                --team-name --teammate-mode --thinking --thinking-display
 #                --watch-artifact --watch-artifact-no-autoreact --workload
 #   * agents:    --plugin-dir-no-mcp
-#   * mcp add:   --xaa  (hideHelp(!enabled), so it is visible where XAA is on)
+#   * mcp add:   --xaa  (documented where XAA is enabled, hidden otherwise)
 #   * plugin eval init: --interview
 #   * --cowork on plugin details/disable/enable/install/list/prune/uninstall/
 #     update/validate and plugin marketplace add/list/remove/update — and only
@@ -89,9 +72,6 @@
 #
 # `--tmux` registers as a boolean but argv preprocessing also accepts
 # `--tmux=classic`, so it is spelled with an optional inline value here.
-#
-# Deliberately not completed: Commander's own `--help`/`--version` plumbing is
-# offered, but nothing else machine-facing exists in this CLI to leave out.
 #
 # -----------------------------------------------------------------------------
 
