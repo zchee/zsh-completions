@@ -37,13 +37,11 @@
 #
 # br 0.5.1 (beads_rust)
 #
-# Generated from the clap derive definitions in src/cli/mod.rs, then validated
-# against `br --help` for all 98 command paths (options and positionals match
-# exactly).
+# Validated against `br --help` for all 98 command paths (options and
+# positionals match exactly).
 #
-# Items marked "(hidden)" are accepted by the CLI but never shown by `br --help`:
-# they are clap `alias = ...` entries, which -- unlike `visible_alias` -- are
-# omitted from the generated help.
+# Items marked "(hidden)" are accepted by the CLI but never shown by `br --help`.
+# All of them are non-visible aliases of a documented name:
 #
 #   * top-level:  comment (comments), completion (completions),
 #                 coord (coordination), robot_docs (robot-docs),
@@ -51,9 +49,8 @@
 #   * doctor:     robot_docs (robot-docs)
 #   * value:      pwsh (br completions powershell)
 #
-# br 0.5.1 defines no `hide = true` command or flag; the entries above are the
-# whole hidden surface. `serve` (MCP stdio server) is gated behind the `mcp`
-# cargo feature and is absent from the Homebrew build, so it is not completed.
+# `serve` (MCP stdio server) is absent from the Homebrew build, so it is not
+# completed.
 #
 # -----------------------------------------------------------------------------
 
@@ -77,13 +74,12 @@ _br_global_options=(
 # -----------------------------------------------------------------------------
 # Value helpers.
 #
-# Static candidate sets mirror the *_CANDIDATES tables in src/cli/mod.rs.
-# Dynamic sets are delegated to br's own clap dynamic-completion engine, which
-# reads .beads/*.jsonl directly (~10ms) instead of going through the SQLite
-# database (`br label list-all` takes ~2s and is unusable during completion).
+# Dynamic sets are delegated to br's own dynamic-completion engine, which reads
+# .beads/*.jsonl directly (~10ms) instead of going through the SQLite database
+# (`br label list-all` takes ~2s and is unusable during completion).
 # -----------------------------------------------------------------------------
 
-# Ask br's clap dynamic completer what belongs at the cursor position of the
+# Ask br's dynamic completer what belongs at the cursor position of the
 # *original* command line, saved by _br() before _arguments rewrote $words.
 # Returns raw "value:description" lines.
 _br__clap_candidates() {
@@ -156,7 +152,7 @@ _br__statuses_all() {
 }
 
 # The standard seven types, plus any custom type already present in the
-# workspace (br's issue_type_completer unions both).
+# workspace; br offers both.
 _br__issue_types_standard() {
   local -a v
   v=(
@@ -296,7 +292,7 @@ _br__orphan_modes() {
   _describe -t modes 'orphan mode' v
 }
 
-# "key" and "key=" both complete, mirroring config_key_assignment_completer.
+# "key" and "key=" both complete, matching what br itself accepts.
 _br__config_key_assignments() {
   local -a cands
   cands=( ${${(f)"$(_br__clap_candidates)"}:#-*} )
