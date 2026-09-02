@@ -38,8 +38,6 @@
 # 0.12.0 (Gajae Code)
 #
 # Items marked "(hidden)" are accepted by the CLI but omitted from `gjc --help`.
-# They are recovered from the command registry in packages/coding-agent/src/cli.ts,
-# the root argv parser in src/cli/args.ts, and the per-command runtimes.
 #
 # -----------------------------------------------------------------------------
 
@@ -82,7 +80,7 @@ _gjc__model_list() {
 }
 
 # Stored credential selector: email:<addr>, id:<n>, account:<id>, project:<id>,
-# or provider/email:<addr> (src/cli/args.ts).
+# or provider/email:<addr>.
 _gjc__credential() {
   if compset -P '(|*/)(email|id|account|project):'; then
     _message 'selector value'
@@ -110,8 +108,8 @@ _gjc__git_branches() {
   fi
 }
 
-# Built-in model profiles (config/model-profiles.ts) merged with any user
-# profiles declared under `profiles:` in ~/.gjc/agent/models.yml.
+# Built-in model profiles merged with any user profiles declared under
+# `profiles:` in ~/.gjc/agent/models.yml.
 _gjc__mpresets() {
   local -a profiles
   profiles=(
@@ -162,7 +160,7 @@ _gjc__mpresets() {
   _describe -t mpresets 'model profile' profiles
 }
 
-# STATE_FIELD_ALLOWLIST (gjc-runtime/state-renderer.ts); comma-separated.
+# The state fields the renderer accepts; comma-separated.
 _gjc__state_fields() {
   _values -s , 'state field' \
     skill phase current_phase next active status fresh fresh_until receipt \
@@ -184,7 +182,7 @@ _gjc__lane_verdict() {
   _values 'lane verdict' CLEAR WATCH BLOCK OKAY ITERATE REJECT
 }
 
-# SDK control + global operations (sdk/protocol/operation-registry.ts).
+# SDK control + global operations.
 _gjc__sdk_ops() {
   local -a ops
   ops=(
@@ -233,7 +231,7 @@ _gjc__sdk_ops() {
   _describe -t operations 'SDK operation' ops
 }
 
-# SDK query operations (sdk/protocol/operation-registry.ts).
+# SDK query operations.
 _gjc__sdk_queries() {
   local -a queries
   queries=(
@@ -414,13 +412,13 @@ _gjc__launch_args() {
     '--list-models=-[list available models (with optional fuzzy search)]::pattern: _gjc__message "pattern"'
     '--no-title[disable title auto-generation]'
     {-w,--worktree=}'-[run in a sibling git worktree (detached when no name given)]::branch name: _gjc__message "branch name"'
-    # Advertised in `--help` but no longer read by the root parser (src/cli/args.ts).
+    # Advertised in `--help` but no longer read by the root parser.
     '*--hook=[(no-op) load a hook/extension file]:file:_files'
     '*'{-e,--extension=}'[(no-op) load an extension file]:file:_files'
     '--no-extensions[(no-op) disable extension discovery]'
     '--no-skills[(no-op) disable skills discovery and loading]'
     '--skills=[(no-op) comma-separated glob patterns to filter skills]:patterns: _gjc__message "patterns"'
-    # Parsed by src/cli/args.ts but absent from `--help`.
+    # Parsed by the root parser but absent from `--help`.
     '--session=[(hidden) alias for --resume]:session: _gjc__message "session"'
     '--fork=[(hidden) fork an existing session by id]:session: _gjc__message "session"'
     '--provider-session-id=[(hidden) reuse an upstream provider session id]:id: _gjc__message "id"'
@@ -1211,18 +1209,18 @@ _gjc() {
     '--list-models=-[list available models (with optional fuzzy search)]::pattern: _gjc__message "pattern"'
     '--no-title[disable title auto-generation]'
     {-w,--worktree=}'-[run in a sibling git worktree (detached when no name given)]::branch name: _gjc__message "branch name"'
-    # Advertised in `--help` but no longer read by the root parser (src/cli/args.ts).
+    # Advertised in `--help` but no longer read by the root parser.
     '*--hook=[(no-op) load a hook/extension file]:file:_files'
     '*'{-e,--extension=}'[(no-op) load an extension file]:file:_files'
     '--no-extensions[(no-op) disable extension discovery]'
     '--no-skills[(no-op) disable skills discovery and loading]'
     '--skills=[(no-op) comma-separated glob patterns to filter skills]:patterns: _gjc__message "patterns"'
-    # Parsed by src/cli/args.ts but absent from `--help`.
+    # Parsed by the root parser but absent from `--help`.
     '--session=[(hidden) alias for --resume]:session: _gjc__message "session"'
     '--fork=[(hidden) fork an existing session by id]:session: _gjc__message "session"'
     '--provider-session-id=[(hidden) reuse an upstream provider session id]:id: _gjc__message "id"'
     '--acp-terminal-auth[(hidden) run terminal auth bootstrap for ACP clients]'
-    # Root fast paths handled before command dispatch in src/cli.ts.
+    # Root fast paths handled before command dispatch.
     '(- *)--smoke-test[(hidden) run the bundled worker/native smoke test]'
     '(- *)--fixture=[(hidden) render a fixture report and exit]:fixture id: _gjc__message "fixture id"'
     '--team[(hidden, legacy) route to `gjc team`; requires --team-size]'
