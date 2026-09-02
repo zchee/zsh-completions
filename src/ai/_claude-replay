@@ -37,20 +37,16 @@
 #
 # 0.11.0
 #
-# The CLI parses argv with node:util parseArgs, so every option is global and
-# may appear before, after, or between positionals. The authoritative option
-# table is the `options` object at the top of bin/claude-replay.mjs; the
-# `--help` text printed further down that file omits two of its entries.
+# Every option is global and may appear before, after, or between positionals.
 #
-# Items marked "(hidden)" are accepted by parseArgs but absent from `--help`:
-#   -v, --version   declared in `options`, never printed by the usage block
-#   --format        declared in `options`, mentioned only in the error string
-#                   emitted when `extract` is called without an input file
+# Items marked "(hidden)" are accepted but absent from `--help`:
+#   -v, --version   never printed by the usage block
+#   --format        mentioned only in the error string emitted when `extract`
+#                   is called without an input file
 #
-# Session IDs are resolved by src/resolve-session.mjs, which also searches
-# Hermes SQLite (~/.hermes/state.db) and Kimi Code (~/.kimi-code/sessions/)
-# even though `--help` lists only the Claude Code, Cursor, Codex, and Gemini
-# directories.
+# Session IDs also resolve against Hermes SQLite (~/.hermes/state.db) and Kimi
+# Code (~/.kimi-code/sessions/), even though `--help` lists only the Claude
+# Code, Cursor, Codex, and Gemini directories.
 #
 # -----------------------------------------------------------------------------
 
@@ -67,8 +63,8 @@ _claude-replay__commands() {
   _describe -t commands 'command' commands
 }
 
-# Built-in theme names come from src/themes.mjs, which `--list-themes` prints
-# and exits before any server is started.
+# Built-in theme names, which `--list-themes` prints and exits before any
+# server is started.
 _claude-replay__themes() {
   local -a themes
   themes=( ${(f)"$(_call_program themes ${words[1]} --list-themes 2>/dev/null)"} )
@@ -129,9 +125,9 @@ _claude-replay__sessions_cache_policy() {
   (( ${REPLY##*:} > cache_mtime[1] ))
 }
 
-# Fills the global _claude_replay_sessions, mirroring src/resolve-session.mjs
-# directory for directory. Sorted newest first so the session in front of you
-# is the first candidate.
+# Fills the global _claude_replay_sessions, mirroring the directories the CLI
+# itself searches. Sorted newest first so the session in front of you is the
+# first candidate.
 _claude-replay__sessions_build() {
   local -a ids parts
   local f db proj
@@ -165,8 +161,7 @@ _claude-replay__sessions_build() {
   done
 
   # Hermes keeps its sessions in SQLite, so they are only listable with sqlite3.
-  # The timestamp columns differ between Hermes versions and the ones named in
-  # src/hermes-db.mjs are absent from some live databases, so an ordering query
+  # The timestamp columns differ between Hermes versions, so an ordering query
   # that fails to parse falls back to the bare id list.
   if (( $+commands[sqlite3] )); then
     local -a hermes_ids
