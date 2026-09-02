@@ -37,20 +37,17 @@
 #
 # grok 1.0.16 (a0239a2688c1) [alpha] (Grok Build TUI)
 #
-# Base: `grok completions zsh` from the 1.0.16 binary. grok ships a static
-# clap_complete generator and post-processes it itself
-# (completions_cmd.rs::fix_zsh_root_prompt_positional) to work around
-# clap-rs/clap#6282, where the optional root `[PROMPT]` positional makes clap
-# dispatch on `$line[2]` and break `grok worktree <TAB>`. The shipped output
-# already has that fixed — do not re-fix it.
+# Base: `grok completions zsh` from the 1.0.16 binary. Its shipped output
+# already works around the optional root `[PROMPT]` positional making
+# subcommand dispatch read the wrong word and break `grok worktree <TAB>` —
+# do not re-fix it.
 #
 # Items marked "(hidden)" are accepted by the CLI but suppressed from
-# `--help`. Two distinct kinds, because clap treats them differently:
+# `--help`. Two distinct kinds, because the generated script treats them
+# differently:
 #
-#   1. `hide = true` args and commands. clap_complete does *not* filter these,
+#   1. Hidden args and commands. The generated script does *not* filter these,
 #      so they were already completable but unlabelled; here they are labelled.
-#      Found by diffing the generated script against every `--help` in the
-#      tree, then confirming each against the 1.0.16 binary.
 #        * root flags:  --background-wait-timeout --client-identifier
 #                       --compaction-detail --compaction-mode
 #                       --experimental-memory --force-login --fs-read
@@ -65,8 +62,8 @@
 #        * update:      --enterprise --trigger --auto
 #        * mcp add:     --command --args --url --type
 #
-#   2. Non-visible `alias = ...` entries. clap_complete drops these outright,
-#      so they were previously uncompletable; they are inserted here.
+#   2. Non-visible aliases. The generated script drops these outright, so they
+#      were previously uncompletable; they are inserted here.
 #        * --allowedTools (--allow), --disallowedTools (--deny),
 #          --print (--single), --append-system-prompt (--rules),
 #          --system-prompt (--system-prompt-override), --yolo and
@@ -74,7 +71,7 @@
 #          --trust-folder (--trust), login --oidc (--oauth),
 #          worktree prune (gc)
 #
-# Scope is not uniform, and the binary enforces it. `--leader` / `--no-leader`
+# Scope is not uniform, and grok enforces it. `--leader` / `--no-leader`
 # are hidden at the root but documented on `grok agent`; `--no-auto-update`
 # likewise on `grok agent leader`; `--memory-flush` exists only at the root.
 # The root `--always-approve` carries both `yolo` and
@@ -82,24 +79,16 @@
 # `yolo` — `grok agent --dangerously-skip-permissions` is rejected.
 #
 # NOT a typo: `grok agent ----reauthenticate` really does take four hyphens.
-# The source writes `visible_alias = "--reauthenticate"` with the dashes
-# inside the alias name, so clap registers it as `--reauthenticate` and the
-# spelling on the command line grows two more. The binary rejects the
-# two-hyphen form.
+# The alias name itself carries two of them, so the spelling on the command
+# line grows two more; the two-hyphen form is rejected.
 #
 # Visible aliases (`v`, `disk-usage`, `worktree ls`, `plugin rm`/`remove`,
-# `workspace list`, `--effort`, `--ref`, `login --device-code`) are documented
-# by clap in a trailing "[aliases: ...]" note and emitted by the generator, so
-# they are completable without being hidden. Reading only the leading token of
-# each help line mistakes every one of them for a hidden item.
+# `workspace list`, `--effort`, `--ref`, `login --device-code`) appear in a
+# trailing "[aliases: ...]" note in `--help` and are emitted by the generated
+# script, so they are completable without being hidden. Reading only the
+# leading token of each help line mistakes every one of them for a hidden item.
 #
-# Cross-checked against xai-org/grok-build at commit bb7f39d5 (crate
-# xai-grok-pager 1.0.13). The public mirror lags the release, so every item
-# was confirmed against the installed 1.0.16 binary with
-# `grok [SUBCMD] <FLAG>=ZZ --zzz-sentinel-flag` (undefined iff clap answers
-# "unexpected argument '<FLAG>'") and `grok help <PATH>` for commands.
-# `login --devbox` is one such case: the mirror has it behind `#[arg(skip)]`
-# for the `devbox-login` feature, and the shipped binary accepts it.
+# Every item was verified against grok 1.0.16 as shipped.
 #
 # -----------------------------------------------------------------------------
 
