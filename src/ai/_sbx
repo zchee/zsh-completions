@@ -39,17 +39,10 @@
 #   Homebrew cask sbx@nightly, build nightly-202608311035-732ea09
 #
 # Derived from `sbx <path> --help` over all 106 documented command paths, then
-# extended with the surface the help output suppresses. sbx is a Cobra CLI
-# (spf13/cobra 1.10.2) built with a stripped symbol table, so the hidden items
-# were recovered from the Go pclntab: every `cli-plugin/commands` constructor
-# was disassembled for its string literals, and each candidate was then
-# confirmed against the binary itself
-# (`sbx <path> --zz-not-a-flag` answers "unknown flag" for a registered path
-# and "unknown command" for anything else; a sentinel control rules out the
-# commands that merely take positional arguments).
+# extended with the surface the help output suppresses; every added item was
+# verified against sbx as shipped.
 #
-# Items marked "(hidden)" are accepted by the binary but never listed by
-# `--help`:
+# Items marked "(hidden)" are accepted by sbx but never listed by `--help`:
 #
 #   * commands:  events, gui (+ status), settings (+ get/list/set/unset),
 #                ssh (+ setup, setup remove, known-hosts, proxy), ssh-connect,
@@ -70,17 +63,16 @@
 # `ssh` and its subcommands sit behind feature.ssh, and the whole subtree is
 # hidden. Aliases (ls/list, rm/remove/delete, secret rm unset, skills add a,
 # skills update upgrade, volume inspect get, create docker-agent cagent) are
-# completed too; Cobra lists them only in the aliased command's own --help.
+# completed too; sbx lists them only in the aliased command's own --help.
 #
-# Values for positional arguments come from the binary's own completion
-# endpoint (`sbx __complete ...`), which resolves sandbox names, MCP servers,
-# secret services, settings keys, templates, volumes and policy profiles.
+# Values for positional arguments come from sbx's own completion endpoint
+# (`sbx __complete ...`), which resolves sandbox names, MCP servers, secret
+# services, settings keys, templates, volumes and policy profiles.
 #
-# Cobra's own hidden commands -- `__complete` and `__completeNoDesc`, the RPC
-# that generated completion scripts call -- are deliberately left out: they are
-# framework plumbing for this file to call, not commands anyone types.
-# `docker-cli-plugin-metadata` is kept: it is docker/cli's plugin handshake
-# rather than Cobra machinery, and it is runnable by hand.
+# The completion RPC itself -- `__complete` and `__completeNoDesc` -- is
+# deliberately left out: it is plumbing for this file to call, not a command
+# anyone types. `docker-cli-plugin-metadata` is kept: it is the docker/cli
+# plugin handshake, and it is runnable by hand.
 #
 # -----------------------------------------------------------------------------
 
