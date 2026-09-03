@@ -1,0 +1,489 @@
+#compdef cm
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://docs.cloud.google.com/gemini-enterprise-agent-platform/codemender
+#
+# cm (CodeMender, Google DeepMind) version 0.5.0
+#   /opt/local/bin/cm; the CLI is published only as a signed artifact
+#   (artifactregistry cmoc-prod/codemender-cli-production), built from Google's
+#   internal tree, so there is no upstream source repository to read.
+#
+# Derived from `cm <path> --help` over every documented command path, then
+# extended from the binary itself: symbols are stripped, so the command tree
+# was recovered by parsing the Go pclntab (58042 functions) and reading the
+# cobra.Command constructors in google3/gdm/security/cmoc/client/cmd. Every
+# item below was then confirmed against cm 0.5.0 as shipped.
+#
+# Items marked "(hidden)" are accepted by cm but never listed by `--help`:
+#
+#   * --backend <iapi|taskapi>  root persistent flag, registered in main.main
+#                               and immediately MarkHidden'd; also $CM_BACKEND.
+#   * cm find verify            the pre-rename spelling of `cm verify`, kept
+#                               as a fourth child of `find` (cobra AddCommand
+#                               at NewFindCmdWithOptions+0x3ac). It carries
+#                               DisableFlagParsing, so it swallows every word
+#                               -- `--help` included -- and only ever warns
+#                               that it was renamed, then fails with
+#                               "use 'cm verify <args>' instead". It is
+#                               completed as `cm verify` would be, since those
+#                               are the words it tells you to re-run.
+#   * completion, help          registered by cobra itself. cm replaces the
+#                               help template with one that renders only its
+#                               own five command groups, so neither ever
+#                               appears in `cm --help`.
+#   * report --format markdown  a sixth accepted value; `--help` documents
+#                               only table, json, sarif, html, md.
+#
+# Deliberately left out, so the next bump does not re-add them as a "missing"
+# find:
+#
+#   * cm __worker   "Execute tools in a sandboxed worker process (internal use
+#                   only)" -- the re-exec cm performs inside its own sandbox,
+#                   with --workspace/--scan-target/--session-id/--artifacts-dir
+#                   /--allowed-roots/--preview. Plumbing, not something typed.
+#   * __complete, __completeNoDesc
+#                   cobra's completion RPC. Plumbing for a file like this one.
+#   * --architecture, --memory-block-size (find, fix, verify)
+#                   present in the binary's constructors but registered behind
+#                   a build-time option that is off in 0.5.0: `cm verify
+#                   --architecture=3-1` is even shown in verify's own Examples,
+#                   yet the binary answers "unknown flag: --architecture".
+#                   The binary rules, so they are not completed.
+#
+# cm registers no ValidArgsFunction anywhere, so its own `__complete` endpoint
+# returns bare file completion for every positional and is useless as a value
+# source. Finding and session IDs instead come from cm's local SQLite state via
+# `cm report --format json` and `cm session list` (~0.3-0.5s each, no network,
+# both pass --yes so the once-a-day update check cannot fire). Both are read
+# live rather than cached: findings change as scans run, and neither is slow
+# enough to be worth a stale answer. Both fail silently until `cm init` has
+# created ~/.codemender/config.yaml.
+#
+# -----------------------------------------------------------------------------
+
+(( $+functions[_cm__findings] )) || _cm__findings() {
+  local -a lines values
+  local line id title severity
+
+  lines=( ${(f)"$(_call_program cm-findings ${(q)_cm_prog} report --format json --yes 2>/dev/null)"} )
+
+  # cm marshals []state.Finding with MarshalIndent, so every key sits at a
+  # four-space indent; anchoring there keeps a "Status" inside an Analysis
+  # string from being mistaken for the real field.
+  for line in $lines; do
+    case $line in
+      ('    "FindingID": '*) id=${${line#*': "'}%'",'} ;;
+      ('    "Title": '*)     title=${${line#*': "'}%'",'} ;;
+      ('    "Severity": '*)  severity=${${line#*': "'}%'",'} ;;
+      ('    "Status": '*)
+        [[ -n $id ]] && values+=( "${id//:/\\:}:${severity:-?} ${title:-untitled}" )
+        id= title= severity=
+        ;;
+    esac
+  done
+
+  (( $#values )) || return 1
+  _describe -t cm-findings 'finding' values
+}
+
+(( $+functions[_cm__sessions] )) || _cm__sessions() {
+  local -a lines fields values
+  local line seen=0
+
+  lines=( ${(f)"$(_call_program cm-sessions ${(q)_cm_prog} session list --yes 2>/dev/null)"} )
+
+  # Tab-writer output: a header row, a rule of box-drawing dashes, the rows,
+  # then a blank line and an "N session(s) total" footer. Only field 1 has a
+  # fixed meaning -- TARGET is empty for imported sessions, which shifts every
+  # later column -- so the rest is kept verbatim as the description.
+  for line in $lines; do
+    [[ $line == 'SESSION_ID'* ]] && continue
+    [[ $line == '─'* ]] && { seen=1; continue; }
+    (( seen )) || continue
+    [[ -z $line || $line == *'session(s) total' ]] && continue
+    fields=( ${=line} )
+    (( $#fields )) || continue
+    values+=( "${fields[1]//:/\\:}:${(j: :)fields[2,-1]}" )
+  done
+
+  (( $#values )) || return 1
+  _describe -t cm-sessions 'session' values
+}
+
+(( $+functions[_cm__find] )) || _cm__find() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    $agent_opts \
+    '(-c --context)'{-c,--context}'=[Additional context to guide the scan agent]:text:' \
+    '1: :->target' \
+    '*:: :->args' && ret=0
+
+  case $state in
+    target)
+      local -a subcommands
+      subcommands=(
+        'verify:(hidden) renamed to `cm verify`; this spelling only warns and fails'
+      )
+      _describe -t commands 'cm find command' subcommands && ret=1
+      _files && ret=0
+      ;;
+    args)
+      if [[ $words[1] == verify ]]; then
+        _arguments -C -s -S \
+          $global_opts \
+          $agent_opts \
+          '(-c --context)'{-c,--context}'=[Additional context to guide the scan agent]:text:' \
+          '*: : _cm__findings' && ret=0
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_cm__fix] )) || _cm__fix() {
+  _arguments -s -S \
+    $global_opts \
+    $agent_opts \
+    '(-c --context)'{-c,--context}'=[Additional context to guide the fix agent]:text:' \
+    '(--export)--export=[Export patch from a session ID]: : _cm__sessions' \
+    '(--no-cache)--no-cache[Bypass cached patches, always run a fresh fix session]' \
+    '*: : _cm__findings'
+}
+
+(( $+functions[_cm__verify] )) || _cm__verify() {
+  _arguments -s -S \
+    $global_opts \
+    $agent_opts \
+    '(-c --context)'{-c,--context}'=[Additional context to guide the verification agent]:text:' \
+    '(--no-reset)--no-reset[Suppress all workspace resets during verification]' \
+    '(--skip-exploit-verification)--skip-exploit-verification[Skip running exploit script to confirm vulnerability]' \
+    '1: : _cm__findings'
+}
+
+(( $+functions[_cm__session] )) || _cm__session() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    '1: :->command' \
+    '*:: :->args' && ret=0
+
+  case $state in
+    command)
+      local -a subcommands
+      subcommands=(
+        'cancel:Cancel a running session'
+        'list:List all sessions'
+        'resume:Resume an interrupted session'
+      )
+      _describe -t commands 'cm session command' subcommands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        cancel)
+          _arguments -s -S $global_opts '1: : _cm__sessions' && ret=0
+          ;;
+        list)
+          _arguments -s -S $global_opts && ret=0
+          ;;
+        resume)
+          _arguments -s -S $global_opts '1: : _cm__sessions' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_cm__report_import] )) || _cm__report_import() {
+  _arguments -s -S \
+    $global_opts \
+    '(-f --file)'{-f,--file}'=[Path to findings file (JSON/SARIF)]:path:_files -g "*.(json|sarif)(-.)"' \
+    '(-p --project-dir)'{-p,--project-dir}'=[Project directory for resolving relative paths]:dir:_files -/' \
+    '*:findings file:_files'
+}
+
+(( $+functions[_cm__report] )) || _cm__report() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  # `report -f` is --format, `report import -f` is --file. Both cannot live in
+  # one _arguments call: the outer spec claims the -f first and completes
+  # format values under `report import`, so the subtree is split off here,
+  # before any of report's own options are declared.
+  if (( CURRENT > 2 )) && [[ $words[2] == import ]]; then
+    (( CURRENT-- ))
+    shift words
+    _cm__report_import
+    return
+  fi
+
+  _arguments -C -s -S \
+    $global_opts \
+    '(--artifacts)--artifacts[Show captured agent-generated artifacts]' \
+    '(-f --format)'{-f,--format}'=[Output format (default table)]:fmt:((
+      table\:"aligned terminal table"
+      json\:"raw findings as JSON"
+      sarif\:"SARIF 2.1.0"
+      html\:"HTML dashboard under ~/.codemender/reports"
+      md\:"Markdown"
+      markdown\:"(hidden) undocumented spelling of md"))' \
+    '(-o --open)'{-o,--open}'[Open the HTML report in your default browser]' \
+    '(--patches)--patches[Show generated patches]' \
+    '(--session)--session=[Filter by session ID (prefix match)]: : _cm__sessions' \
+    '(--severity)--severity=[Filter by severity]:level:(CRITICAL HIGH MEDIUM LOW)' \
+    '(--sort)--sort=[Sort order (default severity)]:order:(severity time)' \
+    '(--status)--status=[Filter by status]:state:(OPEN FIXED DISMISSED REOPENED)' \
+    '1: :->target' \
+    '*:: :->args' && ret=0
+
+  case $state in
+    target)
+      local -a subcommands
+      subcommands=(
+        'import:Import findings from a file or enter them interactively'
+      )
+      _describe -t commands 'cm report command' subcommands && ret=1
+      _cm__findings && ret=0
+      ;;
+    args)
+      [[ $words[1] == import ]] && { _cm__report_import && ret=0 }
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_cm__vcs] )) || _cm__vcs() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    '1: :->command' \
+    '*:: :->args' && ret=0
+
+  case $state in
+    command)
+      local -a subcommands
+      subcommands=(
+        'diff:Show VCS diff of the current workspace changes'
+        'init:Initialize Git repository for CodeMender'
+        'reset:Reset the codebase to a clean state for vulnerability research'
+        'stage:Stage all changes for commit'
+        'status:Show VCS status of the current workspace'
+      )
+      _describe -t commands 'cm vcs command' subcommands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        reset)
+          _arguments -s -S \
+            $global_opts \
+            '(--force)--force[Skip confirmation prompt]' \
+            '1:path:_files -/' && ret=0
+          ;;
+        diff|init|stage|status)
+          _arguments -s -S $global_opts '1:path:_files -/' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_cm__completion] )) || _cm__completion() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    '1: :->shell' \
+    '*:: :->args' && ret=0
+
+  case $state in
+    shell)
+      local -a shells
+      shells=(
+        'bash:Generate the autocompletion script for bash'
+        'fish:Generate the autocompletion script for fish'
+        'powershell:Generate the autocompletion script for powershell'
+        'zsh:Generate the autocompletion script for zsh'
+      )
+      _describe -t commands 'shell' shells && ret=0
+      ;;
+    args)
+      _arguments -s -S \
+        $global_opts \
+        '(--no-descriptions)--no-descriptions[disable completion descriptions]' && ret=0
+      ;;
+  esac
+
+  return ret
+}
+
+function _cm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+  local _cm_prog=${words[1]}
+
+  # Root persistent flags; cobra makes these valid at every depth.
+  local -a global_opts
+  global_opts=(
+    '(--bypass-warning)--bypass-warning[Bypass the warning prompt]'
+    '(--compact)--compact[Compact rolling output (tool steps update in-place)]'
+    '(- : *)'{-h,--help}'[Show help for the command]'
+    '(- : *)--notices[Print third-party open source license notices and exit]'
+    '(--sandbox)--sandbox=-[Enable or disable OS-level sandbox (default true)]::enabled:(true false)'
+    '(--team-id)--team-id=[Customer team identifier for telemetry, e.g. "acme-security" (also $CM_TEAM_ID env or team_id in config.yaml; max 63 chars)]:team-id:'
+    '(-v --verbose)'{-v,--verbose}'[Enable verbose debug output]'
+    '(-y --yes)'{-y,--yes}'[Auto-approve prompts (also skips the update check)]'
+    "(--backend)--backend=[(hidden) Internal\: backend transport to use (also \$CM_BACKEND env)]:transport:((iapi\:'interactions API (StartSession + WaitOperation over SSE)' taskapi\:'Vertex Task API bidirectional streaming'))"
+  )
+
+  # Shared by the three agent-driven commands (find, fix, verify).
+  local -a agent_opts
+  agent_opts=(
+    '(--model)--model=[LLM model to use]:model:(gemini-3.1-pro-preview gemini-3.5-flash gemini-3.6-flash gemini-3.7-flash)'
+    '(--unrestricted)--unrestricted[Disable filesystem sandbox (allow agent to access any path)]'
+  )
+
+  _arguments -C -s -S \
+    $global_opts \
+    '(- : *)--version[Print the cm version and exit]' \
+    '1: :->command' \
+    '*:: :->args' && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'find:Quick scan to discover security vulnerabilities'
+        'fix:Generate and apply a security fix'
+        'verify:Verify a specific finding from a previous scan'
+        'session:Manage sessions (list, resume, cancel)'
+        'report:Query findings and patches'
+        'stats:Summarize local token usage'
+        'build:Build and verify the project after agent changes'
+        'clean:Clean up the local findings cache, HTML reports, and source backup files'
+        'init:Initialize the CodeMender workspace'
+        'update:Update the CodeMender CLI to the latest release'
+        'vcs:Version control system operations'
+        'completion:(hidden) Generate the autocompletion script for the specified shell'
+        'help:(hidden) Help about any command'
+      )
+      _describe -t commands 'cm command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        find)
+          _cm__find && ret=0
+          ;;
+        fix)
+          _cm__fix && ret=0
+          ;;
+        verify)
+          _cm__verify && ret=0
+          ;;
+        session)
+          _cm__session && ret=0
+          ;;
+        report)
+          _cm__report && ret=0
+          ;;
+        vcs)
+          _cm__vcs && ret=0
+          ;;
+        completion)
+          _cm__completion && ret=0
+          ;;
+        stats)
+          _arguments -s -S \
+            $global_opts \
+            '(--json)--json[Output statistics as JSON]' \
+            '(--session)--session=[Drill down into a specific session ID]: : _cm__sessions' \
+            '(--since)--since=[Include only activity from the last duration (default 168h0m0s)]:duration:(1h 24h 168h 720h)' && ret=0
+          ;;
+        build)
+          _arguments -s -S \
+            $global_opts \
+            '(--force)--force[Skip confirmation prompt]' \
+            '1:path:_files -/' && ret=0
+          ;;
+        init)
+          _arguments -s -S \
+            $global_opts \
+            '(--verify)--verify[Verify environment setup without modifying anything]' && ret=0
+          ;;
+        clean|update)
+          _arguments -s -S $global_opts && ret=0
+          ;;
+        help)
+          local -a topics
+          topics=(
+            'build:Build and verify the project after agent changes'
+            'clean:Clean up the local findings cache, HTML reports, and source backup files'
+            'completion:Generate the autocompletion script for the specified shell'
+            'find:Quick scan to discover security vulnerabilities'
+            'fix:Generate and apply a security fix'
+            'init:Initialize the CodeMender workspace'
+            'report:Query findings and patches'
+            'session:Manage sessions (list, resume, cancel)'
+            'stats:Summarize local token usage'
+            'update:Update the CodeMender CLI to the latest release'
+            'vcs:Version control system operations'
+            'verify:Verify a specific finding from a previous scan'
+          )
+          _arguments -C '1: :{_describe -t commands "help topic" topics}' '*:: :->helpargs' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_cm "$@"
+
+# -----------------------------------------------------------------------------
+#
+# vim: ft=zsh sw=2 ts=2 et
