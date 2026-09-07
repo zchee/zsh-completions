@@ -35,22 +35,27 @@
 #
 # https://github.com/anthropics/claude-code
 #
-# 2.1.252 (Claude Code)
+# 2.1.263 (Claude Code)
 #
 # `--help` is not authoritative here: it short-circuits before option
-# validation, so even a bogus flag prints usage. Every item below was verified
-# against 2.1.252 instead.
+# validation, so even a bogus flag prints usage. Every item below was instead
+# confirmed against 2.1.263 by ending a probe in an unknown sentinel flag —
+# `claude <path> <flag> [value] --zz-definitely-not-a-flag` — which makes
+# Commander abort during option parsing, so it names the first unknown flag
+# and no command action ever runs.
 #
 # Items marked "(hidden)" are accepted but suppressed from `--help`:
 #   * commands:  import-conversations, remote-control (alias rc), sandbox
 #                (+ its install/status subcommands)
 #   * root:      --advisor --agent-color --agent-id --agent-name --agent-type
-#                --append-subagent-system-prompt --append-system-prompt-file
-#                --channels --correlation-id
-#                --dangerously-load-development-channels --debug-to-stderr
-#                --deep-link-cwd-b64 --deep-link-last-fetch --deep-link-origin
-#                --deep-link-repo --enable-auth-status --enable-auto-mode
-#                --forward-home-settings --init --init-only --maintenance
+#                --append-subagent-system-prompt
+#                --append-subagent-system-prompt-file
+#                --append-system-prompt-file --await-initialize --channels
+#                --correlation-id --dangerously-load-development-channels
+#                --debug-to-stderr --deep-link-cwd-b64 --deep-link-last-fetch
+#                --deep-link-origin --deep-link-repo --enable-auth-status
+#                --enable-auto-mode --forward-home-settings --handle-uri
+#                --inherit-permission-mode --init --init-only --maintenance
 #                --managed-settings --max-thinking-tokens --max-turns
 #                --messaging-socket-path --on-branch --parent-session-id
 #                --permission-prompt-tool --plan-mode-instructions
@@ -60,18 +65,40 @@
 #                --sdk-url --session-mirror --system-prompt-file --task-budget
 #                --team-name --teammate-mode --thinking --thinking-display
 #                --watch-artifact --watch-artifact-no-autoreact --workload
-#   * agents:    --plugin-dir-no-mcp
+#   * agents:    --inherit-permission-mode --plugin-dir-no-mcp
 #   * mcp add:   --xaa  (documented where XAA is enabled, hidden otherwise)
 #   * plugin eval init: --interview
 #   * --cowork on plugin details/disable/enable/install/list/prune/uninstall/
 #     update/validate and plugin marketplace add/list/remove/update — and only
 #     those: `plugin init`, `plugin tag` and `plugin eval` reject it.
 #
+# `mcp xaa` and its setup/login/show/clear subcommands are not merely hidden:
+# they are registered only when CLAUDE_CODE_ENABLE_XAA is set, so without it
+# `claude mcp xaa --help` answers with `claude mcp` help. They are completed
+# anyway, for the environments that do set it.
+#
 # Scope is not uniform: root `--remote` is hidden while `plugin tag --remote`
 # is documented, and a flat flag-to-hidden map will report that as a mismatch.
 #
-# `--tmux` registers as a boolean but argv preprocessing also accepts
-# `--tmux=classic`, so it is spelled with an optional inline value here.
+# `plugin rm` is a non-visible alias: `plugin uninstall` registers
+# aliases ["remove", "rm"] but every help listing advertises only
+# `uninstall|remove`, so `rm` survives only if it is carried over by hand.
+# The visible ones are init|new, install|i, prune|autoremove and
+# marketplace remove|rm.
+#
+# Two root flags never reach Commander — argv preprocessing consumes them —
+# so they are spelled to match what the preprocessor accepts, not what a
+# Commander registration would imply. `--tmux` registers as a boolean but
+# `--tmux=classic` is also accepted, hence the optional inline value.
+# `--handle-uri` takes its URI as the next word only (`--handle-uri=<uri>`
+# is rejected as an unknown option) and must be the last argument.
+#
+# Deliberately not completed: the eight process-kind entry points dispatched
+# on argv[2] before any parsing — --bg-pty-host, --bg-spare,
+# --chrome-native-host, --claude-in-chrome-mcp, --computer-use-mcp,
+# --daemon-worker, --eval-mock-server, --preload. The binary accepts every
+# one of them, but they exist for Claude Code to spawn its own children and
+# for the Chrome extension host to start a stdio server; nobody types them.
 #
 # -----------------------------------------------------------------------------
 
@@ -174,6 +201,15 @@ _claude__permission_modes() {
     'plan:plan mode'
   )
   _describe 'permission mode' modes
+}
+
+_claude__permission_prompt_targets() {
+  local -a targets
+  targets=(
+    'host:the SDK host or --permission-prompt-tool answers prompts'
+    'none:nobody answers\: anything that would prompt is denied'
+  )
+  _describe 'permission prompt target' targets
 }
 
 _claude__setting_sources() {
@@ -545,6 +581,7 @@ _claude__top_option_specs() {
     '--no-session-persistence[disable session persistence]'
     '--output-format=[output format for print mode]:format:_claude__output_formats'
     '--permission-mode=[permission mode for the session]:mode:_claude__permission_modes'
+    '--permission-prompts=[who answers permission prompts in print mode]:target:_claude__permission_prompt_targets'
     '*--plugin-dir=[load plugins from a directory for this session only]:directory:_files -/'
     '*--plugin-url=[fetch a plugin .zip from a URL for this session only]:url: _claude__message "url"'
     '(-p --print)'{-p,--print}'[print response and exit]'
@@ -560,6 +597,7 @@ _claude__top_option_specs() {
     '--restricted[restricted mode\: removes the built-in tools that run commands or code]'
     '--strict-mcp-config[only use MCP servers from --mcp-config]'
     '--system-prompt=[system prompt to use for the session]:prompt: _claude__message "prompt"'
+    '--system-prompt-snapshot=[record the system prompt once per conversation and reuse it verbatim]:state:(on off)'
     '--teleport=-[resume a teleport session, optionally specify session ID]::session: _claude__message "session"'
     '--tmux=-[create a tmux session for the worktree]::mode:(classic)'
     '--tools=[list of available built-in tools]:tools:_claude__tools'
@@ -571,8 +609,10 @@ _claude__top_option_specs() {
     '--agent-id=[(hidden) teammate agent ID]:id: _claude__message "id"'
     '--agent-name=[(hidden) teammate display name]:name: _claude__message "name"'
     '--agent-type=[(hidden) custom agent type for this teammate]:type: _claude__message "type"'
-    '--append-subagent-system-prompt=[(hidden) append a system prompt to every Task-tool subagent]:prompt: _claude__message "prompt"'
+    '(--append-subagent-system-prompt --append-subagent-system-prompt-file)--append-subagent-system-prompt=[(hidden) append a system prompt to every Task-tool subagent]:prompt: _claude__message "prompt"'
+    '(--append-subagent-system-prompt --append-subagent-system-prompt-file)--append-subagent-system-prompt-file=[(hidden) read a system prompt from a file and append it to every Task-tool subagent]:file:_files'
     '(--append-system-prompt --append-system-prompt-file)--append-system-prompt-file=[(hidden) read a system prompt from a file and append it]:file:_files'
+    '--await-initialize[(hidden) read the initialize control request from stdin during startup]'
     '*--channels=[(hidden) MCP servers whose channel notifications register this session]:servers: _claude__message "servers"'
     '--correlation-id=[(hidden) opaque id echoed back to the environment orchestrator]:id: _claude__message "id"'
     '*--dangerously-load-development-channels=[(hidden) load channel servers not on the approved allowlist]:servers: _claude__message "servers"'
@@ -584,6 +624,8 @@ _claude__top_option_specs() {
     '--enable-auth-status[(hidden) enable auth status messages in SDK mode]'
     '--enable-auto-mode[(hidden, deprecated) opt in to auto mode]'
     '--forward-home-settings=[(hidden) whether this launch sends this machine settings into the cloud session it creates or attaches to]:value:(true false 1 0)'
+    '--handle-uri[(hidden) handle a claude-cli:// deep link; the URI must be the last argument]:uri: _claude__message "deep link uri"'
+    '--inherit-permission-mode=[(hidden) permission mode carried from a parent session, used only when nothing else configures one]:mode:_claude__permission_modes'
     '--init[(hidden) run Setup hooks with init trigger, then continue]'
     '--init-only[(hidden) run Setup and SessionStart:startup hooks, then exit]'
     '--maintenance[(hidden) run Setup hooks with maintenance trigger, then continue]'
@@ -636,6 +678,7 @@ _claude__complete_agents() {
     '--dangerously-skip-permissions[alias for --permission-mode bypassPermissions]' \
     '--effort=[default effort level for dispatched sessions]:level:_claude__effort_levels' \
     '(-h --help)'{-h,--help}'[display help for command]' \
+    '--inherit-permission-mode=[(hidden) permission mode carried from a parent session]:mode:_claude__permission_modes' \
     '--json[print active sessions as a JSON array and exit]' \
     '*--mcp-config=[MCP server configuration to apply to dispatched sessions]:config:_files' \
     '--model=[default model for dispatched sessions]:model:_claude__models' \
@@ -903,6 +946,7 @@ _claude__complete_plugin_marketplace() {
   case $words[1] in
     add)
       _arguments -s \
+        '--claudeai[add the marketplace of this name that claude.ai hosts for you]' \
         '--cowork[(hidden) use cowork_plugins directory]' \
         '--scope=[where to declare the marketplace]:scope:_claude__plugin_scopes' \
         '--sparse=[limit checkout to specific directories]:path:_files -/' \
