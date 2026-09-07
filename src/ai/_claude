@@ -1299,6 +1299,14 @@ function _claude() {
   _claude__top_option_specs
   specs=("${reply[@]}")
 
+  # A wrapper completion whose command forwards its arguments to claude (see
+  # _omc) sets this array to its own root option specs so they join the single
+  # _arguments call below. Two independent _arguments passes writing into one
+  # match listing disagree about column widths, and past roughly 120 columns
+  # the descriptions end up stacked underneath the names instead of beside
+  # them. Left unset by every other caller, including plain `claude`.
+  (( $+_claude_wrapper_option_specs )) && specs+=("${_claude_wrapper_option_specs[@]}")
+
   _arguments -C -s \
     ${specs[@]} \
     '1:claude command:->command' \

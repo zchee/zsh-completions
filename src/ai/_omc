@@ -52,11 +52,25 @@
 # forward everything else to `claude` verbatim -- the whole Claude Code
 # command tree included, so `omc mcp list` really runs `claude mcp list`.
 # Rather than copy that surface (it moves every Claude Code release), those
-# two paths rewrite `words` the way omc rewrites argv and hand off to the
-# `_claude` completion in this same directory. `--madmax`/`--yolo` are
-# forwarded as `--dangerously-skip-permissions`, mirroring the binary. If
-# `_claude` is not on `fpath`, the passthrough completes nothing and omc's own
-# flags still work.
+# two paths rewrite arg0 to `claude`, put omc's own root option specs in
+# `_claude_wrapper_option_specs`, and hand off to the `_claude` completion in
+# this same directory, which folds both sets into its single `_arguments`
+# call. If `_claude` is not on `fpath`, the passthrough completes nothing and
+# omc's own flags still work.
+#
+# Both sets must come from ONE `_arguments` call. Each call sizes its
+# description column from its own matches, so two calls writing into one
+# listing disagree and, past roughly 120 columns, the descriptions end up
+# stacked below the names instead of beside them. That is also why
+# `_omc__claude_delegate` reports only whether `_claude` was available and
+# never its exit status: `_claude` returns non-zero whenever the current word
+# matches nothing it offers, and treating that as failure would run the
+# fallback `_arguments` as a second pass.
+#
+# `-V` is injected but `--version` is not: claude declares `--version` too,
+# and a duplicate spec in the merged call would collide. A flat flag audit
+# reports `-V, --version` as missing for that reason -- expected, since the
+# long form arrives by delegation.
 #
 # Items marked "(hidden)" are accepted but absent from every `--help`:
 #   * commands:  postinstall  (registered with { hidden: true })
@@ -139,71 +153,34 @@ _omc__describe_static_items() {
   _describe "$description" items
 }
 
-# Rewrite `words` for the Claude Code passthrough, mirroring
-# normalizeClaudeLaunchArgs(): drop the flags omc consumes itself and map
-# --madmax/--yolo onto --dangerously-skip-permissions. words[1] (omc, or
-# `launch` after the dispatcher's shift) becomes `claude` so the nested
-# completion sees a well-formed command line.
+# Rewrite `words` for the Claude Code passthrough. Only arg0 changes: omc's
+# own flags are handed to `_claude` too, as injected option specs, so its
+# single `_arguments` call parses the whole line and nothing has to be
+# stripped here. words[1] is `omc`, or `launch` after the dispatcher's shift.
 _omc__claude_words() {
-  local -a out
-  local word
-  local -i index new_current skip
-
-  out=(claude)
-  new_current=0
-  skip=0
-
-  for (( index = 2; index <= ${#words}; index++ )); do
-    word="${words[index]}"
-
-    if (( skip )); then
-      skip=0
-      continue
-    fi
-
-    if (( index != CURRENT )); then
-      case $word in
-        --madmax|--yolo)
-          out+=(--dangerously-skip-permissions)
-          continue
-          ;;
-        --notify)
-          # consumes a following true/false/1/0 token and nothing else
-          case "${words[index+1]}" in
-            true|false|1|0) skip=1 ;;
-          esac
-          continue
-          ;;
-        --notify=*|--openclaw|--openclaw=*|--telegram|--telegram=*)
-          continue
-          ;;
-        --discord|--discord=*|--slack|--slack=*|--webhook|--webhook=*)
-          continue
-          ;;
-      esac
-    fi
-
-    out+=("$word")
-    (( index == CURRENT )) && new_current=${#out}
-  done
-
-  (( new_current )) || new_current=$(( ${#out} + 1 ))
-  reply=("${out[@]}")
-  REPLY=$new_current
+  reply=("${words[@]}")
+  reply[1]=claude
+  REPLY=$CURRENT
 }
 
-# Hand the current word to the `_claude` completion. Matches accumulate, so
-# the caller's own `_arguments` pass and this one both contribute.
+# Hand the line to the `_claude` completion, with omc's own root option specs
+# injected so both flag sets are produced by one `_arguments` call. Returns
+# non-zero when `_claude` is not on `fpath`, so callers can fall back.
 _omc__claude_delegate() {
-  # never delegate while completing the value of an omc-only flag
-  [[ "${words[CURRENT-1]}" == --notify ]] && return 1
-
   (( $+functions[_claude] )) || return 1
 
   _omc__claude_words
   words=("${reply[@]}")
   CURRENT=$REPLY
   _claude
+
+  # Report only whether `_claude` was available, never its own exit status:
+  # it returns non-zero whenever the current word matched nothing it offers,
+  # and a caller that treated that as "delegation failed" would run its own
+  # `_arguments` as well. Two passes writing into one listing disagree about
+  # column widths, and past roughly 120 columns the descriptions end up
+  # stacked below the names instead of beside them.
+  return 0
 }
 
 _omc__wait_daemon_actions() {
@@ -580,51 +557,60 @@ _omc__team_agent_spec() {
     "${agent_types[@]/#/3:}"
 }
 
+# omc's own launch-time flags: consumed by omc, never forwarded to claude.
+#
+# `--notify` takes its value as the next word or after `=`, and only the
+# tokens true/false/1/0 are consumed. The other five are presence-based: the
+# value is optional and inline-only, which is `=-` plus `::` -- with a single
+# `:` zsh treats the value as mandatory and appends a stray second `=` to the
+# buffer.
+#
+# `-h`/`--help` are deliberately absent: claude declares them too, and a
+# duplicate spec in the merged `_arguments` call would collide. The fallback
+# path used when `_claude` is missing adds them back.
 _omc__launch_option_specs() {
   reply=(
     '--notify=[enable or disable CCNotifier events]:boolean:_omc__bool_values'
     '--madmax[alias for --dangerously-skip-permissions]'
     '--yolo[alias for --dangerously-skip-permissions]'
-    '--openclaw=-[enable or disable OpenClaw mode]:boolean:_omc__bool_values'
-    '--telegram=-[enable or disable Telegram notifications]:boolean:_omc__bool_values'
-    '--discord=-[enable or disable Discord notifications]:boolean:_omc__bool_values'
-    '--slack=-[enable or disable Slack notifications]:boolean:_omc__bool_values'
-    '--webhook=-[enable or disable webhook notifications]:boolean:_omc__bool_values'
-    '(-h --help)'{-h,--help}'[display help for command]'
+    '--openclaw=-[enable or disable OpenClaw mode]::boolean:_omc__bool_values'
+    '--telegram=-[enable or disable Telegram notifications]::boolean:_omc__bool_values'
+    '--discord=-[enable or disable Discord notifications]::boolean:_omc__bool_values'
+    '--slack=-[enable or disable Slack notifications]::boolean:_omc__bool_values'
+    '--webhook=-[enable or disable webhook notifications]::boolean:_omc__bool_values'
   )
 }
 
 _omc__complete_root() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a launch_specs
+  local -a _claude_wrapper_option_specs
 
   _omc__launch_option_specs
-  launch_specs=("${reply[@]}")
+  _claude_wrapper_option_specs=(
+    "${reply[@]}"
+    '-V[output the version number]'
+  )
 
-  # Offer omc's own flags only where they are what is being typed. Running
-  # this pass unconditionally would dump them over a claude option's value
-  # too, because these specs cannot know that `--model` takes an argument.
-  if [[ "${words[CURRENT]}" == -* || "${words[CURRENT-1]}" == --notify ]]; then
-    _arguments -s \
-      '(-V --version)'{-V,--version}'[output the version number]' \
-      "${launch_specs[@]}"
-  fi
-
-  # omc's own subcommands belong in the command slot only; everything else
-  # this path accepts is Claude Code's, added by the delegation below
+  # omc's own subcommands belong in the command slot only
   if (( CURRENT == 2 )) && [[ "${words[CURRENT]}" != -* ]]; then
     _omc__top_commands
   fi
 
-  _omc__claude_delegate
+  # `_claude` runs the one `_arguments` call that covers both flag sets
+  _omc__claude_delegate && return
+
+  # no `_claude` on fpath: complete omc's own flags alone
+  _arguments -s \
+    "${_claude_wrapper_option_specs[@]}" \
+    '(-h --help)'{-h,--help}'[display help for command]'
 }
 
 _omc__complete_launch_like() {
   local shift_count=${1:-0}
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a launch_specs
+  local -a _claude_wrapper_option_specs
 
   if (( shift_count > 0 )); then
     _omc__shift_words "$shift_count"
@@ -633,14 +619,13 @@ _omc__complete_launch_like() {
   fi
 
   _omc__launch_option_specs
-  launch_specs=("${reply[@]}")
+  _claude_wrapper_option_specs=("${reply[@]}")
 
-  # see _omc__complete_root for why this pass is gated
-  if [[ "${words[CURRENT]}" == -* || "${words[CURRENT-1]}" == --notify ]]; then
-    _arguments -s "${launch_specs[@]}"
-  fi
+  _omc__claude_delegate && return
 
-  _omc__claude_delegate
+  _arguments -s \
+    "${_claude_wrapper_option_specs[@]}" \
+    '(-h --help)'{-h,--help}'[display help for command]'
 }
 
 _omc__complete_config() {
