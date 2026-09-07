@@ -33,10 +33,51 @@
 #
 # -----------------------------------------------------------------------------
 #
-# https://github.com/Yeachan-Heo/oh-my-claudecode
+# https://github.com/Yeachan-Heo/oh-my-claudecode  (branch: dev)
 #
-# 4.11.6 (Oh-My-ClaudeCode)
-# Source of truth: `omc --help` and nested `omc <command> --help`.
+# 5.3.0 (Oh-My-ClaudeCode)
+#
+# Derived from `omc --help` walked breadth-first over every command path, then
+# reconciled against the Commander definition the installed build runs from.
+# Every option here was confirmed against the binary: strict Commander paths
+# by ending a probe in an unknown sentinel flag
+# (`omc <path> <flag> [value] --zz-definitely-not-a-flag`), which aborts in
+# option parsing so no command action runs; the hand-parsed commands by
+# calling the shipped extractors with a synthetic argv and checking which
+# tokens they consume.
+#
+# Claude Code passthrough
+# -----------------------
+# Bare `omc <args>` and `omc launch <args>` strip only omc's own flags and
+# forward everything else to `claude` verbatim -- the whole Claude Code
+# command tree included, so `omc mcp list` really runs `claude mcp list`.
+# Rather than copy that surface (it moves every Claude Code release), those
+# two paths rewrite `words` the way omc rewrites argv and hand off to the
+# `_claude` completion in this same directory. `--madmax`/`--yolo` are
+# forwarded as `--dangerously-skip-permissions`, mirroring the binary. If
+# `_claude` is not on `fpath`, the passthrough completes nothing and omc's own
+# flags still work.
+#
+# Items marked "(hidden)" are accepted but absent from every `--help`:
+#   * commands:  postinstall  (registered with { hidden: true })
+#   * root and launch: --openclaw --telegram --discord --slack --webhook
+#     -- hand-parsed, presence-based, and each also accepts an inline
+#     `=true|false|1|0`; never a space-separated value
+#   * team:      --fixed-workers --preformed-plan  (undocumented aliases for
+#     --no-decompose, all three set the same flag)
+#
+# `--madmax` and `--yolo` are documented only inside the launch help Examples
+# block, never as options, so a parser that reads the Options: section alone
+# reports them as hidden.
+#
+# Deliberately not completed: `omc autoresearch`'s legacy flags. The command
+# is now a hard-deprecated shim that accepts any argument and only prints a
+# migration message, so completing `--mission`/`--eval`/`--resume` would
+# advertise a runtime that no longer exists.
+#
+# `omc ultragoal` and `omc alias-retirement` set helpOption(false) and parse
+# their own argv, so their surface comes from their hand-written help text,
+# not from Commander.
 #
 # -----------------------------------------------------------------------------
 
@@ -74,7 +115,6 @@ _omc__bool_values() {
   _describe 'boolean' values
 }
 
-
 _omc__complete_help_only_leaf() {
   _omc__shift_words "${1:-1}"
   words=("${reply[@]}")
@@ -99,156 +139,71 @@ _omc__describe_static_items() {
   _describe "$description" items
 }
 
-_omc__claude_commands() {
-  local -a commands
-  commands=(
-    'agents:list configured agents'
-    'auth:manage authentication'
-    'auto-mode:inspect auto mode classifier configuration'
-    'doctor:check the health of the Claude Code auto-updater'
-    'install:install Claude Code native build'
-    'mcp:configure and manage MCP servers'
-    'plugin:manage Claude Code plugins'
-    'plugins:manage Claude Code plugins'
-    'setup-token:set up a long-lived authentication token'
-    'update:check for updates and install if available'
-    'upgrade:check for updates and install if available'
-  )
-  _describe 'claude command' commands
+# Rewrite `words` for the Claude Code passthrough, mirroring
+# normalizeClaudeLaunchArgs(): drop the flags omc consumes itself and map
+# --madmax/--yolo onto --dangerously-skip-permissions. words[1] (omc, or
+# `launch` after the dispatcher's shift) becomes `claude` so the nested
+# completion sees a well-formed command line.
+_omc__claude_words() {
+  local -a out
+  local word
+  local -i index new_current skip
+
+  out=(claude)
+  new_current=0
+  skip=0
+
+  for (( index = 2; index <= ${#words}; index++ )); do
+    word="${words[index]}"
+
+    if (( skip )); then
+      skip=0
+      continue
+    fi
+
+    if (( index != CURRENT )); then
+      case $word in
+        --madmax|--yolo)
+          out+=(--dangerously-skip-permissions)
+          continue
+          ;;
+        --notify)
+          # consumes a following true/false/1/0 token and nothing else
+          case "${words[index+1]}" in
+            true|false|1|0) skip=1 ;;
+          esac
+          continue
+          ;;
+        --notify=*|--openclaw|--openclaw=*|--telegram|--telegram=*)
+          continue
+          ;;
+        --discord|--discord=*|--slack|--slack=*|--webhook|--webhook=*)
+          continue
+          ;;
+      esac
+    fi
+
+    out+=("$word")
+    (( index == CURRENT )) && new_current=${#out}
+  done
+
+  (( new_current )) || new_current=$(( ${#out} + 1 ))
+  reply=("${out[@]}")
+  REPLY=$new_current
 }
 
-_omc__claude_models() {
-  local -a models
-  models=(
-    'claude-haiku-4-5:The fastest model with near-frontier intelligence'
-    'claude-sonnet-5:The best combination of speed and intelligence'
-    "claude-opus-4-8:Anthropic's most capable Opus-tier model for complex reasoning and agentic coding"
-    "claude-fable-5:Anthropic's most capable widely released model, for the most demanding reasoning and long-horizon agentic work"
-    'default:Clears any model override and reverts to the recommended model for your account type. Not itself a model alias'
-    'fable:Uses Claude Fable 5 for your hardest and longest-running tasks'
-    'sonnet:latest Sonnet model'
-    'opus:latest Opus model'
-    'haiku:latest Opus model Haiku model'
-    'opusplan:Uses opus during plan mode, then switches to sonnet for execution'
-  )
-  _describe 'model' models
-}
+# Hand the current word to the `_claude` completion. Matches accumulate, so
+# the caller's own `_arguments` pass and this one both contribute.
+_omc__claude_delegate() {
+  # never delegate while completing the value of an omc-only flag
+  [[ "${words[CURRENT-1]}" == --notify ]] && return 1
 
-_omc__claude_output_formats() {
-  local -a formats
-  formats=(
-    'text:plain text output'
-    'json:single JSON result'
-    'stream-json:streaming JSON output'
-  )
-  _describe 'output format' formats
-}
+  (( $+functions[_claude] )) || return 1
 
-_omc__claude_input_formats() {
-  local -a formats
-  formats=(
-    'text:plain text input'
-    'stream-json:streaming JSON input'
-  )
-  _describe 'input format' formats
-}
-
-_omc__claude_effort_levels() {
-  local -a levels
-  levels=(
-    'low:low effort'
-    'medium:medium effort'
-    'high:high effort'
-    'xhigh:extra high effort'
-    'max:maximum effort'
-  )
-  _describe 'effort level' levels
-}
-
-_omc__claude_permission_modes() {
-  local -a modes
-  modes=(
-    'acceptEdits:accept edits automatically'
-    'auto:auto mode'
-    'bypassPermissions:bypass permissions'
-    'default:default permission mode'
-    'dontAsk:never ask for permissions'
-    'plan:plan mode'
-  )
-  _describe 'permission mode' modes
-}
-
-_omc__claude_setting_sources() {
-  local -a sources
-  sources=(
-    'user:user settings'
-    'project:project settings'
-    'local:local settings'
-  )
-  _describe 'setting source' sources
-}
-
-_omc__claude_option_specs() {
-  reply=(
-    '--add-dir=[additional directories to allow tool access to]:directory:_files -/'
-    '--agent=[agent for the current session]:agent:_omc__ask_agent_roles'
-    '--agents=[JSON object defining custom agents]:json file:_files'
-    '--allow-dangerously-skip-permissions[allow bypassing all permission checks as an option]'
-    '--allowedTools=[comma- or space-separated list of tools]:tools:_omc__message'
-    '--allowed-tools=[comma- or space-separated list of tools]:tools:_omc__message'
-    '--append-system-prompt=[append a system prompt to the default system prompt]:prompt:_omc__message'
-    '--bare[minimal mode]'
-    '--betas=[beta headers to include in API requests]:beta header:_omc__message'
-    '--brief[enable SendUserMessage tool for agent-to-user communication]'
-    '--chrome[enable Claude in Chrome integration]'
-    '(-c --continue)'{-c,--continue}'[continue the most recent conversation in the current directory]'
-    '--dangerously-skip-permissions[bypass all permission checks]'
-    '(-d --debug)'{-d,--debug}'[enable debug mode with optional category filtering]'
-    '--debug-file=[write debug logs to a specific file path]:path:_files'
-    '--disable-slash-commands[disable all skills]'
-    '--disallowedTools=[comma- or space-separated list of denied tools]:tools:_omc__message'
-    '--disallowed-tools=[comma- or space-separated list of denied tools]:tools:_omc__message'
-    '--effort=[effort level for the current session]:level:_omc__claude_effort_levels'
-    '--exclude-dynamic-system-prompt-sections[move per-machine sections out of the system prompt]'
-    '--fallback-model=[fallback model for print mode]:model:_omc__claude_models'
-    '--file=[startup file resource spec]:file spec:_omc__message'
-    '--fork-session[create a new session ID when resuming]'
-    '--from-pr=[resume a session linked to a PR]:PR number or URL:_omc__message'
-    '--ide[automatically connect to the IDE on startup]'
-    '--include-hook-events[include all hook lifecycle events in the output stream]'
-    '--include-partial-messages[include partial message chunks as they arrive]'
-    '--input-format=[input format for print mode]:format:_omc__claude_input_formats'
-    '--json-schema=[JSON Schema for structured output validation]:schema:_omc__message'
-    '--max-budget-usd=[maximum API budget in USD]:amount:_omc__message'
-    '--mcp-config=[MCP server config files or JSON strings]:config:_files'
-    '--mcp-debug[deprecated MCP debug mode]'
-    '--model=[model for the current session]:model:_omc__claude_models'
-    '(-n --name)'{-n,--name}'[set a display name for the session]:name:_omc__message'
-    '--no-chrome[disable Claude in Chrome integration]'
-    '--no-session-persistence[disable session persistence]'
-    '--output-format=[output format for print mode]:format:_omc__claude_output_formats'
-    '--permission-mode=[permission mode for the session]:mode:_omc__claude_permission_modes'
-    '--plugin-dir=[load plugins from a directory for this session only]:directory:_files -/'
-    '(-p --print)'{-p,--print}'[print response and exit]'
-    '--remote-control-session-name-prefix=[prefix for auto-generated remote-control session names]:prefix:_omc__message'
-    '--replay-user-messages[re-emit user messages from stdin]'
-    '(-r --resume)'{-r,--resume}'[resume a conversation by session ID]:session id:_omc__message'
-    '--session-id=[use a specific session UUID]:uuid:_omc__message'
-    '--setting-sources=[setting sources to load]:sources:_omc__claude_setting_sources'
-    '--settings=[settings JSON file or string]:settings:_files'
-    '--strict-mcp-config[only use MCP servers from --mcp-config]'
-    '--system-prompt=[system prompt to use for the session]:prompt:_omc__message'
-    '--tmux=-[create a tmux session for the worktree]:mode:(classic)'
-    '--tools=[list of available built-in tools]:tools:_omc__message'
-    '--verbose[override verbose mode setting from config]'
-    '(-w --worktree)'{-w,--worktree}'[create a new git worktree for this session]:name:_omc__message'
-  )
-}
-
-_omc__keep_policy_values() {
-  _omc__describe_static_items 'keep policy' \
-    'score_improvement:keep only when evaluator score improves' \
-    'pass_only:keep only passing candidates'
+  _omc__claude_words
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+  _claude
 }
 
 _omc__wait_daemon_actions() {
@@ -289,6 +244,9 @@ _omc__team_api_operations() {
     'read-task-approval:read task approval state'
     'write-task-approval:write task approval state'
     'orphan-cleanup:clean orphaned team state'
+    'recover-worker:recover a stalled worker'
+    'write-task-checkpoint:write a task resume checkpoint'
+    'read-recovery-result:read the result of a recovery request'
   )
   _describe 'team api operation' operations
 }
@@ -357,63 +315,6 @@ _omc__team_names() {
   fi
 }
 
-_omc__collect_autoresearch_run_ids() {
-  local -a manifests run_ids
-  local manifest
-
-  manifests=(
-    .omc/logs/autoresearch/*/manifest.json(N)
-    .omc/logs/autoresearch/*/*/manifest.json(N)
-  )
-
-  run_ids=()
-  for manifest in "${manifests[@]}"; do
-    run_ids+=("${manifest:h:t}")
-  done
-
-  reply=(${(ou)run_ids})
-}
-
-_omc__autoresearch_run_ids() {
-  local -a run_ids
-
-  _omc__collect_autoresearch_run_ids
-  run_ids=("${reply[@]}")
-
-  if (( $#run_ids )); then
-    _describe 'autoresearch run id' run_ids
-  else
-    _omc__message 'run id'
-  fi
-}
-
-_omc__collect_mission_dirs() {
-  local -a paths names
-  local path
-
-  paths=(missions/*(/N))
-  names=()
-  for path in "${paths[@]}"; do
-    [[ -f $path/mission.md && -f $path/sandbox.md ]] || continue
-    names+=("${path:t}")
-  done
-
-  reply=(${(ou)names})
-}
-
-_omc__mission_dirs() {
-  local -a names
-
-  _omc__collect_mission_dirs
-  names=("${reply[@]}")
-
-  if (( $#names )); then
-    _describe 'mission directory' names
-  else
-    _message 'mission directory'
-  fi
-}
-
 _omc__git_branches() {
   local current_branch line name desc
   local -a lines branches
@@ -448,6 +349,64 @@ _omc__git_branches() {
   fi
 }
 
+# `omc checkpoint list` prints "<id>  <createdAt>  <label>" per checkpoint, or
+# "No checkpoints." when there are none. Local git shadow commits, ~0.2 s, no
+# network, so no cache file.
+_omc__checkpoint_ids() {
+  local -a entries ids
+  local line id rest
+
+  entries=(${(f)"$(_call_program checkpoint-ids omc checkpoint list 2>/dev/null)"})
+
+  for line in "${entries[@]}"; do
+    [[ $line == 'No checkpoints.'* ]] && continue
+    id="${line%%[[:space:]]*}"
+    [[ -n $id ]] || continue
+    rest="${line#$id}"
+    rest="${rest##[[:space:]]##}"
+    ids+=("${id}:${rest:-checkpoint}")
+  done
+
+  if (( ${#ids} == 0 )); then
+    _omc__message 'checkpoint id'
+    return
+  fi
+  _describe 'checkpoint' ids
+}
+
+# Run ids are the directory names under --runs-root (default .omc/graph-runs).
+# Read the directory rather than spawning omc: there is no listing subcommand.
+_omc__graph_run_ids() {
+  local runs_root="${opt_args[--runs-root]:-.omc/graph-runs}"
+  local -a ids
+  ids=(${runs_root}/*(N/:t))
+
+  if (( ${#ids} == 0 )); then
+    _omc__message 'graph run id'
+    return
+  fi
+  _describe 'graph run id' ids
+}
+
+# Multi-plan ids are directory names under .omc/ultragoal/plans.
+_omc__ultragoal_plan_ids() {
+  local -a ids
+  ids=(.omc/ultragoal/plans/*(N/:t))
+
+  if (( ${#ids} == 0 )); then
+    _omc__message 'plan id'
+    return
+  fi
+  _describe 'ultragoal plan' ids
+}
+
+_omc__ultragoal_statuses() {
+  _omc__describe_static_items 'goal status' \
+    'complete:the goal is done' \
+    'failed:the goal failed' \
+    'blocked:the goal is blocked'
+}
+
 _omc__top_commands() {
   local -a commands
 
@@ -468,13 +427,19 @@ _omc__top_commands() {
     'teleport:create git worktrees for isolated development'
     'session:inspect prior local session history'
     'sessions:alias for session history'
+    'capabilities:create or verify deterministic capability lockfiles'
     'doctor:diagnostic tools for troubleshooting OMC installation'
     'setup:sync hooks, agents, and skills'
     'hud:run the OMC HUD statusline renderer'
     'mission-board:render the opt-in mission board snapshot'
     'team:team CLI API for worker lifecycle operations'
-    'autoresearch:launch thin-supervisor autoresearch'
+    'autoresearch:hard-deprecated shim; use deep-interview + the autoresearch skill'
     'ralphthon:run the autonomous hackathon lifecycle mode'
+    'ultragoal:durable multi-goal workflow with Claude Code /goal handoff'
+    'alias-retirement:alias retirement verifier and generated-closure inventory'
+    'graph:execute sealed graph descriptors'
+    'checkpoint:snapshot and restore the working tree'
+    'postinstall:(hidden) run post-install setup'
   )
 
   _describe 'omc command' commands
@@ -497,13 +462,72 @@ _omc__teleport_commands() {
 _omc__session_commands() {
   _omc__describe_static_items 'session command' \
     'search:search prior local session transcripts and OMC artifacts' \
+    'friction:report local session context-bloat and operator-friction signals' \
+    'help:display help for command'
+}
+
+_omc__session_friction_commands() {
+  _omc__describe_static_items 'friction command' \
+    'report:summarize local session bloat and friction without raw prompt content' \
     'help:display help for command'
 }
 
 _omc__doctor_commands() {
   _omc__describe_static_items 'doctor command' \
+    'team-routing:probe CLI presence for every provider in team.roleRouting' \
     'conflicts:check for plugin coexistence issues and configuration conflicts' \
     'help:display help for command'
+}
+
+_omc__capabilities_commands() {
+  _omc__describe_static_items 'capabilities command' \
+    'lock:write the current deterministic tool/skill/capability lockfile' \
+    'check:check the current capability surface against a lockfile' \
+    'help:display help for command'
+}
+
+_omc__graph_commands() {
+  _omc__describe_static_items 'graph command' \
+    'run:run a graph descriptor with kill/resume support' \
+    'approvals:list and decide pending human-approval gates for graph runs' \
+    'help:display help for command'
+}
+
+_omc__graph_approvals_commands() {
+  _omc__describe_static_items 'approvals command' \
+    'list:list pending approval requests across all runs' \
+    'decide:write an approval decision for one pending gate' \
+    'help:display help for command'
+}
+
+_omc__checkpoint_commands() {
+  _omc__describe_static_items 'checkpoint command' \
+    'create:snapshot the working tree' \
+    'list:list checkpoints (oldest first)' \
+    'rollback:restore the working tree from a checkpoint' \
+    'help:display help for command'
+}
+
+_omc__ultragoal_commands() {
+  _omc__describe_static_items 'ultragoal command' \
+    'create-goals:create the goal plan from a brief' \
+    'create:alias for create-goals' \
+    'complete-goals:complete the next goal and print the /goal handoff' \
+    'complete:alias for complete-goals' \
+    'next:alias for complete-goals' \
+    'start-next:alias for complete-goals' \
+    'add-goal:append a goal to the plan' \
+    'record-review-blockers:record review blockers as a follow-up goal' \
+    'checkpoint:record a goal outcome in the ledger' \
+    'status:print the current plan status' \
+    'list-plans:list multi-plan ids' \
+    'help:display help for command'
+}
+
+_omc__alias_retirement_commands() {
+  _omc__describe_static_items 'alias-retirement command' \
+    'verify:verify all aliases against the retirement contract' \
+    'help:show help'
 }
 
 _omc__team_commands() {
@@ -515,9 +539,16 @@ _omc__team_commands() {
 
 _omc__team_agent_spec() {
   local cur fragment prefix count agent_type
+  local -a agent_types roles
   cur="${words[CURRENT]}"
   prefix=''
   fragment="$cur"
+
+  agent_types=(claude codex gemini grok cursor antigravity)
+  roles=(
+    architect executor planner analyst critic debugger verifier
+    code-reviewer security-reviewer test-engineer designer writer scientist
+  )
 
   if [[ $fragment == *,* ]]; then
     prefix="${fragment%,*},"
@@ -525,19 +556,13 @@ _omc__team_agent_spec() {
   fi
 
   if [[ $fragment == <->: ]]; then
-    compadd -Q -S '' -- \
-      "${prefix}${fragment}claude" \
-      "${prefix}${fragment}codex" \
-      "${prefix}${fragment}gemini"
+    compadd -Q -S '' -- "${agent_types[@]/#/${prefix}${fragment}}"
     return
   fi
 
   if [[ $fragment == <->:* && $fragment != *:*:* ]]; then
     count="${fragment%%:*}"
-    compadd -Q -S '' -- \
-      "${prefix}${count}:claude" \
-      "${prefix}${count}:codex" \
-      "${prefix}${count}:gemini"
+    compadd -Q -S '' -- "${agent_types[@]/#/${prefix}${count}:}"
     return
   fi
 
@@ -545,28 +570,14 @@ _omc__team_agent_spec() {
     count="${fragment%%:*}"
     agent_type="${fragment#*:}"
     agent_type="${agent_type%%:*}"
-    compadd -Q -S '' -- \
-      "${prefix}${count}:${agent_type}:architect" \
-      "${prefix}${count}:${agent_type}:executor" \
-      "${prefix}${count}:${agent_type}:planner" \
-      "${prefix}${count}:${agent_type}:analyst" \
-      "${prefix}${count}:${agent_type}:critic" \
-      "${prefix}${count}:${agent_type}:debugger" \
-      "${prefix}${count}:${agent_type}:verifier" \
-      "${prefix}${count}:${agent_type}:code-reviewer" \
-      "${prefix}${count}:${agent_type}:security-reviewer" \
-      "${prefix}${count}:${agent_type}:test-engineer" \
-      "${prefix}${count}:${agent_type}:designer" \
-      "${prefix}${count}:${agent_type}:writer" \
-      "${prefix}${count}:${agent_type}:scientist"
+    compadd -Q -S '' -- "${roles[@]/#/${prefix}${count}:${agent_type}:}"
     return
   fi
 
   compadd -Q -S '' -- \
-    '1:claude' '1:codex' '1:gemini' \
-    '2:claude' '2:codex' '2:gemini' \
-    '1:codex:architect' '1:codex:executor' '1:codex:planner' \
-    '1:gemini:analyst' '1:claude:critic'
+    "${agent_types[@]/#/1:}" \
+    "${agent_types[@]/#/2:}" \
+    "${agent_types[@]/#/3:}"
 }
 
 _omc__launch_option_specs() {
@@ -586,32 +597,34 @@ _omc__launch_option_specs() {
 _omc__complete_root() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a launch_specs claude_specs
+  local -a launch_specs
 
   _omc__launch_option_specs
   launch_specs=("${reply[@]}")
-  _omc__claude_option_specs
-  claude_specs=("${reply[@]}")
 
-  _arguments -C -s \
-    '(-V --version)'{-V,--version}'[output the version number]' \
-    ${launch_specs[@]} \
-    ${claude_specs[@]} \
-    '1:omc command:->command' \
-    '*::launch argument:_omc__prompt_text'
+  # Offer omc's own flags only where they are what is being typed. Running
+  # this pass unconditionally would dump them over a claude option's value
+  # too, because these specs cannot know that `--model` takes an argument.
+  if [[ "${words[CURRENT]}" == -* || "${words[CURRENT-1]}" == --notify ]]; then
+    _arguments -s \
+      '(-V --version)'{-V,--version}'[output the version number]' \
+      "${launch_specs[@]}"
+  fi
 
-  case $state in
-    command)
-      _omc__top_commands
-      ;;
-  esac
+  # omc's own subcommands belong in the command slot only; everything else
+  # this path accepts is Claude Code's, added by the delegation below
+  if (( CURRENT == 2 )) && [[ "${words[CURRENT]}" != -* ]]; then
+    _omc__top_commands
+  fi
+
+  _omc__claude_delegate
 }
 
 _omc__complete_launch_like() {
   local shift_count=${1:-0}
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a launch_specs claude_specs
+  local -a launch_specs
 
   if (( shift_count > 0 )); then
     _omc__shift_words "$shift_count"
@@ -621,20 +634,13 @@ _omc__complete_launch_like() {
 
   _omc__launch_option_specs
   launch_specs=("${reply[@]}")
-  _omc__claude_option_specs
-  claude_specs=("${reply[@]}")
 
-  _arguments -C -s \
-    ${launch_specs[@]} \
-    ${claude_specs[@]} \
-    '1:claude command:->command' \
-    '*::claude argument:_omc__prompt_text'
+  # see _omc__complete_root for why this pass is gated
+  if [[ "${words[CURRENT]}" == -* || "${words[CURRENT-1]}" == --notify ]]; then
+    _arguments -s "${launch_specs[@]}"
+  fi
 
-  case $state in
-    command)
-      _omc__claude_commands
-      ;;
-  esac
+  _omc__claude_delegate
 }
 
 _omc__complete_config() {
@@ -858,10 +864,20 @@ _omc__complete_teleport() {
 _omc__complete_session_like() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
+  local -a report_specs
 
   _omc__shift_words 1
   words=("${reply[@]}")
   CURRENT=$REPLY
+
+  report_specs=(
+    '(-l --limit)'{-l+,--limit=}'[maximum number of results]:number'
+    '(-s --session)'{-s+,--session=}'[restrict to a specific session id]:session id: _omc__message "session id"'
+    '--since=[only include artifacts since a duration or date]:duration or date: _omc__message "duration or date"'
+    '--project=[project scope]:scope:(current all)'
+    '--json[output as JSON]'
+    '(-h --help)'{-h,--help}'[display help for command]'
+  )
 
   case $words[2] in
     search)
@@ -869,23 +885,50 @@ _omc__complete_session_like() {
       words=("${reply[@]}")
       CURRENT=$REPLY
       _arguments -s \
-        '(-l --limit)'{-l,--limit}'[maximum number of matches to return]:number' \
-        '(-s --session)'{-s,--session}'[restrict search to a specific session ID]:session id:_omc__message' \
-        '--since[only include matches since a duration or date]:duration or date:_omc__message' \
-        '--project[project scope]:scope:(current all)' \
-        '--json[output results as JSON]' \
-        '--case-sensitive[match query case-sensitively]' \
-        '--context[snippet context on each side of the match]:characters' \
-        '1:query:_omc__prompt_text' \
+        "${report_specs[@]}" \
+        '--case-sensitive[match the query case-sensitively]' \
+        '--context=[snippet context on each side of a match]:characters' \
+        '1:query:_omc__prompt_text'
+      return
+      ;;
+    friction)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+
+      case $words[2] in
+        report)
+          _omc__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s "${report_specs[@]}"
+          return
+          ;;
+        help)
+          _omc__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments '1:friction command:_omc__session_friction_commands'
+          return
+          ;;
+      esac
+
+      _arguments -C -s \
+        '1:friction command:->command' \
         '(-h --help)'{-h,--help}'[display help for command]'
+
+      case $state in
+        command)
+          _omc__session_friction_commands
+          ;;
+      esac
       return
       ;;
     help)
       _omc__shift_words 1
       words=("${reply[@]}")
       CURRENT=$REPLY
-      _arguments \
-        '1:session command:((search\:"search session history" help\:"display help for command"))'
+      _arguments '1:session command:_omc__session_commands'
       return
       ;;
   esac
@@ -897,6 +940,45 @@ _omc__complete_session_like() {
   case $state in
     command)
       _omc__session_commands
+      ;;
+  esac
+}
+
+_omc__complete_capabilities() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    lock|check)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--json[output as JSON]' \
+        '--lockfile=[lockfile path]:path:_files' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments '1:capabilities command:_omc__capabilities_commands'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '1:capabilities command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__capabilities_commands
       ;;
   esac
 }
@@ -920,18 +1002,28 @@ _omc__complete_doctor() {
         '(-h --help)'{-h,--help}'[display help for command]'
       return
       ;;
+    team-routing)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--json[output as JSON]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
     help)
       _omc__shift_words 1
       words=("${reply[@]}")
       CURRENT=$REPLY
-      _arguments \
-        '1:doctor command:((conflicts\:"check for plugin conflicts" help\:"display help for command"))'
+      _arguments '1:doctor command:_omc__doctor_commands'
       return
       ;;
   esac
 
   _arguments -C -s \
     '--plugin-dir=[override the OMC plugin root directory]:path:_files -/' \
+    '--team-routing[probe CLI presence for every provider in team.roleRouting]' \
+    '--json[output as JSON (used with --team-routing)]' \
     '1:doctor command:->command' \
     '(-h --help)'{-h,--help}'[display help for command]'
 
@@ -1036,6 +1128,11 @@ _omc__complete_team() {
 
   _arguments -C -s \
     '--new-window[launch the team in a new tmux window]' \
+    '--auto-merge[per-commit auto-merge to the leader with auto-rebase fanout]' \
+    '(--no-decompose --fixed-workers --preformed-plan)--no-decompose[treat the launch text as pre-authored worker scope]' \
+    '(--no-decompose --fixed-workers --preformed-plan)--fixed-workers[(hidden alias for --no-decompose)]' \
+    '(--no-decompose --fixed-workers --preformed-plan)--preformed-plan[(hidden alias for --no-decompose)]' \
+    '--json[output as JSON]' \
     '1:team command or worker spec:->first' \
     '*::team argument:->rest'
 
@@ -1055,51 +1152,17 @@ _omc__complete_team() {
   esac
 }
 
+# Hard-deprecated shim: it accepts any argument and only prints a migration
+# message, so the legacy --mission/--eval/--resume flags are deliberately not
+# offered. See the header.
 _omc__complete_autoresearch() {
-  local curcontext="$curcontext" state line
-  typeset -A opt_args
-
   _omc__shift_words 1
   words=("${reply[@]}")
   CURRENT=$REPLY
 
-  case $words[2] in
-    init)
-      _omc__shift_words 1
-      words=("${reply[@]}")
-      CURRENT=$REPLY
-      _arguments -s \
-        '--topic[seed the guided setup with a topic]:topic:_omc__message' \
-        '--eval[evaluator command]:command:_omc__message' \
-        '--keep-policy[keep policy]:policy:_omc__keep_policy_values' \
-        '--slug[custom mission slug]:slug:_omc__message' \
-        '(-h --help)'{-h,--help}'[display help for command]'
-      return
-      ;;
-    help|-h|--help)
-      return
-      ;;
-  esac
-
-  _arguments -C -s \
-    '--topic[seed the guided intake with a topic]:topic:_omc__message' \
-    '--evaluator[evaluator command for guided intake]:command:_omc__message' \
-    '--mission[bypass interview with raw mission text]:mission text:_omc__message' \
-    '--eval[bypass interview with evaluator command]:command:_omc__message' \
-    '--sandbox[backward-compatible alias for --eval]:command:_omc__message' \
-    '--keep-policy[keep policy]:policy:_omc__keep_policy_values' \
-    '--slug[custom run slug]:slug:_omc__message' \
-    '--resume[resume an existing run]:run id:_omc__autoresearch_run_ids' \
-    '1:mission directory or init:->target' \
-    '*::claude argument:_omc__message'
-
-  case $state in
-    target)
-      _alternative \
-        'subcommands:autoresearch subcommand:(init)' \
-        'mission dirs:mission directory:_omc__mission_dirs'
-      ;;
-  esac
+  _arguments -s \
+    '(-h --help)'{-h,--help}'[show the migration message]' \
+    '*:: : _omc__message "hard-deprecated; use /deep-interview --autoresearch"'
 }
 
 _omc__complete_ralphthon() {
@@ -1130,6 +1193,9 @@ _omc__complete_ask() {
       'claude:use Claude as the advisor provider'
       'codex:use Codex as the advisor provider'
       'gemini:use Gemini as the advisor provider'
+      'antigravity:use Antigravity as the advisor provider'
+      'grok:use Grok as the advisor provider'
+      'cursor:use Cursor as the advisor provider'
     )
     _describe 'provider' providers
     return
@@ -1148,13 +1214,339 @@ _omc__complete_ask() {
     '*::prompt text:_omc__prompt_text'
 }
 
+# ultragoal sets helpOption(false) and parses its own argv, so the flag sets
+# below come from its hand-written help text rather than from Commander.
+_omc__complete_ultragoal() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a plan_specs
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  plan_specs=(
+    '--plan-id=[operate on a specific multi-plan id]:plan id:_omc__ultragoal_plan_ids'
+    '--json[output as JSON]'
+  )
+
+  case $words[2] in
+    create-goals|create)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '(--brief --brief-file --from-stdin)--brief=[mission brief text]:text: _omc__message "brief text"' \
+        '(--brief --brief-file --from-stdin)--brief-file=[read the mission brief from a file]:file:_files' \
+        '(--brief --brief-file --from-stdin)--from-stdin[read the mission brief from stdin]' \
+        '*--goal=[add a goal as title\:\:objective]:goal: _omc__message "title::objective"' \
+        '--claude-goal-mode=[how Claude /goal covers the run]:mode:(aggregate per-story)' \
+        '--force[overwrite an existing plan]' \
+        '(--plan-id --auto-plan-id)--auto-plan-id[derive the plan id automatically]' \
+        "${plan_specs[@]}" \
+        '(-h --help)'{-h,--help}'[show help]'
+      return
+      ;;
+    complete-goals|complete|next|start-next)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--retry-failed[retry goals that previously failed]' \
+        "${plan_specs[@]}" \
+        '(-h --help)'{-h,--help}'[show help]' \
+        '::goal id: _omc__message "goal id"'
+      return
+      ;;
+    add-goal)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--title=[goal title]:title: _omc__message "title"' \
+        '--objective=[goal objective]:text: _omc__message "objective"' \
+        '--evidence=[evidence required to close the goal]:text: _omc__message "evidence"' \
+        "${plan_specs[@]}" \
+        '(-h --help)'{-h,--help}'[show help]'
+      return
+      ;;
+    record-review-blockers)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--goal-id=[goal the blockers belong to]:goal id: _omc__message "goal id"' \
+        '--title=[follow-up goal title]:title: _omc__message "title"' \
+        '--objective=[follow-up goal objective]:text: _omc__message "objective"' \
+        '--evidence=[review findings]:text: _omc__message "review findings"' \
+        '--claude-goal-json=[active Claude /goal JSON or a path to it]:json or path:_files' \
+        "${plan_specs[@]}" \
+        '(-h --help)'{-h,--help}'[show help]'
+      return
+      ;;
+    checkpoint)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--goal-id=[goal to checkpoint]:goal id: _omc__message "goal id"' \
+        '--status=[goal outcome]:status:_omc__ultragoal_statuses' \
+        '--evidence=[evidence for the outcome]:text: _omc__message "evidence"' \
+        '--claude-goal-json=[Claude /goal JSON or a path to it]:json or path:_files' \
+        '--quality-gate-json=[quality gate JSON or a path to it]:json or path:_files' \
+        "${plan_specs[@]}" \
+        '(-h --help)'{-h,--help}'[show help]'
+      return
+      ;;
+    status)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--claude-goal-json=[Claude /goal JSON or a path to it]:json or path:_files' \
+        "${plan_specs[@]}" \
+        '(-h --help)'{-h,--help}'[show help]'
+      return
+      ;;
+    list-plans)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--json[output as JSON]' \
+        '(-h --help)'{-h,--help}'[show help]'
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments '1:ultragoal command:_omc__ultragoal_commands'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '(-h --help)'{-h,--help}'[show help]' \
+    '1:ultragoal command:->command'
+
+  case $state in
+    command)
+      _omc__ultragoal_commands
+      ;;
+  esac
+}
+
+# alias-retirement also sets helpOption(false); `verify` is the default
+# subcommand, so its options are accepted with or without the word.
+_omc__complete_alias_retirement() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+  local -a verify_specs
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  verify_specs=(
+    '--json[machine-readable JSON output]'
+    '--out=[write receipts JSON to a file]:path:_files'
+    '--current-version=[override the current package version]:semver: _omc__message "semver"'
+    '--now=[override the evaluation time]:ISO-8601: _omc__message "ISO-8601 timestamp"'
+    '--usage-history=[alias usage history JSON or a path to it]:json or path:_files'
+    '--critical-integrations=[known critical consumers JSON or a path to it]:json or path:_files'
+    '--check-eligible[exit 2 when any alias is eligible for retirement]'
+    '(-h --help)'{-h,--help}'[show help]'
+  )
+
+  case $words[2] in
+    verify)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s "${verify_specs[@]}"
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments '1:alias-retirement command:_omc__alias_retirement_commands'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    "${verify_specs[@]}" \
+    '1:alias-retirement command:->command'
+
+  case $state in
+    command)
+      _omc__alias_retirement_commands
+      ;;
+  esac
+}
+
+_omc__complete_graph() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    run)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--runs-root=[directory holding per-run state]:directory:_files -/' \
+        '--approval-mode=[approval gate style]:mode:(stdin remote)' \
+        '--approval-timeout=[remote approvals\: max seconds to wait]:seconds' \
+        '--approval-timeout-policy=[resolution for an expired request]:policy:(deny approve)' \
+        '--checkpoint[snapshot the working tree before the run]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:descriptor:_files'
+      return
+      ;;
+    approvals)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+
+      case $words[2] in
+        list)
+          _omc__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -s \
+            '--runs-root=[directory holding per-run state]:directory:_files -/' \
+            '(-h --help)'{-h,--help}'[display help for command]'
+          return
+          ;;
+        decide)
+          _omc__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments -C -s \
+            '--runs-root=[directory holding per-run state]:directory:_files -/' \
+            '--by=[record who made the decision]:who: _omc__message "who"' \
+            '--rollback=[roll the working tree back to a checkpoint after a denial]:checkpoint:_omc__checkpoint_ids' \
+            '--force[with --rollback\: discard changes made after the checkpoint]' \
+            '(-h --help)'{-h,--help}'[display help for command]' \
+            '1:run id:_omc__graph_run_ids' \
+            '2:activation id: _omc__message "activation id"' \
+            '3:decision:(approved denied)'
+          return
+          ;;
+        help)
+          _omc__shift_words 1
+          words=("${reply[@]}")
+          CURRENT=$REPLY
+          _arguments '1:approvals command:_omc__graph_approvals_commands'
+          return
+          ;;
+      esac
+
+      _arguments -C -s \
+        '1:approvals command:->command' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+
+      case $state in
+        command)
+          _omc__graph_approvals_commands
+          ;;
+      esac
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments '1:graph command:_omc__graph_commands'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '1:graph command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__graph_commands
+      ;;
+  esac
+}
+
+_omc__complete_checkpoint() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    create)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--label=[human-readable label]:text: _omc__message "label"' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    list)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    rollback)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--force[required when the working tree has uncommitted changes]' \
+        '(-h --help)'{-h,--help}'[display help for command]' \
+        '1:checkpoint:_omc__checkpoint_ids'
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments '1:checkpoint command:_omc__checkpoint_commands'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '1:checkpoint command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__checkpoint_commands
+      ;;
+  esac
+}
+
+# Hidden root command, registered with { hidden: true }.
+_omc__complete_postinstall() {
+  _omc__complete_help_only_leaf 1
+}
+
 function _omc() {
   case $words[2] in
     ''|-*)
       _omc__complete_root
       ;;
     launch)
-      _omc__complete_launch_like 2
+      _omc__complete_launch_like 1
       ;;
     interop)
       _omc__complete_info
@@ -1198,6 +1590,9 @@ function _omc() {
     session|sessions)
       _omc__complete_session_like
       ;;
+    capabilities)
+      _omc__complete_capabilities
+      ;;
     doctor)
       _omc__complete_doctor
       ;;
@@ -1219,7 +1614,23 @@ function _omc() {
     ralphthon)
       _omc__complete_ralphthon
       ;;
+    ultragoal)
+      _omc__complete_ultragoal
+      ;;
+    alias-retirement)
+      _omc__complete_alias_retirement
+      ;;
+    graph)
+      _omc__complete_graph
+      ;;
+    checkpoint)
+      _omc__complete_checkpoint
+      ;;
+    postinstall)
+      _omc__complete_postinstall
+      ;;
     *)
+      # not an omc subcommand: bare `omc` forwards it to claude
       _omc__complete_root
       ;;
   esac
@@ -1227,9 +1638,4 @@ function _omc() {
 
 _omc "$@"
 
-# -----------------------------------------------------------------------------
-#
-#
-# -----------------------------------------------------------------------------
-
-# vim:ft=zsh:et:sts=2:sw=2
+# vim: ft=zsh sw=2 ts=2 et
