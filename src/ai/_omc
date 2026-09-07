@@ -52,25 +52,37 @@
 # forward everything else to `claude` verbatim -- the whole Claude Code
 # command tree included, so `omc mcp list` really runs `claude mcp list`.
 # Rather than copy that surface (it moves every Claude Code release), those
-# two paths rewrite arg0 to `claude`, put omc's own root option specs in
-# `_claude_wrapper_option_specs`, and hand off to the `_claude` completion in
-# this same directory, which folds both sets into its single `_arguments`
-# call. If `_claude` is not on `fpath`, the passthrough completes nothing and
-# omc's own flags still work.
+# two paths rewrite arg0 to `claude` and hand off to the `_claude` completion
+# in this same directory. If `_claude` is not on `fpath`, the passthrough
+# completes nothing and omc's own flags still work.
 #
-# Both sets must come from ONE `_arguments` call. Each call sizes its
-# description column from its own matches, so two calls writing into one
-# listing disagree and, past roughly 120 columns, the descriptions end up
-# stacked below the names instead of beside them. That is also why
-# `_omc__claude_delegate` reports only whether `_claude` was available and
-# never its exit status: `_claude` returns non-zero whenever the current word
-# matches nothing it offers, and treating that as failure would run the
-# fallback `_arguments` as a second pass.
+# Flag names are offered as two labelled groups, `-- omc option --` and
+# `-- claude option --`, so a flag's owner is visible at a glance -- the same
+# split the two command groups give. Claude's group is converted from
+# `_claude__top_option_specs`, so it still tracks Claude Code releases and
+# nothing is copied.
 #
-# `-V` is injected but `--version` is not: claude declares `--version` too,
-# and a duplicate spec in the merged call would collide. A flat flag audit
-# reports `-V, --version` as missing for that reason -- expected, since the
-# long form arrives by delegation.
+# Neither group may come from `_arguments`. An `_arguments` call sizes its
+# description column from its own matches, so pairing its option listing with
+# any other group drops the descriptions past roughly 120 terminal columns
+# (measured: fine at 80, names only at 200). And `_describe` alone is not
+# enough either -- zsh picks a compact display for a large multi-group
+# listing at that width. Both groups therefore go through `compadd -l` with a
+# pre-formatted display string, which pins one match per line and keeps the
+# descriptions at any width. Values, subcommands and positionals still go
+# through `_claude` and its `_arguments`, where arity and exclusions belong.
+#
+# The cost of leaving `_arguments` for flag NAMES is that a flag already on
+# the line is still offered, and completing `--mo` does not append the `=`.
+#
+# That is also why `_omc__claude_delegate` reports only whether `_claude` was
+# available and never its exit status: `_claude` returns non-zero whenever
+# the current word matches nothing it offers, and treating that as failure
+# would run the fallback `_arguments` as a second pass.
+#
+# Values for omc's own flags are completed before the hand-off, since Claude
+# knows nothing about them. `--notify` takes the next word or an inline `=`;
+# the other five are inline-only (`--telegram=false`).
 #
 # Items marked "(hidden)" are accepted but absent from every `--help`:
 #   * commands:  postinstall  (registered with { hidden: true })
@@ -568,6 +580,148 @@ _omc__team_agent_spec() {
 # `-h`/`--help` are deliberately absent: claude declares them too, and a
 # duplicate spec in the merged `_arguments` call would collide. The fallback
 # path used when `_claude` is missing adds them back.
+# omc's own flags as their own completion group, so `omc --<TAB>` shows them
+# under `-- omc option --` rather than mixed into Claude's `-- option --`.
+#
+# These go through `_describe`, NOT a second `_arguments` call. Two
+# `_arguments` passes writing into one match listing size their description
+# columns independently and, past roughly 120 terminal columns, the
+# descriptions end up stacked below the names. Two `_describe` groups lay out
+# independently and correctly -- the same reason the two command groups
+# render cleanly.
+_omc__launch_option_descriptions() {
+  local -a opts
+  opts=(
+    '--notify:enable or disable CCNotifier events'
+    '--madmax:alias for --dangerously-skip-permissions'
+    '--yolo:alias for --dangerously-skip-permissions'
+    '--openclaw:(hidden) enable or disable OpenClaw mode'
+    '--telegram:(hidden) enable or disable Telegram notifications'
+    '--discord:(hidden) enable or disable Discord notifications'
+    '--slack:(hidden) enable or disable Slack notifications'
+    '--webhook:(hidden) enable or disable webhook notifications'
+  )
+  (( $# )) && opts+=("$@")
+  _omc__add_option_group omc-options 'omc option' "${opts[@]}"
+}
+
+# Values for the omc-only flags. `--notify` takes the next word or an inline
+# `=`; the other five are inline-only.
+_omc__launch_option_values() {
+  case "${words[CURRENT]}" in
+    (--notify=*|--openclaw=*|--telegram=*|--discord=*|--slack=*|--webhook=*)
+      compset -P '*='
+      _omc__bool_values
+      return 0
+      ;;
+  esac
+
+  if [[ "${words[CURRENT-1]}" == --notify ]]; then
+    _omc__bool_values
+    return 0
+  fi
+
+  return 1
+}
+
+# Add one completion group of `name:description` entries.
+#
+# `_describe` would be shorter, but zsh drops the descriptions from a large
+# MULTI-group listing once the terminal is wide (measured: fine at 80
+# columns, names only at 200). `compadd -l` forces one match per line and a
+# pre-formatted display string carries the description, so the two groups keep
+# their descriptions at any width. Padding is per group, which is also why
+# each group stays internally aligned.
+_omc__add_option_group() {
+  local tag=$1 descr=$2
+  shift 2
+
+  local -a names displays
+  local item name desc
+  local -i width=0
+
+  for item in "$@"; do
+    name="${item%%:*}"
+    (( ${#name} > width )) && width=${#name}
+  done
+
+  for item in "$@"; do
+    name="${item%%:*}"
+    desc="${item#*:}"
+    names+=("$name")
+    displays+=("${(r:$width:)name}  -- ${desc}")
+  done
+
+  local expl
+  _wanted "$tag" expl "$descr" compadd -l -d displays -a names
+}
+
+# Claude's root flags as a `-- claude option --` group, converted from
+# `_claude__top_option_specs`.
+#
+# When a flag NAME is being completed both groups have to come from
+# `_describe`. `_arguments`' own option listing sizes its description column
+# from its own matches, so pairing it with any other group drops the
+# descriptions from the listing past roughly 120 terminal columns. Values,
+# subcommands and everything else still go through `_claude` and its
+# `_arguments`, which is where exclusions and arity belong.
+# `_claude__top_option_specs` only exists once the `_claude` file has been
+# sourced, and `autoload +X` defines just `_claude` itself. Source the file
+# with its trailing run suppressed to get the helper tables.
+_omc__ensure_claude_tables() {
+  (( $+functions[_claude__top_option_specs] )) && return 0
+
+  local -a files
+  files=(${^fpath}/_claude(N))
+  (( ${#files} )) || return 1
+
+  local _claude_source_only=1
+  source "${files[1]}" 2>/dev/null
+
+  (( $+functions[_claude__top_option_specs] ))
+}
+
+_omc__claude_option_descriptions() {
+  _omc__ensure_claude_tables || return 1
+
+  local -a specs opts
+  local spec flag desc
+
+  _claude__top_option_specs
+  specs=("${reply[@]}")
+
+  for spec in "${specs[@]}"; do
+    # a leading `*` marks a repeatable option; `(...)` lists what it excludes
+    spec="${spec#\*}"
+    while [[ $spec == '('* ]]; do
+      spec="${spec#*\)}"
+    done
+
+    # the description opens at the first UNESCAPED `[`, and the text itself
+    # may contain `\[` / `\]`, so park the escaped ones out of the way first
+    spec="${spec//\\\[/$'\1'}"
+    spec="${spec//\\\]/$'\2'}"
+    [[ $spec == *'['* ]] || continue
+
+    flag="${spec%%\[*}"
+    desc="${spec#*\[}"
+    desc="${desc%%\]*}"
+
+    # `=`, `=-` and `+` say where the value goes, not part of the name
+    flag="${flag%%[=+]*}"
+    [[ -n $flag ]] || continue
+
+    desc="${desc//$'\1'/\[}"
+    desc="${desc//$'\2'/\]}"
+    desc="${desc//\\:/:}"
+
+    opts+=("${flag}:${desc}")
+  done
+
+  (( ${#opts} )) || return 1
+  _omc__add_option_group claude-options 'claude option' "${opts[@]}"
+}
+
 _omc__launch_option_specs() {
   reply=(
     '--notify=[enable or disable CCNotifier events]:boolean:_omc__bool_values'
@@ -584,33 +738,35 @@ _omc__launch_option_specs() {
 _omc__complete_root() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a _claude_wrapper_option_specs
 
-  _omc__launch_option_specs
-  _claude_wrapper_option_specs=(
-    "${reply[@]}"
-    '-V[output the version number]'
-  )
+  # a value for one of omc's own flags is omc's to complete, not Claude's
+  _omc__launch_option_values && return
 
-  # omc's own subcommands belong in the command slot only
-  if (( CURRENT == 2 )) && [[ "${words[CURRENT]}" != -* ]]; then
-    _omc__top_commands
+  # completing a flag name: two `_describe` groups, so the owner of each flag
+  # is visible and both keep their descriptions
+  if [[ "${words[CURRENT]}" == -* ]]; then
+    _omc__launch_option_descriptions '-V:output the version number'
+    _omc__claude_option_descriptions && return
+
+    # no `_claude` on fpath: omc's own flags are all there is
+    _omc__launch_option_specs
+    _arguments -s \
+      "${reply[@]}" \
+      '-V[output the version number]' \
+      '(-h --help)'{-h,--help}'[display help for command]'
+    return
   fi
 
-  # `_claude` runs the one `_arguments` call that covers both flag sets
-  _omc__claude_delegate && return
+  # omc's own subcommands belong in the command slot only
+  (( CURRENT == 2 )) && _omc__top_commands
 
-  # no `_claude` on fpath: complete omc's own flags alone
-  _arguments -s \
-    "${_claude_wrapper_option_specs[@]}" \
-    '(-h --help)'{-h,--help}'[display help for command]'
+  _omc__claude_delegate
 }
 
 _omc__complete_launch_like() {
   local shift_count=${1:-0}
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a _claude_wrapper_option_specs
 
   if (( shift_count > 0 )); then
     _omc__shift_words "$shift_count"
@@ -618,14 +774,20 @@ _omc__complete_launch_like() {
     CURRENT=$REPLY
   fi
 
-  _omc__launch_option_specs
-  _claude_wrapper_option_specs=("${reply[@]}")
+  _omc__launch_option_values && return
 
-  _omc__claude_delegate && return
+  if [[ "${words[CURRENT]}" == -* ]]; then
+    _omc__launch_option_descriptions
+    _omc__claude_option_descriptions && return
 
-  _arguments -s \
-    "${_claude_wrapper_option_specs[@]}" \
-    '(-h --help)'{-h,--help}'[display help for command]'
+    _omc__launch_option_specs
+    _arguments -s \
+      "${reply[@]}" \
+      '(-h --help)'{-h,--help}'[display help for command]'
+    return
+  fi
+
+  _omc__claude_delegate
 }
 
 _omc__complete_config() {
