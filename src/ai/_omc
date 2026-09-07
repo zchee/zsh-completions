@@ -62,15 +62,15 @@
 # `_claude__top_option_specs`, so it still tracks Claude Code releases and
 # nothing is copied.
 #
-# Neither group may come from `_arguments`. An `_arguments` call sizes its
-# description column from its own matches, so pairing its option listing with
-# any other group drops the descriptions past roughly 120 terminal columns
-# (measured: fine at 80, names only at 200). And `_describe` alone is not
-# enough either -- zsh picks a compact display for a large multi-group
-# listing at that width. Both groups therefore go through `compadd -l` with a
-# pre-formatted display string, which pins one match per line and keeps the
-# descriptions at any width. Values, subcommands and positionals still go
-# through `_claude` and its `_arguments`, where arity and exclusions belong.
+# Each group needs its OWN tag, via `_describe -t`. Two listings that share a
+# tag are sorted together, so the headers come out ordered by whichever group
+# happens to hold the alphabetically first match instead of the order they
+# were added -- and when both contain items with matching descriptions the
+# output is garbled outright (the note atop zsh's own `_describe` documents
+# this; workers/35229). That is also why neither group may come from
+# `_arguments`, whose option listing always uses the `options` tag. Values,
+# subcommands and positionals still go through `_claude` and its
+# `_arguments`, where arity and exclusions belong.
 #
 # The cost of leaving `_arguments` for flag NAMES is that a flag already on
 # the line is still offered, and completing `--mo` does not append the `=`.
@@ -403,6 +403,73 @@ _omc__ultragoal_statuses() {
     'blocked:the goal is blocked'
 }
 
+# Add one labelled group of `name:description` entries.
+#
+# `_wanted` + `compadd`, not `_describe`: a `_describe` group is placed by a
+# sort of its own (measured: `claude command` came out above `omc command`
+# regardless of the order the groups were added, of the tag names, and of
+# whether the tags differed at all), while `compadd` groups are listed in the
+# order they are added. Group order is the whole point here, so `compadd` it
+# is. `-l` plus a pre-formatted display string keeps each group's
+# descriptions and its own alignment at any terminal width.
+_omc__add_group() {
+  local tag=$1 descr=$2
+  shift 2
+  (( $# )) || return 1
+
+  local -a names displays
+  local item name desc
+  local -i width=0
+
+  for item in "$@"; do
+    name="${item%%:*}"
+    (( ${#name} > width )) && width=${#name}
+  done
+
+  for item in "$@"; do
+    name="${item%%:*}"
+    desc="${item#*:}"
+    names+=("$name")
+    displays+=("${(r:$width:)name}  -- ${desc}")
+  done
+
+  local expl
+  _wanted "$tag" expl "$descr" compadd -l -d displays -a names
+}
+
+# omc's group is added first, so it is listed first.
+_omc__complete_command_slot() {
+  local -a mine theirs
+  local -i ret=1
+
+  _omc__top_command_list
+  mine=("${reply[@]}")
+
+  theirs=()
+  _omc__claude_command_list && theirs=("${reply[@]}")
+
+  _omc__add_group omc-commands 'omc command' "${mine[@]}" && ret=0
+  (( ${#theirs} )) && { _omc__add_group claude-commands 'claude command' "${theirs[@]}" && ret=0 }
+
+  return ret
+}
+
+_omc__complete_option_slot() {
+  local -a mine theirs
+  local -i ret=1
+
+  _omc__launch_option_list "$@"
+  mine=("${reply[@]}")
+
+  theirs=()
+  _omc__claude_option_list && theirs=("${reply[@]}")
+
+  _omc__add_group omc-options 'omc option' "${mine[@]}" && ret=0
+  (( ${#theirs} )) && { _omc__add_group claude-options 'claude option' "${theirs[@]}" && ret=0 }
+
+  return ret
+}
+
 # The table and the listing are separate so the Claude passthrough can filter
 # against it: a name omc registers itself is handled by omc's own Commander
 # and never reaches claude, so it must not appear under `-- claude command --`
@@ -441,17 +508,10 @@ _omc__top_command_list() {
   )
 }
 
-_omc__top_commands() {
-  local -a commands
-  _omc__top_command_list
-  commands=("${reply[@]}")
-  _describe 'omc command' commands
-}
-
 # Claude's own commands, minus the ones omc intercepts (`doctor`, `install`,
 # `update` at the time of writing). Aliases are compared by exact name:
 # `omc upgrade` is not an omc command, so it still reaches `claude upgrade`.
-_omc__claude_command_descriptions() {
+_omc__claude_command_list() {
   _omc__ensure_claude_tables || return 1
   (( $+functions[_claude__top_command_list] )) || return 1
 
@@ -474,7 +534,7 @@ _omc__claude_command_descriptions() {
   done
 
   (( ${#commands} )) || return 1
-  _describe 'claude command' commands
+  reply=("${commands[@]}")
 }
 
 _omc__wait_commands() {
@@ -632,7 +692,7 @@ _omc__team_agent_spec() {
 # descriptions end up stacked below the names. Two `_describe` groups lay out
 # independently and correctly -- the same reason the two command groups
 # render cleanly.
-_omc__launch_option_descriptions() {
+_omc__launch_option_list() {
   local -a opts
   opts=(
     '--notify:enable or disable CCNotifier events'
@@ -645,7 +705,7 @@ _omc__launch_option_descriptions() {
     '--webhook:(hidden) enable or disable webhook notifications'
   )
   (( $# )) && opts+=("$@")
-  _omc__add_option_group omc-options 'omc option' "${opts[@]}"
+  reply=("${opts[@]}")
 }
 
 # Values for the omc-only flags. `--notify` takes the next word or an inline
@@ -665,38 +725,6 @@ _omc__launch_option_values() {
   fi
 
   return 1
-}
-
-# Add one completion group of `name:description` entries.
-#
-# `_describe` would be shorter, but zsh drops the descriptions from a large
-# MULTI-group listing once the terminal is wide (measured: fine at 80
-# columns, names only at 200). `compadd -l` forces one match per line and a
-# pre-formatted display string carries the description, so the two groups keep
-# their descriptions at any width. Padding is per group, which is also why
-# each group stays internally aligned.
-_omc__add_option_group() {
-  local tag=$1 descr=$2
-  shift 2
-
-  local -a names displays
-  local item name desc
-  local -i width=0
-
-  for item in "$@"; do
-    name="${item%%:*}"
-    (( ${#name} > width )) && width=${#name}
-  done
-
-  for item in "$@"; do
-    name="${item%%:*}"
-    desc="${item#*:}"
-    names+=("$name")
-    displays+=("${(r:$width:)name}  -- ${desc}")
-  done
-
-  local expl
-  _wanted "$tag" expl "$descr" compadd -l -d displays -a names
 }
 
 # Claude's root flags as a `-- claude option --` group, converted from
@@ -724,7 +752,7 @@ _omc__ensure_claude_tables() {
   (( $+functions[_claude__top_option_specs] ))
 }
 
-_omc__claude_option_descriptions() {
+_omc__claude_option_list() {
   _omc__ensure_claude_tables || return 1
 
   local -a specs opts
@@ -762,7 +790,7 @@ _omc__claude_option_descriptions() {
   done
 
   (( ${#opts} )) || return 1
-  _omc__add_option_group claude-options 'claude option' "${opts[@]}"
+  reply=("${opts[@]}")
 }
 
 _omc__launch_option_specs() {
@@ -788,8 +816,7 @@ _omc__complete_root() {
   # completing a flag name: two `_describe` groups, so the owner of each flag
   # is visible and both keep their descriptions
   if [[ "${words[CURRENT]}" == -* ]]; then
-    _omc__launch_option_descriptions '-V:output the version number'
-    _omc__claude_option_descriptions && return
+    _omc__complete_option_slot '-V:output the version number' && return
 
     # no `_claude` on fpath: omc's own flags are all there is
     _omc__launch_option_specs
@@ -802,10 +829,7 @@ _omc__complete_root() {
 
   # the command slot gets both groups, Claude's filtered so a name omc
   # intercepts is offered once, under `-- omc command --`
-  if (( CURRENT == 2 )); then
-    _omc__top_commands
-    _omc__claude_command_descriptions && return
-  fi
+  (( CURRENT == 2 )) && { _omc__complete_command_slot && return }
 
   _omc__claude_delegate
 }
@@ -824,8 +848,7 @@ _omc__complete_launch_like() {
   _omc__launch_option_values && return
 
   if [[ "${words[CURRENT]}" == -* ]]; then
-    _omc__launch_option_descriptions
-    _omc__claude_option_descriptions && return
+    _omc__complete_option_slot && return
 
     _omc__launch_option_specs
     _arguments -s \
