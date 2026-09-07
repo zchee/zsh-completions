@@ -422,9 +422,10 @@ _claude__autocompact_sizes() {
   _describe 'auto-compact window' sizes
 }
 
-_claude__top_commands() {
-  local -a commands
-  commands=(
+# The table and the listing are separate so a wrapper completion can filter
+# it: `_omc` drops the names omc registers itself, which never reach claude.
+_claude__top_command_list() {
+  reply=(
     'agents:manage background agents'
     'attach:open a background session in this terminal'
     'auth:manage authentication'
@@ -451,6 +452,12 @@ _claude__top_commands() {
     'update:check for updates and install if available'
     'upgrade:check for updates and install if available'
   )
+}
+
+_claude__top_commands() {
+  local -a commands
+  _claude__top_command_list
+  commands=("${reply[@]}")
   _describe 'claude command' commands
 }
 

@@ -80,6 +80,13 @@
 # the current word matches nothing it offers, and treating that as failure
 # would run the fallback `_arguments` as a second pass.
 #
+# Subcommand names are split the same way, and a name omc registers itself is
+# offered only under `-- omc command --`: omc's own Commander handles it, so
+# it never reaches claude. `doctor`, `install` and `update` are the overlap at
+# the time of writing. Aliases are compared by exact name, so `omc upgrade` --
+# which omc does not register -- still reaches `claude upgrade` and stays in
+# Claude's group.
+#
 # Values for omc's own flags are completed before the hand-off, since Claude
 # knows nothing about them. `--notify` takes the next word or an inline `=`;
 # the other five are inline-only (`--telegram=false`).
@@ -396,10 +403,12 @@ _omc__ultragoal_statuses() {
     'blocked:the goal is blocked'
 }
 
-_omc__top_commands() {
-  local -a commands
-
-  commands=(
+# The table and the listing are separate so the Claude passthrough can filter
+# against it: a name omc registers itself is handled by omc's own Commander
+# and never reaches claude, so it must not appear under `-- claude command --`
+# as well.
+_omc__top_command_list() {
+  reply=(
     'launch:launch Claude Code with native tmux shell integration'
     'interop:launch split-pane tmux session with Claude Code and Codex'
     'ask:run provider advisor prompt and write an ask artifact'
@@ -430,8 +439,42 @@ _omc__top_commands() {
     'checkpoint:snapshot and restore the working tree'
     'postinstall:(hidden) run post-install setup'
   )
+}
 
+_omc__top_commands() {
+  local -a commands
+  _omc__top_command_list
+  commands=("${reply[@]}")
   _describe 'omc command' commands
+}
+
+# Claude's own commands, minus the ones omc intercepts (`doctor`, `install`,
+# `update` at the time of writing). Aliases are compared by exact name:
+# `omc upgrade` is not an omc command, so it still reaches `claude upgrade`.
+_omc__claude_command_descriptions() {
+  _omc__ensure_claude_tables || return 1
+  (( $+functions[_claude__top_command_list] )) || return 1
+
+  local -a mine theirs commands
+  local item name
+  typeset -A own
+
+  _omc__top_command_list
+  mine=("${reply[@]}")
+  for item in "${mine[@]}"; do
+    own[${item%%:*}]=1
+  done
+
+  _claude__top_command_list
+  theirs=("${reply[@]}")
+  for item in "${theirs[@]}"; do
+    name="${item%%:*}"
+    (( ${+own[$name]} )) && continue
+    commands+=("$item")
+  done
+
+  (( ${#commands} )) || return 1
+  _describe 'claude command' commands
 }
 
 _omc__wait_commands() {
@@ -757,8 +800,12 @@ _omc__complete_root() {
     return
   fi
 
-  # omc's own subcommands belong in the command slot only
-  (( CURRENT == 2 )) && _omc__top_commands
+  # the command slot gets both groups, Claude's filtered so a name omc
+  # intercepts is offered once, under `-- omc command --`
+  if (( CURRENT == 2 )); then
+    _omc__top_commands
+    _omc__claude_command_descriptions && return
+  fi
 
   _omc__claude_delegate
 }
