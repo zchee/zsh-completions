@@ -1,0 +1,567 @@
+#compdef fm
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# fm -- the Foundation Models command-line interface shipped in macOS as
+# /usr/bin/fm. Apple publishes no source for it.
+#
+# PROGRAM:fm  PROJECT:FoundationModels-2.1.7.1.901 (macOS 27.2, build 26B5086k)
+#
+# fm has no --version; the line above is its embedded what(1) identifier.
+#
+# fm is Swift, built on Apple's private ArgumentParserInternal.framework behind
+# a hand-written root dispatcher and hand-written help screens. The surface
+# below was derived from:
+#   - `fm --experimental-dump-help`, ArgumentParser's tool-info JSON for the
+#     whole registered tree, `.hidden` items included;
+#   - the Swift reflection field names (__swift5_reflstr), which match that
+#     dump one for one, so there is no `.private` option;
+#   - the inline small-string literals of the root dispatcher and of the
+#     `schema object` property parser, decoded from the arm64e __text section;
+#   - `fm <path> --help`, for what is documented.
+# Every item was confirmed against the binary with a parse-time oracle,
+# `fm <path> --CAND=ZZINVALID --zz-definitely-not-a-flag`, whose sentinel is
+# rejected by name on every path.
+#
+# Items marked "(hidden)" are accepted but absent from `fm <path> --help`:
+#   available                  deprecated name of `models`, the only entry of
+#                              the root rename table; warns, then runs models
+#   respond --show-assets      `.hidden`; prints the model assets it used
+#   chat --model-provider, --model-provider-header, --use-case, --guardrails
+#                              left out of the hand-written chat screen
+#   count-tokens --label       left out of the hand-written screen
+#   models -m, --model         `.hidden` (system, pcc)
+#   models --use-case, --guardrails
+#                              left out of the hand-written screen
+#   config add model-provider --model-provider-header
+#                              every `fm config <sub> --help` prints the one
+#                              `config` screen, which omits it
+#   schema object --int, --float, --bool
+#                              aliases of --integer, --double and --boolean in
+#                              the property parser; only `fm --help` shows --int
+#
+# Accepted, but deliberately not completed:
+#   --generate-completion-script, --experimental-dump-help
+#                              ArgumentParser plumbing, not typed by people
+#   count-tokens --schema, -v, --verbose
+#                              registered, but count-tokens exits with an error
+#                              whenever they are passed
+# Named somewhere, but rejected by fm, so not completed:
+#   schema object --nested     still in the long discussion text; the parser
+#                              answers "Unknown argument: --nested"
+#   --guardrails permissive    listed by one error string; the CLI rejects it
+#   fm help <command>          ArgumentParser's `help` is not routed
+#
+# Parser rules the specs encode:
+#   - `-m` takes its value as the next word only; `-msystem` is an error.
+#   - `schema object` hands everything from its first property declaration on
+#     to its own parser, so --name and --help are only read before that point,
+#     and the declarations take no `--flag=value` form.
+#
+# Dynamic values:
+#   model providers   the `model-providers` rows of `fm config list`, which
+#                     reads ~/.fm/config.json (about 7 ms)
+#   provider models   `fm models --model-provider <p>`, for the provider named
+#                     by --model-provider or else by default-model-provider.
+#                     It reaches the provider over the network, so the list is
+#                     cached under ${XDG_CACHE_HOME:-~/.cache}/zsh-completions.
+#                     Tune the lifetime (seconds) with
+#                       zstyle ':completion:*:*:fm:*' fm-models-ttl 600
+#   chat sessions     ~/.fm/sessions/<name>.json, newest first
+#
+# -----------------------------------------------------------------------------
+
+_fm__message() {
+  _message "${1:-value}"
+}
+
+# Configured model providers. `fm config list` prints one row per provider:
+#   model-providers         <name>  <url>  [<header names>]
+_fm__model_providers() {
+  local line
+  local -a fields providers
+
+  for line in ${(f)"$(_call_program model-providers ${fm_bin:-fm} config list 2>/dev/null </dev/null)"}; do
+    fields=( ${=${line//$'\e'\[[0-9;]#[A-Za-z]/}} )
+    [[ ${fields[1]} == model-providers ]] || continue
+    providers+=( "${fields[2]//:/\\:}:${fields[3]}" )
+  done
+
+  if (( ${#providers} )); then
+    _describe -t model-providers 'model provider' providers
+  else
+    _fm__message 'model provider name or base URL'
+  fi
+}
+
+# Sets REPLY to the provider --model is resolved against: --model-provider on
+# the command line, else the configured default-model-provider.
+_fm__current_provider() {
+  REPLY=${(Q)opt_args[--model-provider]}
+  [[ -n ${REPLY} ]] && return 0
+  REPLY=$(_call_program default-model-provider ${fm_bin:-fm} config get default-model-provider 2>/dev/null </dev/null)
+  REPLY=${REPLY//$'\e'\[[0-9;]#[A-Za-z]/}
+  [[ -n ${REPLY} && ${REPLY} != '(none)' ]]
+}
+
+# The built-in models, plus the models the current provider serves. Each
+# available model is a "✓ <name>" row of `fm models --model-provider <p>`.
+_fm__models() {
+  local provider cache_file ttl line expl ret=1
+  local -a builtin remote lines mtime
+
+  builtin=(
+    'system:On-device Apple Foundation Model (default)'
+    'pcc:Apple Foundation Model on Private Cloud Compute'
+  )
+
+  if _fm__current_provider; then
+    provider=${REPLY}
+    zstyle -s ":completion:${curcontext}:" fm-models-ttl ttl || ttl=3600
+    cache_file="${XDG_CACHE_HOME:-${HOME}/.cache}/zsh-completions/fm-models-${provider//[^A-Za-z0-9._-]/_}"
+
+    zmodload -F zsh/stat b:zstat 2>/dev/null
+    zmodload zsh/datetime 2>/dev/null
+
+    if [[ -s ${cache_file} ]]; then
+      zstat -A mtime +mtime -- ${cache_file} 2>/dev/null
+      if (( ${#mtime} && EPOCHSECONDS - mtime[1] < ttl )); then
+        remote=( ${(f)"$(< ${cache_file})"} )
+      fi
+    fi
+
+    if (( ! ${#remote} )); then
+      lines=( ${(f)"$(_call_program provider-models ${fm_bin:-fm} models --model-provider ${(q)provider} 2>/dev/null </dev/null)"} )
+      for line in ${lines}; do
+        line=${line//$'\e'\[[0-9;]#[A-Za-z]/}
+        [[ ${line} == [[:space:]]#✓[[:space:]]##[^[:space:]]* ]] || continue
+        remote+=( ${${=${line#*✓}}[1]} )
+      done
+      if (( ${#remote} )); then
+        mkdir -p -- ${cache_file:h} 2>/dev/null &&
+          print -rl -- ${remote} >| ${cache_file} 2>/dev/null
+      fi
+    fi
+  fi
+
+  _describe -t models 'built-in model' builtin && ret=0
+  if (( ${#remote} )); then
+    _wanted provider-models expl "model served by ${provider}" compadd -a remote && ret=0
+  fi
+  return ret
+}
+
+# Saved chat sessions, newest first.
+_fm__sessions() {
+  local expl
+  local -a sessions
+
+  sessions=( ${HOME}/.fm/sessions/*.json(N.om:t:r) )
+  if (( ${#sessions} )); then
+    _wanted -V sessions expl 'saved chat session' compadd -a sessions
+  else
+    _fm__message 'saved chat session name'
+  fi
+}
+
+_fm__images() {
+  _files "$@" -g '*.(#i)(png|jpg|jpeg|heic|heif|gif|tif|tiff|bmp|webp)(-.)'
+}
+
+_fm__bind_address() {
+  _alternative \
+    'addresses:bind address:(127.0.0.1 0.0.0.0 ::1 localhost)' \
+    'hosts:host:_hosts'
+}
+
+_fm__commands() {
+  local -a commands
+  commands=(
+    'chat:Start an interactive chat session'
+    'config:View and edit the CLI configuration'
+    'count-tokens:Count tokens in a prompt or instructions'
+    'license:Show and agree to the Legal Notice & Terms'
+    'models:Show available models'
+    'quota-usage:Check model quota usage'
+    'respond:Generate a response to a prompt'
+    'schema:Generate a structured output generation schema'
+    'serve:Start a Chat Completions API server'
+    'available:(hidden alias for models) Deprecated name; warns, then shows available models'
+  )
+  _describe -t commands 'fm command' commands
+}
+
+_fm__respond() {
+  _arguments -s -S \
+    $help_opts \
+    $model_opt \
+    $provider_opts \
+    $system_model_opts \
+    $tool_opt \
+    '(-i --instructions)'{-i,--instructions=}'[Instructions for the model to follow]:instructions: _fm__message instructions' \
+    '--schema=[A path to a schema file, or an inline schema string]:schema file:_files' \
+    '*--text=[Text segment to include in the prompt]:text: _fm__message text' \
+    '*--image=[Path to an image to include in the prompt]:image file:_fm__images' \
+    '*--label=[Label for the corresponding --image, paired by order; requires --tool]:label: _fm__message label' \
+    '--resume=[Continue an earlier conversation from a saved transcript]:transcript file:_files' \
+    '--save-transcript=[Save the transcript to a file after responding]:transcript file:_files' \
+    '(--no-stream)--stream[Stream the output as it is generated (default)]' \
+    '(--stream)--no-stream[Print the response only once it is complete]' \
+    '(-g --greedy)'{-g,--greedy}'[Use greedy sampling]' \
+    '(-v --verbose)'{-v,--verbose}'[Print verbose output]' \
+    '--show-assets[(hidden) Print the model assets used before the response]' \
+    ':prompt: _fm__message prompt'
+}
+
+_fm__chat() {
+  _arguments -s -S \
+    $help_opts \
+    $model_opt \
+    ${provider_opts/\[/[(hidden) } \
+    ${system_model_opts/\[/[(hidden) } \
+    $tool_opt \
+    '(--continue -r --resume -i --instructions)'{-r,--resume=}'[Resume a saved chat session]:session:_fm__sessions' \
+    '(-r --resume)--continue[Continue the most recent chat session]' \
+    '(-i --instructions -r --resume)'{-i,--instructions=}'[Instructions for the model]:instructions: _fm__message instructions' \
+    '(- *)--set-default-model=[Persist the model as the default for future fm chat sessions]:model:(system pcc)'
+}
+
+_fm__count_tokens() {
+  _arguments -s -S \
+    $help_opts \
+    '(-i --instructions)'{-i,--instructions=}'[Instructions to include in the count]:instructions: _fm__message instructions' \
+    '*--text=[Additional text segment to include]:text: _fm__message text' \
+    '*--image=[Image to include in the prompt]:image file:_fm__images' \
+    '*--label=[(hidden) Label for the corresponding --image, paired by order]:label: _fm__message label' \
+    '(-q --quiet)'{-q,--quiet}'[Print only the integer count]' \
+    '--transcript=[Saved transcript to count as a framed conversation]:transcript file:_files' \
+    ':prompt: _fm__message prompt'
+}
+
+_fm__schema() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local -a commands
+
+  _arguments -C \
+    $help_opts \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    command)
+      commands=( 'object:Generate a structured output schema for an object type' )
+      _describe -t commands 'fm schema command' commands && ret=0
+      ;;
+    args)
+      curcontext=${curcontext%:*:*}:fm-schema-${words[1]}:
+      case ${words[1]} in
+        object)
+          _fm__schema_object && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+# Each type flag starts a property declaration and the modifiers apply to the
+# property before them. fm reads --name and --help only ahead of the first
+# declaration, so they are dropped from the specs once one is on the line.
+_fm__schema_object() {
+  local -a lead seen
+  local -a before=( ${words[2,CURRENT-1]} )
+  local -a decl=(
+    --string --integer --int --double --float --boolean --bool
+    --object --schema --anyOf --array --description --optional
+  )
+
+  # Intersect in an array assignment: inside (( )) the operand is joined into
+  # one string first, and the intersection is then always empty.
+  seen=( ${before:*decl} )
+  if (( ! ${#seen} )); then
+    lead=(
+      $help_opts
+      '--name=[Name of the root object type (required)]:type name: _fm__message "type name"'
+    )
+  else
+    # Still parse an earlier --name, or its value reads as a stray positional
+    # and _arguments completes nothing at all.
+    lead=( '!--name=:type name: ' )
+  fi
+
+  _arguments \
+    $lead \
+    '*--string[Declare a string property]:property name: _fm__message "property name"' \
+    '*--integer[Declare an integer property]:property name: _fm__message "property name"' \
+    '*--int[(hidden alias for --integer) Declare an integer property]:property name: _fm__message "property name"' \
+    '*--double[Declare a floating-point property]:property name: _fm__message "property name"' \
+    '*--float[(hidden alias for --double) Declare a floating-point property]:property name: _fm__message "property name"' \
+    '*--boolean[Declare a boolean property]:property name: _fm__message "property name"' \
+    '*--bool[(hidden alias for --boolean) Declare a boolean property]:property name: _fm__message "property name"' \
+    '*--object[Declare a nested object property (follow with --schema)]:property name: _fm__message "property name"' \
+    '*--schema[Provide a structured output schema (after --object or --anyOf)]:schema JSON: _fm__message "schema JSON"' \
+    '*--anyOf[Build an anyOf union; subsequent --schema args become choices]' \
+    '*--array[Mark the preceding property as an array of that type]' \
+    '*--description[Set a description on the preceding property]:description: _fm__message description' \
+    '*--optional[Mark the preceding property as optional]'
+}
+
+_fm__serve() {
+  _arguments -S \
+    $help_opts \
+    '(--socket)--host=[Host address to bind to (TCP mode)]:host:_fm__bind_address' \
+    '(--socket)--port=[Port to listen on, 1-65535 (TCP mode)]:port: _fm__message "port (1-65535)"' \
+    '(--host --port)--socket=[Unix domain socket path (socket mode)]:socket path:_files' \
+    '--model-provider=[Chat Completions model provider (name or base URL) for non-built-in request models]:model provider:_fm__model_providers' \
+    '*--model-provider-header=[Extra model provider header (repeatable)]:header: _fm__message "Name\: Value"'
+}
+
+_fm__models_cmd() {
+  _arguments -S \
+    $help_opts \
+    '--model-provider=[Chat Completions model provider: a configured name or a base URL]:model provider:_fm__model_providers' \
+    '(-m --model)'{-m,--model=}'[(hidden) Model to check]:model:(system pcc)' \
+    ${system_model_opts/\[/[(hidden) }
+}
+
+_fm__quota_usage() {
+  _arguments -S \
+    $help_opts \
+    '(-m --model)'{-m,--model=}'[Model to check: system or pcc (default: all)]:model:(system pcc)'
+}
+
+_fm__license() {
+  _arguments -S \
+    $help_opts \
+    '--status[Report whether the license has been agreed to, without prompting]' \
+    '--show[Print the license text without prompting]'
+}
+
+_fm__config() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local -a commands
+
+  _arguments -C \
+    $help_opts \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    command)
+      commands=(
+        'add:Add a configuration entry'
+        'remove:Remove a configuration entry'
+        'set:Set default-model-provider or default-model'
+        'get:Print one configuration value'
+        'list:Print the current configuration'
+        'path:Print the configuration file path'
+      )
+      _describe -t commands 'fm config command' commands && ret=0
+      ;;
+    args)
+      curcontext=${curcontext%:*:*}:fm-config-${words[1]}:
+      case ${words[1]} in
+        add|remove)
+          _fm__config_entry ${words[1]} && ret=0
+          ;;
+        set)
+          _fm__config_set && ret=0
+          ;;
+        get)
+          _fm__config_get && ret=0
+          ;;
+        list|path)
+          _arguments $help_opts && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+# `config add` and `config remove` each have a single entry kind.
+_fm__config_entry() {
+  local verb=$1
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local -a kinds
+
+  _arguments -C \
+    $help_opts \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    command)
+      if [[ ${verb} == add ]]; then
+        kinds=( 'model-provider:Add or replace a named Chat Completions model provider' )
+      else
+        kinds=( 'model-provider:Remove a named model provider' )
+      fi
+      _describe -t commands "fm config ${verb} command" kinds && ret=0
+      ;;
+    args)
+      [[ ${words[1]} == model-provider ]] || return ret
+      if [[ ${verb} == add ]]; then
+        _arguments -S \
+          $help_opts \
+          '*--model-provider-header=[(hidden) Header stored with this model provider (repeatable)]:header: _fm__message "Name\: Value"' \
+          '1:model provider name: _fm__message "new model provider name"' \
+          '2:base URL:_urls' && ret=0
+      else
+        _arguments -S \
+          $help_opts \
+          '1:model provider:_fm__model_providers' && ret=0
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+_fm__config_set() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    $help_opts \
+    '1:key:((default-model-provider\:"Default Chat Completions model provider (name or base URL)" default-model\:"Default model"))' \
+    '2:value:->value' && ret=0
+
+  if [[ ${state} == value ]]; then
+    case ${line[1]} in
+      default-model-provider)
+        _fm__model_providers && ret=0
+        ;;
+      default-model)
+        _fm__models && ret=0
+        ;;
+      *)
+        _fm__message 'value to store'
+        ;;
+    esac
+  fi
+
+  return ret
+}
+
+_fm__config_get() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    $help_opts \
+    '1:key:((default-model-provider\:"Default Chat Completions model provider" default-model\:"Default model" model-provider\:"One named model provider"))' \
+    '2::model provider name:->name' && ret=0
+
+  if [[ ${state} == name && ${line[1]} == model-provider ]]; then
+    _fm__model_providers && ret=0
+  fi
+
+  return ret
+}
+
+function _fm() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local fm_bin=${words[1]}
+
+  local -a help_opts model_opt provider_opts system_model_opts tool_opt
+  help_opts=( '(- *)'{-h,--help}'[Show help information]' )
+  model_opt=(
+    '(-m --model)'{-m,--model=}'[Model to use: system, pcc, or a model served by --model-provider]:model:_fm__models'
+  )
+  provider_opts=(
+    '--model-provider=[Chat Completions model provider: a configured name or a base URL]:model provider:_fm__model_providers'
+    '*--model-provider-header=[Extra request header for --model-provider (repeatable)]:header: _fm__message "Name\: Value"'
+  )
+  system_model_opts=(
+    '--use-case=[Use case for the language model]:use case:(general content-tagging)'
+    '--guardrails=[Guardrail level for the language model]:guardrail level:(default permissive-content-transformations)'
+  )
+  tool_opt=( '*--tool=[Built-in tool to enable (repeatable)]:tool:(barcode ocr)' )
+
+  _arguments -C \
+    $help_opts \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    command)
+      _fm__commands && ret=0
+      ;;
+    args)
+      curcontext=${curcontext%:*:*}:fm-${words[1]}:
+      case ${words[1]} in
+        respond)
+          _fm__respond && ret=0
+          ;;
+        chat)
+          _fm__chat && ret=0
+          ;;
+        count-tokens)
+          _fm__count_tokens && ret=0
+          ;;
+        schema)
+          _fm__schema && ret=0
+          ;;
+        serve)
+          _fm__serve && ret=0
+          ;;
+        models|available)
+          _fm__models_cmd && ret=0
+          ;;
+        quota-usage)
+          _fm__quota_usage && ret=0
+          ;;
+        license)
+          _fm__license && ret=0
+          ;;
+        config)
+          _fm__config && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_fm "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
