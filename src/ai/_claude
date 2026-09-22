@@ -35,11 +35,11 @@
 #
 # https://github.com/anthropics/claude-code
 #
-# 2.1.263 (Claude Code)
+# 2.1.280 (Claude Code)
 #
 # `--help` is not authoritative here: it short-circuits before option
 # validation, so even a bogus flag prints usage. Every item below was instead
-# confirmed against 2.1.263 by ending a probe in an unknown sentinel flag —
+# confirmed against 2.1.280 by ending a probe in an unknown sentinel flag —
 # `claude <path> <flag> [value] --zz-definitely-not-a-flag` — which makes
 # Commander abort during option parsing, so it names the first unknown flag
 # and no command action ever runs.
@@ -60,8 +60,9 @@
 #                --messaging-socket-path --on-branch --parent-session-id
 #                --permission-prompt-tool --plan-mode-instructions
 #                --plan-mode-required --plugin-dir-no-mcp --pool --prefill
-#                --prefill-b64 --rc --ref --remote --reply-on-resume
-#                --resume-drops-turn --resume-session-at --rewind-files
+#                --prefill-b64 --project-config-root --rc --ref --remote
+#                --reply-on-resume --resume-drops-turn --resume-session-at
+#                --rewind-files
 #                --sdk-url --session-mirror --system-prompt-file --task-budget
 #                --team-name --teammate-mode --thinking --thinking-display
 #                --watch-artifact --watch-artifact-no-autoreact --workload
@@ -100,6 +101,13 @@
 # one of them, but they exist for Claude Code to spawn its own children and
 # for the Chrome extension host to start a stdio server; nobody types them.
 #
+# Also not completed, for the same reason: the hidden commands the VS Code
+# extension runs — design-login, edit-chrome-settings, edit-hook,
+# edit-memory-settings, edit-permission-rules, edit-sandbox-settings,
+# edit-skill-overrides — each of which reads one JSON edit from stdin and
+# refuses a TTY; and root --attach-serve, "spawned by the desktop app; not
+# for interactive use". All are accepted by the binary.
+#
 # -----------------------------------------------------------------------------
 
 _claude__message() {
@@ -137,8 +145,9 @@ _claude__models() {
     'fable[1m]:latest Fable model with a 1M context window'
     'sonnet[1m]:latest Sonnet model with a 1M context window'
     'opus[1m]:latest Opus model with a 1M context window'
+    'claude-fable-5-1:full Claude model name'
     'claude-fable-5:full Claude model name'
-    'claude-mythos-5:full Claude model name'
+    'claude-opus-5-5:full Claude model name'
     'claude-opus-5:full Claude model name'
     'claude-sonnet-5:full Claude model name'
     'claude-opus-4-8:full Claude model name'
@@ -649,6 +658,7 @@ _claude__top_option_specs() {
     '(--environment --pool)--pool=[(hidden, deprecated) alias for --environment]:pool id: _claude__message "pool id"'
     '--prefill=[(hidden) pre-fill the prompt input with text without submitting it]:text: _claude__message "text"'
     '--prefill-b64=[(hidden) base64url-encoded --prefill value]:b64: _claude__message "b64"'
+    '--project-config-root=[(hidden) read project settings, .mcp.json and .claude config trees from this directory]:directory:_files -/'
     '(--rc --remote-control)--rc=-[(hidden) alias for --remote-control]::name: _claude__message "name"'
     '--ref=[(hidden) branch, tag, or SHA to check out in the remote session]:ref: _claude__message "ref"'
     '(--cloud --remote)--remote=-[(hidden, deprecated) alias for --cloud]::description or session id or url: _claude__message "description or session id or url"'
@@ -663,7 +673,7 @@ _claude__top_option_specs() {
     '--team-name=[(hidden) team name for teammate coordination]:name: _claude__message "name"'
     '--teammate-mode=[(hidden) how to spawn teammates]:mode:(auto tmux iterm2 in-process)'
     '--thinking=[(hidden) thinking mode]:mode:(enabled adaptive disabled)'
-    '--thinking-display=[(hidden) how thinking content appears in the response]:display:(summarized omitted)'
+    '--thinking-display=[(hidden) how thinking content appears in the response]:display:(summarized omitted highlights)'
     '(--watch-artifact --watch-artifact-no-autoreact)--watch-artifact=[(hidden) watch a Claude artifact for new versions and comments]:artifact: _claude__message "artifact"'
     '(--watch-artifact --watch-artifact-no-autoreact)--watch-artifact-no-autoreact=[(hidden) watch an artifact without auto-reacting]:artifact: _claude__message "artifact"'
     '--workload=[(hidden) workload tag for billing-header attribution]:tag: _claude__message "tag"'
@@ -1015,8 +1025,10 @@ _claude__complete_plugin_eval() {
 
   _arguments -s \
     '--ablation=[run a no-plugin baseline arm and report the score delta]:mode:(none with-without)' \
+    '--allow-real-servers[with --mocks record, also start real MCP servers that have no mock]' \
     '*--allow-tools=[operator grant for gated tools]:tools: _claude__message "tools"' \
     '--case=[filter cases by name glob]:glob: _claude__message "glob"' \
+    '(-j --concurrency)'{-j+,--concurrency=}'[run up to n agent runs at once (1-8)]:n:(1 2 3 4 5 6 7 8)' \
     '--eval-dir=[directory below the plugin that holds the eval cases]:dir:_files -/' \
     '(-h --help)'{-h,--help}'[display help for command]' \
     '--json=-[print the full run result as JSON to stdout, or write it to a path]::path:_files' \
@@ -1034,6 +1046,7 @@ _claude__complete_plugin_eval() {
     '(--scaffold --no-scaffold)--scaffold[run each case scaffold_script]' \
     '*--tag=[filter cases by tag]:tag: _claude__message "tag"' \
     '--threshold=[exit 1 if any case score is below this threshold]:0..1: _claude__message "0..1"' \
+    '--trust-plugin[trust the plugin code and eval suite; skip the first-run trust prompt]' \
     '--verbose[log per-message trace events to the debug log]' \
     '1:target:_claude__plugin_eval_targets'
 }
@@ -1060,6 +1073,7 @@ _claude__complete_plugin() {
         '(-a --all)'{-a,--all}'[disable all enabled plugins]' \
         '--cowork[(hidden) use cowork_plugins directory]' \
         '(-h --help)'{-h,--help}'[display help for command]' \
+        '--json[print one machine-readable result line instead of the human message]' \
         '(-s --scope)'{-s+,--scope=}'[installation scope]:scope:_claude__plugin_scopes' \
         '::plugin: _claude__message "plugin"'
       ;;
@@ -1067,16 +1081,20 @@ _claude__complete_plugin() {
       _arguments -s \
         '--cowork[(hidden) use cowork_plugins directory]' \
         '(-h --help)'{-h,--help}'[display help for command]' \
+        '--json[print one machine-readable result line instead of the human message]' \
         '(-s --scope)'{-s+,--scope=}'[installation scope]:scope:_claude__plugin_scopes' \
         '1:plugin: _claude__message "plugin"'
       ;;
     install|i)
       _arguments -s \
+        '(-y --yes)--accept-command=[accept the marketplace-declared command with this sha256 from a previous --json run]:sha256: _claude__message "sha256"' \
         '*--config=[set a userConfig option declared in the plugin manifest]:key=value: _claude__message "key=value"' \
         '--cowork[(hidden) use cowork_plugins directory]' \
         '(-h --help)'{-h,--help}'[display help for command]' \
+        '--json[print one machine-readable result line instead of the human message]' \
+        '--registry=[npm registry for a <package>@npm install]:url:_urls' \
         '(-s --scope)'{-s+,--scope=}'[installation scope]:scope:_claude__plugin_scopes' \
-        '(-y --yes)'{-y,--yes}'[skip the confirmation prompt]' \
+        '(-y --yes --accept-command)'{-y,--yes}'[skip the confirmation prompt]' \
         '1:plugin: _claude__message "plugin"'
       ;;
     details)
@@ -1130,6 +1148,7 @@ _claude__complete_plugin() {
       _arguments -s \
         '--cowork[(hidden) use cowork_plugins directory]' \
         '(-h --help)'{-h,--help}'[display help for command]' \
+        '--json[print one machine-readable result line instead of the human message (not with --prune)]' \
         '--keep-data[preserve the plugin persistent data directory]' \
         '--prune[also remove auto-installed dependencies no longer needed]' \
         '(-s --scope)'{-s+,--scope=}'[uninstall from scope]:scope:_claude__plugin_scopes' \
@@ -1138,10 +1157,12 @@ _claude__complete_plugin() {
       ;;
     update)
       _arguments -s \
+        '(-y --yes)--accept-command=[accept the marketplace-declared command with this sha256 from a previous --json run]:sha256: _claude__message "sha256"' \
         '--cowork[(hidden) use cowork_plugins directory]' \
         '(-h --help)'{-h,--help}'[display help for command]' \
+        '--json[print one machine-readable result line instead of the human message]' \
         '(-s --scope)'{-s+,--scope=}'[installation scope]:scope:_claude__plugin_update_scopes' \
-        '(-y --yes)'{-y,--yes}'[skip the marketplace-install confirmation prompt]' \
+        '(-y --yes --accept-command)'{-y,--yes}'[skip the marketplace-install confirmation prompt]' \
         '1:plugin: _claude__message "plugin"'
       ;;
     validate)
