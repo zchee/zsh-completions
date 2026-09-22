@@ -1478,7 +1478,8 @@ _omc__complete_ask() {
   _arguments -C -s \
     '--agent-prompt=[prepend an agent prompt role before the task]:role:_omc__ask_agent_roles' \
     '(-p --print --prompt)'{-p,--print,--prompt}'[treat the remaining text as the prompt]:prompt text:_omc__prompt_text' \
-    '*::prompt text:_omc__prompt_text'
+    '1:provider:(claude codex gemini antigravity grok cursor)' \
+    '*:prompt text:_omc__prompt_text'
 }
 
 # ultragoal sets helpOption(false) and parses its own argv, so the flag sets
