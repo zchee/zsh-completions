@@ -33,25 +33,28 @@
 #
 # -----------------------------------------------------------------------------
 #
-# agy 1.1.23 (Google Antigravity CLI)
+# agy 1.2.8 (Google Antigravity CLI)
 #
 # Source of truth: `agy --help` and `agy <cmd> --help`, plus the flags those
-# never print. Entries marked `(hidden)` are accepted by agy 1.1.23 but appear
+# never print. Entries marked `(hidden)` are accepted by agy 1.2.8 but appear
 # in no `--help` output.
 #
-# 1.1.23 changed nothing in the command-line surface: the flag set, the flag
-# names and the subcommand tables are the same as 1.1.22.
+# 1.2.8 over 1.1.23: a `remote-control` subcommand (start|status|stop, with
+# `start --name` and `--session`); root `--remote-control` is now documented;
+# and three new hidden globals for a host application, `--host_bridge_url`,
+# `--host_bridge_token` and `--use_host_auth`. Nothing was removed.
 #
-# `agy --help` lists all eleven top-level subcommands and `agy plugin` all
+# `agy --help` lists all twelve top-level subcommands and `agy plugin` all
 # nine of its verbs, so there are no hidden subcommands. The single hidden
 # subcommand option is `agy plugin import --force`, named only in the
 # "already imported, use --force to re-import" line.
 #
 # Where `-h`/`--help` is actually accepted differs per subcommand, and agy is
 # unforgiving about it:
-#   - `agent`, `agents`, `changelog`, `models`, `install`, `mic-serve` and
-#     every `mcp` verb accept them.
-#   - `agy plugin` and `agy mcp` accept them as aliases for their usage text.
+#   - `agent`, `agents`, `changelog`, `models`, `install`, `mic-serve`,
+#     every `mcp` verb and every `remote-control` verb accept them.
+#   - `agy plugin`, `agy mcp` and `agy remote-control` accept them as aliases
+#     for their usage text.
 #   - `agy update` defines no flags at all and rejects `-h` outright.
 #   - `agy help` reads its first word as a subcommand name, so `-h` comes back
 #     as `unknown subcommand: -h`.
@@ -204,6 +207,7 @@ _agy__top_commands() {
     'models:list available models'
     'plugin:manage plugins (install, uninstall, list, enable, disable)'
     'plugins:alias for plugin'
+    'remote-control:manage the remote-control background daemon (start, status, stop)'
     'update:update CLI'
   )
   _describe -t commands 'agy command' commands
@@ -235,6 +239,16 @@ _agy__mcp_commands() {
     'remove:remove an MCP server configuration'
   )
   _describe -t mcp-commands 'mcp command' commands
+}
+
+_agy__remote_control_commands() {
+  local -a commands
+  commands=(
+    'start:register and start the remote-control daemon'
+    'status:show the daemon status'
+    'stop:stop the daemon and unregister it'
+  )
+  _describe -t remote-control-commands 'remote-control command' commands
 }
 
 _agy__plugin_import_sources() {
@@ -277,6 +291,7 @@ _agy__top_option_specs() {
     '--print-timeout=[timeout for print mode wait]:duration: _agy__message "duration such as 5m0s"'
     '--project=[project ID or project name for the current CLI session]:project:_agy__projects'
     '(-i --prompt-interactive -p --print --prompt)'{-i,--prompt-interactive}'=[run an initial prompt interactively and continue the session]:prompt: _agy__message "prompt"'
+    '--remote-control[create a remote connection for the CLI session on start up]'
     '--sandbox[run in a sandbox with terminal restrictions enabled]'
     '(- *)-h[show help]'
     '(- *)--help=-[show help, optionally filtering flags by regexp]::pattern: _agy__message "flag name regexp"'
@@ -284,7 +299,6 @@ _agy__top_option_specs() {
     # --- hidden: Antigravity Hub and remote control -------------------------
     '--hub[(hidden) run in hub server mode serving the Antigravity Hub web UI on a local port]'
     '--hub-port=[(hidden) port for the hub web UI, 0 selects the default]:port: _agy__message "port number"'
-    '--remote-control[(hidden) enable remote control mode]'
     '--remote-control-name=[(hidden) instance name for remote control mode]:name: _agy__message "instance name"'
 
     # --- hidden: stripped from --help in external builds -------------------
@@ -297,6 +311,9 @@ _agy__top_option_specs() {
     '--local_chrome_user_data_dir=[(hidden) Chrome user data directory]:directory:_files -/'
     '--release_base_url=[(hidden) base URL of the release server for the auto-updater]:url: _agy__message "release server base url"'
     '--csrf_token=[(hidden) CSRF token for the language server]:token: _agy__message "csrf token"'
+    '--host_bridge_url=[(hidden) loopback base URL of a host that serves HostBridgeService]:url: _agy__message "loopback url such as http://127.0.0.1:PORT"'
+    '--host_bridge_token=[(hidden) bearer token for the host bridge]:token: _agy__message "bearer token"'
+    '--use_host_auth[(hidden) use HostAuthProvider via HostBridgeService for OAuth authentication]'
 
     # --- hidden: base logging and runtime flags ----------------------------
     '(- *)--version[(hidden) print version and build info and exit]'
@@ -468,6 +485,41 @@ _agy__plugin_install_target() {
     'plugins:plugin or plugin@marketplace: _agy__message "plugin or plugin@marketplace"'
 }
 
+_agy__complete_remote_control() {
+  local curcontext="$curcontext" state line
+  local -a specs
+  typeset -A opt_args
+
+  _agy__help_flags
+  specs=("${reply[@]}")
+
+  _arguments -C -s \
+    ${specs[@]} \
+    '1:remote-control command:->command' \
+    '*::remote-control argument:->args'
+
+  case $state in
+    command)
+      _agy__remote_control_commands
+      return
+      ;;
+  esac
+
+  curcontext="${curcontext%:*:*}:agy-remote-control-$words[1]:"
+
+  case $words[1] in
+    start)
+      _arguments -s \
+        '--name=[instance name shown in Remote Control for this machine]:name: _agy__message "instance name"' \
+        '--session[register the daemon login-scoped (stops at logout) instead of starting at boot]' \
+        ${specs[@]}
+      ;;
+    status|stop)
+      _arguments -s ${specs[@]}
+      ;;
+  esac
+}
+
 # `help` takes a bare subcommand name; -h and --help land in the same slot and
 # come back as "unknown subcommand", so they are deliberately not offered.
 _agy__complete_help() {
@@ -515,6 +567,9 @@ function _agy() {
           ;;
         plugin|plugins)
           _agy__complete_plugin
+          ;;
+        remote-control)
+          _agy__complete_remote_control
           ;;
       esac
       ;;
