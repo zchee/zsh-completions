@@ -172,14 +172,47 @@ _omc__describe_static_items() {
   _describe "$description" items
 }
 
-# Rewrite `words` for the Claude Code passthrough. Only arg0 changes: omc's
-# own flags are handed to `_claude` too, as injected option specs, so its
-# single `_arguments` call parses the whole line and nothing has to be
-# stripped here. words[1] is `omc`, or `launch` after the dispatcher's shift.
+# Rewrite `words` for the Claude Code passthrough the way `launch.ts` rewrites
+# argv: arg0 becomes `claude`, omc's own flags are dropped, and
+# `--madmax`/`--yolo` become `--dangerously-skip-permissions`. `_claude` knows
+# none of omc's flags, so leaving them in makes it read `--notify false` as an
+# unknown flag plus the prompt positional, and every later value slot is lost.
+# `--notify` also consumes a following true/false/1/0, matched case-insensitively
+# like `extractNotifyFlag`. The word under the cursor is never touched.
+# words[1] is `omc`, or `launch` after the dispatcher's shift.
 _omc__claude_words() {
-  reply=("${words[@]}")
-  reply[1]=claude
-  REPLY=$CURRENT
+  local -a kept
+  local index word next current=$CURRENT
+
+  kept=(claude)
+  for (( index = 2; index <= ${#words}; index++ )); do
+    word=${words[index]}
+    if (( index == CURRENT )); then
+      kept+=("$word")
+      current=${#kept}
+      continue
+    fi
+
+    case $word in
+      (--notify)
+        next=${(L)words[index+1]}
+        if (( index + 1 != CURRENT )) && [[ $next == (true|false|1|0) ]]; then
+          (( index++ ))
+        fi
+        ;;
+      (--notify=*|--openclaw|--openclaw=*|--telegram|--telegram=*|--discord|--discord=*|--slack|--slack=*|--webhook|--webhook=*)
+        ;;
+      (--madmax|--yolo)
+        kept+=(--dangerously-skip-permissions)
+        ;;
+      (*)
+        kept+=("$word")
+        ;;
+    esac
+  done
+
+  reply=("${kept[@]}")
+  REPLY=$current
 }
 
 # Hand the line to the `_claude` completion, with omc's own root option specs
