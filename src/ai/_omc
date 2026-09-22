@@ -35,7 +35,7 @@
 #
 # https://github.com/Yeachan-Heo/oh-my-claudecode  (branch: dev)
 #
-# 5.3.0 (Oh-My-ClaudeCode)
+# 5.5.0 (Oh-My-ClaudeCode)
 #
 # Derived from `omc --help` walked breadth-first over every command path, then
 # reconciled against the Commander definition the installed build runs from.
@@ -504,6 +504,7 @@ _omc__top_command_list() {
     'alias-retirement:alias retirement verifier and generated-closure inventory'
     'graph:execute sealed graph descriptors'
     'checkpoint:snapshot and restore the working tree'
+    'lookout:pre-flight danger scan for autonomous runs (advisory only)'
     'postinstall:(hidden) run post-install setup'
   )
 }
@@ -598,6 +599,22 @@ _omc__checkpoint_commands() {
     'list:list checkpoints (oldest first)' \
     'rollback:restore the working tree from a checkpoint' \
     'help:display help for command'
+}
+
+_omc__lookout_commands() {
+  _omc__describe_static_items 'lookout command' \
+    'scan:scan a task briefing and/or the workspace for danger signals' \
+    'help:display help for command'
+}
+
+# `lookout scan --brief` takes the briefing text itself, or `@<path>` to read
+# it from a file.
+_omc__lookout_brief() {
+  if compset -P '@'; then
+    _files
+  else
+    _omc__message 'briefing text, or @file'
+  fi
 }
 
 _omc__ultragoal_commands() {
@@ -1752,6 +1769,47 @@ _omc__complete_checkpoint() {
   esac
 }
 
+_omc__complete_lookout() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _omc__shift_words 1
+  words=("${reply[@]}")
+  CURRENT=$REPLY
+
+  case $words[2] in
+    scan)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments -s \
+        '--brief=[task briefing text, or @path to a briefing file]:brief: _omc__lookout_brief' \
+        '--repo=[repository to scan (defaults to cwd)]:directory:_files -/' \
+        '--json[emit the machine-readable report]' \
+        '--strict[exit 1 when the verdict is review-recommended]' \
+        '(-h --help)'{-h,--help}'[display help for command]'
+      return
+      ;;
+    help)
+      _omc__shift_words 1
+      words=("${reply[@]}")
+      CURRENT=$REPLY
+      _arguments '1:lookout command:_omc__lookout_commands'
+      return
+      ;;
+  esac
+
+  _arguments -C -s \
+    '1:lookout command:->command' \
+    '(-h --help)'{-h,--help}'[display help for command]'
+
+  case $state in
+    command)
+      _omc__lookout_commands
+      ;;
+  esac
+}
+
 # Hidden root command, registered with { hidden: true }.
 _omc__complete_postinstall() {
   _omc__complete_help_only_leaf 1
@@ -1842,6 +1900,9 @@ function _omc() {
       ;;
     checkpoint)
       _omc__complete_checkpoint
+      ;;
+    lookout)
+      _omc__complete_lookout
       ;;
     postinstall)
       _omc__complete_postinstall
