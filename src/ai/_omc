@@ -487,6 +487,27 @@ _omc__complete_command_slot() {
   return ret
 }
 
+# Whether a Claude subcommand already sits between the command and the cursor.
+# The two-group flag listing is Claude's ROOT flags; after `omc plugin install`
+# the flags that apply are that subcommand's, and only `_claude` scopes them.
+_omc__claude_subcommand_seen() {
+  _omc__ensure_claude_tables || return 1
+  (( $+functions[_claude__top_command_list] )) || return 1
+
+  local item index
+  typeset -A names
+
+  _claude__top_command_list
+  for item in "${reply[@]}"; do
+    names[${item%%:*}]=1
+  done
+
+  for (( index = 2; index < CURRENT; index++ )); do
+    (( ${+names[${words[index]}]} )) && return 0
+  done
+  return 1
+}
+
 _omc__complete_option_slot() {
   local -a mine theirs
   local -i ret=1
@@ -865,7 +886,8 @@ _omc__complete_root() {
 
   # completing a flag name: two `_describe` groups, so the owner of each flag
   # is visible and both keep their descriptions
-  if [[ "${words[CURRENT]}" == -* ]]; then
+  # -- but only at the root: after a Claude subcommand its own flags apply
+  if [[ "${words[CURRENT]}" == -* ]] && ! _omc__claude_subcommand_seen; then
     _omc__complete_option_slot '-V:output the version number' && return
 
     # no `_claude` on fpath: omc's own flags are all there is
@@ -897,7 +919,7 @@ _omc__complete_launch_like() {
 
   _omc__launch_option_values && return
 
-  if [[ "${words[CURRENT]}" == -* ]]; then
+  if [[ "${words[CURRENT]}" == -* ]] && ! _omc__claude_subcommand_seen; then
     _omc__complete_option_slot && return
 
     _omc__launch_option_specs
