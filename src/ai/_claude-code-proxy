@@ -1,0 +1,321 @@
+#compdef claude-code-proxy
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/raine/claude-code-proxy
+#
+# claude-code-proxy 0.1.42
+#
+# Derived from the clap definitions in src/main.rs and src/provider.rs at tag
+# v0.1.42, then checked against `--help` for every command path and against
+# the installed binary with a sentinel-controlled oracle
+# (`claude-code-proxy help <name>`, `<path> --zz-definitely-not-a-flag`).
+#
+# Items marked "(hidden)" are accepted but absent from `--help`:
+#   * top-level:  demo   open the monitor TUI with mock data and no proxy
+#                        server (`#[command(hide = true)]`); also resolvable
+#                        through `help demo`
+#
+# The CLI declares no aliases and no value enums. Running it with no command
+# starts `serve` with its defaults, but the root does not accept serve's
+# flags, so `--port`/`--no-monitor` are offered only under `serve`.
+#
+# The `--port` and `--url` defaults follow the proxy's own resolution:
+# $PORT, then "port" in config.json, then 18765; $CCP_BIND_ADDRESS, then
+# "bindAddress", then 127.0.0.1. config.json lives in $CCP_CONFIG_DIR, else
+# ~/.config/claude-code-proxy on macOS, else
+# ${XDG_CONFIG_HOME:-~/.config}/claude-code-proxy.
+#
+# The CCP_* environment variables configure the server; they are not flags
+# and are not completed here.
+#
+# -----------------------------------------------------------------------------
+
+(( $+functions[_claude-code-proxy__message] )) ||
+_claude-code-proxy__message() {
+  _message "${1:-value}"
+}
+
+(( $+functions[_claude-code-proxy__config_file] )) ||
+_claude-code-proxy__config_file() {
+  local dir
+  if [[ -n ${CCP_CONFIG_DIR-} ]]; then
+    dir=$CCP_CONFIG_DIR
+  elif [[ $OSTYPE == darwin* ]]; then
+    dir=$HOME/.config/claude-code-proxy
+  else
+    dir=${XDG_CONFIG_HOME:-$HOME/.config}/claude-code-proxy
+  fi
+  REPLY=$dir/config.json
+}
+
+# Sets REPLY to the value of a top-level JSON key in config.json, or fails.
+# A pattern match is enough for the two scalar keys read here and avoids a
+# jq dependency.
+(( $+functions[_claude-code-proxy__config_value] )) ||
+_claude-code-proxy__config_value() {
+  local key=$1 content MATCH MBEGIN MEND
+  local -a match mbegin mend
+  _claude-code-proxy__config_file
+  [[ -r $REPLY ]] || return 1
+  content=$(<$REPLY)
+  if [[ $content =~ "\"$key\"[[:space:]]*:[[:space:]]*\"?([^\",}[:space:]]+)" ]]; then
+    REPLY=$match[1]
+    return 0
+  fi
+  return 1
+}
+
+(( $+functions[_claude-code-proxy__effective_port] )) ||
+_claude-code-proxy__effective_port() {
+  local REPLY
+  if [[ ${PORT-} == <1-65535> ]]; then
+    port=$PORT source='$PORT'
+  elif _claude-code-proxy__config_value port && [[ $REPLY == <1-65535> ]]; then
+    port=$REPLY source='config.json'
+  else
+    port=18765 source='built-in default'
+  fi
+}
+
+(( $+functions[_claude-code-proxy__port] )) ||
+_claude-code-proxy__port() {
+  local port source
+  local -a ports
+  _claude-code-proxy__effective_port
+  ports=( "${port}:current proxy port (${source})" )
+  [[ $port == 18765 ]] || ports+=( '18765:built-in default port' )
+  _describe -t ports 'port' ports
+}
+
+(( $+functions[_claude-code-proxy__url] )) ||
+_claude-code-proxy__url() {
+  local port source bind REPLY
+  local -a urls
+  _claude-code-proxy__effective_port
+  if [[ -n ${CCP_BIND_ADDRESS-} ]]; then
+    bind=$CCP_BIND_ADDRESS
+  elif _claude-code-proxy__config_value bindAddress; then
+    bind=$REPLY
+  fi
+  urls=( "http\://127.0.0.1\:${port}:local proxy (${source})" )
+  case $bind in
+    (''|127.0.0.1|0.0.0.0|::|'[::]') ;;
+    (*:*) urls+=( "http\://[${bind}]\:${port}:configured bind address" ) ;;
+    (*) urls+=( "http\://${bind}\:${port}:configured bind address" ) ;;
+  esac
+  local ret=1
+  _describe -t proxy-urls 'proxy URL' urls && ret=0
+  _urls && ret=0
+  return ret
+}
+
+(( $+functions[_claude-code-proxy__commands] )) ||
+_claude-code-proxy__commands() {
+  local -a commands=(
+    'version:Print version information'
+    'serve:Start the proxy server and monitor'
+    'monitor:Attach a read-only dashboard to a running proxy'
+    'models:List supported provider models'
+    'codex:Manage Codex authentication'
+    'kimi:Manage Kimi authentication'
+    'cursor:Manage Cursor authentication'
+    'grok:Manage Grok authentication'
+    'help:Print this message or the help of the given subcommand(s)'
+  )
+  _describe -t commands 'claude-code-proxy command' commands
+}
+
+(( $+functions[_claude-code-proxy__provider_commands] )) ||
+_claude-code-proxy__provider_commands() {
+  local -a commands=(
+    'auth:Manage authentication'
+    'help:Print this message or the help of the given subcommand(s)'
+  )
+  _describe -t commands 'provider command' commands
+}
+
+(( $+functions[_claude-code-proxy__auth_commands] )) ||
+_claude-code-proxy__auth_commands() {
+  local -a commands=(
+    'login:Sign in using browser-based authentication'
+    'device:Sign in using a device code'
+    'status:Show the current authentication status'
+    'logout:Delete stored authentication credentials'
+    'help:Print this message or the help of the given subcommand(s)'
+  )
+  _describe -t commands 'auth command' commands
+}
+
+# Completes the next name of a `help` path. $1 is the command path the help
+# subcommand sits under (empty at the root, "codex", or "codex auth"); the
+# words already typed after `help` extend it. clap resolves every level of
+# the tree this way, `help` itself included, and accepts no word after a leaf.
+(( $+functions[_claude-code-proxy__help_path] )) ||
+_claude-code-proxy__help_path() {
+  local -a cmdpath=( ${=1} ${words[2,CURRENT-1]} )
+  if [[ ${cmdpath[-1]-} == help ]]; then
+    _claude-code-proxy__message 'no more arguments'
+    return
+  fi
+  case ${#cmdpath}:${cmdpath[1]-} in
+    (0:) _claude-code-proxy__commands ;;
+    (1:(codex|kimi|cursor|grok)) _claude-code-proxy__provider_commands ;;
+    (2:(codex|kimi|cursor|grok))
+      if [[ ${cmdpath[2]} == auth ]]; then
+        _claude-code-proxy__auth_commands
+      else
+        _claude-code-proxy__message 'no more arguments'
+      fi
+      ;;
+    (*) _claude-code-proxy__message 'no more arguments' ;;
+  esac
+}
+
+(( $+functions[_claude-code-proxy__auth] )) ||
+_claude-code-proxy__auth() {
+  local curcontext="$curcontext" state line ret=1
+  local provider=$1
+
+  _arguments -C \
+    $help_option \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    (command)
+      _claude-code-proxy__auth_commands && ret=0
+      ;;
+    (args)
+      curcontext="${curcontext%:*:*}:claude-code-proxy-${provider}-auth-${words[1]}:"
+      case ${words[1]} in
+        (login|device|status|logout)
+          _arguments $help_option && ret=0
+          ;;
+        (help)
+          _claude-code-proxy__help_path "$provider auth" && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_claude-code-proxy__provider] )) ||
+_claude-code-proxy__provider() {
+  local curcontext="$curcontext" state line ret=1
+  local provider=$1
+
+  _arguments -C \
+    $help_option \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    (command)
+      _claude-code-proxy__provider_commands && ret=0
+      ;;
+    (args)
+      curcontext="${curcontext%:*:*}:claude-code-proxy-${provider}-${words[1]}:"
+      case ${words[1]} in
+        (auth)
+          _claude-code-proxy__auth $provider && ret=0
+          ;;
+        (help)
+          _claude-code-proxy__help_path $provider && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+function _claude-code-proxy() {
+  local curcontext="$curcontext" state line ret=1
+  typeset -A opt_args
+
+  local -a help_option=(
+    '(- *)'{-h,--help}'[Print help]'
+  )
+
+  _arguments -C \
+    $help_option \
+    '(- *)'{-v,--version}'[Print version information]' \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case $state in
+    (command)
+      _claude-code-proxy__commands && ret=0
+      ;;
+    (args)
+      curcontext="${curcontext%:*:*}:claude-code-proxy-${words[1]}:"
+      case ${words[1]} in
+        (version)
+          _arguments $help_option && ret=0
+          ;;
+        (serve)
+          _arguments \
+            $help_option \
+            '--port=[port to listen on; default $PORT, config.json, then 18765]: : _claude-code-proxy__port' \
+            '--no-monitor[run without the monitor dashboard]' && ret=0
+          ;;
+        (monitor)
+          _arguments \
+            $help_option \
+            '--url=[HTTP(S) base URL of the running proxy; default the local proxy port]: : _claude-code-proxy__url' && ret=0
+          ;;
+        (models)
+          _arguments \
+            $help_option \
+            '--full[list every model alias, including all dynamic Cursor aliases]' && ret=0
+          ;;
+        (codex|kimi|cursor|grok)
+          _claude-code-proxy__provider ${words[1]} && ret=0
+          ;;
+        (help)
+          _claude-code-proxy__help_path '' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_claude-code-proxy "$@"
+
+# vim:ft=zsh:et:sts=2:sw=2
