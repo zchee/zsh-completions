@@ -133,8 +133,20 @@ _claude__shift_words() {
   (( REPLY < 1 )) && REPLY=1
 }
 
+# The `[1m]` aliases hold glob brackets, which compadd would insert as
+# `opus\[1m\]`. Unquoted, they are inserted as `'opus[1m]'` instead: `-Q` stops
+# the backslashes, and `-P`/`-S` wrap the match without becoming part of it.
+# A `-P` that differs between matches stops zsh from inserting their common
+# prefix, so `f` would no longer grow to `fable`. The quotes are therefore added
+# only when menu completion will insert whole matches, as far as can be told
+# before `_main_complete` applies the `menu` style (the MENU_COMPLETE/AUTO_MENU
+# state on entry, or a bare `yes`), or when there is no longer common prefix to
+# insert. Otherwise the next Tab, now at `fable`, adds them. Inside an open
+# quote, compadd already closes it itself, and a typed backslash means the user
+# chose that style, so both keep the default quoting.
 _claude__models() {
-  local -a models
+  local -a models bracketed matched quoting menu_style
+  local common name
   models=(
     'fable:latest Fable model'
     'sonnet:latest Sonnet model'
@@ -142,9 +154,6 @@ _claude__models() {
     'haiku:fast and efficient Haiku model'
     'best:best available model'
     'opusplan:use opus for planning and sonnet for execution'
-    'fable[1m]:latest Fable model with a 1M context window'
-    'sonnet[1m]:latest Sonnet model with a 1M context window'
-    'opus[1m]:latest Opus model with a 1M context window'
     'claude-fable-5-1:full Claude model name'
     'claude-fable-5:full Claude model name'
     'claude-opus-5-5:full Claude model name'
@@ -164,7 +173,27 @@ _claude__models() {
     'claude-3-5-sonnet:full Claude model name'
     'claude-3-5-haiku:full Claude model name'
   )
-  _describe 'model' models
+  bracketed=(
+    'fable[1m]:latest Fable model with a 1M context window'
+    'sonnet[1m]:latest Sonnet model with a 1M context window'
+    'opus[1m]:latest Opus model with a 1M context window'
+  )
+  if [[ -z $compstate[quote] && $PREFIX$SUFFIX != *\\* ]]; then
+    matched=(${(M)${models%%:*}:#${PREFIX}*} ${(M)${bracketed%%:*}:#${PREFIX}*})
+    common=$matched[1]
+    for name in $matched; do
+      while [[ $name != ${common}* ]]; do
+        common=${common%?}
+      done
+    done
+    zstyle -a ":completion:${curcontext}:values" menu menu_style ||
+      zstyle -a ":completion:${curcontext}:default" menu menu_style
+    if [[ $compstate[insert] == (menu|automenu) || $common == "$PREFIX" ]] ||
+      (( ${menu_style[(I)(yes|true|1|on)]} )); then
+      quoting=(-Q -P "'" -S "'")
+    fi
+  fi
+  _describe 'model' models -- bracketed "${quoting[@]}"
 }
 
 _claude__output_formats() {
