@@ -1,0 +1,851 @@
+#compdef muse
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# Muse Code (Meta) — no public upstream source; built from Meta's internal
+# fbcode/musecode tree and installed by https://api.meta.ai/muse-launcher.sh
+#
+# Muse Code 1.4.0 (1.4.0-R4161.1)
+#
+# `muse` is a bash launcher that self-updates and then execs
+# muse-bin-<version> with the arguments untouched. The binary is Rust: the root
+# and `resume`, `auth set` and `trace inspect` parse with clap; every other
+# subcommand has a hand-rolled parser with its own help dialect. The
+# hand-rolled parsers reject `--flag=value`, so every value is completed as a
+# separate word.
+#
+# Derived from the `--help` of every command path, plus a sweep of every
+# `--long-flag` literal in the binary's string table through a per-scope
+# oracle (`muse <path> --CAND --zz-s1 --zz-s2`, with a `--zz-control` sentinel
+# as the control) and the packed top-level dispatch table.
+#
+# Hidden surface, all confirmed against the binary:
+#   * command:        workflows (list, save, and the QA-only run/recover)
+#   * root flag:      --last (the root copy of `resume --last`)
+#   * exec flags:     --agents, --eval-context-compaction-strategy,
+#                     --eval-workflow-api-version
+#   * skills list:    --scope
+#   * skills inspect: --scope, --enabled-only
+#   * skills enable, user-only, disable:
+#                     --source, --enabled-only
+#
+# Deliberately left out:
+#   * `plugins` is dispatched but only prints "plugins are not available in
+#     this build".
+#   * `serve --yolo/--approval-mode/--approval-judge/--disable-approval/
+#     --listen` are recognized only to be refused with an explanation.
+#   * `skills validate/update/uninstall/install` parse the whole skills option
+#     set, then reject the extras with "option --X is not supported for this
+#     command".
+#
+# -----------------------------------------------------------------------------
+
+(( $+functions[_muse__sessions] )) ||
+_muse__sessions() {
+  local db=${XDG_DATA_HOME:-$HOME/.local/share}/muse/session-index.db
+  local sql="select session_id, coalesce(session_name, ''), title from sessions order by updated_at_us desc limit 200"
+  local -a rows ids names dirs
+  local row id name title
+  if [[ -r $db ]] && (( $+commands[sqlite3] )); then
+    rows=(${(f)"$(_call_program sessions sqlite3 -readonly -separator ${(q):-$'\t'} ${(q)db} ${(q)sql} 2>/dev/null)"})
+    for row in $rows; do
+      id=${row%%$'\t'*}
+      row=${row#*$'\t'}
+      name=${row%%$'\t'*}
+      title=${row#*$'\t'}
+      [[ -n $id ]] || continue
+      ids+=("${id//:/\\:}:${title:-session}")
+      [[ -n $name ]] && names+=("${name//:/\\:}:${title:-session} ($id)")
+    done
+  fi
+  # The index is filled lazily, so it can lag the session directories.
+  if (( ! $#ids )); then
+    dirs=(${XDG_DATA_HOME:-$HOME/.local/share}/muse/sessions/*/*/*/*(N/om:t))
+    ids=(${dirs//:/\\:})
+  fi
+  _describe -t session-ids 'session id' ids -- names
+}
+
+(( $+functions[_muse__session_or_log] )) ||
+_muse__session_or_log() {
+  _alternative \
+    'sessions: :_muse__sessions' \
+    'files:session log:_files -g "*.jsonl(-.)"'
+}
+
+(( $+functions[_muse__skills] )) ||
+_muse__skills() {
+  local -a rows skills
+  local row name scope desc
+  rows=(${(f)"$(_call_program skills MUSE_NO_AUTO_UPDATE=1 ${(q)_muse_bin} skills list 2>/dev/null)"})
+  for row in $rows; do
+    name=${row%%$'\t'*}
+    row=${row#*$'\t'}
+    scope=${row%%$'\t'*}
+    row=${row#*$'\t'}
+    [[ $scope == (user|project|built-in|plugin) ]] || continue
+    desc=${${row#*$'\t'}%%$'\t'*}
+    skills+=("${name//:/\\:}:[$scope] ${desc[1,100]}")
+  done
+  _describe -t skills 'skill' skills
+}
+
+(( $+functions[_muse__skill_or_path] )) ||
+_muse__skill_or_path() {
+  _alternative \
+    'skills: :_muse__skills' \
+    'files:skill path:_files'
+}
+
+(( $+functions[_muse__mcp_servers] )) ||
+_muse__mcp_servers() {
+  local -a files servers
+  local f
+  for f in ${XDG_CONFIG_HOME:-$HOME/.config}/muse/settings.json .claude/settings.json .claude/settings.local.json; do
+    [[ -r $f ]] && files+=($f)
+  done
+  if (( $#files )) && (( $+commands[jq] )); then
+    servers=(${(fu)"$(_call_program mcp-servers jq -r ${(q):-'.mcpServers // {} | to_entries[] | select(.value.url != null) | .key'} ${(q)files} 2>/dev/null)"})
+  fi
+  if (( $#servers )); then
+    _describe -t mcp-servers 'MCP server' servers
+  else
+    _message 'MCP server (a streamable-HTTP entry under mcpServers in settings.json)'
+  fi
+}
+
+(( $+functions[_muse__git_refs] )) ||
+_muse__git_refs() {
+  local -a refs
+  refs=(${(f)"$(_call_program refs git for-each-ref "--format='%(refname:short)'" refs/heads refs/remotes refs/tags 2>/dev/null)"})
+  _describe -t refs 'git ref' refs
+}
+
+(( $+functions[_muse__providers] )) ||
+_muse__providers() {
+  local -a providers
+  providers=(
+    'meta:Meta API (default)'
+    'echo:deterministic local echo provider'
+  )
+  _describe -t providers 'provider' providers
+}
+
+(( $+functions[_muse__approval_modes] )) ||
+_muse__approval_modes() {
+  local -a modes
+  modes=(
+    'untrusted:ask before running untrusted tool calls'
+    'on-request:ask when a tool call requests approval (default)'
+    'never:never ask for approval'
+  )
+  _describe -t approval-modes 'approval mode' modes
+}
+
+(( $+functions[_muse__sandbox_network] )) ||
+_muse__sandbox_network() {
+  local -a modes
+  modes=(
+    'restricted:no network access from the sandbox'
+    'enabled:unrestricted network access'
+    'proxy-only:network only through the sandbox proxy (default)'
+  )
+  _describe -t network-modes 'sandbox network mode' modes
+}
+
+(( $+functions[_muse__worktree_modes] )) ||
+_muse__worktree_modes() {
+  local -a modes
+  modes=(
+    'off:no session worktree (default)'
+    'create:create a new worktree from --worktree-base'
+    'existing:use the worktree given by --worktree-existing'
+  )
+  _describe -t worktree-modes 'worktree mode' modes
+}
+
+(( $+functions[_muse__compaction_strategies] )) ||
+_muse__compaction_strategies() {
+  local -a strategies
+  strategies=(
+    'summary-preserved-suffix/v1'
+    'prefix-extension-summary/v1'
+    'prefix-extension-inventory-summary/v1'
+  )
+  _describe -t strategies 'context compaction strategy' strategies
+}
+
+(( $+functions[_muse__eval_compaction_strategies] )) ||
+_muse__eval_compaction_strategies() {
+  local -a strategies
+  strategies=(
+    'prefix-extension-freeform-checkpoint/v1'
+    'prefix-extension-freeform-checkpoint-with-suffix/v1'
+    'prefix-extension-freeform-checkpoint-with-suffix/v2'
+  )
+  _describe -t strategies 'eval context compaction strategy' strategies
+}
+
+function _muse() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local _muse_bin=${words[1]}
+
+  # Options shared by the TUI root, `resume` and `exec`.
+  local -a run_opts
+  run_opts=(
+    '--provider[startup provider]: :_muse__providers'
+    '--preset[run a built-in preset]:preset:(native-basic miniswe)'
+    '--model[model id for non-echo providers]:model id:'
+    '--reasoning-effort[Meta reasoning effort]:effort:(none minimal low medium high xhigh max ultra)'
+    '--base-url[override the Meta provider base URL]:URL:_urls'
+    '*--image[attach a local image file to the next submitted prompt]:image file:_files'
+    '--workspace[register policy-gated workspace tools rooted at PATH]:workspace:_directories'
+    '--worktree-base[base ref for --worktree create]: :_muse__git_refs'
+    '--worktree-existing[existing worktree path for --worktree existing]:worktree:_directories'
+    '(--no-parallel-tool-calls)--parallel-tool-calls[enable Meta API parallel tool calls]'
+    '(--parallel-tool-calls)--no-parallel-tool-calls[disable Meta API parallel tool calls]'
+    '--subagent-worktree-isolation[compatibility flag; subagent worktree isolation defaults on]'
+    '--approval-mode[tool approval mode]: :_muse__approval_modes'
+    '--permission-profile[select a named permission profile for this session]:permission profile id:'
+    '--approval-judge[LLM approval judge for Prompt-bound calls]:judge:(off on)'
+    '--no-session-log[do not persist session event logs to disk]'
+    '--yolo[disable approval and sandboxing and trust this workspace for this run]'
+    '--trust-workspace[trust this workspace for this run (load its skills and rules)]'
+    '--disable-approval[disable tool approval prompts for this run]'
+    '--disable-sandbox[disable shell filesystem/network sandboxing for this run]'
+    '--sandbox-network[sandbox network mode]: :_muse__sandbox_network'
+    '--disable-write[disable non-shell workspace filesystem writes]'
+    '--disable-shell[disable workspace shell execution]'
+    '--enable-shell-tool[use the legacy shell tool instead of the managed platform shell]'
+  )
+
+  # clap requires `=` for the optional worktree mode on the root and `resume`.
+  local -a tui_opts
+  tui_opts=(
+    $run_opts
+    '(- *)'{-h,--help}'[print help]'
+    '(- *)'{-V,--version}'[print version]'
+    '--agents[supply one ephemeral agent-definition overlay]:agent definition JSON:'
+    '(-w --worktree)'{-w=-,--worktree=-}'[session Git worktree; bare means create]:: :_muse__worktree_modes'
+    '--echo-delay-ms[deterministic echo reply delay (echo provider only)]:milliseconds:'
+  )
+
+  _arguments -C \
+    $tui_opts \
+    '--last[(hidden) resume the most recent session in this workspace]' \
+    '(-)1: :->command' \
+    '(-)*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'resume:resume a previous session (--last or <session-ref>)'
+        'exec:run one prompt non-interactively (headless)'
+        'config:validate enterprise configuration documents'
+        'export:export a session transcript to a file'
+        'trace:inspect a recorded session or run trace'
+        'skills:list, inspect, enable, or disable skills'
+        'sandbox:check or set up the OS sandbox'
+        'schema:export the MSP wire schema (JSON Schema or TypeScript)'
+        'serve:serve an MSP session host over stdio'
+        'session-message:list or send cross-session messages'
+        'mcp:log in to or out of an MCP server (OAuth)'
+        'auth:store provider API credentials'
+        'login:log in to a provider'
+        'logout:remove stored provider credentials'
+        'init:scaffold agent config in this workspace'
+        'workflows:(hidden) list, save, run, or recover saved workflows'
+      )
+      _describe -t commands 'muse command' commands && ret=0
+      ;;
+    args)
+      curcontext=${curcontext%:*:*}:muse-$words[1]:
+      case $words[1] in
+        resume)
+          _arguments \
+            $tui_opts \
+            '--last[resume the most recent session in this workspace]' \
+            '1:: :_muse__sessions' \
+            && ret=0
+          ;;
+        exec)
+          _arguments \
+            $run_opts \
+            '(- *)'{-h,--help}'[print help]' \
+            '(-w --worktree)'{-w,--worktree}'[session git worktree; bare means create]' \
+            '--agents[(hidden) supply one ephemeral agent-definition overlay]:agent definition JSON:' \
+            '--json[emit machine-readable JSONL events on stdout]' \
+            '--prompt-file[read the prompt from a file instead of an argument]:prompt file:_files' \
+            '--api-key-stdin[read the provider API key from stdin]' \
+            '(--eval-context-compaction-strategy)--context-compaction-strategy[context compaction strategy]: :_muse__compaction_strategies' \
+            '--context-compaction-soft-threshold[soft compaction threshold]:fraction:' \
+            '--context-compaction-hard-threshold[hard compaction threshold]:fraction:' \
+            '(--context-compaction-strategy)--eval-context-compaction-strategy[(hidden) eval-only context compaction strategy]: :_muse__eval_compaction_strategies' \
+            '--eval-workflow-api-version[(hidden) Workflow API version for evals]:version:(v1 v2)' \
+            '--output-schema[shape the final answer with the JSON schema in FILE (meta provider only)]:JSON schema file:_files' \
+            '--max-model-steps[cap the number of model steps]:steps:' \
+            '--max-tool-output-bytes[cap tool output bytes fed back to the model (0 or >=9)]:bytes:' \
+            '--session-id[use a specific session id]:session UUID:' \
+            '--allow-workspace-switch[allow switching the workspace mid-run]' \
+            '--user-input-auto-resolve[offer request_user_input and auto-cancel prompts (headless)]' \
+            '--disable-web-tools[disable web tools for this run]' \
+            '--no-foreign-personal-context[exclude foreign personal rules and skills from this run]' \
+            '*:prompt:->exec_arg' \
+            && ret=0
+          # exec takes the word after -w as its mode only when it is a valid one.
+          if [[ $state == exec_arg ]]; then
+            if [[ $words[CURRENT-1] == (-w|--worktree) ]]; then
+              _muse__worktree_modes && ret=0
+            else
+              _message 'prompt'
+            fi
+          fi
+          ;;
+        config)
+          _muse__config && ret=0
+          ;;
+        export)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--session[session UUID or path to a session.jsonl file]: :_muse__session_or_log' \
+            '--last[skip the picker and export the most recent session]' \
+            '--out[write the document to this file]:output file:_files' \
+            '--redacted[share-safe variant with telemetry redaction applied]' \
+            && ret=0
+          ;;
+        trace)
+          _muse__trace && ret=0
+          ;;
+        skills)
+          _muse__skills_cmd && ret=0
+          ;;
+        sandbox)
+          _muse__sandbox && ret=0
+          ;;
+        schema)
+          _muse__schema && ret=0
+          ;;
+        serve)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            '--no-session-log[use memory-only sessions]' \
+            '--disable-sandbox[disable shell filesystem/network sandboxing for this host]' \
+            '--sandbox-network[sandbox network mode]: :_muse__sandbox_network' \
+            '--disable-write[disable non-shell workspace filesystem writes]' \
+            '--disable-shell[disable workspace shell execution]' \
+            '--trust-workspace[load each session workspace'\''s skills and rules]' \
+            && ret=0
+          ;;
+        session-message)
+          _muse__session_message && ret=0
+          ;;
+        mcp)
+          _muse__mcp && ret=0
+          ;;
+        auth)
+          _muse__auth && ret=0
+          ;;
+        login|logout)
+          _arguments '(- *)--help[print help]' && ret=0
+          ;;
+        init)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--dry-run[print the scaffolded AGENTS.md instead of writing it]' \
+            '--force[overwrite an existing AGENTS.md]' \
+            && ret=0
+          ;;
+        workflows)
+          _muse__workflows && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__config] )) ||
+_muse__config() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'validate:validate an enterprise plane document'
+        'status:show enterprise configuration status'
+      )
+      _describe -t commands 'muse config command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        validate)
+          _arguments \
+            '--plane[configuration plane the document belongs to]:plane:(defaults policy)' \
+            '--file[enterprise plane document to validate]:document:_files' \
+            && ret=0
+          ;;
+        status)
+          _message 'no arguments'
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__trace] )) ||
+_muse__trace() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'inspect:inspect a recorded session trace (golden fixture, session log, or runtime window)'
+      )
+      _describe -t commands 'muse trace command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        inspect)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            '--fixture[golden-trace fixture path or bare name]:fixture:_files' \
+            '--session-log[session-log JSONL file to inspect]:session log:_files -g "*.jsonl(-.)"' \
+            '(--all-runs)--run-id[project only this run stream of --session-log]:run UUID:' \
+            '(--run-id)--all-runs[project every run stream of --session-log as one section per run]' \
+            '--run-log[run-stream runtime log JSONL file]:run log:_files -g "*.jsonl(-.)"' \
+            '--task-log[task-stream runtime log JSONL file]:task log:_files -g "*.jsonl(-.)"' \
+            '--render-mode[report detail level]:render mode:(compact default verbose)' \
+            '--include-positions[include source positions in the report]' \
+            '--max-text-bytes[truncate rendered text values to N bytes]:bytes:' \
+            '--format[output format]:format:(text json)' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__skills_cmd] )) ||
+_muse__skills_cmd() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  local -a common_opts
+  common_opts=(
+    '(- *)--help[print help]'
+    '--workspace[workspace whose project skills to consider]:workspace:_directories'
+    '--trust-workspace[trust the workspace for this run (load its skills)]'
+    '--json[emit JSON]'
+  )
+  local source_spec='--source[which skill source to consider]:source:(all user project built-in plugin)'
+  local scope_values='(user project built-in plugin)'
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'list:list skills'
+        'inspect:show one skill'
+        'enable:enable a skill in a scope'
+        'user-only:restrict a skill to user invocation in a scope'
+        'disable:disable a skill in a scope'
+        'validate:validate a skill directory or SKILL.md'
+        'install:install a skill from a path'
+        'import:import skills from Claude Code or Codex'
+        'update:update an installed skill'
+        'uninstall:uninstall an installed skill'
+      )
+      _describe -t commands 'muse skills command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        list)
+          _arguments \
+            $common_opts \
+            $source_spec \
+            '--enabled-only[list only enabled skills]' \
+            "--scope[(hidden) restrict to one scope]:scope:$scope_values" \
+            && ret=0
+          ;;
+        inspect)
+          _arguments \
+            $common_opts \
+            $source_spec \
+            "--scope[(hidden) restrict to one scope]:scope:$scope_values" \
+            '--enabled-only[(hidden) consider only enabled skills]' \
+            '1: :_muse__skill_or_path' \
+            && ret=0
+          ;;
+        enable|user-only|disable)
+          _arguments \
+            $common_opts \
+            "--scope[scope whose setting to change]:scope:$scope_values" \
+            "--source[(hidden) which skill source to consider]:source:(all user project built-in plugin)" \
+            '--enabled-only[(hidden) consider only enabled skills]' \
+            '1: :_muse__skill_or_path' \
+            && ret=0
+          ;;
+        validate)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--json[emit JSON]' \
+            '1:skill path:_files' \
+            && ret=0
+          ;;
+        install)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--scope[install scope]:scope:(user)' \
+            '--name[install under this name]:name:' \
+            '--force[overwrite an existing skill]' \
+            '--json[emit JSON]' \
+            '1:skill path:_files' \
+            && ret=0
+          ;;
+        import)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--from[agent to import skills from]:agent:(claude codex)' \
+            '--scope[import scope]:scope:(user)' \
+            '--dry-run[show what would be imported without writing]' \
+            '--force[overwrite existing skills]' \
+            '--json[emit JSON]' \
+            && ret=0
+          ;;
+        update)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--json[emit JSON]' \
+            '1: :_muse__skills' \
+            && ret=0
+          ;;
+        uninstall)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--keep-files[keep the skill files on disk]' \
+            '--json[emit JSON]' \
+            '1: :_muse__skills' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__sandbox] )) ||
+_muse__sandbox() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'windows:check or set up the Windows sandbox'
+      )
+      _describe -t commands 'muse sandbox command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        windows)
+          _arguments '1: :_muse__windows_sandbox_actions' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__windows_sandbox_actions] )) ||
+_muse__windows_sandbox_actions() {
+  local -a actions
+  actions=(
+    'check:check the Windows sandbox'
+    'setup:set up the Windows sandbox'
+  )
+  _describe -t actions 'windows sandbox action' actions
+}
+
+(( $+functions[_muse__schema] )) ||
+_muse__schema() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'generate-json-schema:export the MSP wire schema as JSON Schema'
+        'generate-ts:export the MSP wire schema as TypeScript'
+      )
+      _describe -t commands 'muse schema command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        generate-json-schema|generate-ts)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            '--out[directory to write the export into (created if absent)]:output directory:_directories' \
+            '--experimental[export the experimental surface instead of the stable one]' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__session_message] )) ||
+_muse__session_message() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'list:list cross-session messages'
+        'send:send a message (body on stdin) to another session'
+      )
+      _describe -t commands 'muse session-message command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        list)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--json[emit JSON]' \
+            && ret=0
+          ;;
+        send)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--target[target session UUID or Session Name]: :_muse__sessions' \
+            '--in-reply-to[reply token of the message being answered]:reply token:' \
+            '--display-context[display context JSON]:display context JSON:' \
+            '--json[emit JSON]' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__mcp] )) ||
+_muse__mcp() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'login:authorize an MCP server with OAuth (browser or headless)'
+        'logout:remove stored OAuth credentials for an MCP server'
+      )
+      _describe -t commands 'muse mcp command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        login)
+          _arguments \
+            '(- *)--help[print help]' \
+            '--oauth-client-id[use this public client ID]:client ID:' \
+            '*--scope[request this scope (repeatable or comma-separated)]:scope:' \
+            '--headless[print the URL, do not open a browser, and paste the final redirect URL]' \
+            '--callback-port[loopback callback port]:port:' \
+            '1: :_muse__mcp_servers' \
+            && ret=0
+          ;;
+        logout)
+          _arguments \
+            '(- *)--help[print help]' \
+            '1: :_muse__mcp_servers' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__auth] )) ||
+_muse__auth() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'set:save provider credentials (API key read from stdin)'
+      )
+      _describe -t commands 'muse auth command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        set)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            '--provider[which provider the credential is for]:provider:(meta)' \
+            '--api-key-stdin[read the API key from stdin]' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_muse__workflows] )) ||
+_muse__workflows() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args' \
+    && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'list:list saved named workflows'
+        'save:save a workflow script under a name'
+        'run:run a workflow entry headlessly (QA-only)'
+        'recover:recover a workflow run from its session log (QA-only)'
+      )
+      _describe -t commands 'muse workflows command' commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        list)
+          _message 'no arguments'
+          ;;
+        save)
+          _arguments \
+            '--from[workflow script to save]:workflow script:_files -g "*.js(-.)"' \
+            '--scope[where to save the workflow]:scope:(project user)' \
+            '--overwrite[replace an existing workflow of the same name]' \
+            '1:workflow name:' \
+            && ret=0
+          ;;
+        run)
+          _arguments \
+            '--headless-qa[run in the headless QA lane (required)]' \
+            '--token-budget[token budget]:tokens (N, Nk, or Nm):' \
+            '(--prompt-live-smoke)--live-auto-qa[live auto-QA run (needs TBH_WORKFLOW_PRODUCT_LIVE_AUTO_QA=1)]' \
+            '(--live-auto-qa)--prompt-live-smoke[prompt live smoke run (needs TBH_WORKFLOW_PROMPT_LIVE_SMOKE=1)]' \
+            '1:workflow entry:_files -g "*.js(-.)"' \
+            && ret=0
+          ;;
+        recover)
+          _arguments \
+            '--apply[apply the recovery instead of planning it]' \
+            '(--session)--session-log[session log of the workflow run]:session log:_files -g "*.jsonl(-.)"' \
+            '(--session-log)--session[session id of the workflow run]: :_muse__sessions' \
+            '1:workflow run id:' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_muse "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
