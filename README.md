@@ -146,6 +146,7 @@ fork, fix or wrote myself.
 | shellcheck |  |
 | swig | Simplified wrapper and interface generator |
 | travis |  |
+| tshark | Dump and analyze network traffic (Wireshark) |
 | vint | Fast and highly extensible Vim script language lint implemented by Python |
 | vmrun |  |
 | vmware-vdiskmanager |  |

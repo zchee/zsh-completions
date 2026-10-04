@@ -1,0 +1,846 @@
+#compdef tshark
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://gitlab.com/wireshark/wireshark
+#
+# TShark (Wireshark) 4.6.9 (v4.6.9-0-g2d548b197c75)
+#
+# Derived from tshark.c at tag v4.6.9 (the long_options table and OPTSTRING,
+# plus the LONGOPT_*/OPTSTRING_* macros in ui/capture_opts.h,
+# ui/dissect_opts.h, wsutil/clopts_common.h and wsutil/wslog.h), compared with
+# `tshark -h`. Every option and every hidden value below was confirmed against
+# the macOS build of /Applications/Wireshark.app: an unknown name fails with
+# "tshark: unrecognized option" before anything runs.
+#
+# tshark has no subcommands. Its optstring starts with "+", so the first
+# non-option word ends option parsing and every later word is filter text: a
+# display filter with -r, a capture filter otherwise.
+#
+# Items marked "(hidden)" are accepted but absent from `tshark -h`:
+#   --source               alias of -i; the Stratoshark spelling, advertised
+#                          only in stratoshark(1)
+#   --list-sources         alias of -D; same story
+#   --log-domain           singular alias of --log-domains
+#   --log-fatal-domain     singular alias of --log-fatal-domains
+#   --compress-type        compression for live-capture output files; the man
+#                          page carries it only inside a commented-out block
+#   --selected-frame       "Hidden option to mark a frame as selected. Used for
+#                          testing and debugging." Only active with -2
+#   --print-timers         documented in tshark(1), missing from -h
+# Hidden values of documented options:
+#   -a events:NUM          alias of packets:NUM (Stratoshark wording)
+#   -b events:NUM          alias of packets:NUM
+#   -b nametimenum:NUM     documented in tshark(1), missing from -h
+#   -E escape=y|n          documented in tshark(1), missing from -h
+#   -f predef:NAME         a saved capture filter from a cfilters file;
+#                          documented in tshark(1), missing from -h
+#
+# Deliberately left out:
+#   -A <user>:<password>   documented in tshark(1) but compiled in only with
+#                          HAVE_PCAP_REMOTE; this build rejects it
+#
+# Dynamic values, all read from tshark itself (each call takes 0.13-0.28 s):
+#   interfaces             tshark -D
+#   link types             tshark -L [-I] [-i IFACE], for the last -i given
+#   timestamp types        tshark --list-time-stamp-types [-i IFACE]
+#   protocols, fields      tshark -G fields (272k lines), cached
+#   preferences            tshark -G defaultprefs, cached
+#   heuristic dissectors   tshark -G heuristic-decodes
+#   decode-as tables       tshark -d . and tshark -d LAYER==SELECTOR,.
+#   file types, taps, statistics, export-object types, compression types,
+#   read formats           the lists tshark prints for -F, -U, -z help,
+#                          --export-objects help, --compress, -X read_format:
+#   profiles, cfilters     the configuration folders from tshark -G folders
+# The two cached lists live under ${XDG_CACHE_HOME:-~/.cache}/zsh-completions
+# and are rebuilt when tshark is newer than the cache or the cache is older
+# than the TTL (seconds, default 86400):
+#   zstyle ':completion:*:*:tshark:*' tshark-cache-ttl 3600
+#
+# -----------------------------------------------------------------------------
+
+_tshark__message() {
+  _message "${1:-value}"
+}
+
+# Prints the combined stdout and stderr of tshark; most of its value lists are
+# written to stderr.
+_tshark__run() {
+  local tag=$1
+  shift
+  _call_program $tag ${(q)${tshark_bin:-tshark}} "${(@q)@}" 2>&1 </dev/null
+}
+
+# Sets REPLY to a cache file holding the lines of `tshark ARGS...` filtered
+# through the awk program PROG.
+#   _tshark__cache NAME PROG ARGS...
+_tshark__cache() {
+  local name=$1 prog=$2 ttl bin cache_file
+  local -a cache_mtime bin_mtime
+  shift 2
+
+  zstyle -s ":completion:${curcontext}:" tshark-cache-ttl ttl || ttl=86400
+  cache_file="${XDG_CACHE_HOME:-${HOME}/.cache}/zsh-completions/tshark-${name}"
+  bin=${tshark_bin:-tshark}
+  [[ ${bin} == */* ]] || bin=${commands[${bin}]}
+
+  zmodload -F zsh/stat b:zstat 2>/dev/null
+  zmodload zsh/datetime 2>/dev/null
+
+  if [[ -s ${cache_file} ]] &&
+     zstat -A cache_mtime +mtime -- ${cache_file} 2>/dev/null &&
+     (( EPOCHSECONDS - cache_mtime[1] < ttl )); then
+    if [[ -z ${bin} ]] ||
+       ! zstat -A bin_mtime +mtime -- ${bin} 2>/dev/null ||
+       (( bin_mtime[1] <= cache_mtime[1] )); then
+      REPLY=${cache_file}
+      return 0
+    fi
+  fi
+
+  mkdir -p -- ${cache_file:h} 2>/dev/null || return 1
+  if _call_program ${name} ${(q)${tshark_bin:-tshark}} "${(@q)@}" 2>/dev/null </dev/null |
+       awk -F '\t' "${prog}" >| ${cache_file}.$$ 2>/dev/null &&
+     [[ -s ${cache_file}.$$ ]]; then
+    mv -f -- ${cache_file}.$$ ${cache_file} 2>/dev/null
+  else
+    rm -f -- ${cache_file}.$$ 2>/dev/null
+    return 1
+  fi
+  REPLY=${cache_file}
+}
+
+# Turns "name<TAB>description" lines into _describe items in reply.
+_tshark__pairs() {
+  local line
+  reply=()
+  for line in "$@"; do
+    if [[ ${line} == *$'\t'* ]]; then
+      reply+=( "${${line%%$'\t'*}//:/\\:}:${line#*$'\t'}" )
+    else
+      reply+=( "${line//:/\\:}" )
+    fi
+  done
+}
+
+# Sets reply to the personal and the global configuration directory.
+_tshark__folders() {
+  local line personal global
+  for line in ${(f)"$(_tshark__run folders -G folders)"}; do
+    case ${line} in
+      ('Personal configuration:'*) personal=${${line#*:}##[[:space:]]#} ;;
+      ('Global configuration:'*) global=${${line#*:}##[[:space:]]#} ;;
+    esac
+  done
+  reply=( "${personal}" "${global}" )
+}
+
+# Sets REPLY to the interface named by the last -i before the cursor.
+_tshark__current_interface() {
+  local i w
+  REPLY=
+  for (( i = 2; i < CURRENT; i++ )); do
+    w=${words[i]}
+    case ${w} in
+      (-i|--interface|--source) REPLY=${words[i+1]}; (( i++ )) ;;
+      (--interface=*|--source=*) REPLY=${w#*=} ;;
+      (-i?*) REPLY=${w#-i} ;;
+    esac
+  done
+  REPLY=${(Q)REPLY}
+}
+
+# `tshark -D` prints "N. name (description)".
+_tshark__interfaces() {
+  local line name desc
+  local -a ifaces
+
+  for line in ${(f)"$(_tshark__run interfaces -D)"}; do
+    [[ ${line} == <->.\ * ]] || continue
+    line=${line#<->. }
+    name=${line%% *}
+    desc=${${line#${name}}# }
+    desc=${${desc#\(}%\)}
+    ifaces+=( "${name//:/\\:}${desc:+:${desc}}" )
+  done
+  ifaces+=( '-:read packets from standard input or a pipe' )
+  _describe -t interfaces 'interface' ifaces
+}
+
+# Lists the two-space indented "NAME (description)" rows of an interface query.
+_tshark__interface_rows() {
+  local tag=$1 query=$2 line
+  local -a args rows
+
+  _tshark__current_interface
+  args=( ${query} )
+  (( ${words[(I)(-I|--monitor-mode)]} )) && args+=( -I )
+  [[ -n ${REPLY} ]] && args+=( -i "${REPLY}" )
+
+  for line in ${(f)"$(_tshark__run ${tag} "${args[@]}")"}; do
+    [[ ${line} == '  '[^[:space:]]* ]] || continue
+    line=${line##[[:space:]]#}
+    rows+=( "${${line%% *}//:/\\:}:${${${line#* }#\(}%%\)*}" )
+  done
+
+  if (( ${#rows} )); then
+    _describe -t ${tag} "${3}" rows
+  else
+    _tshark__message "${3}"
+  fi
+}
+
+_tshark__link_types() {
+  _tshark__interface_rows link-types -L 'link-layer type'
+}
+
+_tshark__time_stamp_types() {
+  _tshark__interface_rows time-stamp-types --list-time-stamp-types 'timestamp type'
+}
+
+# Saved capture filters: lines of the form "NAME" EXPRESSION in the cfilters
+# file of the personal configuration, its profiles, and the global one.
+_tshark__saved_capture_filters() {
+  local file line
+  local -a files names
+
+  _tshark__folders
+  files=( ${reply[1]:+${reply[1]}/cfilters(N-.)} ${reply[1]:+${reply[1]}/profiles/*/cfilters(N-.)} ${reply[2]:+${reply[2]}/cfilters(N-.)} )
+  for file in ${files}; do
+    for line in ${(f)"$(<${file})"}; do
+      [[ ${line} == \"*\"* ]] || continue
+      line=${line#\"}
+      names+=( "${${line%%\"*}//:/\\:}:${${line#*\"}##[[:space:]]#}" )
+    done
+  done
+
+  if (( ${#names} )); then
+    _describe -t capture-filters 'saved capture filter' names
+  else
+    _tshark__message 'saved capture filter name'
+  fi
+}
+
+_tshark__capture_filter() {
+  if compset -P 'predef:'; then
+    _tshark__saved_capture_filters
+    return
+  fi
+
+  local ret=1
+  local -a predef
+  predef=( 'predef\::(hidden) use a saved capture filter by name' )
+  _describe -t capture-filters 'saved capture filter' predef -S '' && ret=0
+
+  # The filter is one quoted word here; _bpf_filters accepts spaces in place
+  # of word ends, so hand it that word as the only argument.
+  local -a words
+  words=( tshark "${PREFIX}${SUFFIX}" )
+  local CURRENT=2
+  _bpf_filters && ret=0
+  return ret
+}
+
+# Protocols and fields from the cached `-G fields` dump, stored as
+# "P|F<TAB>abbreviation<TAB>name".
+_tshark__fields_cache() {
+  _tshark__cache fields '$1 == "P" || $1 == "F" { print $1 "\t" $3 "\t" $2 }' -G fields
+}
+
+_tshark__protocols() {
+  local -a protos
+  if _tshark__fields_cache; then
+    protos=( ${(f)"$(awk -F '\t' '$1 == "P" { print $2 ":" $3 }' ${REPLY})"} )
+  fi
+  if (( ${#protos} )); then
+    _describe -t protocols 'protocol' protos "$@"
+  else
+    _tshark__message 'protocol name'
+  fi
+}
+
+_tshark__protocol_list() {
+  _sequence _tshark__protocols
+}
+
+# Field names. Below a dot only the fields under the typed parent are read, so
+# that the 272k-line glossary is never loaded whole.
+_tshark__fields() {
+  local parent ret=1
+  local -a protos fields
+
+  if ! _tshark__fields_cache; then
+    _tshark__message 'field name'
+    return
+  fi
+
+  if [[ ${PREFIX} == *.* ]]; then
+    parent=${PREFIX%.*}.
+    fields=( ${(f)"$(awk -F '\t' -v p="${parent}" 'index($2, p) == 1 { print $2 ":" $3 }' ${REPLY})"} )
+    _describe -t fields 'field' fields && ret=0
+  else
+    protos=( ${(f)"$(awk -F '\t' '$1 == "P" && index($2, ".") == 0 { print $2 ":" $3 }' ${REPLY})"} )
+    fields=( ${(f)"$(awk -F '\t' '$1 == "F" && index($2, ".") == 0 { print $2 ":" $3 }' ${REPLY})"} )
+    _describe -t protocols 'protocol' protos -S . -q && ret=0
+    _describe -t fields 'field' fields && ret=0
+  fi
+  return ret
+}
+
+# A display filter is free text; complete the field name under the cursor.
+_tshark__display_filter() {
+  compset -P '*[^[:alnum:]_.-]'
+  _tshark__fields
+}
+
+# -j/-J take a space-separated list of protocols and fields.
+_tshark__protocol_filter() {
+  compset -P '* '
+  _tshark__fields
+}
+
+_tshark__heuristics() {
+  local -a heur
+  _tshark__pairs ${(f)"$(_tshark__run heuristic-decodes -G heuristic-decodes | awk -F '\t' 'NF >= 6 && !seen[$5]++ { print $5 "\t" $6 }')"}
+  heur=( "${reply[@]}" )
+  if (( ${#heur} )); then
+    _describe -t heuristics 'heuristic dissector' heur
+  else
+    _tshark__message 'heuristic dissector short name'
+  fi
+}
+
+# -d LAYER==SELECTOR,PROTOCOL
+_tshark__decode_as() {
+  local selector line
+  local -a items
+
+  if [[ ${PREFIX} == *==*,* ]]; then
+    selector=${PREFIX%%,*}
+    compset -P '*,'
+    for line in ${(f)"$(_tshark__run decode-as-protocols -d "${selector},.")"}; do
+      [[ ${line} == $'\t'* ]] || continue
+      line=${line#$'\t'}
+      items+=( "${${line%% \(*}//:/\\:}:${${line#* \(}%\)}" )
+    done
+    if (( ${#items} )); then
+      _describe -t protocols "protocol for ${selector}" items
+    else
+      _tshark__message 'decode-as protocol'
+    fi
+  elif [[ ${PREFIX} == *==* ]]; then
+    _tshark__message 'selector value, range N-M, or N:count'
+  else
+    for line in ${(f)"$(_tshark__run decode-as-layers -d .)"}; do
+      [[ ${line} == $'\t'* ]] || continue
+      line=${line#$'\t'}
+      items+=( "${${line%% \(*}//:/\\:}:${${line#* \(}%\)}" )
+    done
+    if (( ${#items} )); then
+      _describe -t layer-types 'layer type' items -S '=='
+    else
+      _tshark__message 'layer type'
+    fi
+  fi
+}
+
+# Preferences from the cached `-G defaultprefs` dump, stored as
+# "name<TAB>first description line<TAB>choices".
+_tshark__preferences() {
+  local name choices expl
+  local -a prefs values
+  local prog='
+    /^$/ { desc = ""; choices = ""; next }
+    /^# One of: / { choices = substr($0, 11); next }
+    /^# (true|TRUE) or (false|FALSE)/ { choices = "TRUE, FALSE"; next }
+    /^#[A-Za-z0-9_.-]+: / {
+      n = index($0, ": ")
+      print substr($0, 2, n - 2) "\t" desc "\t" choices
+      desc = ""; choices = ""; next
+    }
+    /^# / { if (desc == "") desc = substr($0, 3); next }'
+
+  if ! _tshark__cache prefs "${prog}" -G defaultprefs; then
+    _tshark__message 'name:value'
+    return
+  fi
+
+  if [[ ${PREFIX} == *:* ]]; then
+    name=${PREFIX%%:*}
+    compset -P '[^:]#:'
+    choices=$(awk -F '\t' -v n="${name}" '$1 == n { print $3; exit }' ${REPLY})
+    if [[ -n ${choices} ]]; then
+      values=( ${(s:, :)choices} )
+      _wanted values expl "value for ${name}" compadd -a values
+    else
+      _tshark__message "value for ${name}"
+    fi
+  else
+    prefs=( ${(f)"$(awk -F '\t' '{ print $1 ":" $2 }' ${REPLY})"} )
+    prefs+=( 'uat:user access table entry, uat:NAME:"field","field",...' )
+    _describe -t preferences 'preference' prefs -S ':'
+  fi
+}
+
+_tshark__profiles() {
+  local -a personal global
+
+  _tshark__folders
+  personal=( ${reply[1]:+${reply[1]}/profiles/*(N/:t)} )
+  global=( ${reply[2]:+${reply[2]}/profiles/*(N/:t)} )
+  personal=( ${personal//:/\\:} )
+  global=( ${${global//:/\\:}/%/:global profile} )
+
+  if (( ${#personal} + ${#global} )); then
+    _describe -t profiles 'configuration profile' personal -- global
+  else
+    _tshark__message 'configuration profile'
+  fi
+}
+
+# `tshark -F ''` prints "    name - description".
+_tshark__file_types() {
+  local line
+  local -a types
+  for line in ${(f)"$(_tshark__run file-types -F '')"}; do
+    [[ ${line} == '    '[^[:space:]]*' - '* ]] || continue
+    line=${line##[[:space:]]#}
+    types+=( "${${line%% - *}//:/\\:}:${line#* - }" )
+  done
+  if (( ${#types} )); then
+    _describe -t file-types 'output file type' types
+  else
+    _tshark__message 'output file type'
+  fi
+}
+
+# Output compression types, from the list `--compress` prints without a value.
+_tshark__compression_types() {
+  local expl
+  local -a types
+  types=( ${${(M)${(f)"$(_tshark__run compression-types --compress)"}:#'   '[^[:space:]]*}##[[:space:]]#} )
+  if (( ${#types} )); then
+    _wanted compression-types expl 'compression type' compadd -a types
+  else
+    _tshark__message 'compression type'
+  fi
+}
+
+# `tshark -U ''` prints "    TAP NAME - encapsulation".
+_tshark__export_taps() {
+  local line
+  local -a taps
+  for line in ${(f)"$(_tshark__run export-taps -U '')"}; do
+    [[ ${line} == '    '[^[:space:]]*' - '* ]] || continue
+    line=${line##[[:space:]]#}
+    taps+=( "${${line% - *}//:/\\:}:${line##* - }" )
+  done
+  if (( ${#taps} )); then
+    _describe -t taps 'export tap' taps
+  else
+    _tshark__message 'export tap name'
+  fi
+}
+
+_tshark__statistics() {
+  local expl
+  local -a stats
+  stats=( ${${(M)${(f)"$(_tshark__run statistics -z help)"}:#'     '[^[:space:]]*}##[[:space:]]#} )
+  if (( ${#stats} )); then
+    _wanted statistics expl 'statistics' compadd -a stats
+  else
+    _tshark__message 'statistics'
+  fi
+}
+
+# --export-objects PROTOCOL,DESTDIR
+_tshark__export_objects() {
+  local expl
+  local -a protos
+
+  if compset -P '*,'; then
+    _files -/
+    return
+  fi
+
+  protos=( ${${(M)${(f)"$(_tshark__run export-objects --export-objects help)"}:#'     '[^[:space:]]*}##[[:space:]]#} )
+  if (( ${#protos} )); then
+    _wanted export-objects expl 'export object protocol' compadd -S , -a protos
+  else
+    _tshark__message 'export object protocol'
+  fi
+}
+
+# -X KEY:VALUE
+_tshark__extension_options() {
+  local expl line
+  local -a keys formats
+
+  if compset -P 'read_format:'; then
+    for line in ${(f)"$(_tshark__run read-formats -X read_format:)"}; do
+      [[ ${line} == '    '[^[:space:]]*' - '* ]] || continue
+      line=${line##[[:space:]]#}
+      formats+=( "${line% - *}" )
+    done
+    if (( ${#formats} )); then
+      _wanted read-formats expl 'read file format' compadd -a formats
+    else
+      _tshark__message 'read file format'
+    fi
+  elif compset -P 'lua_script:'; then
+    _files -g '*.lua(-.)'
+  elif compset -P 'lua_script<->:'; then
+    _tshark__message 'argument for that Lua script'
+  else
+    keys=(
+      'lua_script:load a Lua script in addition to the default ones'
+      'lua_script1:pass an argument to the Nth loaded Lua script'
+      'read_format:read the -r file with the given file format'
+    )
+    _describe -t extension-keys 'extension option' keys -S ':'
+  fi
+}
+
+# -E OPTION=VALUE
+_tshark__field_options() {
+  local key
+  local -a opts values
+
+  if [[ ${PREFIX} == *=* ]]; then
+    key=${PREFIX%%=*}
+    compset -P '*='
+    case ${key} in
+      (bom|header|escape) values=( 'y:yes' 'n:no' ) ;;
+      (separator) values=( '/t:tab (default)' '/s:space' ) ;;
+      (aggregator) values=( ',:comma (default)' '/s:space' ) ;;
+      (occurrence) values=( 'f:first occurrence' 'l:last occurrence' 'a:all occurrences (default)' ) ;;
+      (quote) values=( 'd:double quotes' 's:single quotes' 'n:no quotes (default)' ) ;;
+      (*) _tshark__message "value for ${key}"; return ;;
+    esac
+    _describe -t values "value for ${key}" values
+    [[ ${key} == (separator|aggregator) ]] && _tshark__message 'or any printable character'
+  else
+    opts=(
+      'bom:print a UTF-8 BOM'
+      'header:switch headers on and off'
+      'separator:separator between fields'
+      'occurrence:which occurrences of each field to print'
+      'aggregator:separator between occurrences of a field'
+      'quote:quotes around values'
+      'escape:(hidden) replace control characters with C-style escapes'
+    )
+    _describe -t field-options 'field print option' opts -S '='
+  fi
+}
+
+# -a CONDITION:NUM
+_tshark__autostop() {
+  local -a conds
+  if compset -P '*:'; then
+    _tshark__message 'number'
+    return
+  fi
+  conds=(
+    'duration:stop after NUM seconds'
+    'filesize:stop this file after NUM KB'
+    'files:stop after NUM files'
+    'packets:stop after NUM packets'
+    'events:(hidden) stop after NUM events, same as packets'
+  )
+  _describe -t autostop-conditions 'autostop condition' conds -S ':'
+}
+
+# -b OPTION:VALUE
+_tshark__ring_buffer() {
+  local key
+  local -a opts targets
+
+  if [[ ${PREFIX} == *:* ]]; then
+    key=${PREFIX%%:*}
+    compset -P '*:'
+    if [[ ${key} == printname ]]; then
+      targets=( 'stdout:standard output' 'stderr:standard error' )
+      _describe -t targets 'print target' targets
+      _files
+    else
+      _tshark__message 'number'
+    fi
+    return
+  fi
+  opts=(
+    'duration:switch to next file after NUM secs'
+    'filesize:switch to next file after NUM KB'
+    'files:ringbuffer: replace after NUM files'
+    'packets:switch to next file after NUM packets'
+    'interval:switch to next file when the time is an exact multiple of NUM secs'
+    'printname:print filename to FILE when written'
+    'events:(hidden) switch to next file after NUM events, same as packets'
+    'nametimenum:(hidden) 2 puts the timestamp before the file number in names'
+  )
+  _describe -t ring-buffer-options 'ring buffer option' opts -S ':'
+}
+
+# -N takes a run of single-letter flags.
+_tshark__resolve_flags() {
+  local used=${PREFIX}
+  local -a flags
+  flags=(
+    'm:MAC address resolution'
+    'n:network address resolution'
+    'N:external resolvers (e.g. DNS) for network address resolution'
+    't:transport-layer port number resolution'
+    'd:resolution from captured DNS packets'
+    's:resolution using SNI in captured handshake packets'
+    'v:VLAN ID to name resolution'
+    'g:geolocation from MaxMind databases'
+  )
+  compset -P '*'
+  [[ -n ${used} ]] && flags=( ${flags:#[${used}]:*} )
+  _describe -t resolve-flags 'name resolution flag' flags -S ''
+}
+
+_tshark__time_formats() {
+  local -a formats
+  formats=(
+    'a:absolute'
+    'ad:absolute with YYYY-MM-DD date'
+    'adoy:absolute with YYYY/DOY date'
+    'd:delta'
+    'dd:delta displayed'
+    'e:epoch'
+    'r:relative to the first packet (default)'
+    'u:absolute UTC'
+    'ud:absolute UTC with YYYY-MM-DD date'
+    'udoy:absolute UTC with YYYY/DOY date'
+  )
+  if compset -P '*.'; then
+    _tshark__message 'precision (digits after the decimal point)'
+    return
+  fi
+  _describe -t time-formats 'time stamp format, optionally followed by .N' formats
+}
+
+_tshark__output_formats() {
+  local -a formats
+  formats=(
+    'fields:values of the fields given with -e, formatted per -E'
+    'pdml:Packet Details Markup Language (XML)'
+    'ps:PostScript'
+    'psml:Packet Summary Markup Language (XML)'
+    'json:packet details as JSON'
+    'jsonraw:packet details as JSON with raw hex values only'
+    'ek:newline-delimited JSON for Elasticsearch bulk insert'
+    'tabs:like text, with tab-delimited summary columns'
+    'text:human-readable text (default)'
+  )
+  _describe -t output-formats 'output format' formats
+}
+
+_tshark__hexdump() {
+  local -a opts
+  opts=(
+    'all:dump all data sources (-x default)'
+    'frames:dump only frame data source'
+    'ascii:include ASCII dump text (-x default)'
+    'delimit:delimit ASCII dump text with | characters'
+    'noascii:exclude ASCII dump text'
+    'time:include frame timestamp preamble'
+    'notime:do not include frame timestamp preamble (-x default)'
+    'help:display help for --hexdump and exit'
+  )
+  _describe -t hexdump-options 'hexdump option' opts
+}
+
+_tshark__reports() {
+  local -a reports
+  reports=(
+    'column-formats:column format codes'
+    'decodes:"layer type"/"decode as" associations'
+    'dissector-tables:dissector table names, types, and properties'
+    'dissectors:registered dissector names'
+    'elastic-mapping:ElasticSearch mapping file'
+    'enterprises:IANA Private Enterprise Number (PEN) table'
+    'fieldcount:count of header fields'
+    'fields:fields glossary (also fields,PREFIX)'
+    'ftypes:field type basic and descriptive names'
+    'heuristic-decodes:heuristic dissector tables'
+    'manuf:ethernet manufacturer tables'
+    'plugins:installed plugins'
+    'protocols:protocols in registration database'
+    'services:transport service (port) names'
+    'values:value, range, true/false strings'
+    'currentprefs:current preferences'
+    'defaultprefs:default preferences'
+    'folders:about\:folders'
+    'help:list the reports'
+  )
+  _describe -t reports 'report' reports
+}
+
+# Log domains are free-form; these are the ones wsutil defines.
+_tshark__log_domain_names() {
+  local expl
+  local -a domains
+  domains=( Main Capture Capchild Wiretap Epan DFilter WSUtil GUI UAT Extcap UTF-8 MaxMindDB InvalidArg Plugins Lua )
+  _wanted log-domains expl 'log domain' compadd "$@" -a domains
+}
+
+# With -n, the list may be negated by a leading "!".
+_tshark__log_domains() {
+  [[ $1 == -n ]] && compset -P '!'
+  _sequence _tshark__log_domain_names
+}
+
+_tshark__read_file() {
+  _alternative \
+    'stdin:standard input:((-\:standard\ input))' \
+    'files:capture file:_files'
+}
+
+_tshark__write_file() {
+  _alternative \
+    'stdout:standard output:((-\:standard\ output))' \
+    'files:output file:_files'
+}
+
+function _tshark() {
+  local curcontext=${curcontext} state state_descr line ret=1
+  local -A opt_args
+  local tshark_bin=${~words[1]}
+
+  _arguments -s -S -C -A '-*' : \
+    '*'{-i+,--interface=}'[name or index of interface (def: first non-loopback)]: : _tshark__interfaces' \
+    '*--source=[(hidden alias for --interface) name or index of capture source]: : _tshark__interfaces' \
+    '*-f+[packet filter in libpcap filter syntax]: : _tshark__capture_filter' \
+    '*'{-s+,--snapshot-length=}'[packet snapshot length (def: appropriate maximum)]: : _tshark__message "snapshot length in bytes"' \
+    '*'{-p,--no-promiscuous-mode}'[do not capture in promiscuous mode]' \
+    '*'{-I,--monitor-mode}'[capture in monitor mode, if available]' \
+    '*'{-B+,--buffer-size=}'[size of kernel buffer in MiB (def: 2MiB)]: : _tshark__message "buffer size in MiB"' \
+    '*'{-y+,--linktype=}'[link layer type (def: first appropriate)]: : _tshark__link_types' \
+    '*--time-stamp-type=[timestamp method for interface]: : _tshark__time_stamp_types' \
+    '(- *)'{-D,--list-interfaces}'[print list of interfaces and exit]' \
+    '(- *)--list-sources[(hidden alias for --list-interfaces) print list of capture sources and exit]' \
+    '(-L --list-data-link-types)'{-L,--list-data-link-types}'[print list of link-layer types of iface and exit]' \
+    '--list-time-stamp-types[print list of timestamp types for iface and exit]' \
+    '--update-interval=[interval between updates with new packets, in milliseconds (def: 100ms)]: : _tshark__message "milliseconds"' \
+    '-c+[stop after n packets (def: infinite)]: : _tshark__message "packet count"' \
+    '*'{-a+,--autostop=}'[stop capturing when a condition is met]: : _tshark__autostop' \
+    '*'{-b+,--ring-buffer=}'[write to a ring buffer of files]: : _tshark__ring_buffer' \
+    '(-r --read-file)'{-r+,--read-file=}'[set the filename to read from (or - for stdin)]: : _tshark__read_file' \
+    '-2[perform a two-pass analysis]' \
+    '-M+[perform session auto reset after n packets]: : _tshark__message "packet count"' \
+    '(-R --read-filter)'{-R+,--read-filter=}'[packet read filter in display filter syntax (requires -2)]: : _tshark__display_filter' \
+    '(-Y --display-filter)'{-Y+,--display-filter=}'[packet display filter in display filter syntax]: : _tshark__display_filter' \
+    '-n[disable all name resolutions]' \
+    '-N+[enable specific name resolutions]: : _tshark__resolve_flags' \
+    '*-d+["Decode As" a layer type selector as a protocol]: : _tshark__decode_as' \
+    '-H+[read a list of entries from a hosts file (implies -W n)]:hosts file:_files' \
+    '*--enable-protocol=[enable dissection of proto_name]: : _tshark__protocol_list' \
+    '*--disable-protocol=[disable dissection of proto_name]: : _tshark__protocol_list' \
+    '--only-protocols=[only enable dissection of these protocols, comma separated]: : _tshark__protocol_list' \
+    '--disable-all-protocols[disable dissection of all protocols]' \
+    '*--enable-heuristic=[enable dissection of heuristic protocol]: : _tshark__heuristics' \
+    '*--disable-heuristic=[disable dissection of heuristic protocol]: : _tshark__heuristics' \
+    '-w+[write packets to a pcapng-format file (or - for stdout)]: : _tshark__write_file' \
+    '*--capture-comment=[add a capture file comment, if supported]: : _tshark__message "comment"' \
+    '-C+[start with specified configuration profile]: : _tshark__profiles' \
+    '--global-profile[use the global profile instead of personal profile]' \
+    '-F+[set the output file type (def: pcapng)]: : _tshark__file_types' \
+    '-V[add output of packet tree (Packet Details)]' \
+    '-O+[only show packet details of these protocols, comma separated]: : _tshark__protocol_list' \
+    '(-P --print)'{-P,--print}'[print packet summary even when writing to a file]' \
+    '-S+[line separator to print between packets]: : _tshark__message "separator"' \
+    '-x[add output of hex and ASCII dump (Packet Bytes)]' \
+    '*--hexdump=[add hexdump, set options for data source and ASCII dump]: : _tshark__hexdump' \
+    '-T+[format of text output (def: text)]: : _tshark__output_formats' \
+    '-j+[protocol layers filter if -T ek|pdml|json selected]: : _tshark__protocol_filter' \
+    '-J+[top level protocol filter if -T ek|pdml|json selected]: : _tshark__protocol_filter' \
+    '*-e+[field to print if -T fields selected]: : _tshark__fields' \
+    '*-E+[set options for output when -T fields selected]: : _tshark__field_options' \
+    '-t+[output format of time stamps (def: r)]: : _tshark__time_formats' \
+    '-u+[output format of seconds (def: s)]:seconds format:((s\:seconds hms\:hours\,\ minutes\ and\ seconds))' \
+    '-l[flush standard output after each packet (implies --update-interval 0)]' \
+    '-q[be more quiet on stdout (e.g. when using statistics)]' \
+    '-Q[only log true errors to stderr (quieter than -q)]' \
+    '-g[enable group read access on the output file(s)]' \
+    '-W+[save extra information in the file, if supported]:extra information:((n\:write\ network\ address\ resolution\ information))' \
+    '*-X+[eXtension option, key:value]: : _tshark__extension_options' \
+    '-U+[PDUs export mode]: : _tshark__export_taps' \
+    '*-z+[various statistics]: : _tshark__statistics' \
+    '*--export-objects=[save exported objects for a protocol to a directory]: : _tshark__export_objects' \
+    '--export-tls-session-keys=[export TLS session keys to a file]:key file:_files' \
+    '--color[color output text similarly to the Wireshark GUI]' \
+    '--no-duplicate-keys[with -T json, merge duplicate keys in an object into an array]' \
+    '--elastic-mapping-filter=[with -G elastic-mapping, put only these protocols in the mapping]: : _tshark__protocol_list' \
+    '--temp-dir=[write temporary files to this directory]:directory:_files -/' \
+    '--compress=[compress the output file using the given format]: : _tshark__compression_types' \
+    '--compress-type=[(hidden) compress live-capture output files using the given format]: : _tshark__compression_types' \
+    '--selected-frame=[(hidden) mark frame N as selected, for testing; only active with -2]: : _tshark__message "frame number"' \
+    '--print-timers[(hidden) print JSON with the elapsed time of each processing pass]' \
+    '--log-level=[set the active log level]:log level:(noisy debug info message warning critical error)' \
+    '--log-fatal=[set level to abort the program]:log level:(critical warning)' \
+    '--log-domains=[comma-separated list of the active log domains]: : _tshark__log_domains -n' \
+    '--log-domain=[(hidden alias for --log-domains) comma-separated list of the active log domains]: : _tshark__log_domains -n' \
+    '--log-fatal-domains=[list of domains that cause the program to abort]: : _tshark__log_domains' \
+    '--log-fatal-domain=[(hidden alias for --log-fatal-domains) list of domains that cause the program to abort]: : _tshark__log_domains' \
+    '--log-debug=[list of domains with "debug" level]: : _tshark__log_domains -n' \
+    '--log-noisy=[list of domains with "noisy" level]: : _tshark__log_domains -n' \
+    '--log-file=[file to output messages to (in addition to stderr)]:log file:_files' \
+    '(- *)'{-h,--help}'[display help and exit]' \
+    '(- *)'{-v,--version}'[display version info and exit]' \
+    '*-o+[override preference setting, name:value]: : _tshark__preferences' \
+    '-K+[keytab file to use for kerberos decryption]:keytab file:_files' \
+    '-G+[dump one of several available reports and exit]: : _tshark__reports' \
+    '*:: :->filter' && ret=0
+
+  case ${state} in
+    (filter)
+      if (( ${+opt_args[-r]} || ${+opt_args[--read-file]} )); then
+        _tshark__display_filter && ret=0
+      else
+        # _bpf_filters is a _regex_arguments function and reads the filter
+        # from words[2] on, so put a command word back in front.
+        words=( tshark "${words[@]}" )
+        (( CURRENT++ ))
+        _bpf_filters && ret=0
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+_tshark "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
