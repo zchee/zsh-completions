@@ -1,0 +1,2949 @@
+#compdef pnpm pn pnpx pnx
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/pnpm/pnpm
+#
+# pnpm 12.8.1 (Homebrew build of the Rust CLI, pnpm/crates/cli)
+#
+# Generated from the clap command tree, dumped out of the crate at tag
+# v12.8.1 after pnpm's own `with_boolean_negations` pass, plus the argv
+# passes that run before clap (config overrides, shorthands, prefixes). The
+# visible surface matches `pnpm <path> --help` on the root and all
+# 112 command paths (`test`, `start` and `stop` forward --help to
+# the package script).
+#
+# Items marked "(hidden)" are accepted by pnpm but never shown by --help;
+# each one was confirmed against the binary with `pnpm <path> <item> --help`
+# (prints help) next to a `--zz-definitely-not-a-flag` control (rejected):
+#
+#   * (`rb` is a clap command of its own, not an alias of `rebuild`)
+#   * every boolean flag has a hidden `--no-<flag>` negation added at parse
+#     time (215 of them across all scopes);
+#   * <root>: --prefix (alias for --dir), --store (alias for --store-dir),
+#              --no-color, --progress, --reporter-hide-prefix,
+#              --no-reporter-hide-prefix, --no-reverse, --resume-from,
+#              --no-bail, --bail, --report-summary, --if-present
+#   * add: --no-ignore-workspace-root-check
+#   * ci: --verify-deps-before-run-install
+#   * deploy: --verify-deps-before-run-install
+#   * env: --remote
+#   * install: --verify-deps-before-run-install
+#   * install-test: --verify-deps-before-run-install
+#   * pack: --no-skip-manifest-obfuscation
+#   * pipeline: --verify-deps-before-run-install
+#   * publish: --no-embed-readme, --no-skip-manifest-obfuscation
+#   * rb: --no-pending
+#   * rebuild: --no-pending
+#   * stage: --no-embed-readme, --no-skip-manifest-obfuscation
+#   * tasks: <args> positional
+#   * 39 config settings accepted as bare flags on every command
+#     (`--<setting>`, plus `--no-<setting>` for the boolean ones):
+#       allow-unused-patches child-concurrency dangerously-allow-all-builds
+#       engine-strict force-legacy-deploy frozen-store global-dir hoist
+#       hoist-pattern ignore-pnpmfile ignore-scripts link-workspace-packages
+#       lockfile lockfile-include-tarball-url merge-git-branch-lockfiles
+#       modules-dir node-experimental-package-map offline
+#       optimistic-repeat-install package-import-method pm-on-fail
+#       prefer-frozen-lockfile prefer-offline public-hoist-pattern
+#       runtime-on-fail save-workspace-protocol shamefully-hoist
+#       shared-workspace-lockfile side-effects-cache
+#       side-effects-cache-readonly strict-peer-dependencies trust-lockfile
+#       trust-policy trust-policy-exclude trust-policy-ignore-after
+#       unsafe-perm verify-store-integrity virtual-store-dir
+#       virtual-store-only
+#   * `--config.<key>=<value>` for any config key, and `-s`/`--silent`
+#     (rewritten to --reporter=silent; `run -s` keeps its own --sequential);
+#   * the `pm` prefix (`pnpm pm <cmd>` forces the built-in command over a
+#     same-named script);
+#   * `pnpm install <pkg>`, which pnpm rewrites to `pnpm add <pkg>`;
+#   * hand-dispatched words that a command's own help or error message lists
+#     under one spelling only: env ls/rm/uninstall/un, shim remove/uninstall/
+#     list, team list. Commands whose help says only "Subcommand and
+#     arguments" (access, dist-tag, licenses, owner, stage, ...) have no
+#     documented word list, so their words are completed unmarked.
+#
+# Also completed: `recursive`/`multi`/`m` and `with <version|current>` as
+# prefixes of another pnpm command line, `pnpm <script>` (the script
+# fallback), and the `pnpx`/`pnx` wrappers (`pnpm dlx`).
+#
+# Left out on purpose:
+#   * `completion-server`: the hidden endpoint shell scripts call. It is
+#     used here as the value source for scripts and workspace packages.
+#   * `completion <shell>`'s hidden trailing arguments (always an error).
+#   * `--<flag>=true|false` spellings of boolean flags (accepted, rewritten
+#     to the flag or its negation before parsing).
+#   * abbreviations: pnpm does not infer them (`pnpm instal` runs a script).
+#
+# -----------------------------------------------------------------------------
+
+# Options pnpm accepts anywhere on the command line, keyed by the option token
+# they define so a command that declares the same name can drop the global spec.
+typeset -gA _pnpm_global_specs
+_pnpm_global_specs=(
+  '-C' '(-C --dir)-C+[Set working directory. Accepted anywhere on the command line, before or after the subcommand, like every other rc-option]:dir:_files -/'
+  '--dir' '(-C --dir)--dir=[Set working directory. Accepted anywhere on the command line, before or after the subcommand, like every other rc-option]:dir:_files -/'
+  '--prefix' '--prefix=[(hidden alias for --dir) Set working directory. Accepted anywhere on the command line, before or after the subcommand, like every other rc-option]:dir:_files -/'
+  '--store-dir' '(--store-dir)--store-dir=[Directory in which the package store is created. Relative paths are resolved from the workspace root, or from `--dir` outside a workspace]:dir:_files -/'
+  '--store' '--store=[(hidden alias for --store-dir) Directory in which the package store is created. Relative paths are resolved from the workspace root, or from `--dir` outside a workspace]:dir:_files -/'
+  '--state-dir' '(--state-dir)--state-dir=[Directory in which pnpm persists machine-local state]:dir:_files -/'
+  '--npmrc-auth-file' '(--npmrc-auth-file)--npmrc-auth-file=[Path to an `.npmrc` to read auth settings from, overriding the default `~/.npmrc`]:npmrc-auth-file:_files'
+  '--userconfig' '--userconfig=[(alias for --npmrc-auth-file) Path to an `.npmrc` to read auth settings from, overriding the default `~/.npmrc`]:npmrc-auth-file:_files'
+  '--workspace-packages' '*--workspace-packages=[Glob patterns selecting the workspace'\''s projects, overriding the `packages` field of `pnpm-workspace.yaml`. Repeat to add more]:workspace-packages: _pnpm__message "workspace packages"'
+  '--registry' '(--registry)--registry=[Base URL of the npm registry to resolve and fetch packages from]:registry:_urls'
+  '--https-proxy' '(--https-proxy)--https-proxy=[Proxy for HTTPS registry and tarball requests]:https-proxy:_urls'
+  '--http-proxy' '(--http-proxy)--http-proxy=[Proxy for HTTP registry and tarball requests]:http-proxy:_urls'
+  '--no-proxy' '(--no-proxy)--no-proxy=[Hosts that bypass configured proxies]:no-proxy: _pnpm__message "no proxy"'
+  '--color' '(--color)--color=-[Force colored output]::color:(auto always never)'
+  '--no-color' '(--no-color)--no-color[(hidden) Disable colored output]'
+  '--reporter' '(--reporter)--reporter=[Reporter output format]:reporter:(default append-only ndjson silent)'
+  '--loglevel' '(--loglevel)--loglevel=[What level of logs to print. Mirrors pnpm'\''s universal `--loglevel` option: `silent` selects the silent reporter over any `--reporter` choice...]:loglevel:(silent error warn info debug)'
+  '--progress' '(--progress)--progress[(hidden) Enable dependency and download progress output]'
+  '--no-progress' '(--no-progress)--no-progress[Disable dependency and download progress output]'
+  '--reporter-hide-prefix' '(--reporter-hide-prefix)--reporter-hide-prefix[(hidden) Omit the project prefix from the streamed output of running scripts]'
+  '--no-reporter-hide-prefix' '(--no-reporter-hide-prefix)--no-reporter-hide-prefix[(hidden) Prefix the streamed output of running scripts with the project it came from, overriding a `reporterHidePrefix: true` setting]'
+  '-F' '*-F+[Select which workspace projects to run on. Repeat to add more.]:filter: _pnpm__workspace_packages'
+  '--filter' '*--filter=[Select which workspace projects to run on. Repeat to add more.]:filter: _pnpm__workspace_packages'
+  '--filter-prod' '*--filter-prod=[Like `--filter`, but follow only production dependencies when selecting projects]:filter-prod: _pnpm__workspace_packages'
+  '--include-workspace-root' '(--include-workspace-root)--include-workspace-root[Also run a recursive command on the root workspace project, which `run` / `exec` / `add` / `test` otherwise leave out]'
+  '--no-include-workspace-root' '(--no-include-workspace-root)--no-include-workspace-root[Leave the root workspace project out of a recursive command, overriding an `includeWorkspaceRoot: true` setting]'
+  '--test-pattern' '*--test-pattern=[Glob patterns naming test files, used by the `\[since\]` `--filter` selector to decide which changes count]:test-pattern: _pnpm__message "test pattern"'
+  '--changed-files-ignore-pattern' '*--changed-files-ignore-pattern=[Glob patterns of changed files that the `\[since\]` `--filter` selector should ignore]:changed-files-ignore-pattern: _pnpm__message "changed files ignore pattern"'
+  '--sort' '(--sort)--sort[Keep recursive workspace projects sorted topologically]'
+  '--no-sort' '(--no-sort)--no-sort[Run recursive workspace projects in workspace order]'
+  '--reverse' '(--reverse)--reverse[Process recursive workspace projects in reverse order]'
+  '--no-reverse' '(--no-reverse)--no-reverse[(hidden) Process recursive workspace projects in their normal order]'
+  '--workspace-concurrency' '(--workspace-concurrency)--workspace-concurrency=[Maximum number of workspace projects to process in parallel]:workspace-concurrency: _pnpm__message "number of projects"'
+  '--resume-from' '(--resume-from)--resume-from=[(hidden) Recursive only: resume execution from the given package]:resume-from: _pnpm__workspace_packages'
+  '--no-bail' '(--no-bail)--no-bail[(hidden) Recursive only: keep going after a project fails]'
+  '--bail' '(--bail)--bail[(hidden) Stop a recursive command after the first failure]'
+  '-y' '(-y --yes --no-yes)-y[Automatically answer yes to prompts]'
+  '--yes' '(-y --yes --no-yes)--yes[Automatically answer yes to prompts]'
+  '--no-yes' '(--no-yes -y --yes)--no-yes[(hidden) negate --yes]'
+  '--ignore-workspace' '(--ignore-workspace --no-ignore-workspace)--ignore-workspace[Run as if the project were standalone, ignoring any `pnpm-workspace.yaml` above it]'
+  '--no-ignore-workspace' '(--no-ignore-workspace --ignore-workspace)--no-ignore-workspace[(hidden) negate --ignore-workspace]'
+  '--stream' '(--stream --no-stream)--stream[Stream a recursive command'\''s script output as it arrives, one prefixed line at a time]'
+  '--no-stream' '(--no-stream --stream)--no-stream[(hidden) negate --stream]'
+  '--aggregate-output' '(--aggregate-output --no-aggregate-output)--aggregate-output[Hold each script'\''s streamed output until the script exits, then print it as one block]'
+  '--no-aggregate-output' '(--no-aggregate-output --aggregate-output)--no-aggregate-output[(hidden) negate --aggregate-output]'
+  '--use-stderr' '(--use-stderr --no-use-stderr)--use-stderr[Divert the reporter'\''s output to stderr, leaving stdout for the command'\''s own result]'
+  '--no-use-stderr' '(--no-use-stderr --use-stderr)--no-use-stderr[(hidden) negate --use-stderr]'
+  '-r' '(-r --recursive --no-recursive)-r[Run the command for every project in the workspace instead of only the project in `--dir`]'
+  '--recursive' '(-r --recursive --no-recursive)--recursive[Run the command for every project in the workspace instead of only the project in `--dir`]'
+  '--no-recursive' '(--no-recursive -r --recursive)--no-recursive[(hidden) negate --recursive]'
+  '-w' '(-w --workspace-root --no-workspace-root)-w[Run the command on the root workspace project]'
+  '--workspace-root' '(-w --workspace-root --no-workspace-root)--workspace-root[Run the command on the root workspace project]'
+  '--no-workspace-root' '(--no-workspace-root -w --workspace-root)--no-workspace-root[(hidden) negate --workspace-root]'
+  '--fail-if-no-match' '(--fail-if-no-match --no-fail-if-no-match)--fail-if-no-match[Exit with code 1 when the `--filter` / `--filter-prod` selectors match no workspace project]'
+  '--no-fail-if-no-match' '(--no-fail-if-no-match --fail-if-no-match)--no-fail-if-no-match[(hidden) negate --fail-if-no-match]'
+  '--parallel' '(--parallel --no-parallel)--parallel[Run scripts in every selected workspace project concurrently, disregarding topological sorting]'
+  '--no-parallel' '(--no-parallel --parallel)--no-parallel[(hidden) negate --parallel]'
+  '--report-summary' '(--report-summary --no-report-summary)--report-summary[(hidden) Recursive only: write a `pnpm-exec-summary.json` execution report]'
+  '--no-report-summary' '(--no-report-summary --report-summary)--no-report-summary[(hidden) negate --report-summary]'
+  '--allow-unused-patches' '(--allow-unused-patches --no-allow-unused-patches)--allow-unused-patches[(hidden) set the allow-unused-patches setting for this run]'
+  '--no-allow-unused-patches' '(--allow-unused-patches --no-allow-unused-patches)--no-allow-unused-patches[(hidden) unset the allow-unused-patches setting for this run]'
+  '--child-concurrency' '--child-concurrency=[(hidden) set the child-concurrency setting for this run]:child-concurrency: _pnpm__message "number (negative: cores minus N)"'
+  '--dangerously-allow-all-builds' '(--dangerously-allow-all-builds --no-dangerously-allow-all-builds)--dangerously-allow-all-builds[(hidden) set the dangerously-allow-all-builds setting for this run]'
+  '--no-dangerously-allow-all-builds' '(--dangerously-allow-all-builds --no-dangerously-allow-all-builds)--no-dangerously-allow-all-builds[(hidden) unset the dangerously-allow-all-builds setting for this run]'
+  '--engine-strict' '(--engine-strict --no-engine-strict)--engine-strict[(hidden) set the engine-strict setting for this run]'
+  '--no-engine-strict' '(--engine-strict --no-engine-strict)--no-engine-strict[(hidden) unset the engine-strict setting for this run]'
+  '--force-legacy-deploy' '(--force-legacy-deploy --no-force-legacy-deploy)--force-legacy-deploy[(hidden) set the force-legacy-deploy setting for this run]'
+  '--no-force-legacy-deploy' '(--force-legacy-deploy --no-force-legacy-deploy)--no-force-legacy-deploy[(hidden) unset the force-legacy-deploy setting for this run]'
+  '--frozen-store' '(--frozen-store --no-frozen-store)--frozen-store[(hidden) set the frozen-store setting for this run]'
+  '--no-frozen-store' '(--frozen-store --no-frozen-store)--no-frozen-store[(hidden) unset the frozen-store setting for this run]'
+  '--global-dir' '--global-dir=[(hidden) set the global-dir setting for this run]:global-dir:_files -/'
+  '--hoist' '(--hoist --no-hoist)--hoist[(hidden) set the hoist setting for this run]'
+  '--no-hoist' '(--hoist --no-hoist)--no-hoist[(hidden) unset the hoist setting for this run]'
+  '--hoist-pattern' '*--hoist-pattern=[(hidden) set the hoist-pattern setting for this run]:hoist-pattern: _pnpm__message "hoist pattern"'
+  '--ignore-pnpmfile' '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[(hidden) set the ignore-pnpmfile setting for this run]'
+  '--no-ignore-pnpmfile' '(--ignore-pnpmfile --no-ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) unset the ignore-pnpmfile setting for this run]'
+  '--ignore-scripts' '(--ignore-scripts --no-ignore-scripts)--ignore-scripts[(hidden) set the ignore-scripts setting for this run]'
+  '--no-ignore-scripts' '(--ignore-scripts --no-ignore-scripts)--no-ignore-scripts[(hidden) unset the ignore-scripts setting for this run]'
+  '--link-workspace-packages' '(--link-workspace-packages --no-link-workspace-packages)--link-workspace-packages=-[(hidden) set the link-workspace-packages setting for this run]::value:(true false deep)'
+  '--no-link-workspace-packages' '(--link-workspace-packages --no-link-workspace-packages)--no-link-workspace-packages[(hidden) unset the link-workspace-packages setting for this run]'
+  '--lockfile' '(--lockfile --no-lockfile)--lockfile[(hidden) set the lockfile setting for this run]'
+  '--no-lockfile' '(--lockfile --no-lockfile)--no-lockfile[(hidden) unset the lockfile setting for this run]'
+  '--lockfile-include-tarball-url' '(--lockfile-include-tarball-url --no-lockfile-include-tarball-url)--lockfile-include-tarball-url[(hidden) set the lockfile-include-tarball-url setting for this run]'
+  '--no-lockfile-include-tarball-url' '(--lockfile-include-tarball-url --no-lockfile-include-tarball-url)--no-lockfile-include-tarball-url[(hidden) unset the lockfile-include-tarball-url setting for this run]'
+  '--merge-git-branch-lockfiles' '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--merge-git-branch-lockfiles[(hidden) set the merge-git-branch-lockfiles setting for this run]'
+  '--no-merge-git-branch-lockfiles' '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--no-merge-git-branch-lockfiles[(hidden) unset the merge-git-branch-lockfiles setting for this run]'
+  '--modules-dir' '--modules-dir=[(hidden) set the modules-dir setting for this run]:modules-dir:_files -/'
+  '--node-experimental-package-map' '(--node-experimental-package-map --no-node-experimental-package-map)--node-experimental-package-map[(hidden) set the node-experimental-package-map setting for this run]'
+  '--no-node-experimental-package-map' '(--node-experimental-package-map --no-node-experimental-package-map)--no-node-experimental-package-map[(hidden) unset the node-experimental-package-map setting for this run]'
+  '--offline' '(--offline --no-offline)--offline[(hidden) set the offline setting for this run]'
+  '--no-offline' '(--offline --no-offline)--no-offline[(hidden) unset the offline setting for this run]'
+  '--optimistic-repeat-install' '(--optimistic-repeat-install --no-optimistic-repeat-install)--optimistic-repeat-install[(hidden) set the optimistic-repeat-install setting for this run]'
+  '--no-optimistic-repeat-install' '(--optimistic-repeat-install --no-optimistic-repeat-install)--no-optimistic-repeat-install[(hidden) unset the optimistic-repeat-install setting for this run]'
+  '--package-import-method' '--package-import-method=[(hidden) set the package-import-method setting for this run]:package-import-method:(auto hardlink copy clone clone-or-copy)'
+  '--pm-on-fail' '--pm-on-fail=[(hidden) set the pm-on-fail setting for this run]:pm-on-fail:(download error warn ignore)'
+  '--prefer-frozen-lockfile' '(--prefer-frozen-lockfile --no-prefer-frozen-lockfile)--prefer-frozen-lockfile[(hidden) set the prefer-frozen-lockfile setting for this run]'
+  '--no-prefer-frozen-lockfile' '(--prefer-frozen-lockfile --no-prefer-frozen-lockfile)--no-prefer-frozen-lockfile[(hidden) unset the prefer-frozen-lockfile setting for this run]'
+  '--prefer-offline' '(--prefer-offline --no-prefer-offline)--prefer-offline[(hidden) set the prefer-offline setting for this run]'
+  '--no-prefer-offline' '(--prefer-offline --no-prefer-offline)--no-prefer-offline[(hidden) unset the prefer-offline setting for this run]'
+  '--public-hoist-pattern' '*--public-hoist-pattern=[(hidden) set the public-hoist-pattern setting for this run]:public-hoist-pattern: _pnpm__message "public hoist pattern"'
+  '--runtime-on-fail' '--runtime-on-fail=[(hidden) set the runtime-on-fail setting for this run]:runtime-on-fail:(download error warn ignore)'
+  '--save-workspace-protocol' '(--save-workspace-protocol --no-save-workspace-protocol)--save-workspace-protocol=-[(hidden) set the save-workspace-protocol setting for this run]::value:(true false)'
+  '--no-save-workspace-protocol' '(--save-workspace-protocol --no-save-workspace-protocol)--no-save-workspace-protocol[(hidden) unset the save-workspace-protocol setting for this run]'
+  '--shamefully-hoist' '(--shamefully-hoist --no-shamefully-hoist)--shamefully-hoist[(hidden) set the shamefully-hoist setting for this run]'
+  '--no-shamefully-hoist' '(--shamefully-hoist --no-shamefully-hoist)--no-shamefully-hoist[(hidden) unset the shamefully-hoist setting for this run]'
+  '--shared-workspace-lockfile' '(--shared-workspace-lockfile --no-shared-workspace-lockfile)--shared-workspace-lockfile[(hidden) set the shared-workspace-lockfile setting for this run]'
+  '--no-shared-workspace-lockfile' '(--shared-workspace-lockfile --no-shared-workspace-lockfile)--no-shared-workspace-lockfile[(hidden) unset the shared-workspace-lockfile setting for this run]'
+  '--side-effects-cache' '(--side-effects-cache --no-side-effects-cache)--side-effects-cache[(hidden) set the side-effects-cache setting for this run]'
+  '--no-side-effects-cache' '(--side-effects-cache --no-side-effects-cache)--no-side-effects-cache[(hidden) unset the side-effects-cache setting for this run]'
+  '--side-effects-cache-readonly' '(--side-effects-cache-readonly --no-side-effects-cache-readonly)--side-effects-cache-readonly[(hidden) set the side-effects-cache-readonly setting for this run]'
+  '--no-side-effects-cache-readonly' '(--side-effects-cache-readonly --no-side-effects-cache-readonly)--no-side-effects-cache-readonly[(hidden) unset the side-effects-cache-readonly setting for this run]'
+  '--strict-peer-dependencies' '(--strict-peer-dependencies --no-strict-peer-dependencies)--strict-peer-dependencies[(hidden) set the strict-peer-dependencies setting for this run]'
+  '--no-strict-peer-dependencies' '(--strict-peer-dependencies --no-strict-peer-dependencies)--no-strict-peer-dependencies[(hidden) unset the strict-peer-dependencies setting for this run]'
+  '--trust-lockfile' '(--trust-lockfile --no-trust-lockfile)--trust-lockfile[(hidden) set the trust-lockfile setting for this run]'
+  '--no-trust-lockfile' '(--trust-lockfile --no-trust-lockfile)--no-trust-lockfile[(hidden) unset the trust-lockfile setting for this run]'
+  '--trust-policy' '--trust-policy=[(hidden) set the trust-policy setting for this run]:trust-policy:(off no-downgrade)'
+  '--trust-policy-exclude' '*--trust-policy-exclude=[(hidden) set the trust-policy-exclude setting for this run]:trust-policy-exclude: _pnpm__message "trust policy exclude"'
+  '--trust-policy-ignore-after' '--trust-policy-ignore-after=[(hidden) set the trust-policy-ignore-after setting for this run]:trust-policy-ignore-after: _pnpm__message "minutes"'
+  '--unsafe-perm' '(--unsafe-perm --no-unsafe-perm)--unsafe-perm[(hidden) set the unsafe-perm setting for this run]'
+  '--no-unsafe-perm' '(--unsafe-perm --no-unsafe-perm)--no-unsafe-perm[(hidden) unset the unsafe-perm setting for this run]'
+  '--verify-store-integrity' '(--verify-store-integrity --no-verify-store-integrity)--verify-store-integrity[(hidden) set the verify-store-integrity setting for this run]'
+  '--no-verify-store-integrity' '(--verify-store-integrity --no-verify-store-integrity)--no-verify-store-integrity[(hidden) unset the verify-store-integrity setting for this run]'
+  '--virtual-store-dir' '--virtual-store-dir=[(hidden) set the virtual-store-dir setting for this run]:virtual-store-dir:_files -/'
+  '--virtual-store-only' '(--virtual-store-only --no-virtual-store-only)--virtual-store-only[(hidden) set the virtual-store-only setting for this run]'
+  '--no-virtual-store-only' '(--virtual-store-only --no-virtual-store-only)--no-virtual-store-only[(hidden) unset the virtual-store-only setting for this run]'
+  '-s' '-s[(hidden) same as --reporter=silent]'
+  '--silent' '--silent[(hidden) same as --reporter=silent]'
+  '--config.' '*--config.-[(hidden) set any config key for this run, as --config.<key>=<value>]: : _pnpm__config_override'
+)
+
+typeset -ga _pnpm_root_specs
+_pnpm_root_specs=(
+  '(- *)-v[Print the pnpm version]'
+  '(- *)--version[Print the pnpm version]'
+  '(--if-present --no-if-present)--if-present[(hidden) Don'\''t fail when the named script is undefined]'
+  '(--no-if-present --if-present)--no-if-present[(hidden) negate --if-present]'
+  '(- *)-h[Print help (see more with '\''--help'\'')]'
+  '(- *)--help[Print help (see more with '\''--help'\'')]'
+)
+
+typeset -ga _pnpm_global_value_options
+_pnpm_global_value_options=('--changed-files-ignore-pattern' '--child-concurrency' '--dir' '--filter' '--filter-prod' '--global-dir' '--hoist-pattern' '--http-proxy' '--https-proxy' '--loglevel' '--modules-dir' '--no-proxy' '--npmrc-auth-file' '--package-import-method' '--pm-on-fail' '--prefix' '--public-hoist-pattern' '--registry' '--reporter' '--resume-from' '--runtime-on-fail' '--state-dir' '--store' '--store-dir' '--test-pattern' '--trust-policy' '--trust-policy-exclude' '--trust-policy-ignore-after' '--userconfig' '--virtual-store-dir' '--workspace-concurrency' '--workspace-packages' '-C' '-F')
+
+typeset -ga _pnpm_commands
+_pnpm_commands=(
+  'help:Print this message or the help of the given subcommand(s)'
+  'access:Manage package access and visibility on the registry'
+  'init:Initialize a package.json'
+  'recursive:Concurrently runs a command in all subdirectory projects'
+  'add:Add a package'
+  'install:Install packages'
+  'install-test:Runs a `pnpm install` followed immediately by a `pnpm test`'
+  'update:Update packages to their newest version based on the specified range'
+  'outdated:Check for outdated package and GitHub Actions dependencies'
+  'audit:Checks for known security issues with the installed packages'
+  'change:Record a change intent: which packages a change affects, the bump type for each, and a summary that becomes the changelog entry'
+  'version:Apply the pending change intents (`pnpm version -r`)'
+  'lane:Manage per-package release lanes'
+  'bugs:Opens the bug tracker URL of a package in the default browser'
+  'list:List installed packages'
+  'll:List installed packages in long format'
+  'licenses:Check the licenses of the installed packages'
+  'why:Shows the packages that depend on `pkg`'
+  'view:View registry information about a package'
+  'sbom:Generate a Software Bill of Materials (SBOM)'
+  'whoami:Displays your pnpm username'
+  'deprecate:Deprecates a version of a package in the registry'
+  'undeprecate:Removes deprecation from a version of a package in the registry. Only works on already deprecated versions'
+  'unpublish:Removes a package from the registry'
+  'star:Marks a package as a favorite'
+  'unstar:Unmarks a package as a favorite'
+  'stars:Lists all packages starred by a specific user'
+  'dist-tag:Manage a package'\''s distribution tags'
+  'ping:Test connectivity to the configured registry'
+  'doctor:Run diagnostics on the pnpm installation and environment'
+  'search:Search for packages in the registry'
+  'rebuild:Rebuild a package'
+  'rb:Rebuild a package'
+  'pack:Create a tarball from a package'
+  'publish:Publish a package to the registry'
+  'stage:Stage packages for publishing, deferring proof-of-presence (2FA) to a later point in time'
+  'remove:Removes packages from `node_modules` and from the project'\''s `package.json`'
+  'patch:Prepare a package for patching'
+  'patch-commit:Generate a patch out of a directory'
+  'patch-remove:Remove existing patch files'
+  'peers:Checks for unmet or missing peer dependency issues'
+  'set-script:Set a script in package.json'
+  'test:Runs a package'\''s "test" script, if one was provided'
+  'run:Runs a defined package script'
+  'tasks:Inspect tasks in concurrency groups. A same-named script takes precedence. Use `pnpm pm tasks` to force the built-in'
+  'pipeline:Runs a named pipeline of workspace tasks the way a CI run would: a frozen install, affected-since-base selection, the task graph in dependen...'
+  'exec:Run a shell command in the context of a project'
+  'dlx:Run a package in a temporary environment'
+  'create:Creates a project from a `create-*` starter kit'
+  'completion:Print shell completion code to stdout'
+  'start:Runs an arbitrary command specified in the package'\''s start property of its scripts object'
+  'stop:Runs a package'\''s "stop" script, if one was provided'
+  'restart:Restarts a package. Runs "stop", "restart" (if present), and "start" scripts, and associated pre- and post- scripts'
+  'find-hash:Lists the packages that include the file with the specified hash'
+  'runtime:Manage runtimes'
+  'env:Manage Node.js versions. Deprecated in favour of `pnpm runtime`'
+  'shim:Manage context-aware shims for packages that are not installed globally, so a project decides which version runs'
+  'bin:Print the directory where pnpm will install executables'
+  'clean:Safely remove `node_modules` directories from the current project (or every workspace project) without following NTFS junctions into their t...'
+  'purge:Alias of `clean`: same behavior, except a `purge` script (not a `clean` script) overrides it when present'
+  'ci:Runs clean then install with a frozen lockfile'
+  'root:Print the effective `node_modules` directory'
+  'prefix:Print the current package prefix'
+  'config:Manage the pnpm configuration files'
+  'get:Print the config value for the provided key. Shorthand for `pnpm config get`'
+  'set:Set the config key to the value provided. Shorthand for `pnpm config set`'
+  'pkg:Manages your package.json'
+  'pack-app:Pack a `CommonJS` entry file into a standalone executable for one or more target platforms'
+  'store:Managing the package store'
+  'cache:Inspect and manage the metadata cache'
+  'cat-file:Prints the contents of a file based on the hash value stored in the index file'
+  'cat-index:Prints the index file of a specific package from the store'
+  'ignored-builds:Print the list of packages with blocked build scripts'
+  'approve-builds:Approve dependencies for running scripts during installation'
+  'link:Links a local package as a dependency'
+  'import:Generates a pnpm-lock.yaml from an external lockfile'
+  'dedupe:Deduplicate packages in the lockfile'
+  'deploy:Deploy a package from a workspace'
+  'prune:Remove extraneous packages'
+  'fetch:Fetch packages from the lockfile into the virtual store'
+  'unlink:Removes links to a local package and reinstalls it'
+  'docs:Opens the documentation of a package in the browser'
+  'repo:Opens the URL of the package'\''s repository in a browser'
+  'self-update:Updates pnpm to the latest version (or the one specified)'
+  'setup:Sets up pnpm'
+  'login:Log in to an npm registry'
+  'team:Manage organization teams and team memberships'
+  'owner:Manage package owners on the registry'
+  'logout:Log out of an npm registry'
+  'with:Runs pnpm at a specific version (or the currently running one) for a single invocation, ignoring the "packageManager" and "devEngines.packag...'
+  'edit:Not implemented in pnpm. Use the npm CLI directly'
+  'profile:Not implemented in pnpm. Use the npm CLI directly'
+  'token:Not implemented in pnpm. Use the npm CLI directly'
+  'xmas:Not implemented in pnpm. Use the npm CLI directly'
+)
+
+typeset -ga _pnpm_command_aliases
+_pnpm_command_aliases=(
+  'multi:alias for recursive'
+  'm:alias for recursive'
+  'i:alias for install'
+  'it:alias for install-test'
+  'up:alias for update'
+  'upgrade:alias for update'
+  'issues:alias for bugs'
+  'ls:alias for list'
+  'la:alias for ll'
+  'licences:alias for licenses'
+  'info:alias for view'
+  'show:alias for view'
+  'v:alias for view'
+  'dist-tags:alias for dist-tag'
+  's:alias for search'
+  'se:alias for search'
+  'find:alias for search'
+  'uninstall:alias for remove'
+  'rm:alias for remove'
+  'un:alias for remove'
+  'uni:alias for remove'
+  'ss:alias for set-script'
+  't:alias for test'
+  'tst:alias for test'
+  'run-script:alias for run'
+  'rt:alias for runtime'
+  'clean-install:alias for ci'
+  'ic:alias for ci'
+  'install-clean:alias for ci'
+  'c:alias for config'
+  'ln:alias for link'
+  'dislink:alias for unlink'
+  'home:alias for docs'
+  'adduser:alias for login'
+  'owners:alias for owner'
+)
+
+
+# -----------------------------------------------------------------------------
+# Helpers.
+
+(( $+functions[_pnpm__message] )) ||
+_pnpm__message() {
+  _message "${1:-value}"
+}
+
+# The global specs, minus the option tokens given as arguments (the ones the
+# current command declares itself), in reply. _arguments has to run in the
+# handler itself: the words it narrows for a `*::` state do not survive a
+# wrapper function's return.
+(( $+functions[_pnpm__globals] )) ||
+_pnpm__globals() {
+  local k
+  reply=()
+  for k in ${(k)_pnpm_global_specs}; do
+    (( ${@[(Ie)$k]} )) || reply+=("$_pnpm_global_specs[$k]")
+  done
+}
+
+# Index (in $words) of the first positional argument before the cursor, in
+# REPLY. Fails when there is none yet. The array named by $1 lists the option
+# tokens of the current command that take a separate value.
+(( $+functions[_pnpm__passthrough_at] )) ||
+_pnpm__passthrough_at() {
+  local -a _vo
+  _vo=(${(P)1} $_pnpm_global_value_options)
+  local -i i=2
+  while (( i < CURRENT )); do
+    case $words[i] in
+      (--) (( i + 1 <= CURRENT )) && { REPLY=$(( i + 1 )); return 0 } ;;
+      (--*=*) ;;
+      (-?*)
+        (( ${_vo[(Ie)$words[i]]} )) && (( i++ ))
+        ;;
+      (*) REPLY=$i; return 0 ;;
+    esac
+    (( i++ ))
+  done
+  REPLY=$CURRENT
+  [[ $PREFIX != -* ]] && (( CURRENT > 1 ))
+}
+
+# The pnpm command line words that pick the project: -C/--dir/--prefix and
+# -w/--workspace-root, from the line as typed.
+(( $+functions[_pnpm__project_args] )) ||
+_pnpm__project_args() {
+  local -a w
+  w=("${(@)_pnpm_line_words[2,-1]}")
+  reply=()
+  local -i i=1
+  while (( i < ${#w} )); do
+    case $w[i] in
+      (-C|--dir|--prefix) reply+=(--dir "${(Q)w[i+1]}"); (( i++ )) ;;
+      (-C?*) reply+=(--dir "${(Q)${w[i]#-C}#=}") ;;
+      (--dir=*|--prefix=*) reply+=(--dir "${(Q)w[i]#*=}") ;;
+      (-w|--workspace-root) reply+=(--workspace-root) ;;
+    esac
+    (( i++ ))
+  done
+}
+
+# pnpm's own completion endpoint. It is exempt from the packageManager pin
+# check, reads only local files, and escapes colons for _describe when SHELL
+# is exactly `zsh`.
+(( $+functions[_pnpm__engine] )) ||
+_pnpm__engine() {
+  local tag=$1; shift
+  local -a reply
+  _pnpm__project_args
+  _call_program $tag SHELL=zsh pnpm completion-server -- pnpm ${(q)reply} ${(q)@} "''" 2>/dev/null
+}
+
+(( $+functions[_pnpm__scripts] )) ||
+_pnpm__scripts() {
+  local -a scripts
+  scripts=(${(f)"$(_pnpm__engine scripts run)"})
+  _describe -t scripts 'package script' scripts
+}
+
+(( $+functions[_pnpm__workspace_packages] )) ||
+_pnpm__workspace_packages() {
+  local -a pkgs
+  compset -P '[.!^]#'
+  pkgs=(${(f)"$(_pnpm__engine workspace-packages --filter)"})
+  _describe -t workspace-packages 'workspace package' pkgs
+}
+
+# Dependency names from the nearest package.json, read locally: pnpm's own
+# query commands obey a packageManager pin and may start another pnpm.
+(( $+functions[_pnpm__dependencies] )) ||
+_pnpm__dependencies() {
+  local -a reply deps
+  local dir=$PWD manifest
+  _pnpm__project_args
+  local -i i=${reply[(I)--dir]}
+  (( i )) && dir=${~reply[i+1]}
+  [[ $dir == /* ]] || dir=$PWD/$dir
+  while [[ $dir != / && ! -f $dir/package.json ]]; do dir=${dir:h}; done
+  manifest=$dir/package.json
+  [[ -f $manifest ]] || { _message 'package name'; return 1 }
+  if (( $+commands[node] )); then
+    deps=(${(f)"$(_call_program dependencies node -e ${(q)_pnpm_deps_js} ${(q)manifest} 2>/dev/null)"})
+  elif (( $+commands[jq] )); then
+    deps=(${(f)"$(_call_program dependencies jq -r ${(q)_pnpm_deps_jq} ${(q)manifest} 2>/dev/null)"})
+  fi
+  _wanted dependencies expl 'dependency' compadd -a deps
+}
+typeset -g _pnpm_deps_js='const m=require(process.argv[1]);for(const k of ["dependencies","devDependencies","optionalDependencies","peerDependencies"])for(const n of Object.keys(m[k]||{}))console.log(n)'
+typeset -g _pnpm_deps_jq='[.dependencies,.devDependencies,.optionalDependencies,.peerDependencies]|map(select(.)|keys[])|flatten|unique[]'
+
+(( $+functions[_pnpm__config_keys] )) ||
+_pnpm__config_keys() {
+  local -a keys=(
+    allow-unused-patches bail block-exotic-subdeps cache-dir child-concurrency
+    ci color dangerously-allow-all-builds dlx-cache-max-age
+    enable-global-virtual-store enable-modules-dir engine-strict
+    exclude-links-from-lockfile extend-node-path fetch-min-speed-ki-bps
+    fetch-timeout fetch-warn-timeout-ms fetching-concurrency
+    force-ignores-platform force-legacy-deploy frozen-store git-checks
+    git-shallow-hosts global-bin-dir global-dir global-path global-pnpmfile
+    global-shims global-virtual-store-dir hoist hoist-pattern http-proxy
+    ignore-pnpmfile ignore-scripts init-package-manager init-type
+    link-workspace-packages lockfile lockfile-include-tarball-url loglevel
+    maxsockets merge-git-branch-lockfiles minimum-release-age
+    minimum-release-age-exclude minimum-release-age-ignore-missing-time
+    minimum-release-age-strict modules-cache-max-age modules-dir
+    network-concurrency node-download-mirrors node-experimental-package-map
+    node-package-map-type noproxy npm-path npmrc-auth-file offline
+    optimistic-repeat-install package-import-method pm-on-fail pnpr-server
+    prefer-frozen-lockfile prefer-offline prefer-symlinked-executables
+    progress public-hoist-pattern publish-wait-timeout
+    registry-supports-time-field reporter resolution-mode runtime-on-fail
+    save-workspace-protocol script-shell shamefully-hoist
+    shared-workspace-lockfile shell-emulator side-effects-cache
+    side-effects-cache-readonly state-dir store-dir strict-dep-builds
+    strict-peer-dependencies trust-lockfile trust-policy trust-policy-exclude
+    trust-policy-ignore-after unsafe-perm update-notifier use-beta-cli
+    use-stderr verify-deps-before-run verify-store-integrity virtual-store-dir
+    virtual-store-dir-max-length virtual-store-only virtual-store-type
+  )
+  _wanted config-keys expl 'config key' compadd -a keys
+}
+
+(( $+functions[_pnpm__config_values] )) ||
+_pnpm__config_values() {
+  local -a vals
+  case $1 in
+    (allow-unused-patches) vals=(true false) ;;
+    (dangerously-allow-all-builds) vals=(true false) ;;
+    (engine-strict) vals=(true false) ;;
+    (force-legacy-deploy) vals=(true false) ;;
+    (frozen-store) vals=(true false) ;;
+    (hoist) vals=(true false) ;;
+    (ignore-pnpmfile) vals=(true false) ;;
+    (ignore-scripts) vals=(true false) ;;
+    (link-workspace-packages) vals=(true false deep) ;;
+    (lockfile) vals=(true false) ;;
+    (lockfile-include-tarball-url) vals=(true false) ;;
+    (merge-git-branch-lockfiles) vals=(true false) ;;
+    (node-experimental-package-map) vals=(true false) ;;
+    (offline) vals=(true false) ;;
+    (optimistic-repeat-install) vals=(true false) ;;
+    (package-import-method) vals=(auto hardlink copy clone clone-or-copy) ;;
+    (pm-on-fail) vals=(download error warn ignore) ;;
+    (prefer-frozen-lockfile) vals=(true false) ;;
+    (prefer-offline) vals=(true false) ;;
+    (runtime-on-fail) vals=(download error warn ignore) ;;
+    (save-workspace-protocol) vals=(true false rolling) ;;
+    (shamefully-hoist) vals=(true false) ;;
+    (shared-workspace-lockfile) vals=(true false) ;;
+    (side-effects-cache) vals=(true false) ;;
+    (side-effects-cache-readonly) vals=(true false) ;;
+    (strict-peer-dependencies) vals=(true false) ;;
+    (trust-lockfile) vals=(true false) ;;
+    (trust-policy) vals=(off no-downgrade) ;;
+    (unsafe-perm) vals=(true false) ;;
+    (verify-store-integrity) vals=(true false) ;;
+    (virtual-store-only) vals=(true false) ;;
+    (color) vals=(auto always never) ;;
+    (*) _message 'value'; return ;;
+  esac
+  _wanted values expl "value of $1" compadd -a vals
+}
+
+# --config.<key>=<value>
+(( $+functions[_pnpm__config_override] )) ||
+_pnpm__config_override() {
+  if compset -P '*='; then
+    _pnpm__config_values ${${IPREFIX%=}##*.}
+  else
+    local -a reply
+    _pnpm__config_keys_list
+    _wanted config-keys expl 'config key' compadd -S '=' -q -a reply
+  fi
+}
+
+(( $+functions[_pnpm__config_keys_list] )) ||
+_pnpm__config_keys_list() {
+  reply=(
+    allow-unused-patches bail block-exotic-subdeps cache-dir child-concurrency
+    ci color dangerously-allow-all-builds dlx-cache-max-age
+    enable-global-virtual-store enable-modules-dir engine-strict
+    exclude-links-from-lockfile extend-node-path fetch-min-speed-ki-bps
+    fetch-timeout fetch-warn-timeout-ms fetching-concurrency
+    force-ignores-platform force-legacy-deploy frozen-store git-checks
+    git-shallow-hosts global-bin-dir global-dir global-path global-pnpmfile
+    global-shims global-virtual-store-dir hoist hoist-pattern http-proxy
+    ignore-pnpmfile ignore-scripts init-package-manager init-type
+    link-workspace-packages lockfile lockfile-include-tarball-url loglevel
+    maxsockets merge-git-branch-lockfiles minimum-release-age
+    minimum-release-age-exclude minimum-release-age-ignore-missing-time
+    minimum-release-age-strict modules-cache-max-age modules-dir
+    network-concurrency node-download-mirrors node-experimental-package-map
+    node-package-map-type noproxy npm-path npmrc-auth-file offline
+    optimistic-repeat-install package-import-method pm-on-fail pnpr-server
+    prefer-frozen-lockfile prefer-offline prefer-symlinked-executables
+    progress public-hoist-pattern publish-wait-timeout
+    registry-supports-time-field reporter resolution-mode runtime-on-fail
+    save-workspace-protocol script-shell shamefully-hoist
+    shared-workspace-lockfile shell-emulator side-effects-cache
+    side-effects-cache-readonly state-dir store-dir strict-dep-builds
+    strict-peer-dependencies trust-lockfile trust-policy trust-policy-exclude
+    trust-policy-ignore-after unsafe-perm update-notifier use-beta-cli
+    use-stderr verify-deps-before-run verify-store-integrity virtual-store-dir
+    virtual-store-dir-max-length virtual-store-only virtual-store-type
+  )
+}
+
+(( $+functions[_pnpm__save_prefix] )) ||
+_pnpm__save_prefix() {
+  local -a prefixes=('^:caret range (default)' '~:tilde range' '=:exact pin')
+  _describe -t save-prefixes 'save prefix' prefixes -Q
+}
+
+(( $+functions[_pnpm__version_words] )) ||
+_pnpm__version_words() {
+  local -a words_=(major minor patch premajor preminor prepatch prerelease from-git)
+  _wanted bump expl 'version bump or semver version' compadd -a words_
+}
+
+(( $+functions[_pnpm__lanes] )) ||
+_pnpm__lanes() {
+  _alternative \
+    'lanes:lane:(main)' \
+    'new-lane: : _pnpm__message "lane name"'
+}
+
+(( $+functions[_pnpm__change_params] )) ||
+_pnpm__change_params() {
+  _alternative \
+    'subcommands:change form:((status\:"print the pending intents and release plan" check\:"validate the pending intents"))' \
+    'workspace-packages: : _pnpm__workspace_packages'
+}
+
+(( $+functions[_pnpm__with_spec] )) ||
+_pnpm__with_spec() {
+  _alternative \
+    'current:pnpm:((current\:"the pnpm that is already running"))' \
+    'versions: : _pnpm__message "pnpm version, range or dist-tag"'
+}
+
+# Hand-dispatched words of commands that take a free parameter list. Only the
+# first parameter is a word; later ones are the command's arguments.
+(( $+functions[_pnpm__hand_words] )) ||
+_pnpm__hand_words() {
+  local cmd=$1
+  local -a ws
+  local -i i n=0
+  for (( i = 2; i < CURRENT; i++ )); do
+    [[ $words[i] == -* ]] || (( n++ ))
+  done
+  if (( n == 0 )); then
+    case $cmd in
+      (access) ws=('list:list packages or collaborators' 'ls:list packages' 'get:get status' 'set:set status=<public|restricted> or mfa=<none|publish|automation>' 'public:set the package public' 'restricted:set the package restricted' 'grant:grant a team access: grant <read-only|read-write> <scope:team> [pkg]' 'revoke:revoke a team'\''s access: revoke <scope:team> [pkg]') ;;
+      (audit) ws=('signatures:verify registry signatures of the installed packages') ;;
+      (licenses) ws=('list:list the licenses of installed packages' 'ls:list the licenses of installed packages') ;;
+      (dist-tag) ws=('add:add a tag: add <pkg>@<version> [tag]' 'rm:remove a tag: rm <pkg> <tag>' 'ls:list tags: ls [pkg]' 'list:list tags: list [pkg]') ;;
+      (stage) ws=('publish:stage packages for publishing' 'list:list staged packages' 'view:view a staged package' 'approve:approve a staged package' 'reject:reject a staged package' 'download:download a staged package') ;;
+      (peers) ws=('check:check for unmet or missing peer dependencies') ;;
+      (runtime) ws=('set:set a runtime: set <node|deno|bun> <version>') ;;
+      (env) ws=('use:install and activate a Node.js version' 'list:list installed Node.js versions' 'remove:remove Node.js versions' 'ls:(hidden) list installed Node.js versions' 'rm:(hidden) remove Node.js versions' 'uninstall:(hidden) remove Node.js versions' 'un:(hidden) remove Node.js versions') ;;
+      (shim) ws=('add:add a context-aware shim for a package' 'rm:remove shims' 'ls:list shims' 'remove:(hidden) remove shims' 'uninstall:(hidden) remove shims' 'list:(hidden) list shims') ;;
+      (team) ws=('create:create a team: create <scope:team>' 'destroy:destroy a team: destroy <scope:team>' 'add:add a user: add <scope:team> <user>' 'rm:remove a user: rm <scope:team> <user>' 'ls:list teams or members: ls <scope|scope:team>' 'list:(hidden) list teams or members: list <scope|scope:team>') ;;
+      (owner) ws=('ls:list owners: ls [pkg]' 'list:list owners: list [pkg]' 'add:add an owner: add <user> [pkg]' 'rm:remove an owner: rm <user> [pkg]') ;;
+    esac
+    _describe -t subcommands "$cmd subcommand" ws
+    return
+  fi
+  local -a params=(${(@)${(@)words[2,CURRENT-1]}:#-*})
+  case "$cmd $params[1]" in
+    ("access list") (( n == 1 )) && { compadd packages collaborators; return } ;;
+    ("access ls") (( n == 1 )) && { compadd packages; return } ;;
+    ("access get") (( n == 1 )) && { compadd status; return } ;;
+    ("access set")
+      if (( n == 1 )); then
+        if compset -P 'status='; then compadd public restricted private
+        elif compset -P 'mfa='; then compadd none publish automation
+        else compadd -S '' status= mfa=
+        fi
+        return
+      fi
+      ;;
+    ("access grant") (( n == 1 )) && { compadd read-only read-write; return } ;;
+    ("runtime set")
+      (( n == 1 )) && { _wanted runtimes expl runtime compadd node deno bun; return }
+      (( n == 2 )) && { _message 'runtime version'; return }
+      ;;
+    ("env use"|"env remove"|"env rm"|"env uninstall"|"env un") _message 'Node.js version'; return ;;
+    ("dist-tag add") _message 'pkg@version, then tag'; return ;;
+    ("dist-tag rm"|"dist-tag ls"|"dist-tag list"|"owner ls"|"owner list") _message 'package name'; return ;;
+    ("owner add"|"owner rm") _message 'username, then package name'; return ;;
+    ("shim add"|"shim rm"|"shim remove"|"shim uninstall") _message 'package name'; return ;;
+    ("team "*) _message 'scope:team, then username'; return ;;
+  esac
+  _message 'argument'
+}
+
+# -----------------------------------------------------------------------------
+# Commands.
+
+(( $+functions[_pnpm__cmd_access] )) ||
+_pnpm__cmd_access() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(--json --no-json)--json[Output results in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words access'
+}
+
+(( $+functions[_pnpm__cmd_init] )) ||
+_pnpm__cmd_init() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--init-type)--init-type=[Set the module system for the package. Defaults to "module"]:commonjs|module:(commonjs module)' \
+    '(--init-package-manager)--init-package-manager[Pin the latest pnpm version in package.json, through "devEngines.packageManager" and "packageManager", and auto-download pnpm when it is mis...]' \
+    '(--no-init-package-manager)--no-init-package-manager[Scaffold the manifest without a pnpm version pin]' \
+    '(--bare --no-bare)--bare[Create a package.json file with the bare minimum of required fields]' \
+    '(--no-bare --bare)--no-bare[(hidden) negate --bare]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_add] )) ||
+_pnpm__cmd_add() {
+  local -a reply
+  _pnpm__globals '--ignore-pnpmfile' '--ignore-scripts' '--no-ignore-pnpmfile' '--no-ignore-scripts'
+  _arguments -s -S : $reply \
+    '(--save-peer)--save-peer[Using --save-peer will add one or more packages to peerDependencies and install them as dev dependencies]' \
+    '(--no-save-peer)--no-save-peer[Don'\''t add the packages to peerDependencies, overriding a `savePeer: true` setting]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--save-types)--save-types[Add available `@types` packages to `devDependencies` for packages without bundled types]' \
+    '(--no-save-types)--no-save-types[Do not add `@types` packages automatically]' \
+    '(--save-prefix)--save-prefix=[The prefix of the saved version range: `^` (default), `~`, `=` for an explicit exact pin, or empty for a bare exact version]:prefix: _pnpm__save_prefix' \
+    '(--save-catalog-name)--save-catalog-name=[Save the new dependency to the named catalog `<name>`]:name: _pnpm__message "name"' \
+    '(--ignore-workspace-root-check)--ignore-workspace-root-check[Permit adding dependencies to a multi-package workspace root without `-w`]' \
+    '(--no-ignore-workspace-root-check)--no-ignore-workspace-root-check[(hidden) Keep the workspace-root safety check enabled]' \
+    '(--auto-dedupe)--auto-dedupe[Deduplicate compatible dependency versions during installation]' \
+    '(--no-auto-dedupe)--no-auto-dedupe[Disable automatic deduplication configured in pnpm-workspace.yaml]' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during this install, appended to `allowBuilds`]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--optional)--optional[Include optionalDependencies while materializing the updated project]' \
+    '(--no-optional)--no-optional[Exclude optionalDependencies while materializing the updated project]' \
+    '(-P --save-prod --no-save-prod)-P[Install the specified packages as regular dependencies]' \
+    '(-P --save-prod --no-save-prod)--save-prod[Install the specified packages as regular dependencies]' \
+    '(--no-save-prod -P --save-prod)--no-save-prod[(hidden) negate --save-prod]' \
+    '(-D --save-dev --no-save-dev)-D[Install the specified packages as devDependencies]' \
+    '(-D --save-dev --no-save-dev)--save-dev[Install the specified packages as devDependencies]' \
+    '(--no-save-dev -D --save-dev)--no-save-dev[(hidden) negate --save-dev]' \
+    '(-O --save-optional --no-save-optional)-O[Install the specified packages as optionalDependencies]' \
+    '(-O --save-optional --no-save-optional)--save-optional[Install the specified packages as optionalDependencies]' \
+    '(--no-save-optional -O --save-optional)--no-save-optional[(hidden) negate --save-optional]' \
+    '(--save-build --no-save-build)--save-build[Install crate: packages as Cargo build dependencies]' \
+    '(--no-save-build --save-build)--no-save-build[(hidden) negate --save-build]' \
+    '(--prod --no-prod)--prod[Leave devDependencies out of `node_modules`]' \
+    '--production[(alias for --prod) Leave devDependencies out of `node_modules`]' \
+    '(--no-prod --prod)--no-prod[(hidden) negate --prod]' \
+    '(--dev --no-dev)--dev[Leave dependencies and optionalDependencies out of `node_modules`]' \
+    '(--no-dev --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(-E --save-exact --no-save-exact)-E[Saved dependencies will be configured with an exact version rather than using the default semver range operator]' \
+    '(-E --save-exact --no-save-exact)--save-exact[Saved dependencies will be configured with an exact version rather than using the default semver range operator]' \
+    '(--no-save-exact -E --save-exact)--no-save-exact[(hidden) negate --save-exact]' \
+    '(--tilde --no-tilde)--tilde[Save the resolved version with a `~` range prefix. Equivalent to `--save-prefix=~`]' \
+    '(--no-tilde --tilde)--no-tilde[(hidden) negate --tilde]' \
+    '(--save-catalog --no-save-catalog)--save-catalog[Save the new dependency to the default catalog. Shorthand for `--save-catalog-name=default`]' \
+    '(--no-save-catalog --save-catalog)--no-save-catalog[(hidden) negate --save-catalog]' \
+    '(--config --no-config)--config[Add the package as a configuration dependency]' \
+    '(--no-config --config)--no-config[(hidden) negate --config]' \
+    '(--workspace --no-workspace)--workspace[Only add the dependency if a workspace project provides it]' \
+    '(--no-workspace --workspace)--no-workspace[(hidden) negate --workspace]' \
+    '(-g --global --no-global)-g[Install the package globally, linking its bins into the global bin directory]' \
+    '(-g --global --no-global)--global[Install the package globally, linking its bins into the global bin directory]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Dependencies are not downloaded. Only `pnpm-lock.yaml` is updated]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--force --no-force)--force[Reinstall every package the lockfile names: relink packages an earlier install already materialized, and install optional dependencies whose...]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "package names"'
+}
+
+(( $+functions[_pnpm__cmd_install] )) ||
+_pnpm__cmd_install() {
+  local -a reply
+  _pnpm__globals '--frozen-store' '--ignore-pnpmfile' '--ignore-scripts' '--merge-git-branch-lockfiles' '--no-frozen-store' '--no-ignore-pnpmfile' '--no-ignore-scripts' '--no-merge-git-branch-lockfiles' '--no-offline' '--no-prefer-frozen-lockfile' '--no-prefer-offline' '--no-trust-lockfile' '--offline' '--prefer-frozen-lockfile' '--prefer-offline' '--trust-lockfile'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[Include optionalDependencies even when the configured default excludes them]' \
+    '(--no-optional)--no-optional[Don'\''t install optionalDependencies]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--offline)--offline[Fail on a cache miss instead of fetching from the registry, using only packages already in the store]' \
+    '(--no-offline)--no-offline[Allow network fetches even when the configuration enables offline mode]' \
+    '(--prefer-offline)--prefer-offline[Prefer packages already in the cache over the network, even past their freshness window]' \
+    '(--no-prefer-offline)--no-prefer-offline[Don'\''t prefer cached packages even when the configuration enables it]' \
+    '(--frozen-lockfile)--frozen-lockfile[Don'\''t generate a lockfile, and fail if an update to it is needed. This setting is enabled by default in CI when a lockfile is present]' \
+    '(--no-frozen-lockfile)--no-frozen-lockfile[Allow the lockfile to be updated, overriding a `frozenLockfile: true` setting]' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--prefer-frozen-lockfile)--prefer-frozen-lockfile[Prefer the existing lockfile over re-resolving, even when the manifest may have changed]' \
+    '(--no-prefer-frozen-lockfile)--no-prefer-frozen-lockfile[Always re-resolve against the registry instead of preferring the existing lockfile]' \
+    '(--auto-dedupe)--auto-dedupe[Deduplicate compatible dependency versions during installation]' \
+    '(--no-auto-dedupe)--no-auto-dedupe[Disable automatic deduplication configured in pnpm-workspace.yaml]' \
+    '*--merge-git-branch-lockfiles-branch-pattern=[Glob patterns naming the branches that merge the per-branch lockfiles, so a mainline branch does not have to pass `--merge-git-branch-lockfi...]:merge-git-branch-lockfiles-branch-pattern: _pnpm__message "merge git branch lockfiles branch pattern"' \
+    '(--trust-lockfile)--trust-lockfile[Skip verifying the lockfile against supply-chain policies]' \
+    '(--no-trust-lockfile)--no-trust-lockfile[Verify the lockfile against supply-chain policies even when the configuration trusts it]' \
+    '(--network-concurrency)--network-concurrency=[Maximum number of concurrent network requests during install]:network-concurrency: _pnpm__message "number of requests"' \
+    '(--fetch-timeout)--fetch-timeout=[Per-request network timeout, in milliseconds]:fetch-timeout: _pnpm__message "fetch timeout"' \
+    '(--fetch-warn-timeout-ms)--fetch-warn-timeout-ms=[Warn when a registry metadata request takes longer than this many milliseconds]:fetch-warn-timeout-ms: _pnpm__message "fetch warn timeout ms"' \
+    '(--fetch-min-speed-ki-bps)--fetch-min-speed-ki-bps=[Warn when a tarball download'\''s average speed is below this many KiB/s]:fetch-min-speed-ki-bps: _pnpm__message "fetch min speed ki bps"' \
+    '(--user-agent)--user-agent=[`User-Agent` header to send on registry requests]:user-agent: _pnpm__message "user agent"' \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server to offload resolution and file fetching to. `node_modules` is still linked locally from the server-produced lockfile]:pnpr-server:_urls' \
+    '(--no-runtime)--no-runtime[Don'\''t install runtime dependencies (`node`, `deno`, `bun`)]' \
+    '(--node-linker)--node-linker=[Which node linker to use: `isolated` (the default, a symlinked store), `hoisted` (a flat `node_modules`), or `pnp` (Plug'\''n'\''Play)]:node-linker:(isolated hoisted pnp)' \
+    '(--frozen-store)--frozen-store[Open the store read-only and skip all store writes. For installing against a store on a read-only filesystem (e.g.]' \
+    '(--no-frozen-store)--no-frozen-store[Allow store writes even when the configuration enables the read-only store]' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during this install, appended to `allowBuilds`]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '(-P --prod --no-prod)-P[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(-P --prod --no-prod)--prod[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '--production[(alias for --prod) Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(-D --dev --no-dev)--dev[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only update `pnpm-lock.yaml`. Don'\''t download packages or write `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--fix-lockfile --no-fix-lockfile)--fix-lockfile[Repair broken lockfile entries by re-resolving their metadata while preserving compatible locked versions]' \
+    '(--no-fix-lockfile --fix-lockfile)--no-fix-lockfile[(hidden) negate --fix-lockfile]' \
+    '(--ignore-manifest-check --no-ignore-manifest-check)--ignore-manifest-check[Skip the check that `pnpm-lock.yaml` is up to date with `package.json` under `--frozen-lockfile`.]' \
+    '(--no-ignore-manifest-check --ignore-manifest-check)--no-ignore-manifest-check[(hidden) negate --ignore-manifest-check]' \
+    '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--merge-git-branch-lockfiles[Fold every per-branch lockfile (`pnpm-lock.<branch>.yaml`, written under the `gitBranchLockfile` setting) into `pnpm-lock.yaml` and delete t...]' \
+    '(--no-merge-git-branch-lockfiles --merge-git-branch-lockfiles)--no-merge-git-branch-lockfiles[(hidden) negate --merge-git-branch-lockfiles]' \
+    '(--update-checksums --no-update-checksums)--update-checksums[Refresh the integrity checksums in `pnpm-lock.yaml` from the registry. Cannot be combined with `--frozen-lockfile`]' \
+    '(--no-update-checksums --update-checksums)--no-update-checksums[(hidden) negate --update-checksums]' \
+    '(--dry-run --no-dry-run)--dry-run[Show what an install would change without writing anything to disk]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--force --no-force)--force[Reinstall every package the lockfile names: relink packages an earlier install already materialized, and install optional dependencies whose...]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--verify-deps-before-run-install --no-verify-deps-before-run-install)--verify-deps-before-run-install[(hidden) Run the install already requested by `verifyDepsBeforeRun` without independently short-circuiting it as up to date]' \
+    '(--no-verify-deps-before-run-install --verify-deps-before-run-install)--no-verify-deps-before-run-install[(hidden) negate --verify-deps-before-run-install]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "(hidden) package spec; pnpm install <pkg> runs pnpm add <pkg>"'
+}
+
+(( $+functions[_pnpm__cmd_install_test] )) ||
+_pnpm__cmd_install_test() {
+  local -a vopts=('--cpu' '--os' '--libc' '--lockfile-dir' '--merge-git-branch-lockfiles-branch-pattern' '--network-concurrency' '--fetch-timeout' '--fetch-warn-timeout-ms' '--fetch-min-speed-ki-bps' '--user-agent' '--pnpr-server' '--node-linker' '--allow-build')
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    _files
+    return
+  fi
+  local -a reply
+  _pnpm__globals '--frozen-store' '--ignore-pnpmfile' '--ignore-scripts' '--merge-git-branch-lockfiles' '--no-frozen-store' '--no-ignore-pnpmfile' '--no-ignore-scripts' '--no-merge-git-branch-lockfiles' '--no-offline' '--no-prefer-frozen-lockfile' '--no-prefer-offline' '--no-trust-lockfile' '--offline' '--prefer-frozen-lockfile' '--prefer-offline' '--trust-lockfile'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[Include optionalDependencies even when the configured default excludes them]' \
+    '(--no-optional)--no-optional[Don'\''t install optionalDependencies]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--offline)--offline[Fail on a cache miss instead of fetching from the registry, using only packages already in the store]' \
+    '(--no-offline)--no-offline[Allow network fetches even when the configuration enables offline mode]' \
+    '(--prefer-offline)--prefer-offline[Prefer packages already in the cache over the network, even past their freshness window]' \
+    '(--no-prefer-offline)--no-prefer-offline[Don'\''t prefer cached packages even when the configuration enables it]' \
+    '(--frozen-lockfile)--frozen-lockfile[Don'\''t generate a lockfile, and fail if an update to it is needed. This setting is enabled by default in CI when a lockfile is present]' \
+    '(--no-frozen-lockfile)--no-frozen-lockfile[Allow the lockfile to be updated, overriding a `frozenLockfile: true` setting]' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--prefer-frozen-lockfile)--prefer-frozen-lockfile[Prefer the existing lockfile over re-resolving, even when the manifest may have changed]' \
+    '(--no-prefer-frozen-lockfile)--no-prefer-frozen-lockfile[Always re-resolve against the registry instead of preferring the existing lockfile]' \
+    '(--auto-dedupe)--auto-dedupe[Deduplicate compatible dependency versions during installation]' \
+    '(--no-auto-dedupe)--no-auto-dedupe[Disable automatic deduplication configured in pnpm-workspace.yaml]' \
+    '*--merge-git-branch-lockfiles-branch-pattern=[Glob patterns naming the branches that merge the per-branch lockfiles, so a mainline branch does not have to pass `--merge-git-branch-lockfi...]:merge-git-branch-lockfiles-branch-pattern: _pnpm__message "merge git branch lockfiles branch pattern"' \
+    '(--trust-lockfile)--trust-lockfile[Skip verifying the lockfile against supply-chain policies]' \
+    '(--no-trust-lockfile)--no-trust-lockfile[Verify the lockfile against supply-chain policies even when the configuration trusts it]' \
+    '(--network-concurrency)--network-concurrency=[Maximum number of concurrent network requests during install]:network-concurrency: _pnpm__message "number of requests"' \
+    '(--fetch-timeout)--fetch-timeout=[Per-request network timeout, in milliseconds]:fetch-timeout: _pnpm__message "fetch timeout"' \
+    '(--fetch-warn-timeout-ms)--fetch-warn-timeout-ms=[Warn when a registry metadata request takes longer than this many milliseconds]:fetch-warn-timeout-ms: _pnpm__message "fetch warn timeout ms"' \
+    '(--fetch-min-speed-ki-bps)--fetch-min-speed-ki-bps=[Warn when a tarball download'\''s average speed is below this many KiB/s]:fetch-min-speed-ki-bps: _pnpm__message "fetch min speed ki bps"' \
+    '(--user-agent)--user-agent=[`User-Agent` header to send on registry requests]:user-agent: _pnpm__message "user agent"' \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server to offload resolution and file fetching to. `node_modules` is still linked locally from the server-produced lockfile]:pnpr-server:_urls' \
+    '(--no-runtime)--no-runtime[Don'\''t install runtime dependencies (`node`, `deno`, `bun`)]' \
+    '(--node-linker)--node-linker=[Which node linker to use: `isolated` (the default, a symlinked store), `hoisted` (a flat `node_modules`), or `pnp` (Plug'\''n'\''Play)]:node-linker:(isolated hoisted pnp)' \
+    '(--frozen-store)--frozen-store[Open the store read-only and skip all store writes. For installing against a store on a read-only filesystem (e.g.]' \
+    '(--no-frozen-store)--no-frozen-store[Allow store writes even when the configuration enables the read-only store]' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during this install, appended to `allowBuilds`]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '(-P --prod --no-prod)-P[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(-P --prod --no-prod)--prod[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '--production[(alias for --prod) Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(-D --dev --no-dev)--dev[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only update `pnpm-lock.yaml`. Don'\''t download packages or write `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--fix-lockfile --no-fix-lockfile)--fix-lockfile[Repair broken lockfile entries by re-resolving their metadata while preserving compatible locked versions]' \
+    '(--no-fix-lockfile --fix-lockfile)--no-fix-lockfile[(hidden) negate --fix-lockfile]' \
+    '(--ignore-manifest-check --no-ignore-manifest-check)--ignore-manifest-check[Skip the check that `pnpm-lock.yaml` is up to date with `package.json` under `--frozen-lockfile`.]' \
+    '(--no-ignore-manifest-check --ignore-manifest-check)--no-ignore-manifest-check[(hidden) negate --ignore-manifest-check]' \
+    '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--merge-git-branch-lockfiles[Fold every per-branch lockfile (`pnpm-lock.<branch>.yaml`, written under the `gitBranchLockfile` setting) into `pnpm-lock.yaml` and delete t...]' \
+    '(--no-merge-git-branch-lockfiles --merge-git-branch-lockfiles)--no-merge-git-branch-lockfiles[(hidden) negate --merge-git-branch-lockfiles]' \
+    '(--update-checksums --no-update-checksums)--update-checksums[Refresh the integrity checksums in `pnpm-lock.yaml` from the registry. Cannot be combined with `--frozen-lockfile`]' \
+    '(--no-update-checksums --update-checksums)--no-update-checksums[(hidden) negate --update-checksums]' \
+    '(--dry-run --no-dry-run)--dry-run[Show what an install would change without writing anything to disk]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--force --no-force)--force[Reinstall every package the lockfile names: relink packages an earlier install already materialized, and install optional dependencies whose...]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--verify-deps-before-run-install --no-verify-deps-before-run-install)--verify-deps-before-run-install[(hidden) Run the install already requested by `verifyDepsBeforeRun` without independently short-circuiting it as up to date]' \
+    '(--no-verify-deps-before-run-install --verify-deps-before-run-install)--no-verify-deps-before-run-install[(hidden) negate --verify-deps-before-run-install]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_files'
+}
+
+(( $+functions[_pnpm__cmd_update] )) ||
+_pnpm__cmd_update() {
+  local -a reply
+  _pnpm__globals '--ignore-pnpmfile' '--ignore-scripts' '--no-ignore-pnpmfile' '--no-ignore-scripts'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[Update packages only in "optionalDependencies"]' \
+    '(--no-optional)--no-optional[Don'\''t update packages in "optionalDependencies"]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--depth)--depth=[How deep to inspect dependencies. `0` means top-level dependencies only. Defaults to unlimited]:depth: _pnpm__message "depth (0 = top-level only)"' \
+    '(--no-save)--no-save[Do not write the updated ranges back to package.json. The lockfile is still updated (the `--no-save` flag)]' \
+    '(--changeset)--changeset[Generate a changeset file declaring a patch bump for every workspace package whose production dependencies were changed by the update]' \
+    '(--no-changeset)--no-changeset[Do not generate a changeset, even when `updateConfig.changeset` enables changeset generation by default]' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server to offload revision refresh resolution to]:pnpr-server:_urls' \
+    '(-P --prod --no-prod)-P[Update packages only in "dependencies" and "optionalDependencies"]' \
+    '(-P --prod --no-prod)--prod[Update packages only in "dependencies" and "optionalDependencies"]' \
+    '--production[(alias for --prod) Update packages only in "dependencies" and "optionalDependencies"]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Update packages only in "devDependencies"]' \
+    '(-D --dev --no-dev)--dev[Update packages only in "devDependencies"]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--peer --no-peer)--peer[Also update packages in "peerDependencies"]' \
+    '(--no-peer --peer)--no-peer[(hidden) negate --peer]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(-L --latest --no-latest)-L[Ignore version ranges in package.json: bump the matched packages to their latest version and rewrite the manifest ranges]' \
+    '(-L --latest --no-latest)--latest[Ignore version ranges in package.json: bump the matched packages to their latest version and rewrite the manifest ranges]' \
+    '(--no-latest -L --latest)--no-latest[(hidden) negate --latest]' \
+    '(--patches --no-patches)--patches[Refresh registry revisions without changing package versions]' \
+    '(--no-patches --patches)--no-patches[(hidden) negate --patches]' \
+    '(-i --interactive --no-interactive)-i[Show outdated dependencies and select which ones to update]' \
+    '(-i --interactive --no-interactive)--interactive[Show outdated dependencies and select which ones to update]' \
+    '(--no-interactive -i --interactive)--no-interactive[(hidden) negate --interactive]' \
+    '(--include-github-actions --no-include-github-actions)--include-github-actions[Also update GitHub Actions dependencies in workflow and action files]' \
+    '(--no-include-github-actions --include-github-actions)--no-include-github-actions[(hidden) negate --include-github-actions]' \
+    '(-g --global --no-global)-g[Update globally installed packages]' \
+    '(-g --global --no-global)--global[Update globally installed packages]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(--workspace --no-workspace)--workspace[Tries to link all packages from the workspace, updating versions to match the workspace packages]' \
+    '(--no-workspace --workspace)--no-workspace[(hidden) negate --workspace]' \
+    '(-E --save-exact --no-save-exact)-E[Write the resolved version without a range operator when rewriting the manifest under `--latest`]' \
+    '(-E --save-exact --no-save-exact)--save-exact[Write the resolved version without a range operator when rewriting the manifest under `--latest`]' \
+    '(--no-save-exact -E --save-exact)--no-save-exact[(hidden) negate --save-exact]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Dependencies are not downloaded; only `pnpm-lock.yaml` is updated]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_outdated] )) ||
+_pnpm__cmd_outdated() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--no-optional)--no-optional[Don'\''t check "optionalDependencies"]' \
+    '(--optional)--optional[Include "optionalDependencies"]' \
+    '(--format)--format=[Output format]:format:(table list json)' \
+    '(--no-table)--no-table[Shorthand for `--format list`. Good for small consoles]' \
+    '(--sort-by)--sort-by=[Sorting method. Currently only `name` is supported; the default sorts by the size of the version change, then by name]:sort-by:(name)' \
+    '(-P --prod --no-prod)-P[Check only "dependencies" and "optionalDependencies"]' \
+    '(-P --prod --no-prod)--prod[Check only "dependencies" and "optionalDependencies"]' \
+    '--production[(alias for --prod) Check only "dependencies" and "optionalDependencies"]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Check only "devDependencies"]' \
+    '(-D --dev --no-dev)--dev[Check only "devDependencies"]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--compatible --no-compatible)--compatible[Print only versions that satisfy the ranges in package.json]' \
+    '(--no-compatible --compatible)--no-compatible[(hidden) negate --compatible]' \
+    '(--include-github-actions --no-include-github-actions)--include-github-actions[Also check GitHub Actions dependencies in workflow and action files]' \
+    '(--no-include-github-actions --include-github-actions)--no-include-github-actions[(hidden) negate --include-github-actions]' \
+    '(-g --global --no-global)-g[Check globally installed packages]' \
+    '(-g --global --no-global)--global[Check globally installed packages]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(--long --no-long)--long[Print details about the outdated packages (homepage, deprecation notice)]' \
+    '(--no-long --long)--no-long[(hidden) negate --long]' \
+    '(--json --no-json)--json[Shorthand for `--format json`]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_audit] )) ||
+_pnpm__cmd_audit() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--no-optional)--no-optional[Don'\''t audit "optionalDependencies"]' \
+    '(--optional)--optional[Include "optionalDependencies"]' \
+    '(--fix)--fix=[Fix the audited vulnerabilities using the specified method: "override" or "update"]::method:(override update)' \
+    '(--audit-level)--audit-level=[Only print advisories with severity greater than or equal to this level]:audit-level:(info low moderate high critical)' \
+    '*--ignore=[Ignore a vulnerability by its GitHub advisory ID (e.g. GHSA-xxxx-xxxx-xxxx). May be repeated]:ghsa: _pnpm__message "ghsa"' \
+    '(--json --no-json)--json[Output audit report in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(-P --prod --no-prod)-P[Only audit "dependencies" and "optionalDependencies"]' \
+    '(-P --prod --no-prod)--prod[Only audit "dependencies" and "optionalDependencies"]' \
+    '--production[(alias for --prod) Only audit "dependencies" and "optionalDependencies"]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Only audit "devDependencies"]' \
+    '(-D --dev --no-dev)--dev[Only audit "devDependencies"]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-registry-errors --no-ignore-registry-errors)--ignore-registry-errors[Use exit code 0 if the registry responds with an error]' \
+    '(--no-ignore-registry-errors --ignore-registry-errors)--no-ignore-registry-errors[(hidden) negate --ignore-registry-errors]' \
+    '(-i --interactive --no-interactive)-i[Show vulnerabilities and select which ones to fix interactively]' \
+    '(-i --interactive --no-interactive)--interactive[Show vulnerabilities and select which ones to fix interactively]' \
+    '(--no-interactive -i --interactive)--no-interactive[(hidden) negate --interactive]' \
+    '(--ignore-unfixable --no-ignore-unfixable)--ignore-unfixable[Ignore all vulnerabilities for which no fix exists]' \
+    '(--no-ignore-unfixable --ignore-unfixable)--no-ignore-unfixable[(hidden) negate --ignore-unfixable]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words audit'
+}
+
+(( $+functions[_pnpm__cmd_change] )) ||
+_pnpm__cmd_change() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--bump)--bump=[Bump type for the named packages: none, patch, minor, major. "none" records an explicit decline — the change needs no release]:bump:(none patch minor major)' \
+    '(--summary)--summary=[The summary for the changelog entry. Runs non-interactively when given together with package names]:summary: _pnpm__message "summary"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__change_params'
+}
+
+(( $+functions[_pnpm__cmd_version] )) ||
+_pnpm__cmd_version() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--preid)--preid=[Sets the prerelease identifier (e.g. alpha, beta, rc)]:preid:(alpha beta rc)' \
+    '(--no-git-checks)--no-git-checks[Don'\''t check if the working tree is clean]' \
+    '(-m --message)-m+[Commit message. "%s" is replaced with the new version. Default is "%s"]:message: _pnpm__message "message"' \
+    '(-m --message)--message=[Commit message. "%s" is replaced with the new version. Default is "%s"]:message: _pnpm__message "message"' \
+    '(--no-git-tag-version)--no-git-tag-version[Don'\''t create a commit or tag for the version bump. Git commits and tags are always skipped in recursive mode]' \
+    '(--no-commit-hooks)--no-commit-hooks[Skip running git commit hooks when committing the version bump]' \
+    '(--tag-version-prefix)--tag-version-prefix=[Sets the tag prefix. Defaults to the `tagVersionPrefix` setting, or "v" when the setting is unset. Set to empty string to remove the prefix]:tag-version-prefix: _pnpm__message "tag version prefix"' \
+    '(--dry-run --no-dry-run)--dry-run[Print what the command would do without changing anything]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--allow-same-version --no-allow-same-version)--allow-same-version[Allow bumping to the same version]' \
+    '(--no-allow-same-version --allow-same-version)--no-allow-same-version[(hidden) negate --allow-same-version]' \
+    '(--json --no-json)--json[Show information in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--sign-git-tag --no-sign-git-tag)--sign-git-tag[Sign the generated git tag with GPG]' \
+    '(--no-sign-git-tag --sign-git-tag)--no-sign-git-tag[(hidden) negate --sign-git-tag]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__version_words'
+}
+
+(( $+functions[_pnpm__cmd_lane] )) ||
+_pnpm__cmd_lane() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__lanes'
+}
+
+(( $+functions[_pnpm__cmd_bugs] )) ||
+_pnpm__cmd_bugs() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[]:registry:_urls' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_list] )) ||
+_pnpm__cmd_list() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '*--find-by=[Search by a finder function declared in `.pnpmfile.cjs`]:find-by: _pnpm__message "finder declared in .pnpmfile.cjs"' \
+    '(--no-optional)--no-optional[Don'\''t display packages from `optionalDependencies`]' \
+    '(--optional)--optional[Include packages from `optionalDependencies`]' \
+    '(--depth)--depth=[Max display depth of the dependency tree. `0` lists direct dependencies only; `-1` lists projects only]:depth: _pnpm__message "depth (0 = top-level only)"' \
+    '(-g --global --no-global)-g[]' \
+    '(-g --global --no-global)--global[]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(--exclude-peers --no-exclude-peers)--exclude-peers[Exclude peer dependencies]' \
+    '(--no-exclude-peers --exclude-peers)--no-exclude-peers[(hidden) negate --exclude-peers]' \
+    '(--long --no-long)--long[Show extended information]' \
+    '(--no-long --long)--no-long[(hidden) negate --long]' \
+    '(--json --no-json)--json[Show information in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--parseable --no-parseable)--parseable[Show parseable output instead of tree view]' \
+    '(--no-parseable --parseable)--no-parseable[(hidden) negate --parseable]' \
+    '(-P --prod --no-prod)-P[Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '(-P --prod --no-prod)--prod[Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '--production[(alias for --prod) Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Display only the dependency graph for packages in `devDependencies`]' \
+    '(-D --dev --no-dev)--dev[Display only the dependency graph for packages in `devDependencies`]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--only-projects --no-only-projects)--only-projects[Display only dependencies that are also projects within the workspace]' \
+    '(--no-only-projects --only-projects)--no-only-projects[(hidden) negate --only-projects]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[List packages from the lockfile only, without checking `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_ll] )) ||
+_pnpm__cmd_ll() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '*--find-by=[Search by a finder function declared in `.pnpmfile.cjs`]:find-by: _pnpm__message "finder declared in .pnpmfile.cjs"' \
+    '(--no-optional)--no-optional[Don'\''t display packages from `optionalDependencies`]' \
+    '(--optional)--optional[Include packages from `optionalDependencies`]' \
+    '(--depth)--depth=[Max display depth of the dependency tree. `0` lists direct dependencies only; `-1` lists projects only]:depth: _pnpm__message "depth (0 = top-level only)"' \
+    '(-g --global --no-global)-g[]' \
+    '(-g --global --no-global)--global[]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(--exclude-peers --no-exclude-peers)--exclude-peers[Exclude peer dependencies]' \
+    '(--no-exclude-peers --exclude-peers)--no-exclude-peers[(hidden) negate --exclude-peers]' \
+    '(--long --no-long)--long[Show extended information]' \
+    '(--no-long --long)--no-long[(hidden) negate --long]' \
+    '(--json --no-json)--json[Show information in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--parseable --no-parseable)--parseable[Show parseable output instead of tree view]' \
+    '(--no-parseable --parseable)--no-parseable[(hidden) negate --parseable]' \
+    '(-P --prod --no-prod)-P[Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '(-P --prod --no-prod)--prod[Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '--production[(alias for --prod) Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Display only the dependency graph for packages in `devDependencies`]' \
+    '(-D --dev --no-dev)--dev[Display only the dependency graph for packages in `devDependencies`]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--only-projects --no-only-projects)--only-projects[Display only dependencies that are also projects within the workspace]' \
+    '(--no-only-projects --only-projects)--no-only-projects[(hidden) negate --only-projects]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[List packages from the lockfile only, without checking `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_licenses] )) ||
+_pnpm__cmd_licenses() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--no-optional)--no-optional[Don'\''t check "optionalDependencies"]' \
+    '(-O --optional)-O[Only dependencies in "optionalDependencies"]' \
+    '(-O --optional)--optional[Only dependencies in "optionalDependencies"]' \
+    '(--json --no-json)--json[Output the information in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--long --no-long)--long[Show more details (such as a link to the repo)]' \
+    '(--no-long --long)--no-long[(hidden) negate --long]' \
+    '(-P --prod --no-prod)-P[Only dependencies in "dependencies"]' \
+    '(-P --prod --no-prod)--prod[Only dependencies in "dependencies"]' \
+    '--production[(alias for --prod) Only dependencies in "dependencies"]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Only dependencies in "devDependencies"]' \
+    '(-D --dev --no-dev)--dev[Only dependencies in "devDependencies"]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words licenses'
+}
+
+(( $+functions[_pnpm__cmd_why] )) ||
+_pnpm__cmd_why() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--depth)--depth=[Max display depth of the reverse dependency tree]:depth: _pnpm__message "depth (0 = top-level only)"' \
+    '*--find-by=[Search by a finder function declared in `.pnpmfile.cjs`]:find-by: _pnpm__message "finder declared in .pnpmfile.cjs"' \
+    '(--no-optional)--no-optional[Don'\''t display packages from `optionalDependencies`]' \
+    '(--optional)--optional[Include packages from `optionalDependencies`]' \
+    '(--exclude-peers --no-exclude-peers)--exclude-peers[Exclude peer dependencies]' \
+    '(--no-exclude-peers --exclude-peers)--no-exclude-peers[(hidden) negate --exclude-peers]' \
+    '(--long --no-long)--long[Show extended information]' \
+    '(--no-long --long)--no-long[(hidden) negate --long]' \
+    '(--json --no-json)--json[Show information in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--parseable --no-parseable)--parseable[Show parseable output instead of tree view]' \
+    '(--no-parseable --parseable)--no-parseable[(hidden) negate --parseable]' \
+    '(-P --prod --no-prod)-P[Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '(-P --prod --no-prod)--prod[Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '--production[(alias for --prod) Display only the dependency graph for packages in `dependencies` and `optionalDependencies`]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Display only the dependency graph for packages in `devDependencies`]' \
+    '(-D --dev --no-dev)--dev[Display only the dependency graph for packages in `devDependencies`]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_view] )) ||
+_pnpm__cmd_view() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--json --no-json)--json[Show information in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "params"'
+}
+
+(( $+functions[_pnpm__cmd_sbom] )) ||
+_pnpm__cmd_sbom() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--out)--out=[Write SBOM to a file instead of stdout. Use `%s` for the package name and `%v` for the version]:out:_files' \
+    '(--sbom-format)--sbom-format=[The SBOM output format (required)]:format:(cyclonedx spdx)' \
+    '(--sbom-type)--sbom-type=[The component type for the root package (default: library)]:sbom-type:(library application)' \
+    '(--sbom-spec-version)--sbom-spec-version=[The `CycloneDX` specification version (`1.5`, `1.6`, or `1.7`; default: `1.7`). Only valid with `--sbom-format cyclonedx`]:spec-version:(1.5 1.6 1.7)' \
+    '(--sbom-authors)--sbom-authors=[Comma-separated list of SBOM authors (`CycloneDX` `metadata.authors`)]:authors: _pnpm__message "authors"' \
+    '(--sbom-supplier)--sbom-supplier=[SBOM supplier name (`CycloneDX` `metadata.supplier`)]:supplier: _pnpm__message "supplier"' \
+    '(--no-optional)--no-optional[Exclude optional dependencies]' \
+    '(--optional)--optional[Include optional dependencies]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only use lockfile data (skip reading from the store)]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--split --no-split)--split[Generate a separate SBOM for each matched workspace package]' \
+    '(--no-split --split)--no-split[(hidden) negate --split]' \
+    '(-P --prod --no-prod)-P[Only include production dependencies]' \
+    '(-P --prod --no-prod)--prod[Only include production dependencies]' \
+    '--production[(alias for --prod) Only include production dependencies]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Only include dev dependencies]' \
+    '(-D --dev --no-dev)--dev[Only include dev dependencies]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--exclude-peers --no-exclude-peers)--exclude-peers[Exclude peer dependencies]' \
+    '(--no-exclude-peers --exclude-peers)--no-exclude-peers[(hidden) negate --exclude-peers]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_whoami] )) ||
+_pnpm__cmd_whoami() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_deprecate] )) ||
+_pnpm__cmd_deprecate() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "params"'
+}
+
+(( $+functions[_pnpm__cmd_undeprecate] )) ||
+_pnpm__cmd_undeprecate() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "params"'
+}
+
+(( $+functions[_pnpm__cmd_unpublish] )) ||
+_pnpm__cmd_unpublish() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(--force --no-force)--force[Removes the package from the registry regardless of what version is currently published]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "params"'
+}
+
+(( $+functions[_pnpm__cmd_star] )) ||
+_pnpm__cmd_star() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "package name"'
+}
+
+(( $+functions[_pnpm__cmd_unstar] )) ||
+_pnpm__cmd_unstar() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "package name"'
+}
+
+(( $+functions[_pnpm__cmd_stars] )) ||
+_pnpm__cmd_stars() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "username"'
+}
+
+(( $+functions[_pnpm__cmd_dist_tag] )) ||
+_pnpm__cmd_dist_tag() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words dist-tag'
+}
+
+(( $+functions[_pnpm__cmd_ping] )) ||
+_pnpm__cmd_ping() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[Test a specific registry URL]:registry:_urls' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_doctor] )) ||
+_pnpm__cmd_doctor() {
+  local -a reply
+  _pnpm__globals '--no-offline' '--offline'
+  _arguments -s -S : $reply \
+    '(--offline --no-offline)--offline[Skip checks that need network access]' \
+    '(--no-offline --offline)--no-offline[(hidden) negate --offline]' \
+    '(--benchmark --no-benchmark)--benchmark[Also time filesystem and install operations]' \
+    '(--no-benchmark --benchmark)--no-benchmark[(hidden) negate --benchmark]' \
+    '(--json --no-json)--json[Report the results as JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_search] )) ||
+_pnpm__cmd_search() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--search-limit)--search-limit=[Maximum number of results to show (default: 20)]:search-limit: _pnpm__message "search limit"' \
+    '(--registry)--registry=[Registry URL to search in]:registry:_urls' \
+    '(--json --no-json)--json[Show search results in JSON format]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "query"'
+}
+
+(( $+functions[_pnpm__cmd_rebuild] )) ||
+_pnpm__cmd_rebuild() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--pending)--pending[Rebuild packages that were not built during installation, such as under `--ignore-scripts`]' \
+    '(--no-pending)--no-pending[(hidden) Rebuild all matching packages, including those without pending builds]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_rb] )) ||
+_pnpm__cmd_rb() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--pending)--pending[Rebuild packages that were not built during installation, such as under `--ignore-scripts`]' \
+    '(--no-pending)--no-pending[(hidden) Rebuild all matching packages, including those without pending builds]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_pack] )) ||
+_pnpm__cmd_pack() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--pack-destination)--pack-destination=[Directory in which to save the tarball. Defaults to the current working directory]:pack-destination:_files -/' \
+    '(--out)--out=[Customize the output path. `%s` expands to the package name and `%v` to the version, e.g. `%s.tgz` or `some-dir/%s-%v.tgz`]:out:_files' \
+    '(--pack-gzip-level)--pack-gzip-level=[gzip compression level (`0`–`9`) for the tarball]:pack-gzip-level:(0 1 2 3 4 5 6 7 8 9)' \
+    '(--skip-manifest-obfuscation)--skip-manifest-obfuscation[Keep the original `packageManager` field and publish-lifecycle scripts in the packed manifest instead of stripping them]' \
+    '(--no-skip-manifest-obfuscation)--no-skip-manifest-obfuscation[(hidden) Apply pnpm'\''s normal packed-manifest filtering]' \
+    '(--dry-run --no-dry-run)--dry-run[Do everything `pack` would do except writing the tarball to disk]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--json --no-json)--json[Print the packed tarball and its contents in JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_publish] )) ||
+_pnpm__cmd_publish() {
+  local -a reply
+  _pnpm__globals '--ignore-scripts' '--no-ignore-scripts' '--no-report-summary' '--report-summary'
+  _arguments -s -S : $reply \
+    '(--tag)--tag=[Register the published package under this tag instead of `latest`]:tag: _pnpm__message "tag"' \
+    '(--access)--access=[Publish the package as `public` or `restricted`]:access:(public restricted)' \
+    '(--otp)--otp=[One-time password for two-factor-authenticated registries]:otp: _pnpm__message "otp"' \
+    '(--publish-wait-timeout)--publish-wait-timeout=[Wait up to this many milliseconds per package for registry availability. A batch upload uses one timeout per registry group.]:milliseconds: _pnpm__message "milliseconds"' \
+    '(--embed-readme)--embed-readme[Embed the README contents in the published manifest]' \
+    '(--no-embed-readme)--no-embed-readme[(hidden) Do not embed README contents in the published manifest]' \
+    '(--skip-manifest-obfuscation)--skip-manifest-obfuscation[Keep the original `packageManager` field and publish-lifecycle scripts in the published manifest instead of stripping them]' \
+    '(--no-skip-manifest-obfuscation)--no-skip-manifest-obfuscation[(hidden) Apply pnpm'\''s normal published-manifest filtering]' \
+    '(--publish-branch)--publish-branch=[The branch publishing is allowed from. Defaults to `master` / `main`]:publish-branch: _pnpm__message "publish branch"' \
+    '(--no-git-checks)--no-git-checks[Skip the git working-tree / branch / remote checks]' \
+    '(--dry-run --no-dry-run)--dry-run[Do everything `publish` would do except uploading to the registry]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--ignore-scripts --no-ignore-scripts)--ignore-scripts[Don'\''t run publish-related lifecycle scripts]' \
+    '(--no-ignore-scripts --ignore-scripts)--no-ignore-scripts[(hidden) negate --ignore-scripts]' \
+    '(--force --no-force)--force[Publish even if the version is already in the registry]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--batch --no-batch)--batch[Send all workspace packages in a single request (requires `--recursive`)]' \
+    '(--no-batch --batch)--no-batch[(hidden) negate --batch]' \
+    '(--provenance --no-provenance)--provenance[Generate a provenance attestation for the published package]' \
+    '(--no-provenance --provenance)--no-provenance[(hidden) negate --provenance]' \
+    '(--json --no-json)--json[Print the per-package publish summary in JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--report-summary --no-report-summary)--report-summary[Recursive only: write a `pnpm-publish-summary.json` report listing the packages that were published]' \
+    '(--no-report-summary --report-summary)--no-report-summary[(hidden) negate --report-summary]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_files'
+}
+
+(( $+functions[_pnpm__cmd_stage] )) ||
+_pnpm__cmd_stage() {
+  local -a reply
+  _pnpm__globals '--ignore-scripts' '--no-ignore-scripts' '--no-report-summary' '--registry' '--report-summary'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--tag)--tag=[Register the published package under this tag instead of `latest`]:tag: _pnpm__message "tag"' \
+    '(--access)--access=[Publish the package as `public` or `restricted`]:access:(public restricted)' \
+    '(--otp)--otp=[One-time password for two-factor-authenticated registries]:otp: _pnpm__message "otp"' \
+    '(--publish-wait-timeout)--publish-wait-timeout=[Wait up to this many milliseconds per package for registry availability. A batch upload uses one timeout per registry group.]:milliseconds: _pnpm__message "milliseconds"' \
+    '(--embed-readme)--embed-readme[Embed the README contents in the published manifest]' \
+    '(--no-embed-readme)--no-embed-readme[(hidden) Do not embed README contents in the published manifest]' \
+    '(--skip-manifest-obfuscation)--skip-manifest-obfuscation[Keep the original `packageManager` field and publish-lifecycle scripts in the published manifest instead of stripping them]' \
+    '(--no-skip-manifest-obfuscation)--no-skip-manifest-obfuscation[(hidden) Apply pnpm'\''s normal published-manifest filtering]' \
+    '(--publish-branch)--publish-branch=[The branch publishing is allowed from. Defaults to `master` / `main`]:publish-branch: _pnpm__message "publish branch"' \
+    '(--no-git-checks)--no-git-checks[Skip the git working-tree / branch / remote checks]' \
+    '(--dry-run --no-dry-run)--dry-run[Do everything `publish` would do except uploading to the registry]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--ignore-scripts --no-ignore-scripts)--ignore-scripts[Don'\''t run publish-related lifecycle scripts]' \
+    '(--no-ignore-scripts --ignore-scripts)--no-ignore-scripts[(hidden) negate --ignore-scripts]' \
+    '(--force --no-force)--force[Publish even if the version is already in the registry]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--batch --no-batch)--batch[Send all workspace packages in a single request (requires `--recursive`)]' \
+    '(--no-batch --batch)--no-batch[(hidden) negate --batch]' \
+    '(--provenance --no-provenance)--provenance[Generate a provenance attestation for the published package]' \
+    '(--no-provenance --provenance)--no-provenance[(hidden) negate --provenance]' \
+    '(--json --no-json)--json[Print the per-package publish summary in JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--report-summary --no-report-summary)--report-summary[Recursive only: write a `pnpm-publish-summary.json` report listing the packages that were published]' \
+    '(--no-report-summary --report-summary)--no-report-summary[(hidden) negate --report-summary]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words stage'
+}
+
+(( $+functions[_pnpm__cmd_remove] )) ||
+_pnpm__cmd_remove() {
+  local -a reply
+  _pnpm__globals '--no-trust-lockfile' '--trust-lockfile'
+  _arguments -s -S : $reply \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--trust-lockfile)--trust-lockfile[Skip verifying the lockfile against supply-chain policies]' \
+    '(--no-trust-lockfile)--no-trust-lockfile[Verify the lockfile against supply-chain policies even when the configuration trusts it]' \
+    '(-P --save-prod --no-save-prod)-P[Remove the dependency only from "dependencies"]' \
+    '(-P --save-prod --no-save-prod)--save-prod[Remove the dependency only from "dependencies"]' \
+    '(--no-save-prod -P --save-prod)--no-save-prod[(hidden) negate --save-prod]' \
+    '(-D --save-dev --no-save-dev)-D[Remove the dependency only from "devDependencies"]' \
+    '(-D --save-dev --no-save-dev)--save-dev[Remove the dependency only from "devDependencies"]' \
+    '(--no-save-dev -D --save-dev)--no-save-dev[(hidden) negate --save-dev]' \
+    '(-O --save-optional --no-save-optional)-O[Remove the dependency only from "optionalDependencies"]' \
+    '(-O --save-optional --no-save-optional)--save-optional[Remove the dependency only from "optionalDependencies"]' \
+    '(--no-save-optional -O --save-optional)--no-save-optional[(hidden) negate --save-optional]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Dependencies are not removed from `node_modules`. Only the manifest and `pnpm-lock.yaml` are updated]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(-g --global --no-global)-g[Remove the package from the global packages directory and unlink its bins]' \
+    '(-g --global --no-global)--global[Remove the package from the global packages directory and unlink its bins]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_patch] )) ||
+_pnpm__cmd_patch() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-d --edit-dir)-d+[The package that needs to be modified will be extracted to this directory]:dir:_files -/' \
+    '(-d --edit-dir)--edit-dir=[The package that needs to be modified will be extracted to this directory]:dir:_files -/' \
+    '(--ignore-existing --no-ignore-existing)--ignore-existing[Ignore existing patch files when patching]' \
+    '(--no-ignore-existing --ignore-existing)--no-ignore-existing[(hidden) negate --ignore-existing]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_patch_commit] )) ||
+_pnpm__cmd_patch_commit() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--patches-dir)--patches-dir=[The generated patch file will be saved to this directory]:dir:_files -/' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_files -/'
+}
+
+(( $+functions[_pnpm__cmd_patch_remove] )) ||
+_pnpm__cmd_patch_remove() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "pkg"'
+}
+
+(( $+functions[_pnpm__cmd_peers] )) ||
+_pnpm__cmd_peers() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--json --no-json)--json[]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words peers'
+}
+
+(( $+functions[_pnpm__cmd_set_script] )) ||
+_pnpm__cmd_set_script() {
+  local -a vopts=()
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    if (( CURRENT == at )); then
+      _pnpm__scripts
+    else
+      _message 'script command'
+    fi
+    return
+  fi
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_pnpm__scripts'
+}
+
+(( $+functions[_pnpm__cmd_test] )) ||
+_pnpm__cmd_test() {
+  # everything after the command name belongs to the script
+  _files
+}
+
+(( $+functions[_pnpm__cmd_run] )) ||
+_pnpm__cmd_run() {
+  local -a vopts=()
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    if (( CURRENT == at )); then
+      _pnpm__scripts
+    else
+      _files
+    fi
+    return
+  fi
+  local -a reply
+  _pnpm__globals '-s'
+  _arguments -s -S : $reply \
+    '(--if-present --no-if-present)--if-present[Avoid exiting with a non-zero exit code when the script is undefined]' \
+    '(--no-if-present --if-present)--no-if-present[(hidden) negate --if-present]' \
+    '(-s --sequential --no-sequential)-s[Run the specified scripts one by one]' \
+    '(-s --sequential --no-sequential)--sequential[Run the specified scripts one by one]' \
+    '(--no-sequential -s --sequential)--no-sequential[(hidden) negate --sequential]' \
+    '(--dry-run --no-dry-run)--dry-run[Print the task graph a recursive run would execute, without running anything]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--json --no-json)--json[With `--dry-run`, print the tasks and their resolved dependency edges as JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_pnpm__scripts'
+}
+
+(( $+functions[_pnpm__cmd_tasks_status] )) ||
+_pnpm__cmd_tasks_status() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "groups"'
+}
+
+(( $+functions[_pnpm__cmd_tasks] )) ||
+_pnpm__cmd_tasks() {
+  local curcontext=$curcontext state state_descr line ret=1
+  typeset -A opt_args
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S -C : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    ': :->sub' \
+    '*::arg:->args' && ret=0
+  case $state in
+    (sub)
+      local -a subcommands=(
+        'status:Show running and waiting tasks in concurrency groups'
+      )
+      _describe -t subcommands 'tasks subcommand' subcommands && ret=0
+      _message '(hidden) task arguments'
+      ;;
+    (args)
+      curcontext=${curcontext%:*:*}:pnpm-tasks-$words[1]:
+      case $words[1] in
+        (status) _pnpm__cmd_tasks_status && ret=0 ;;
+        (*) _files && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+(( $+functions[_pnpm__cmd_pipeline] )) ||
+_pnpm__cmd_pipeline() {
+  local -a reply
+  _pnpm__globals '--frozen-store' '--ignore-pnpmfile' '--ignore-scripts' '--merge-git-branch-lockfiles' '--no-frozen-store' '--no-ignore-pnpmfile' '--no-ignore-scripts' '--no-merge-git-branch-lockfiles' '--no-offline' '--no-prefer-frozen-lockfile' '--no-prefer-offline' '--no-trust-lockfile' '--offline' '--prefer-frozen-lockfile' '--prefer-offline' '--trust-lockfile'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[Include optionalDependencies even when the configured default excludes them]' \
+    '(--no-optional)--no-optional[Don'\''t install optionalDependencies]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--offline)--offline[Fail on a cache miss instead of fetching from the registry, using only packages already in the store]' \
+    '(--no-offline)--no-offline[Allow network fetches even when the configuration enables offline mode]' \
+    '(--prefer-offline)--prefer-offline[Prefer packages already in the cache over the network, even past their freshness window]' \
+    '(--no-prefer-offline)--no-prefer-offline[Don'\''t prefer cached packages even when the configuration enables it]' \
+    '(--frozen-lockfile)--frozen-lockfile[Don'\''t generate a lockfile, and fail if an update to it is needed. This setting is enabled by default in CI when a lockfile is present]' \
+    '(--no-frozen-lockfile)--no-frozen-lockfile[Allow the lockfile to be updated, overriding a `frozenLockfile: true` setting]' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--prefer-frozen-lockfile)--prefer-frozen-lockfile[Prefer the existing lockfile over re-resolving, even when the manifest may have changed]' \
+    '(--no-prefer-frozen-lockfile)--no-prefer-frozen-lockfile[Always re-resolve against the registry instead of preferring the existing lockfile]' \
+    '(--auto-dedupe)--auto-dedupe[Deduplicate compatible dependency versions during installation]' \
+    '(--no-auto-dedupe)--no-auto-dedupe[Disable automatic deduplication configured in pnpm-workspace.yaml]' \
+    '*--merge-git-branch-lockfiles-branch-pattern=[Glob patterns naming the branches that merge the per-branch lockfiles, so a mainline branch does not have to pass `--merge-git-branch-lockfi...]:merge-git-branch-lockfiles-branch-pattern: _pnpm__message "merge git branch lockfiles branch pattern"' \
+    '(--trust-lockfile)--trust-lockfile[Skip verifying the lockfile against supply-chain policies]' \
+    '(--no-trust-lockfile)--no-trust-lockfile[Verify the lockfile against supply-chain policies even when the configuration trusts it]' \
+    '(--network-concurrency)--network-concurrency=[Maximum number of concurrent network requests during install]:network-concurrency: _pnpm__message "number of requests"' \
+    '(--fetch-timeout)--fetch-timeout=[Per-request network timeout, in milliseconds]:fetch-timeout: _pnpm__message "fetch timeout"' \
+    '(--fetch-warn-timeout-ms)--fetch-warn-timeout-ms=[Warn when a registry metadata request takes longer than this many milliseconds]:fetch-warn-timeout-ms: _pnpm__message "fetch warn timeout ms"' \
+    '(--fetch-min-speed-ki-bps)--fetch-min-speed-ki-bps=[Warn when a tarball download'\''s average speed is below this many KiB/s]:fetch-min-speed-ki-bps: _pnpm__message "fetch min speed ki bps"' \
+    '(--user-agent)--user-agent=[`User-Agent` header to send on registry requests]:user-agent: _pnpm__message "user agent"' \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server to offload resolution and file fetching to. `node_modules` is still linked locally from the server-produced lockfile]:pnpr-server:_urls' \
+    '(--no-runtime)--no-runtime[Don'\''t install runtime dependencies (`node`, `deno`, `bun`)]' \
+    '(--node-linker)--node-linker=[Which node linker to use: `isolated` (the default, a symlinked store), `hoisted` (a flat `node_modules`), or `pnp` (Plug'\''n'\''Play)]:node-linker:(isolated hoisted pnp)' \
+    '(--frozen-store)--frozen-store[Open the store read-only and skip all store writes. For installing against a store on a read-only filesystem (e.g.]' \
+    '(--no-frozen-store)--no-frozen-store[Allow store writes even when the configuration enables the read-only store]' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during this install, appended to `allowBuilds`]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '(--no-cache)--no-cache[Run every task without reading or writing cached results or Cargo snapshots]' \
+    '(--base)--base=[The git ref the affected selection diffs against (its merge base with HEAD). Overrides the `pipelineBase` setting]:base: _pnpm__message "git ref"' \
+    '(--repo)--repo=[The repository the watch agent polls and builds — a URL or a local path, anything git accepts as a remote]:repo:_urls' \
+    '(--branch)--branch=[The branch the watch agent follows]:name: _pnpm__message "branch name"' \
+    '(--interval)--interval=[Seconds between polls of the watched repository]:seconds: _pnpm__message "seconds"' \
+    '(--report-to)--report-to=[Publish the run to this pnpr server instead of the `pnprServer` setting — which also drives install offloading, so a server that only stores...]:url:_urls' \
+    '(-P --prod --no-prod)-P[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(-P --prod --no-prod)--prod[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '--production[(alias for --prod) Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(-D --dev --no-dev)--dev[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only update `pnpm-lock.yaml`. Don'\''t download packages or write `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--fix-lockfile --no-fix-lockfile)--fix-lockfile[Repair broken lockfile entries by re-resolving their metadata while preserving compatible locked versions]' \
+    '(--no-fix-lockfile --fix-lockfile)--no-fix-lockfile[(hidden) negate --fix-lockfile]' \
+    '(--ignore-manifest-check --no-ignore-manifest-check)--ignore-manifest-check[Skip the check that `pnpm-lock.yaml` is up to date with `package.json` under `--frozen-lockfile`.]' \
+    '(--no-ignore-manifest-check --ignore-manifest-check)--no-ignore-manifest-check[(hidden) negate --ignore-manifest-check]' \
+    '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--merge-git-branch-lockfiles[Fold every per-branch lockfile (`pnpm-lock.<branch>.yaml`, written under the `gitBranchLockfile` setting) into `pnpm-lock.yaml` and delete t...]' \
+    '(--no-merge-git-branch-lockfiles --merge-git-branch-lockfiles)--no-merge-git-branch-lockfiles[(hidden) negate --merge-git-branch-lockfiles]' \
+    '(--update-checksums --no-update-checksums)--update-checksums[Refresh the integrity checksums in `pnpm-lock.yaml` from the registry. Cannot be combined with `--frozen-lockfile`]' \
+    '(--no-update-checksums --update-checksums)--no-update-checksums[(hidden) negate --update-checksums]' \
+    '(--dry-run --no-dry-run)--dry-run[Show what an install would change without writing anything to disk]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--force --no-force)--force[Reinstall every package the lockfile names: relink packages an earlier install already materialized, and install optional dependencies whose...]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--verify-deps-before-run-install --no-verify-deps-before-run-install)--verify-deps-before-run-install[(hidden) Run the install already requested by `verifyDepsBeforeRun` without independently short-circuiting it as up to date]' \
+    '(--no-verify-deps-before-run-install --verify-deps-before-run-install)--no-verify-deps-before-run-install[(hidden) negate --verify-deps-before-run-install]' \
+    '(--json --no-json)--json[With `--dry-run`, print the tasks and their resolved dependency edges as JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(--full --no-full)--full[Run the pipeline over every workspace project instead of the affected-since-base selection]' \
+    '(--no-full --full)--no-full[(hidden) negate --full]' \
+    '(--watch --no-watch)--watch[Watch a git repository and run the pipeline for every new revision of a branch, instead of running once against the current directory]' \
+    '(--no-watch --watch)--no-watch[(hidden) negate --watch]' \
+    '(--once --no-once)--once[With `--watch`: poll once, build if there is a new revision, and exit]' \
+    '(--no-once --once)--no-once[(hidden) negate --once]' \
+    '(--report --no-report)--report[Publish the run'\''s summary and event stream to the configured pnpr server (the `pnprServer` setting) once the run settles]' \
+    '(--no-report --report)--no-report[(hidden) negate --report]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "name"'
+}
+
+(( $+functions[_pnpm__cmd_exec] )) ||
+_pnpm__cmd_exec() {
+  local -a vopts=()
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    shift $(( at - 1 )) words; (( CURRENT -= at - 1 ))
+    _normal
+    return
+  fi
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-c --shell-mode --no-shell-mode)-c[Run the command inside of a shell. Uses `/bin/sh` on UNIX and `cmd.exe` on Windows]' \
+    '(-c --shell-mode --no-shell-mode)--shell-mode[Run the command inside of a shell. Uses `/bin/sh` on UNIX and `cmd.exe` on Windows]' \
+    '(--no-shell-mode -c --shell-mode)--no-shell-mode[(hidden) negate --shell-mode]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_command_names -e'
+}
+
+(( $+functions[_pnpm__cmd_dlx] )) ||
+_pnpm__cmd_dlx() {
+  local -a vopts=('--package' '--allow-build' '--cpu' '--os' '--libc')
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    if (( CURRENT == at )); then
+      _message 'package or command to run'
+    else
+      _files
+    fi
+    return
+  fi
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-v[Print the pnpm version]' \
+    '(- *)--version[Print the pnpm version]' \
+    '*--package=[The package to install before running the command. May be repeated. When omitted, the command name is the package]:package: _pnpm__message "package"' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during the dlx install. May be repeated]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '*--cpu=[CPU architectures whose platform-tagged optional dependencies the dlx install should keep. Repeat or comma-separate for multiple]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-tagged optional dependencies the dlx install should keep]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families (`glibc`, `musl`) whose platform-tagged optional dependencies the dlx install should keep]:libc:(current glibc musl)' \
+    '(-c --shell-mode --no-shell-mode)-c[Run the command inside of a shell. Uses `/bin/sh` on UNIX and `cmd.exe` on Windows]' \
+    '(-c --shell-mode --no-shell-mode)--shell-mode[Run the command inside of a shell. Uses `/bin/sh` on UNIX and `cmd.exe` on Windows]' \
+    '(--no-shell-mode -c --shell-mode)--no-shell-mode[(hidden) negate --shell-mode]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "package or command to run"'
+}
+
+(( $+functions[_pnpm__cmd_create] )) ||
+_pnpm__cmd_create() {
+  local -a vopts=('--allow-build' '--cpu' '--os' '--libc')
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    if (( CURRENT == at )); then
+      _message 'create-* starter kit (e.g. vite, next-app)'
+    else
+      _files
+    fi
+    return
+  fi
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during the install. May be repeated]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '*--cpu=[CPU architectures whose platform-tagged optional dependencies the install should keep. Repeat or comma-separate for multiple]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-tagged optional dependencies the install should keep]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families (`glibc`, `musl`) whose platform-tagged optional dependencies the install should keep]:libc:(current glibc musl)' \
+    '(-c --shell-mode --no-shell-mode)-c[Run the command inside of a shell. Uses `/bin/sh` on UNIX and `cmd.exe` on Windows]' \
+    '(-c --shell-mode --no-shell-mode)--shell-mode[Run the command inside of a shell. Uses `/bin/sh` on UNIX and `cmd.exe` on Windows]' \
+    '(--no-shell-mode -c --shell-mode)--no-shell-mode[(hidden) negate --shell-mode]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "create-* starter kit"'
+}
+
+(( $+functions[_pnpm__cmd_completion] )) ||
+_pnpm__cmd_completion() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :(bash fish pwsh zsh)'
+}
+
+(( $+functions[_pnpm__cmd_start] )) ||
+_pnpm__cmd_start() {
+  # everything after the command name belongs to the script
+  _files
+}
+
+(( $+functions[_pnpm__cmd_stop] )) ||
+_pnpm__cmd_stop() {
+  # everything after the command name belongs to the script
+  _files
+}
+
+(( $+functions[_pnpm__cmd_restart] )) ||
+_pnpm__cmd_restart() {
+  local -a vopts=()
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    _files
+    return
+  fi
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--if-present --no-if-present)--if-present[Avoid exiting with a non-zero exit code when a script is undefined]' \
+    '(--no-if-present --if-present)--no-if-present[(hidden) negate --if-present]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_files'
+}
+
+(( $+functions[_pnpm__cmd_find_hash] )) ||
+_pnpm__cmd_find_hash() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "hash"'
+}
+
+(( $+functions[_pnpm__cmd_runtime] )) ||
+_pnpm__cmd_runtime() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-g --global --no-global)-g[Install the runtime globally]' \
+    '(-g --global --no-global)--global[Install the runtime globally]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(-D --save-dev --no-save-dev)-D[Save the runtime to `devEngines.runtime`. This is the default]' \
+    '(-D --save-dev --no-save-dev)--save-dev[Save the runtime to `devEngines.runtime`. This is the default]' \
+    '(--no-save-dev -D --save-dev)--no-save-dev[(hidden) negate --save-dev]' \
+    '(-P --save-prod --no-save-prod)-P[Save the runtime to `engines.runtime`]' \
+    '(-P --save-prod --no-save-prod)--save-prod[Save the runtime to `engines.runtime`]' \
+    '(--no-save-prod -P --save-prod)--no-save-prod[(hidden) negate --save-prod]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words runtime'
+}
+
+(( $+functions[_pnpm__cmd_env] )) ||
+_pnpm__cmd_env() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-g --global --no-global)-g[Manage Node.js versions globally]' \
+    '(-g --global --no-global)--global[Manage Node.js versions globally]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(--remote --no-remote)--remote[(hidden) Accepted for surface parity with pnpm, which declares the option but never reads it]' \
+    '(--no-remote --remote)--no-remote[(hidden) negate --remote]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words env'
+}
+
+(( $+functions[_pnpm__cmd_shim] )) ||
+_pnpm__cmd_shim() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words shim'
+}
+
+(( $+functions[_pnpm__cmd_bin] )) ||
+_pnpm__cmd_bin() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-g --global --no-global)-g[Print the global executables directory]' \
+    '(-g --global --no-global)--global[Print the global executables directory]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_clean] )) ||
+_pnpm__cmd_clean() {
+  local -a reply
+  _pnpm__globals '--lockfile' '--no-lockfile'
+  _arguments -s -S : $reply \
+    '(-l --lockfile --no-lockfile)-l[Also remove `pnpm-lock.yaml` files]' \
+    '(-l --lockfile --no-lockfile)--lockfile[Also remove `pnpm-lock.yaml` files]' \
+    '(--no-lockfile -l --lockfile)--no-lockfile[(hidden) negate --lockfile]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_purge] )) ||
+_pnpm__cmd_purge() {
+  local -a reply
+  _pnpm__globals '--lockfile' '--no-lockfile'
+  _arguments -s -S : $reply \
+    '(-l --lockfile --no-lockfile)-l[Also remove `pnpm-lock.yaml` files]' \
+    '(-l --lockfile --no-lockfile)--lockfile[Also remove `pnpm-lock.yaml` files]' \
+    '(--no-lockfile -l --lockfile)--no-lockfile[(hidden) negate --lockfile]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_ci] )) ||
+_pnpm__cmd_ci() {
+  local -a reply
+  _pnpm__globals '--frozen-store' '--ignore-pnpmfile' '--ignore-scripts' '--lockfile' '--merge-git-branch-lockfiles' '--no-frozen-store' '--no-ignore-pnpmfile' '--no-ignore-scripts' '--no-lockfile' '--no-merge-git-branch-lockfiles' '--no-offline' '--no-prefer-frozen-lockfile' '--no-prefer-offline' '--no-trust-lockfile' '--offline' '--prefer-frozen-lockfile' '--prefer-offline' '--trust-lockfile'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[Include optionalDependencies even when the configured default excludes them]' \
+    '(--no-optional)--no-optional[Don'\''t install optionalDependencies]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--offline)--offline[Fail on a cache miss instead of fetching from the registry, using only packages already in the store]' \
+    '(--no-offline)--no-offline[Allow network fetches even when the configuration enables offline mode]' \
+    '(--prefer-offline)--prefer-offline[Prefer packages already in the cache over the network, even past their freshness window]' \
+    '(--no-prefer-offline)--no-prefer-offline[Don'\''t prefer cached packages even when the configuration enables it]' \
+    '(--frozen-lockfile)--frozen-lockfile[Don'\''t generate a lockfile, and fail if an update to it is needed. This setting is enabled by default in CI when a lockfile is present]' \
+    '(--no-frozen-lockfile)--no-frozen-lockfile[Allow the lockfile to be updated, overriding a `frozenLockfile: true` setting]' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--prefer-frozen-lockfile)--prefer-frozen-lockfile[Prefer the existing lockfile over re-resolving, even when the manifest may have changed]' \
+    '(--no-prefer-frozen-lockfile)--no-prefer-frozen-lockfile[Always re-resolve against the registry instead of preferring the existing lockfile]' \
+    '(--auto-dedupe)--auto-dedupe[Deduplicate compatible dependency versions during installation]' \
+    '(--no-auto-dedupe)--no-auto-dedupe[Disable automatic deduplication configured in pnpm-workspace.yaml]' \
+    '*--merge-git-branch-lockfiles-branch-pattern=[Glob patterns naming the branches that merge the per-branch lockfiles, so a mainline branch does not have to pass `--merge-git-branch-lockfi...]:merge-git-branch-lockfiles-branch-pattern: _pnpm__message "merge git branch lockfiles branch pattern"' \
+    '(--trust-lockfile)--trust-lockfile[Skip verifying the lockfile against supply-chain policies]' \
+    '(--no-trust-lockfile)--no-trust-lockfile[Verify the lockfile against supply-chain policies even when the configuration trusts it]' \
+    '(--network-concurrency)--network-concurrency=[Maximum number of concurrent network requests during install]:network-concurrency: _pnpm__message "number of requests"' \
+    '(--fetch-timeout)--fetch-timeout=[Per-request network timeout, in milliseconds]:fetch-timeout: _pnpm__message "fetch timeout"' \
+    '(--fetch-warn-timeout-ms)--fetch-warn-timeout-ms=[Warn when a registry metadata request takes longer than this many milliseconds]:fetch-warn-timeout-ms: _pnpm__message "fetch warn timeout ms"' \
+    '(--fetch-min-speed-ki-bps)--fetch-min-speed-ki-bps=[Warn when a tarball download'\''s average speed is below this many KiB/s]:fetch-min-speed-ki-bps: _pnpm__message "fetch min speed ki bps"' \
+    '(--user-agent)--user-agent=[`User-Agent` header to send on registry requests]:user-agent: _pnpm__message "user agent"' \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server to offload resolution and file fetching to. `node_modules` is still linked locally from the server-produced lockfile]:pnpr-server:_urls' \
+    '(--no-runtime)--no-runtime[Don'\''t install runtime dependencies (`node`, `deno`, `bun`)]' \
+    '(--node-linker)--node-linker=[Which node linker to use: `isolated` (the default, a symlinked store), `hoisted` (a flat `node_modules`), or `pnp` (Plug'\''n'\''Play)]:node-linker:(isolated hoisted pnp)' \
+    '(--frozen-store)--frozen-store[Open the store read-only and skip all store writes. For installing against a store on a read-only filesystem (e.g.]' \
+    '(--no-frozen-store)--no-frozen-store[Allow store writes even when the configuration enables the read-only store]' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during this install, appended to `allowBuilds`]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '(-P --prod --no-prod)-P[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(-P --prod --no-prod)--prod[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '--production[(alias for --prod) Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(-D --dev --no-dev)--dev[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only update `pnpm-lock.yaml`. Don'\''t download packages or write `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--fix-lockfile --no-fix-lockfile)--fix-lockfile[Repair broken lockfile entries by re-resolving their metadata while preserving compatible locked versions]' \
+    '(--no-fix-lockfile --fix-lockfile)--no-fix-lockfile[(hidden) negate --fix-lockfile]' \
+    '(--ignore-manifest-check --no-ignore-manifest-check)--ignore-manifest-check[Skip the check that `pnpm-lock.yaml` is up to date with `package.json` under `--frozen-lockfile`.]' \
+    '(--no-ignore-manifest-check --ignore-manifest-check)--no-ignore-manifest-check[(hidden) negate --ignore-manifest-check]' \
+    '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--merge-git-branch-lockfiles[Fold every per-branch lockfile (`pnpm-lock.<branch>.yaml`, written under the `gitBranchLockfile` setting) into `pnpm-lock.yaml` and delete t...]' \
+    '(--no-merge-git-branch-lockfiles --merge-git-branch-lockfiles)--no-merge-git-branch-lockfiles[(hidden) negate --merge-git-branch-lockfiles]' \
+    '(--update-checksums --no-update-checksums)--update-checksums[Refresh the integrity checksums in `pnpm-lock.yaml` from the registry. Cannot be combined with `--frozen-lockfile`]' \
+    '(--no-update-checksums --update-checksums)--no-update-checksums[(hidden) negate --update-checksums]' \
+    '(--dry-run --no-dry-run)--dry-run[Show what an install would change without writing anything to disk]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--force --no-force)--force[Reinstall every package the lockfile names: relink packages an earlier install already materialized, and install optional dependencies whose...]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--verify-deps-before-run-install --no-verify-deps-before-run-install)--verify-deps-before-run-install[(hidden) Run the install already requested by `verifyDepsBeforeRun` without independently short-circuiting it as up to date]' \
+    '(--no-verify-deps-before-run-install --verify-deps-before-run-install)--no-verify-deps-before-run-install[(hidden) negate --verify-deps-before-run-install]' \
+    '(-l --lockfile --no-lockfile)-l[Also remove `pnpm-lock.yaml` files]' \
+    '(-l --lockfile --no-lockfile)--lockfile[Also remove `pnpm-lock.yaml` files]' \
+    '(--no-lockfile -l --lockfile)--no-lockfile[(hidden) negate --lockfile]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_root] )) ||
+_pnpm__cmd_root() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-g --global --no-global)-g[Print the global packages directory]' \
+    '(-g --global --no-global)--global[Print the global packages directory]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_prefix] )) ||
+_pnpm__cmd_prefix() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-g --global --no-global)-g[Print the global prefix]' \
+    '(-g --global --no-global)--global[Print the global prefix]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_config_set] )) ||
+_pnpm__cmd_config_set() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__config_keys' \
+    '2: : _pnpm__message "value"'
+}
+
+(( $+functions[_pnpm__cmd_config_get] )) ||
+_pnpm__cmd_config_get() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__config_keys'
+}
+
+(( $+functions[_pnpm__cmd_config_delete] )) ||
+_pnpm__cmd_config_delete() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__config_keys'
+}
+
+(( $+functions[_pnpm__cmd_config_list] )) ||
+_pnpm__cmd_config_list() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_config] )) ||
+_pnpm__cmd_config() {
+  local curcontext=$curcontext state state_descr line ret=1
+  typeset -A opt_args
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S -C : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    ': :->sub' \
+    '*::arg:->args' && ret=0
+  case $state in
+    (sub)
+      local -a subcommands=(
+        'set:Set the config key to the value provided'
+        'get:Print the config value for the provided key'
+        'delete:Remove the config key from the config file'
+        'list:Show all the config settings'
+      )
+      _describe -t subcommands 'config subcommand' subcommands && ret=0
+      ;;
+    (args)
+      curcontext=${curcontext%:*:*}:pnpm-config-$words[1]:
+      case $words[1] in
+        (set) _pnpm__cmd_config_set && ret=0 ;;
+        (get) _pnpm__cmd_config_get && ret=0 ;;
+        (delete) _pnpm__cmd_config_delete && ret=0 ;;
+        (list) _pnpm__cmd_config_list && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+(( $+functions[_pnpm__cmd_get] )) ||
+_pnpm__cmd_get() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__config_keys'
+}
+
+(( $+functions[_pnpm__cmd_set] )) ||
+_pnpm__cmd_set() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__config_keys' \
+    '2: : _pnpm__message "value"'
+}
+
+(( $+functions[_pnpm__cmd_pkg_get] )) ||
+_pnpm__cmd_pkg_get() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "keys"'
+}
+
+(( $+functions[_pnpm__cmd_pkg_set] )) ||
+_pnpm__cmd_pkg_set() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "pairs"'
+}
+
+(( $+functions[_pnpm__cmd_pkg_delete] )) ||
+_pnpm__cmd_pkg_delete() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "keys"'
+}
+
+(( $+functions[_pnpm__cmd_pkg_fix] )) ||
+_pnpm__cmd_pkg_fix() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_pkg] )) ||
+_pnpm__cmd_pkg() {
+  local curcontext=$curcontext state state_descr line ret=1
+  typeset -A opt_args
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S -C : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    ': :->sub' \
+    '*::arg:->args' && ret=0
+  case $state in
+    (sub)
+      local -a subcommands=(
+        'get:Retrieves a value from package.json'
+        'set:Sets a value in package.json'
+        'delete:Deletes a key from package.json'
+        'fix:Auto corrects common errors in package.json'
+      )
+      _describe -t subcommands 'pkg subcommand' subcommands && ret=0
+      ;;
+    (args)
+      curcontext=${curcontext%:*:*}:pnpm-pkg-$words[1]:
+      case $words[1] in
+        (get) _pnpm__cmd_pkg_get && ret=0 ;;
+        (set) _pnpm__cmd_pkg_set && ret=0 ;;
+        (delete) _pnpm__cmd_pkg_delete && ret=0 ;;
+        (fix) _pnpm__cmd_pkg_fix && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+(( $+functions[_pnpm__cmd_pack_app] )) ||
+_pnpm__cmd_pack_app() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--entry)--entry=[Path to the CJS entry file to embed in the executable]:entry:_files' \
+    '*-t+[Target to build for. May be specified multiple times.]:target:(linux-x64 linux-x64-musl linux-arm64 linux-arm64-musl darwin-x64 darwin-arm64 win32-x64 win32-arm64)' \
+    '*--target=[Target to build for. May be specified multiple times.]:target:(linux-x64 linux-x64-musl linux-arm64 linux-arm64-musl darwin-x64 darwin-arm64 win32-x64 win32-arm64)' \
+    '(--runtime)--runtime=[Runtime to embed, as a `<name>@<version>` spec (e.g. `node@25`, `node@25.5.0`). Only `node` is supported, and the version must be >= v25.5.]:runtime: _pnpm__message "runtime spec (node@<version>)"' \
+    '(-o --output-dir)-o+[Output directory for the built executables. Defaults to `dist-app`]:output-dir:_files -/' \
+    '(-o --output-dir)--output-dir=[Output directory for the built executables. Defaults to `dist-app`]:output-dir:_files -/' \
+    '(--output-name)--output-name=[Name for the output executable (without extension). Defaults to the unscoped package name]:output-name: _pnpm__message "output name"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: :_files'
+}
+
+(( $+functions[_pnpm__cmd_store_status] )) ||
+_pnpm__cmd_store_status() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_store_add] )) ||
+_pnpm__cmd_store_add() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "packages"'
+}
+
+(( $+functions[_pnpm__cmd_store_prune] )) ||
+_pnpm__cmd_store_prune() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_store_path] )) ||
+_pnpm__cmd_store_path() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_store] )) ||
+_pnpm__cmd_store() {
+  local curcontext=$curcontext state state_descr line ret=1
+  typeset -A opt_args
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S -C : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    ': :->sub' \
+    '*::arg:->args' && ret=0
+  case $state in
+    (sub)
+      local -a subcommands=(
+        'status:Checks for modified packages in the store. Returns exit code 0 if the content of the package is the same as it was at the time of unpacking'
+        'add:Functionally equivalent to pnpm add, except this adds new packages to the store directly without modifying any projects or files outside of...'
+        'prune:Removes unreferenced packages from the store. Unreferenced packages are packages that are not used by any projects on the system.'
+        'path:Returns the path to the active store directory'
+      )
+      _describe -t subcommands 'store subcommand' subcommands && ret=0
+      ;;
+    (args)
+      curcontext=${curcontext%:*:*}:pnpm-store-$words[1]:
+      case $words[1] in
+        (status) _pnpm__cmd_store_status && ret=0 ;;
+        (add) _pnpm__cmd_store_add && ret=0 ;;
+        (prune) _pnpm__cmd_store_prune && ret=0 ;;
+        (path) _pnpm__cmd_store_path && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+(( $+functions[_pnpm__cmd_cache_list] )) ||
+_pnpm__cmd_cache_list() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "packages"'
+}
+
+(( $+functions[_pnpm__cmd_cache_list_registries] )) ||
+_pnpm__cmd_cache_list_registries() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_cache_path] )) ||
+_pnpm__cmd_cache_path() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_cache_view] )) ||
+_pnpm__cmd_cache_view() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "package"'
+}
+
+(( $+functions[_pnpm__cmd_cache_delete] )) ||
+_pnpm__cmd_cache_delete() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "packages"'
+}
+
+(( $+functions[_pnpm__cmd_cache_prune] )) ||
+_pnpm__cmd_cache_prune() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--dry-run --no-dry-run)--dry-run[Lists what would be deleted without removing anything]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_cache] )) ||
+_pnpm__cmd_cache() {
+  local curcontext=$curcontext state state_descr line ret=1
+  typeset -A opt_args
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S -C : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    ': :->sub' \
+    '*::arg:->args' && ret=0
+  case $state in
+    (sub)
+      local -a subcommands=(
+        'list:Lists the available packages metadata cache. Supports filtering by glob'
+        'list-registries:Lists all registries that have their metadata cache locally'
+        'path:Prints the path to the cache directory'
+        'view:Views information from the specified package'\''s cache'
+        'delete:Deletes metadata cache for the specified package(s). Supports patterns'
+        'prune:Deletes registry metadata cache directories that this version of pnpm can no longer read'
+      )
+      _describe -t subcommands 'cache subcommand' subcommands && ret=0
+      ;;
+    (args)
+      curcontext=${curcontext%:*:*}:pnpm-cache-$words[1]:
+      case $words[1] in
+        (list) _pnpm__cmd_cache_list && ret=0 ;;
+        (list-registries) _pnpm__cmd_cache_list_registries && ret=0 ;;
+        (path) _pnpm__cmd_cache_path && ret=0 ;;
+        (view) _pnpm__cmd_cache_view && ret=0 ;;
+        (delete) _pnpm__cmd_cache_delete && ret=0 ;;
+        (prune) _pnpm__cmd_cache_prune && ret=0 ;;
+      esac
+      ;;
+  esac
+  return ret
+}
+
+(( $+functions[_pnpm__cmd_cat_file] )) ||
+_pnpm__cmd_cat_file() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "hash"'
+}
+
+(( $+functions[_pnpm__cmd_cat_index] )) ||
+_pnpm__cmd_cat_index() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "wanted dependency"'
+}
+
+(( $+functions[_pnpm__cmd_ignored_builds] )) ||
+_pnpm__cmd_ignored_builds() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_approve_builds] )) ||
+_pnpm__cmd_approve_builds() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--all --no-all)--all[Approve all pending dependencies without interactive prompts]' \
+    '(--no-all --all)--no-all[(hidden) negate --all]' \
+    '(-g --global --no-global)-g[Approve builds for globally installed packages]' \
+    '(-g --global --no-global)--global[Approve builds for globally installed packages]' \
+    '(--no-global -g --global)--no-global[(hidden) negate --global]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__message "packages"'
+}
+
+(( $+functions[_pnpm__cmd_link] )) ||
+_pnpm__cmd_link() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: :_files -/'
+}
+
+(( $+functions[_pnpm__cmd_import] )) ||
+_pnpm__cmd_import() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server. Accepted for symmetry with the other installing commands; `pnpm import` always resolves locally]:pnpr-server:_urls' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_dedupe] )) ||
+_pnpm__cmd_dedupe() {
+  local -a reply
+  _pnpm__globals '--ignore-pnpmfile' '--ignore-scripts' '--no-ignore-pnpmfile' '--no-ignore-scripts' '--no-offline' '--no-prefer-offline' '--offline' '--prefer-offline'
+  _arguments -s -S : $reply \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--offline)--offline[Fail on a cache miss instead of fetching from the registry, using only packages already in the store]' \
+    '(--no-offline)--no-offline[Allow network fetches even when the configuration enables offline mode]' \
+    '(--prefer-offline)--prefer-offline[Prefer packages already in the cache over the network, even past their freshness window]' \
+    '(--no-prefer-offline)--no-prefer-offline[Don'\''t prefer cached packages even when the configuration enables it]' \
+    '(--check --no-check)--check[Check if running dedupe would result in changes without installing packages or editing the lockfile]' \
+    '(--no-check --check)--no-check[(hidden) negate --check]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only update `pnpm-lock.yaml`. Don'\''t download packages or write `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_deploy] )) ||
+_pnpm__cmd_deploy() {
+  local -a reply
+  _pnpm__globals '--frozen-store' '--ignore-pnpmfile' '--ignore-scripts' '--merge-git-branch-lockfiles' '--no-frozen-store' '--no-ignore-pnpmfile' '--no-ignore-scripts' '--no-merge-git-branch-lockfiles' '--no-offline' '--no-prefer-frozen-lockfile' '--no-prefer-offline' '--no-trust-lockfile' '--offline' '--prefer-frozen-lockfile' '--prefer-offline' '--trust-lockfile'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[Include optionalDependencies even when the configured default excludes them]' \
+    '(--no-optional)--no-optional[Don'\''t install optionalDependencies]' \
+    '*--cpu=[CPU architectures whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:cpu:(current x64 arm64 ia32 arm ppc64 s390x riscv64 loong64 mips64el)' \
+    '*--os=[Operating systems whose platform-specific optional dependencies should be installed. Repeat or comma-separate for multiple values]:os:(current darwin linux win32 freebsd openbsd netbsd sunos aix android)' \
+    '*--libc=[libc families whose platform-specific optional dependencies should be installed (`glibc`, `musl`)]:libc:(current glibc musl)' \
+    '(--ignore-scripts)--ignore-scripts[Don'\''t run lifecycle scripts of the project or its dependencies]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even when the configuration disables them]' \
+    '(--offline)--offline[Fail on a cache miss instead of fetching from the registry, using only packages already in the store]' \
+    '(--no-offline)--no-offline[Allow network fetches even when the configuration enables offline mode]' \
+    '(--prefer-offline)--prefer-offline[Prefer packages already in the cache over the network, even past their freshness window]' \
+    '(--no-prefer-offline)--no-prefer-offline[Don'\''t prefer cached packages even when the configuration enables it]' \
+    '(--frozen-lockfile)--frozen-lockfile[Don'\''t generate a lockfile, and fail if an update to it is needed. This setting is enabled by default in CI when a lockfile is present]' \
+    '(--no-frozen-lockfile)--no-frozen-lockfile[Allow the lockfile to be updated, overriding a `frozenLockfile: true` setting]' \
+    '(--lockfile-dir)--lockfile-dir=[The directory in which `pnpm-lock.yaml` is created. Several projects may share a single lockfile]:dir:_files -/' \
+    '(--prefer-frozen-lockfile)--prefer-frozen-lockfile[Prefer the existing lockfile over re-resolving, even when the manifest may have changed]' \
+    '(--no-prefer-frozen-lockfile)--no-prefer-frozen-lockfile[Always re-resolve against the registry instead of preferring the existing lockfile]' \
+    '(--auto-dedupe)--auto-dedupe[Deduplicate compatible dependency versions during installation]' \
+    '(--no-auto-dedupe)--no-auto-dedupe[Disable automatic deduplication configured in pnpm-workspace.yaml]' \
+    '*--merge-git-branch-lockfiles-branch-pattern=[Glob patterns naming the branches that merge the per-branch lockfiles, so a mainline branch does not have to pass `--merge-git-branch-lockfi...]:merge-git-branch-lockfiles-branch-pattern: _pnpm__message "merge git branch lockfiles branch pattern"' \
+    '(--trust-lockfile)--trust-lockfile[Skip verifying the lockfile against supply-chain policies]' \
+    '(--no-trust-lockfile)--no-trust-lockfile[Verify the lockfile against supply-chain policies even when the configuration trusts it]' \
+    '(--network-concurrency)--network-concurrency=[Maximum number of concurrent network requests during install]:network-concurrency: _pnpm__message "number of requests"' \
+    '(--fetch-timeout)--fetch-timeout=[Per-request network timeout, in milliseconds]:fetch-timeout: _pnpm__message "fetch timeout"' \
+    '(--fetch-warn-timeout-ms)--fetch-warn-timeout-ms=[Warn when a registry metadata request takes longer than this many milliseconds]:fetch-warn-timeout-ms: _pnpm__message "fetch warn timeout ms"' \
+    '(--fetch-min-speed-ki-bps)--fetch-min-speed-ki-bps=[Warn when a tarball download'\''s average speed is below this many KiB/s]:fetch-min-speed-ki-bps: _pnpm__message "fetch min speed ki bps"' \
+    '(--user-agent)--user-agent=[`User-Agent` header to send on registry requests]:user-agent: _pnpm__message "user agent"' \
+    '(--pnpr-server)--pnpr-server=[URL of a pnpr server to offload resolution and file fetching to. `node_modules` is still linked locally from the server-produced lockfile]:pnpr-server:_urls' \
+    '(--no-runtime)--no-runtime[Don'\''t install runtime dependencies (`node`, `deno`, `bun`)]' \
+    '(--node-linker)--node-linker=[Which node linker to use: `isolated` (the default, a symlinked store), `hoisted` (a flat `node_modules`), or `pnp` (Plug'\''n'\''Play)]:node-linker:(isolated hoisted pnp)' \
+    '(--frozen-store)--frozen-store[Open the store read-only and skip all store writes. For installing against a store on a read-only filesystem (e.g.]' \
+    '(--no-frozen-store)--no-frozen-store[Allow store writes even when the configuration enables the read-only store]' \
+    '*--allow-build=[Package names allowed to run lifecycle (build) scripts during this install, appended to `allowBuilds`]:allow-build: _pnpm__message "package name (prefix ! to deny)"' \
+    '(-P --prod --no-prod)-P[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(-P --prod --no-prod)--prod[Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '--production[(alias for --prod) Install only production dependencies. devDependencies are skipped, and removed if already installed]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(-D --dev --no-dev)--dev[Install only devDependencies. Regular dependencies are skipped, and removed if already installed]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(--lockfile-only --no-lockfile-only)--lockfile-only[Only update `pnpm-lock.yaml`. Don'\''t download packages or write `node_modules`]' \
+    '(--no-lockfile-only --lockfile-only)--no-lockfile-only[(hidden) negate --lockfile-only]' \
+    '(--fix-lockfile --no-fix-lockfile)--fix-lockfile[Repair broken lockfile entries by re-resolving their metadata while preserving compatible locked versions]' \
+    '(--no-fix-lockfile --fix-lockfile)--no-fix-lockfile[(hidden) negate --fix-lockfile]' \
+    '(--ignore-manifest-check --no-ignore-manifest-check)--ignore-manifest-check[Skip the check that `pnpm-lock.yaml` is up to date with `package.json` under `--frozen-lockfile`.]' \
+    '(--no-ignore-manifest-check --ignore-manifest-check)--no-ignore-manifest-check[(hidden) negate --ignore-manifest-check]' \
+    '(--merge-git-branch-lockfiles --no-merge-git-branch-lockfiles)--merge-git-branch-lockfiles[Fold every per-branch lockfile (`pnpm-lock.<branch>.yaml`, written under the `gitBranchLockfile` setting) into `pnpm-lock.yaml` and delete t...]' \
+    '(--no-merge-git-branch-lockfiles --merge-git-branch-lockfiles)--no-merge-git-branch-lockfiles[(hidden) negate --merge-git-branch-lockfiles]' \
+    '(--update-checksums --no-update-checksums)--update-checksums[Refresh the integrity checksums in `pnpm-lock.yaml` from the registry. Cannot be combined with `--frozen-lockfile`]' \
+    '(--no-update-checksums --update-checksums)--no-update-checksums[(hidden) negate --update-checksums]' \
+    '(--dry-run --no-dry-run)--dry-run[Show what an install would change without writing anything to disk]' \
+    '(--no-dry-run --dry-run)--no-dry-run[(hidden) negate --dry-run]' \
+    '(--force --no-force)--force[Reinstall every package the lockfile names: relink packages an earlier install already materialized, and install optional dependencies whose...]' \
+    '(--no-force --force)--no-force[(hidden) negate --force]' \
+    '(--verify-deps-before-run-install --no-verify-deps-before-run-install)--verify-deps-before-run-install[(hidden) Run the install already requested by `verifyDepsBeforeRun` without independently short-circuiting it as up to date]' \
+    '(--no-verify-deps-before-run-install --verify-deps-before-run-install)--no-verify-deps-before-run-install[(hidden) negate --verify-deps-before-run-install]' \
+    '(--legacy --no-legacy)--legacy[Use the legacy deploy implementation]' \
+    '(--no-legacy --legacy)--no-legacy[(hidden) negate --legacy]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: :_files -/'
+}
+
+(( $+functions[_pnpm__cmd_prune] )) ||
+_pnpm__cmd_prune() {
+  local -a reply
+  _pnpm__globals '--ignore-scripts' '--no-ignore-scripts'
+  _arguments -s -S : $reply \
+    '(--optional)--optional[]' \
+    '(--no-optional)--no-optional[]' \
+    '(--ignore-scripts)--ignore-scripts[]' \
+    '(--no-ignore-scripts)--no-ignore-scripts[Run lifecycle scripts even if scripts are disabled by configuration]' \
+    '(-P --prod --no-prod)-P[]' \
+    '(-P --prod --no-prod)--prod[]' \
+    '--production[(alias for --prod) ]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[]' \
+    '(-D --dev --no-dev)--dev[]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_fetch] )) ||
+_pnpm__cmd_fetch() {
+  local -a reply
+  _pnpm__globals '--ignore-pnpmfile' '--no-ignore-pnpmfile'
+  _arguments -s -S : $reply \
+    '(-P --prod --no-prod)-P[]' \
+    '(-P --prod --no-prod)--prod[]' \
+    '--production[(alias for --prod) ]' \
+    '(--no-prod -P --prod)--no-prod[(hidden) negate --prod]' \
+    '(-D --dev --no-dev)-D[]' \
+    '(-D --dev --no-dev)--dev[]' \
+    '(--no-dev -D --dev)--no-dev[(hidden) negate --dev]' \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_unlink] )) ||
+_pnpm__cmd_unlink() {
+  local -a reply
+  _pnpm__globals '--ignore-pnpmfile' '--no-ignore-pnpmfile'
+  _arguments -s -S : $reply \
+    '(--ignore-pnpmfile --no-ignore-pnpmfile)--ignore-pnpmfile[Disable pnpm hooks defined in `.pnpmfile.cjs`, including the pnpmfiles of config dependencies]' \
+    '(--no-ignore-pnpmfile --ignore-pnpmfile)--no-ignore-pnpmfile[(hidden) negate --ignore-pnpmfile]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_docs] )) ||
+_pnpm__cmd_docs() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_repo] )) ||
+_pnpm__cmd_repo() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__dependencies'
+}
+
+(( $+functions[_pnpm__cmd_self_update] )) ||
+_pnpm__cmd_self_update() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: : _pnpm__message "pnpm version or dist-tag"'
+}
+
+(( $+functions[_pnpm__cmd_setup] )) ||
+_pnpm__cmd_setup() {
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(-f --force --no-force)-f[Override the PNPM_HOME env variable in case it already exists]' \
+    '(-f --force --no-force)--force[Override the PNPM_HOME env variable in case it already exists]' \
+    '(--no-force -f --force)--no-force[(hidden) negate --force]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_login] )) ||
+_pnpm__cmd_login() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The registry to log in to]:registry:_urls' \
+    '(--scope)--scope=[Associate the login token with a package scope and record the scope-to-registry mapping]:scope: _pnpm__message "@scope"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_team] )) ||
+_pnpm__cmd_team() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(--parseable --no-parseable)--parseable[Output parseable results (tab-separated)]' \
+    '(--no-parseable --parseable)--no-parseable[(hidden) negate --parseable]' \
+    '(--json --no-json)--json[Output results as JSON]' \
+    '(--no-json --json)--no-json[(hidden) negate --json]' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words team'
+}
+
+(( $+functions[_pnpm__cmd_owner] )) ||
+_pnpm__cmd_owner() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The base URL of the npm registry]:registry:_urls' \
+    '(--otp)--otp=[One-time password for registries that require two-factor authentication]:otp: _pnpm__message "otp"' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '*: : _pnpm__hand_words owner'
+}
+
+(( $+functions[_pnpm__cmd_logout] )) ||
+_pnpm__cmd_logout() {
+  local -a reply
+  _pnpm__globals '--registry'
+  _arguments -s -S : $reply \
+    '(--registry)--registry=[The registry to log out of]:registry:_urls' \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]'
+}
+
+(( $+functions[_pnpm__cmd_with] )) ||
+_pnpm__cmd_with() {
+  local -a vopts=()
+  local -i at
+  if _pnpm__passthrough_at vopts; then
+    at=$REPLY
+    if (( CURRENT == at )); then
+      _pnpm__with_spec
+    else
+      shift $(( at - 1 )) words; (( CURRENT -= at - 1 ))
+      _pnpm__root
+    fi
+    return
+  fi
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S : $reply \
+    '(- *)-h[Print help (see more with '\''--help'\'')]' \
+    '(- *)--help[Print help (see more with '\''--help'\'')]' \
+    '1: :_pnpm__with_spec'
+}
+
+(( $+functions[_pnpm__cmd_edit] )) ||
+_pnpm__cmd_edit() {
+  _message 'arguments (not implemented in pnpm; use the npm CLI)'
+}
+
+(( $+functions[_pnpm__cmd_profile] )) ||
+_pnpm__cmd_profile() {
+  _message 'arguments (not implemented in pnpm; use the npm CLI)'
+}
+
+(( $+functions[_pnpm__cmd_token] )) ||
+_pnpm__cmd_token() {
+  _message 'arguments (not implemented in pnpm; use the npm CLI)'
+}
+
+(( $+functions[_pnpm__cmd_xmas] )) ||
+_pnpm__cmd_xmas() {
+  _message 'arguments (not implemented in pnpm; use the npm CLI)'
+}
+
+
+(( $+functions[_pnpm__cmd_help] )) ||
+_pnpm__cmd_help() {
+  local -a subs
+  if (( CURRENT == 2 )); then
+    _describe -t commands 'pnpm command' _pnpm_commands
+  elif (( CURRENT == 3 )); then
+    case $words[2] in
+      (tasks) subs=('status:Show running and waiting tasks in concurrency groups') ;;
+      (config|c) subs=('set:Set the config key to the value provided' 'get:Print the config value for the provided key' 'delete:Remove the config key from the config file' 'list:Show all the config settings') ;;
+      (pkg) subs=('get:Retrieves a value from package.json' 'set:Sets a value in package.json' 'delete:Deletes a key from package.json' 'fix:Auto corrects common errors in package.json') ;;
+      (store) subs=('status:Checks for modified packages in the store. Returns exit code 0 if the content of the package is the same as it was at the time of unpacking' 'add:Functionally equivalent to pnpm add, except this adds new packages to the store directly without modifying any projects or files outside of...' 'prune:Removes unreferenced packages from the store. Unreferenced packages are packages that are not used by any projects on the system.' 'path:Returns the path to the active store directory') ;;
+      (cache) subs=('list:Lists the available packages metadata cache. Supports filtering by glob' 'list-registries:Lists all registries that have their metadata cache locally' 'path:Prints the path to the cache directory' 'view:Views information from the specified package'\''s cache' 'delete:Deletes metadata cache for the specified package(s). Supports patterns' 'prune:Deletes registry metadata cache directories that this version of pnpm can no longer read') ;;
+    esac
+    (( $#subs )) && _describe -t subcommands "$words[2] subcommand" subs
+  fi
+}
+
+(( $+functions[_pnpm__commands] )) ||
+_pnpm__commands() {
+  local -a hidden=('pm:(hidden) force the built-in command over a same-named script')
+  _alternative \
+    'commands:pnpm command: _describe -t commands "pnpm command" _pnpm_commands' \
+    'aliases:command alias: _describe -t aliases "command alias" _pnpm_command_aliases' \
+    'hidden-commands:hidden command: _describe -t hidden-commands "hidden command" hidden' \
+    'scripts:package script: _pnpm__scripts'
+}
+
+# The pnpm command line from $words[1] on, where $words[1] is the program name
+# or a prefix (`pm`, `recursive`, `with <version>`) standing in for it.
+(( $+functions[_pnpm__root] )) ||
+_pnpm__root() {
+  local curcontext=$curcontext state state_descr line ret=1
+  typeset -A opt_args
+  local -a reply
+  _pnpm__globals
+  _arguments -s -S -C : $reply $_pnpm_root_specs \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+  case $state in
+    (command) _pnpm__commands && ret=0 ;;
+    (args)
+      curcontext=${curcontext%:*:*}:pnpm-$words[1]:
+      _pnpm__dispatch && ret=0
+      ;;
+  esac
+  return ret
+}
+
+(( $+functions[_pnpm__dispatch] )) ||
+_pnpm__dispatch() {
+  case $words[1] in
+    (pm|recursive|multi|m) _pnpm__root ;;
+    (help) _pnpm__cmd_help ;;
+    (access) _pnpm__cmd_access ;;
+    (init) _pnpm__cmd_init ;;
+    (add) _pnpm__cmd_add ;;
+    (install|i) _pnpm__cmd_install ;;
+    (install-test|it) _pnpm__cmd_install_test ;;
+    (update|up|upgrade) _pnpm__cmd_update ;;
+    (outdated) _pnpm__cmd_outdated ;;
+    (audit) _pnpm__cmd_audit ;;
+    (change) _pnpm__cmd_change ;;
+    (version) _pnpm__cmd_version ;;
+    (lane) _pnpm__cmd_lane ;;
+    (bugs|issues) _pnpm__cmd_bugs ;;
+    (list|ls) _pnpm__cmd_list ;;
+    (ll|la) _pnpm__cmd_ll ;;
+    (licenses|licences) _pnpm__cmd_licenses ;;
+    (why) _pnpm__cmd_why ;;
+    (view|info|show|v) _pnpm__cmd_view ;;
+    (sbom) _pnpm__cmd_sbom ;;
+    (whoami) _pnpm__cmd_whoami ;;
+    (deprecate) _pnpm__cmd_deprecate ;;
+    (undeprecate) _pnpm__cmd_undeprecate ;;
+    (unpublish) _pnpm__cmd_unpublish ;;
+    (star) _pnpm__cmd_star ;;
+    (unstar) _pnpm__cmd_unstar ;;
+    (stars) _pnpm__cmd_stars ;;
+    (dist-tag|dist-tags) _pnpm__cmd_dist_tag ;;
+    (ping) _pnpm__cmd_ping ;;
+    (doctor) _pnpm__cmd_doctor ;;
+    (search|s|se|find) _pnpm__cmd_search ;;
+    (rebuild) _pnpm__cmd_rebuild ;;
+    (rb) _pnpm__cmd_rb ;;
+    (pack) _pnpm__cmd_pack ;;
+    (publish) _pnpm__cmd_publish ;;
+    (stage) _pnpm__cmd_stage ;;
+    (remove|uninstall|rm|un|uni) _pnpm__cmd_remove ;;
+    (patch) _pnpm__cmd_patch ;;
+    (patch-commit) _pnpm__cmd_patch_commit ;;
+    (patch-remove) _pnpm__cmd_patch_remove ;;
+    (peers) _pnpm__cmd_peers ;;
+    (set-script|ss) _pnpm__cmd_set_script ;;
+    (test|t|tst) _pnpm__cmd_test ;;
+    (run|run-script) _pnpm__cmd_run ;;
+    (tasks) _pnpm__cmd_tasks ;;
+    (pipeline) _pnpm__cmd_pipeline ;;
+    (exec) _pnpm__cmd_exec ;;
+    (dlx) _pnpm__cmd_dlx ;;
+    (create) _pnpm__cmd_create ;;
+    (completion) _pnpm__cmd_completion ;;
+    (start) _pnpm__cmd_start ;;
+    (stop) _pnpm__cmd_stop ;;
+    (restart) _pnpm__cmd_restart ;;
+    (find-hash) _pnpm__cmd_find_hash ;;
+    (runtime|rt) _pnpm__cmd_runtime ;;
+    (env) _pnpm__cmd_env ;;
+    (shim) _pnpm__cmd_shim ;;
+    (bin) _pnpm__cmd_bin ;;
+    (clean) _pnpm__cmd_clean ;;
+    (purge) _pnpm__cmd_purge ;;
+    (ci|clean-install|ic|install-clean) _pnpm__cmd_ci ;;
+    (root) _pnpm__cmd_root ;;
+    (prefix) _pnpm__cmd_prefix ;;
+    (config|c) _pnpm__cmd_config ;;
+    (get) _pnpm__cmd_get ;;
+    (set) _pnpm__cmd_set ;;
+    (pkg) _pnpm__cmd_pkg ;;
+    (pack-app) _pnpm__cmd_pack_app ;;
+    (store) _pnpm__cmd_store ;;
+    (cache) _pnpm__cmd_cache ;;
+    (cat-file) _pnpm__cmd_cat_file ;;
+    (cat-index) _pnpm__cmd_cat_index ;;
+    (ignored-builds) _pnpm__cmd_ignored_builds ;;
+    (approve-builds) _pnpm__cmd_approve_builds ;;
+    (link|ln) _pnpm__cmd_link ;;
+    (import) _pnpm__cmd_import ;;
+    (dedupe) _pnpm__cmd_dedupe ;;
+    (deploy) _pnpm__cmd_deploy ;;
+    (prune) _pnpm__cmd_prune ;;
+    (fetch) _pnpm__cmd_fetch ;;
+    (unlink|dislink) _pnpm__cmd_unlink ;;
+    (docs|home) _pnpm__cmd_docs ;;
+    (repo) _pnpm__cmd_repo ;;
+    (self-update) _pnpm__cmd_self_update ;;
+    (setup) _pnpm__cmd_setup ;;
+    (login|adduser) _pnpm__cmd_login ;;
+    (team) _pnpm__cmd_team ;;
+    (owner|owners) _pnpm__cmd_owner ;;
+    (logout) _pnpm__cmd_logout ;;
+    (with) _pnpm__cmd_with ;;
+    (edit) _pnpm__cmd_edit ;;
+    (profile) _pnpm__cmd_profile ;;
+    (token) _pnpm__cmd_token ;;
+    (xmas) _pnpm__cmd_xmas ;;
+    (*) _files ;;
+  esac
+}
+
+function _pnpm() {
+  local -a _pnpm_line_words
+  case $service in
+    (pnpx|pnx)
+      words=(pnpm dlx "${(@)words[2,-1]}")
+      (( CURRENT++ ))
+      ;;
+  esac
+  _pnpm_line_words=("${(@)words}")
+  _pnpm__root
+}
+
+_pnpm "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
