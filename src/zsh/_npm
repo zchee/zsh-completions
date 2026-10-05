@@ -1,0 +1,1708 @@
+#compdef npm
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# https://github.com/npm/cli
+#
+# npm 11.19.1
+#
+# Written against the Homebrew npm (/opt/homebrew/opt/node/bin/npm). npm 12
+# differs: 12.2.0 drops adduser, shrinkwrap, star, stars, unstar and the
+# add-user alias, and adds patch; regenerate from that package root to follow it.
+#
+# Generated from the installed package (lib/utils/cmd-list.js, the command
+# classes under lib/commands/, and @npmcli/config's definitions and shorthands),
+# then checked against `npm <command> --help` for every command and stage/trust
+# subcommand. Per-command positionals and the subcommand tables are written by
+# hand from each command's usage and exec() switch.
+#
+# An option is shown plainly where `npm <command> --help` prints it, and marked
+# "(hidden)" everywhere else. `-h` is plain everywhere and `-l` at the root,
+# because the root usage documents both. A short form the command's help leaves
+# out is hidden even when its long form is printed (`-D` on install).
+#
+# Hidden surface, every item confirmed against npm itself:
+#   * Config options: every config key is accepted as `--key` by every command
+#     (npm warns `Unknown cli config "--x"` for anything else), but each
+#     command's help prints only its own params.
+#   * `--no-<key>` for every boolean config key.
+#   * Shorthands from the config shorthands table: -d, -q, -s, --quiet,
+#     --silent, --verbose, --dd, --ddd (loglevel presets), --enjoy-by, --desc,
+#     --help, --iwr, --local, -n, --no, --porcelain, --readonly, --reg, --ws,
+#     -?, -H.
+#   * Deprecated config keys: also, cache-max, cache-min, cert, dev,
+#     global-style, init.author.email, init.author.name, init.author.url,
+#     init.license, init.module, init.version, key, legacy-bundling, only,
+#     optional, production, shrinkwrap.
+#   * trust github/gitlab/circleci/list/revoke: `--no-<flag>` for each of their
+#     own boolean options. Their own options (--file, --repository, --id, ...)
+#     exist only under trust and are scoped there.
+#   * Subcommand aliases from the exec() switches: cache rm, clear (clean) and
+#     check (verify); config rm, del (delete) and ls (list); dist-tag a, set, s
+#     (add), r, del, d, remove (rm) and l, sl, list (ls); install-scripts list
+#     (ls); org add (set); owner list (ls) and remove (rm); profile enable-tfa,
+#     enable2fa, enabletfa, disable-tfa, disable2fa, disabletfa; token ls
+#     (list) and rm, delete, remove (revoke).
+#   * Values: access set 2fa=none|publish|automation (same as mfa=), doctor
+#     ping (same check group as connection).
+#
+# Command aliases are listed by each command's own --help, so they are not
+# marked. Dispatched but deliberately not offered:
+#   * The misspellings innit, isnt, isnta, isntal, isntall, isntall-clean, hlep,
+#     udpate, rum, urn, ogr, sit and verison, and the pinned prefixes of install
+#     in, ins, inst, insta and instal.
+#   * Unique prefixes of command names (`npm conf get`): npm resolves them, and
+#     so does this file when dispatching, but they are not offered.
+# Not completed at all:
+#   * Prefixes of option names (`--par` for --parseable) and single-dash spellings
+#     of multi-letter shorthands (`-dd`, `-ws`, `-iwr`), which npm warns it will
+#     stop accepting.
+#   * `access ls`: npm's own completion offers it, but `npm access ls` fails with
+#     "ls is not a valid access command".
+#   * `trust gitlab --repo/--repository`: printed in that command's usage line,
+#     rejected by its parser ("Unknown flags: --repo").
+#   * Field names for `npm view <pkg> <field>` and package lists for deprecate
+#     and unpublish: npm completes these with a registry round-trip.
+#   * npx, which is a separate executable.
+#
+# Dynamic values are read locally: installed packages from node_modules (with
+# -g, from `npm root -g`), scripts, package.json fields and workspaces through
+# node, and help topics from npm's own man pages.
+#
+# -----------------------------------------------------------------------------
+
+# Every option npm accepts, keyed by the token typed on the command line.
+# Generated from @npmcli/config definitions and shorthands.
+typeset -gA _npm_option_specs
+_npm_option_specs=(
+  '--_auth' '(--_auth)--_auth=[A basic-auth string to use when authenticating against the npm registry]:_auth:'
+  '--access' '(--access)--access=[If you do not want your scoped package to be publicly viewable (and installable) set `--access=restricted`]:access:(restricted public private)'
+  '--all' '(--all --no-all -a)--all[Show or act on all packages, not just the ones your project directly depends on]'
+  '--no-all' '(--all --no-all -a)--no-all[negate --all: Show or act on all packages, not just the ones your project directly depends on]'
+  '--allow-same-version' '(--allow-same-version --no-allow-same-version)--allow-same-version[Prevents throwing an error when `npm version` is used to set the new version to the same value as the...]'
+  '--no-allow-same-version' '(--allow-same-version --no-allow-same-version)--no-allow-same-version[negate --allow-same-version: Prevents throwing an error when `npm version` is used to set the new version to the same value as the...]'
+  '--allow-directory' '(--allow-directory)--allow-directory=[Limits the ability for npm to install dependencies from directories]:allow-directory:(all none root)'
+  '--allow-file' '(--allow-file)--allow-file=[Limits the ability for npm to install dependencies from tarball files]:allow-file:(all none root)'
+  '--allow-git' '(--allow-git)--allow-git=[Limits the ability for npm to fetch dependencies from git references]:allow-git:(all none root)'
+  '--allow-remote' '(--allow-remote)--allow-remote=[Limits the ability for npm to fetch dependencies from urls]:allow-remote:(all none root)'
+  '--allow-scripts' '*--allow-scripts=[Comma-separated list of packages whose install-time lifecycle scripts (`preinstall`, `install`,...]:package-list:'
+  '--also' '(--also)--also=[deprecated: When set to `dev` or `development`, this is an alias for `--include=dev`]:also:(dev development)'
+  '--audit' '(--audit --no-audit)--audit[When "true" submit audit reports alongside the current npm command to the default registry and all...]'
+  '--no-audit' '(--audit --no-audit)--no-audit[negate --audit: When "true" submit audit reports alongside the current npm command to the default registry and all...]'
+  '--audit-level' '(--audit-level)--audit-level=[The minimum level of vulnerability for `npm audit` to exit with a non-zero exit code]:audit-level:(info low moderate high critical none)'
+  '--auth-type' '(--auth-type)--auth-type=[What authentication strategy to use with `login`]:auth-type:(legacy web)'
+  '--before' '(--before --enjoy-by)--before=[If passed to `npm install`, will rebuild the npm tree such that only versions that were available **on or...]:date:'
+  '--bin-links' '(--bin-links --no-bin-links)--bin-links[Tells npm to create symlinks (or `.cmd` shims on Windows) for package executables]'
+  '--no-bin-links' '(--bin-links --no-bin-links)--no-bin-links[negate --bin-links: Tells npm to create symlinks (or `.cmd` shims on Windows) for package executables]'
+  '--browser' '(--browser --no-browser)--browser=-[The browser that is called by npm commands to open websites]::browser: _npm__browsers'
+  '--no-browser' '(--browser --no-browser)--no-browser[negate --browser: The browser that is called by npm commands to open websites]'
+  '--bypass-2fa' '(--bypass-2fa --no-bypass-2fa)--bypass-2fa[When creating a Granular Access Token with `npm token create`, setting this to true will allow the token...]'
+  '--no-bypass-2fa' '(--bypass-2fa --no-bypass-2fa)--no-bypass-2fa[negate --bypass-2fa: When creating a Granular Access Token with `npm token create`, setting this to true will allow the token...]'
+  '--ca' '*--ca=[The Certificate Authority signing certificate that is trusted for SSL connections to the registry]:ca:'
+  '--cache' '(--cache)--cache=[The location of npm'\''s cache directory]:cache:_files -/'
+  '--cache-max' '(--cache-max)--cache-max=[deprecated: `--cache-max=0` is an alias for `--prefer-online`]:number:'
+  '--cache-min' '(--cache-min)--cache-min=[deprecated: `--cache-min=9999 (or bigger)` is an alias for `--prefer-offline`]:number:'
+  '--cafile' '(--cafile)--cafile=[A path to a file containing one or multiple Certificate Authority signing certificates]:cafile:_files'
+  '--call' '(--call -c)--call=[Optional companion option for `npm exec`, `npx` that allows for specifying a custom command to be run...]:call:'
+  '--cert' '(--cert)--cert=[deprecated: A client certificate to pass when accessing the registry]:cert:'
+  '--cidr' '*--cidr=[This is a list of CIDR address to be used when configuring limited access tokens with the `npm token...]:cidr:'
+  '--color' '(--color --no-color)--color=-[If false, never shows colors]::color:(always true false)'
+  '--no-color' '(--color --no-color)--no-color[negate --color: If false, never shows colors]'
+  '--commit-hooks' '(--commit-hooks --no-commit-hooks)--commit-hooks[Run git commit hooks when using the `npm version` command]'
+  '--no-commit-hooks' '(--commit-hooks --no-commit-hooks)--no-commit-hooks[negate --commit-hooks: Run git commit hooks when using the `npm version` command]'
+  '--cpu' '(--cpu)--cpu=[Override CPU architecture of native modules to install]:cpu:(arm arm64 ia32 loong64 mips mipsel ppc ppc64 riscv64 s390 s390x x64)'
+  '--dangerously-allow-all-scripts' '(--dangerously-allow-all-scripts --no-dangerously-allow-all-scripts)--dangerously-allow-all-scripts[If `true`, bypass the `allowScripts` policy entirely and run every dependency install script regardless of...]'
+  '--no-dangerously-allow-all-scripts' '(--dangerously-allow-all-scripts --no-dangerously-allow-all-scripts)--no-dangerously-allow-all-scripts[negate --dangerously-allow-all-scripts: If `true`, bypass the `allowScripts` policy entirely and run every dependency install script regardless of...]'
+  '--depth' '(--depth)--depth=[The depth to go when recursing packages for `npm ls`]:depth:'
+  '--description' '(--description --no-description --desc)--description[Show the description in `npm search`]'
+  '--no-description' '(--description --no-description --desc)--no-description[negate --description: Show the description in `npm search`]'
+  '--dev' '(--dev --no-dev)--dev[deprecated: Alias for `--include=dev`]'
+  '--no-dev' '(--dev --no-dev)--no-dev[deprecated: negate --dev: Alias for `--include=dev`]'
+  '--diff' '*--diff=[Define arguments to compare in `npm diff`]:package-spec:'
+  '--diff-ignore-all-space' '(--diff-ignore-all-space --no-diff-ignore-all-space)--diff-ignore-all-space[Ignore whitespace when comparing lines in `npm diff`]'
+  '--no-diff-ignore-all-space' '(--diff-ignore-all-space --no-diff-ignore-all-space)--no-diff-ignore-all-space[negate --diff-ignore-all-space: Ignore whitespace when comparing lines in `npm diff`]'
+  '--diff-name-only' '(--diff-name-only --no-diff-name-only)--diff-name-only[Prints only filenames when using `npm diff`]'
+  '--no-diff-name-only' '(--diff-name-only --no-diff-name-only)--no-diff-name-only[negate --diff-name-only: Prints only filenames when using `npm diff`]'
+  '--diff-no-prefix' '(--diff-no-prefix --no-diff-no-prefix)--diff-no-prefix[Do not show any source or destination prefix in `npm diff` output]'
+  '--no-diff-no-prefix' '(--diff-no-prefix --no-diff-no-prefix)--no-diff-no-prefix[negate --diff-no-prefix: Do not show any source or destination prefix in `npm diff` output]'
+  '--diff-dst-prefix' '(--diff-dst-prefix)--diff-dst-prefix=[Destination prefix to be used in `npm diff` output]:path:'
+  '--diff-src-prefix' '(--diff-src-prefix)--diff-src-prefix=[Source prefix to be used in `npm diff` output]:path:'
+  '--diff-text' '(--diff-text --no-diff-text)--diff-text[Treat all files as text in `npm diff`]'
+  '--no-diff-text' '(--diff-text --no-diff-text)--no-diff-text[negate --diff-text: Treat all files as text in `npm diff`]'
+  '--diff-unified' '(--diff-unified)--diff-unified=[The number of lines of context to print in `npm diff`]:number:'
+  '--dry-run' '(--dry-run --no-dry-run)--dry-run[Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]'
+  '--no-dry-run' '(--dry-run --no-dry-run)--no-dry-run[negate --dry-run: Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]'
+  '--editor' '(--editor)--editor=[The command to run for `npm edit` and `npm config edit`]:editor:_command_names -e'
+  '--engine-strict' '(--engine-strict --no-engine-strict)--engine-strict[If set to true, then npm will stubbornly refuse to install (or even consider installing) any package that...]'
+  '--no-engine-strict' '(--engine-strict --no-engine-strict)--no-engine-strict[negate --engine-strict: If set to true, then npm will stubbornly refuse to install (or even consider installing) any package that...]'
+  '--expect-result-count' '(--expect-result-count --expect-results --no-expect-results)--expect-result-count=[Tells to expect a specific number of results from the command]:count:'
+  '--expect-results' '(--expect-results --no-expect-results --expect-result-count)--expect-results[Tells npm whether or not to expect results from the command]'
+  '--no-expect-results' '(--expect-results --no-expect-results --expect-result-count)--no-expect-results[negate --expect-results: Tells npm whether or not to expect results from the command]'
+  '--expires' '(--expires)--expires=[When creating a Granular Access Token with `npm token create`, this sets the expiration in days]:expires:'
+  '--fetch-retries' '(--fetch-retries)--fetch-retries=[The "retries" config for the `retry` module to use when fetching packages from the registry]:number:'
+  '--fetch-retry-factor' '(--fetch-retry-factor)--fetch-retry-factor=[The "factor" config for the `retry` module to use when fetching packages]:number:'
+  '--fetch-retry-maxtimeout' '(--fetch-retry-maxtimeout)--fetch-retry-maxtimeout=[The "maxTimeout" config for the `retry` module to use when fetching packages]:number:'
+  '--fetch-retry-mintimeout' '(--fetch-retry-mintimeout)--fetch-retry-mintimeout=[The "minTimeout" config for the `retry` module to use when fetching packages]:number:'
+  '--fetch-timeout' '(--fetch-timeout)--fetch-timeout=[The maximum amount of time to wait for HTTP requests to complete]:number:'
+  '--force' '(--force --no-force -f)--force[Removes various protections against unfortunate side effects, common mistakes, unnecessary performance...]'
+  '--no-force' '(--force --no-force -f)--no-force[negate --force: Removes various protections against unfortunate side effects, common mistakes, unnecessary performance...]'
+  '--foreground-scripts' '(--foreground-scripts --no-foreground-scripts)--foreground-scripts[Run all build scripts (ie, `preinstall`, `install`, and `postinstall`) scripts for installed packages in...]'
+  '--no-foreground-scripts' '(--foreground-scripts --no-foreground-scripts)--no-foreground-scripts[negate --foreground-scripts: Run all build scripts (ie, `preinstall`, `install`, and `postinstall`) scripts for installed packages in...]'
+  '--format-package-lock' '(--format-package-lock --no-format-package-lock)--format-package-lock[Format `package-lock.json` or `npm-shrinkwrap.json` as a human readable file]'
+  '--no-format-package-lock' '(--format-package-lock --no-format-package-lock)--no-format-package-lock[negate --format-package-lock: Format `package-lock.json` or `npm-shrinkwrap.json` as a human readable file]'
+  '--fund' '(--fund --no-fund)--fund[When "true" displays the message at the end of each `npm install` acknowledging the number of dependencies...]'
+  '--no-fund' '(--fund --no-fund)--no-fund[negate --fund: When "true" displays the message at the end of each `npm install` acknowledging the number of dependencies...]'
+  '--git' '(--git)--git=[The command to use for git commands]:git:_command_names -e'
+  '--git-tag-version' '(--git-tag-version --no-git-tag-version)--git-tag-version[Tag the commit when using the `npm version` command]'
+  '--no-git-tag-version' '(--git-tag-version --no-git-tag-version)--no-git-tag-version[negate --git-tag-version: Tag the commit when using the `npm version` command]'
+  '--global' '(--global --no-global --local -g)--global[Operates in "global" mode, so that packages are installed into the `prefix` folder instead of the current...]'
+  '--no-global' '(--global --no-global --local -g)--no-global[negate --global: Operates in "global" mode, so that packages are installed into the `prefix` folder instead of the current...]'
+  '--globalconfig' '(--globalconfig)--globalconfig=[The config file to read for global config options]:globalconfig:_files'
+  '--global-style' '(--global-style --no-global-style)--global-style[deprecated: Only install direct dependencies in the top level `node_modules`, but hoist on deeper dependencies]'
+  '--no-global-style' '(--global-style --no-global-style)--no-global-style[deprecated: negate --global-style: Only install direct dependencies in the top level `node_modules`, but hoist on deeper dependencies]'
+  '--heading' '(--heading)--heading=[The string that starts all the debugging log output]:heading:'
+  '--https-proxy' '(--https-proxy)--https-proxy=[A proxy to use for outgoing https requests]:https-proxy:_urls'
+  '--if-present' '(--if-present --no-if-present)--if-present[If true, npm will not exit with an error code when `run` is invoked for a script that isn'\''t defined in the...]'
+  '--no-if-present' '(--if-present --no-if-present)--no-if-present[negate --if-present: If true, npm will not exit with an error code when `run` is invoked for a script that isn'\''t defined in the...]'
+  '--ignore-scripts' '(--ignore-scripts --no-ignore-scripts)--ignore-scripts[If true, npm does not run scripts specified in package.json files]'
+  '--no-ignore-scripts' '(--ignore-scripts --no-ignore-scripts)--no-ignore-scripts[negate --ignore-scripts: If true, npm does not run scripts specified in package.json files]'
+  '--include' '*--include=[Option that allows for defining which types of dependencies to install]:include:(prod dev optional peer)'
+  '--include-staged' '(--include-staged --no-include-staged)--include-staged[Allow installing "staged" published packages, as defined by \[npm RFC PR...]'
+  '--no-include-staged' '(--include-staged --no-include-staged)--no-include-staged[negate --include-staged: Allow installing "staged" published packages, as defined by \[npm RFC PR...]'
+  '--include-workspace-root' '(--include-workspace-root --no-include-workspace-root --iwr)--include-workspace-root[Include the workspace root when workspaces are enabled for a command]'
+  '--no-include-workspace-root' '(--include-workspace-root --no-include-workspace-root --iwr)--no-include-workspace-root[negate --include-workspace-root: Include the workspace root when workspaces are enabled for a command]'
+  '--include-attestations' '(--include-attestations --no-include-attestations)--include-attestations[When used with `npm audit signatures --json`, includes the full sigstore attestation bundles in the JSON...]'
+  '--no-include-attestations' '(--include-attestations --no-include-attestations)--no-include-attestations[negate --include-attestations: When used with `npm audit signatures --json`, includes the full sigstore attestation bundles in the JSON...]'
+  '--init-author-email' '(--init-author-email)--init-author-email=[The value `npm init` should use by default for the package author'\''s email]:email:'
+  '--init-author-name' '(--init-author-name)--init-author-name=[The value `npm init` should use by default for the package author'\''s name]:name:'
+  '--init-author-url' '(--init-author-url)--init-author-url=[The value `npm init` should use by default for the package author'\''s homepage]:url:_urls'
+  '--init-license' '(--init-license)--init-license=[The value `npm init` should use by default for the package license]:license:'
+  '--init-module' '(--init-module)--init-module=[A module that will be loaded by the `npm init` command]:module:_files'
+  '--init-type' '(--init-type)--init-type=[The value that `npm init` should use by default for the package.json type field]:type:'
+  '--init-version' '(--init-version)--init-version=[The value that `npm init` should use by default for the package version number, if not already set in...]:version:'
+  '--init-private' '(--init-private --no-init-private)--init-private[The value `npm init` should use by default for the package'\''s private flag]'
+  '--no-init-private' '(--init-private --no-init-private)--no-init-private[negate --init-private: The value `npm init` should use by default for the package'\''s private flag]'
+  '--init.author.email' '(--init.author.email)--init.author.email=[deprecated: Alias for `--init-author-email`]:init.author.email:'
+  '--init.author.name' '(--init.author.name)--init.author.name=[deprecated: Alias for `--init-author-name`]:init.author.name:'
+  '--init.author.url' '(--init.author.url)--init.author.url=[deprecated: Alias for `--init-author-url`]:init.author.url:_urls'
+  '--init.license' '(--init.license)--init.license=[deprecated: Alias for `--init-license`]:init.license:'
+  '--init.module' '(--init.module)--init.module=[deprecated: Alias for `--init-module`]:init.module:_files'
+  '--init.version' '(--init.version)--init.version=[deprecated: Alias for `--init-version`]:init.version:'
+  '--install-links' '(--install-links --no-install-links)--install-links[When set file: protocol dependencies will be packed and installed as regular dependencies instead of...]'
+  '--no-install-links' '(--install-links --no-install-links)--no-install-links[negate --install-links: When set file: protocol dependencies will be packed and installed as regular dependencies instead of...]'
+  '--install-strategy' '(--install-strategy)--install-strategy=[Sets the strategy for installing packages in node_modules]:install-strategy:(hoisted nested shallow linked)'
+  '--json' '(--json --no-json)--json[Whether or not to output JSON data, rather than the normal output]'
+  '--no-json' '(--json --no-json)--no-json[negate --json: Whether or not to output JSON data, rather than the normal output]'
+  '--key' '(--key)--key=[deprecated: A client key to pass when accessing the registry]:key:'
+  '--legacy-bundling' '(--legacy-bundling --no-legacy-bundling)--legacy-bundling[deprecated: Instead of hoisting package installs in `node_modules`, install packages in the same manner that they are...]'
+  '--no-legacy-bundling' '(--legacy-bundling --no-legacy-bundling)--no-legacy-bundling[deprecated: negate --legacy-bundling: Instead of hoisting package installs in `node_modules`, install packages in the same manner that they are...]'
+  '--legacy-peer-deps' '(--legacy-peer-deps --no-legacy-peer-deps)--legacy-peer-deps[Causes npm to completely ignore `peerDependencies` when building a package tree, as in npm versions 3...]'
+  '--no-legacy-peer-deps' '(--legacy-peer-deps --no-legacy-peer-deps)--no-legacy-peer-deps[negate --legacy-peer-deps: Causes npm to completely ignore `peerDependencies` when building a package tree, as in npm versions 3...]'
+  '--libc' '(--libc)--libc=[Override libc of native modules to install]:libc:(glibc musl)'
+  '--link' '(--link --no-link)--link[Used with `npm ls`, limiting output to only those packages that are linked]'
+  '--no-link' '(--link --no-link)--no-link[negate --link: Used with `npm ls`, limiting output to only those packages that are linked]'
+  '--local-address' '(--local-address)--local-address=[The IP address of the local interface to use when making connections to the npm registry]:local-address: _npm__local_addresses'
+  '--location' '(--location -L)--location=[When passed to `npm config` this refers to which config file to use]:location:(global user project)'
+  '--lockfile-version' '(--lockfile-version)--lockfile-version=[Set the lockfile format version to be used in package-lock.json and npm-shrinkwrap-json files]:lockfile-version:(1 2 3)'
+  '--loglevel' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)--loglevel=[What level of logs to report]:loglevel:(silent error warn notice http info verbose silly)'
+  '--logs-dir' '(--logs-dir)--logs-dir=[The location of npm'\''s log directory]:logs-dir:_files -/'
+  '--logs-max' '(--logs-max)--logs-max=[The maximum number of log files to store]:number:'
+  '--long' '(--long --no-long -l)--long[Show extended information in `ls`, `search`, and `help-search`]'
+  '--no-long' '(--long --no-long -l)--no-long[negate --long: Show extended information in `ls`, `search`, and `help-search`]'
+  '--name' '(--name)--name=[When creating a Granular Access Token with `npm token create`, this sets the name/description for the token]:name:'
+  '--maxsockets' '(--maxsockets)--maxsockets=[The maximum number of connections to use per origin (protocol/host/port combination)]:number:'
+  '--message' '(--message -m)--message=[Commit message which is used by `npm version` when creating version commit]:message:'
+  '--min-release-age' '(--min-release-age)--min-release-age=[If set, npm will build the npm tree such that only versions that were available more than the given number...]:days:'
+  '--min-release-age-exclude' '*--min-release-age-exclude=[A list of package names or `minimatch` glob patterns that are exempt from the `min-release-age` (and...]:pkg|glob:'
+  '--node-gyp' '(--node-gyp)--node-gyp=[This is the location of the "node-gyp" bin]:node-gyp:_command_names -e'
+  '--node-options' '(--node-options)--node-options=[Options to pass through to Node.js via the `NODE_OPTIONS` environment variable]:node-options:'
+  '--noproxy' '*--noproxy=[Domain extensions that should bypass any proxies]:noproxy:'
+  '--offline' '(--offline --no-offline)--offline[Force offline mode: no network requests will be done during install]'
+  '--no-offline' '(--offline --no-offline)--no-offline[negate --offline: Force offline mode: no network requests will be done during install]'
+  '--omit' '*--omit=[Dependency types to omit from the installation tree on disk]:omit:(dev optional peer)'
+  '--omit-lockfile-registry-resolved' '(--omit-lockfile-registry-resolved --no-omit-lockfile-registry-resolved)--omit-lockfile-registry-resolved[This option causes npm to create lock files without a `resolved` key for registry dependencies]'
+  '--no-omit-lockfile-registry-resolved' '(--omit-lockfile-registry-resolved --no-omit-lockfile-registry-resolved)--no-omit-lockfile-registry-resolved[negate --omit-lockfile-registry-resolved: This option causes npm to create lock files without a `resolved` key for registry dependencies]'
+  '--only' '(--only)--only=[deprecated: When set to `prod` or `production`, this is an alias for `--omit=dev`]:only:(prod production)'
+  '--orgs' '*--orgs=[When creating a Granular Access Token with `npm token create`, this limits the token access to specific...]:orgs:'
+  '--optional' '(--optional --no-optional)--optional[deprecated: Alias for --include=optional or --omit=optional]'
+  '--no-optional' '(--optional --no-optional)--no-optional[deprecated: negate --optional: Alias for --include=optional or --omit=optional]'
+  '--os' '(--os)--os=[Override OS of native modules to install]:os:(aix android darwin freebsd linux openbsd sunos win32)'
+  '--otp' '(--otp)--otp=[This is a one-time password from a two-factor authenticator]:otp:'
+  '--package' '*--package=[The package or packages to install for \[`npm exec`\](/commands/npm-exec)]:package-spec:'
+  '--package-lock' '(--package-lock --no-package-lock)--package-lock[If set to false, then ignore `package-lock.json` files when installing]'
+  '--no-package-lock' '(--package-lock --no-package-lock)--no-package-lock[negate --package-lock: If set to false, then ignore `package-lock.json` files when installing]'
+  '--package-lock-only' '(--package-lock-only --no-package-lock-only)--package-lock-only[If set to true, the current operation will only use the `package-lock.json`, ignoring `node_modules`]'
+  '--no-package-lock-only' '(--package-lock-only --no-package-lock-only)--no-package-lock-only[negate --package-lock-only: If set to true, the current operation will only use the `package-lock.json`, ignoring `node_modules`]'
+  '--pack-destination' '(--pack-destination)--pack-destination=[Directory in which `npm pack` will save tarballs]:pack-destination:'
+  '--packages' '*--packages=[When creating a Granular Access Token with `npm token create`, this limits the token access to specific...]:packages:'
+  '--parseable' '(--parseable --no-parseable --porcelain -p)--parseable[Output parseable results from commands that write to standard output]'
+  '--no-parseable' '(--parseable --no-parseable --porcelain -p)--no-parseable[negate --parseable: Output parseable results from commands that write to standard output]'
+  '--allow-scripts-pending' '(--allow-scripts-pending --no-allow-scripts-pending)--allow-scripts-pending[List packages with install scripts that are not yet covered by the `allowScripts` policy, without...]'
+  '--no-allow-scripts-pending' '(--allow-scripts-pending --no-allow-scripts-pending)--no-allow-scripts-pending[negate --allow-scripts-pending: List packages with install scripts that are not yet covered by the `allowScripts` policy, without...]'
+  '--allow-scripts-pin' '(--allow-scripts-pin --no-allow-scripts-pin)--allow-scripts-pin[Write pinned (`pkg@version`) entries when approving install scripts]'
+  '--no-allow-scripts-pin' '(--allow-scripts-pin --no-allow-scripts-pin)--no-allow-scripts-pin[negate --allow-scripts-pin: Write pinned (`pkg@version`) entries when approving install scripts]'
+  '--prefer-dedupe' '(--prefer-dedupe --no-prefer-dedupe)--prefer-dedupe[Prefer to deduplicate packages if possible, rather than choosing a newer version of a dependency]'
+  '--no-prefer-dedupe' '(--prefer-dedupe --no-prefer-dedupe)--no-prefer-dedupe[negate --prefer-dedupe: Prefer to deduplicate packages if possible, rather than choosing a newer version of a dependency]'
+  '--prefer-offline' '(--prefer-offline --no-prefer-offline)--prefer-offline[If true, staleness checks for cached data will be bypassed, but missing data will be requested from the server]'
+  '--no-prefer-offline' '(--prefer-offline --no-prefer-offline)--no-prefer-offline[negate --prefer-offline: If true, staleness checks for cached data will be bypassed, but missing data will be requested from the server]'
+  '--prefer-online' '(--prefer-online --no-prefer-online)--prefer-online[If true, staleness checks for cached data will be forced, making the CLI look for updates immediately even...]'
+  '--no-prefer-online' '(--prefer-online --no-prefer-online)--no-prefer-online[negate --prefer-online: If true, staleness checks for cached data will be forced, making the CLI look for updates immediately even...]'
+  '--prefix' '(--prefix -C)--prefix=[The location to install global items]:prefix:_files -/'
+  '--preid' '(--preid)--preid=[The "prerelease identifier" to use as a prefix for the "prerelease" part of a semver]:prerelease-id:'
+  '--production' '(--production --no-production)--production[deprecated: Alias for `--omit=dev`]'
+  '--no-production' '(--production --no-production)--no-production[deprecated: negate --production: Alias for `--omit=dev`]'
+  '--progress' '(--progress --no-progress)--progress[When set to `true`, npm will display a progress bar during time intensive operations, if `process.stderr`...]'
+  '--no-progress' '(--progress --no-progress)--no-progress[negate --progress: When set to `true`, npm will display a progress bar during time intensive operations, if `process.stderr`...]'
+  '--provenance' '(--provenance --no-provenance --provenance-file)--provenance[When publishing from a supported cloud CI/CD system, the package will be publicly linked to where it was...]'
+  '--no-provenance' '(--provenance --no-provenance --provenance-file)--no-provenance[negate --provenance: When publishing from a supported cloud CI/CD system, the package will be publicly linked to where it was...]'
+  '--provenance-file' '(--provenance-file --provenance --no-provenance)--provenance-file=[When publishing, the provenance bundle at the given path will be used]:file:_files'
+  '--proxy' '(--proxy --no-proxy)--proxy=[A proxy to use for outgoing http requests]:proxy:_urls'
+  '--no-proxy' '(--proxy --no-proxy)--no-proxy[negate --proxy: A proxy to use for outgoing http requests]'
+  '--read-only' '(--read-only --no-read-only --readonly)--read-only[This is used to mark a token as unable to publish when configuring limited access tokens with the `npm...]'
+  '--no-read-only' '(--read-only --no-read-only --readonly)--no-read-only[negate --read-only: This is used to mark a token as unable to publish when configuring limited access tokens with the `npm...]'
+  '--rebuild-bundle' '(--rebuild-bundle --no-rebuild-bundle)--rebuild-bundle[Rebuild bundled dependencies after installation]'
+  '--no-rebuild-bundle' '(--rebuild-bundle --no-rebuild-bundle)--no-rebuild-bundle[negate --rebuild-bundle: Rebuild bundled dependencies after installation]'
+  '--registry' '(--registry --reg)--registry=[The base URL of the npm registry]:registry:_urls'
+  '--replace-registry-host' '(--replace-registry-host)--replace-registry-host=[Defines behavior for replacing the registry host in a lockfile with the configured registry]:npmjs|never|always | hostname | url:(npmjs never always)'
+  '--save' '(--save --no-save -S)--save[Save installed packages to a `package.json` file as dependencies]'
+  '--no-save' '(--save --no-save -S)--no-save[negate --save: Save installed packages to a `package.json` file as dependencies]'
+  '--save-bundle' '(--save-bundle --no-save-bundle -B)--save-bundle[If a package would be saved at install time by the use of `--save`, `--save-dev`, or `--save-optional`,...]'
+  '--no-save-bundle' '(--save-bundle --no-save-bundle -B)--no-save-bundle[negate --save-bundle: If a package would be saved at install time by the use of `--save`, `--save-dev`, or `--save-optional`,...]'
+  '--save-dev' '(--save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-peer --no-save-peer --save-prod --no-save-prod -P)--save-dev[Save installed packages to a package.json file as `devDependencies`]'
+  '--no-save-dev' '(--save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-peer --no-save-peer --save-prod --no-save-prod -P)--no-save-dev[negate --save-dev: Save installed packages to a package.json file as `devDependencies`]'
+  '--save-exact' '(--save-exact --no-save-exact -E)--save-exact[Dependencies saved to package.json will be configured with an exact version rather than using npm'\''s...]'
+  '--no-save-exact' '(--save-exact --no-save-exact -E)--no-save-exact[negate --save-exact: Dependencies saved to package.json will be configured with an exact version rather than using npm'\''s...]'
+  '--save-optional' '(--save-optional --no-save-optional -O --save-dev --no-save-dev -D --save-peer --no-save-peer --save-prod --no-save-prod -P)--save-optional[Save installed packages to a package.json file as `optionalDependencies`]'
+  '--no-save-optional' '(--save-optional --no-save-optional -O --save-dev --no-save-dev -D --save-peer --no-save-peer --save-prod --no-save-prod -P)--no-save-optional[negate --save-optional: Save installed packages to a package.json file as `optionalDependencies`]'
+  '--save-peer' '(--save-peer --no-save-peer --save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-prod --no-save-prod -P)--save-peer[Save installed packages to a package.json file as `peerDependencies`]'
+  '--no-save-peer' '(--save-peer --no-save-peer --save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-prod --no-save-prod -P)--no-save-peer[negate --save-peer: Save installed packages to a package.json file as `peerDependencies`]'
+  '--save-prefix' '(--save-prefix)--save-prefix=[Configure how versions of packages installed to a package.json file via `--save` or `--save-dev` get prefixed]:save-prefix:'
+  '--save-prod' '(--save-prod --no-save-prod -P --save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-peer --no-save-peer)--save-prod[Save installed packages into `dependencies` specifically]'
+  '--no-save-prod' '(--save-prod --no-save-prod -P --save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-peer --no-save-peer)--no-save-prod[negate --save-prod: Save installed packages into `dependencies` specifically]'
+  '--sbom-format' '(--sbom-format)--sbom-format=[SBOM format to use when generating SBOMs]:sbom-format:(cyclonedx spdx)'
+  '--sbom-type' '(--sbom-type)--sbom-type=[The type of package described by the generated SBOM]:sbom-type:(library application framework)'
+  '--scope' '(--scope)--scope=[Associate an operation with a scope for a scoped registry]:@scope:'
+  '--scopes' '*--scopes=[When creating a Granular Access Token with `npm token create`, this limits the token access to specific scopes]:scopes:'
+  '--packages-all' '(--packages-all --no-packages-all)--packages-all[When creating a Granular Access Token with `npm token create`, grants the token access to all packages...]'
+  '--no-packages-all' '(--packages-all --no-packages-all)--no-packages-all[negate --packages-all: When creating a Granular Access Token with `npm token create`, grants the token access to all packages...]'
+  '--packages-and-scopes-permission' '(--packages-and-scopes-permission)--packages-and-scopes-permission=[When creating a Granular Access Token with `npm token create`, sets the permission level for packages and...]:packages-and-scopes-permission:(read-only read-write no-access)'
+  '--orgs-permission' '(--orgs-permission)--orgs-permission=[When creating a Granular Access Token with `npm token create`, sets the permission level for organizations]:orgs-permission:(read-only read-write no-access)'
+  '--password' '(--password)--password=[Password for authentication]:password:'
+  '--token-description' '(--token-description)--token-description=[Description text for the token when using `npm token create`]:token-description:'
+  '--script-shell' '(--script-shell)--script-shell=[The shell to use for scripts run with the `npm exec`, `npm run` and `npm init <package-spec>` commands]:script-shell:_command_names -e'
+  '--searchexclude' '(--searchexclude)--searchexclude=[Space-separated options that limit the results from search]:searchexclude:'
+  '--searchlimit' '(--searchlimit)--searchlimit=[Number of items to limit search results to]:number:'
+  '--searchopts' '(--searchopts)--searchopts=[Space-separated options that are always passed to search]:searchopts:'
+  '--searchstaleness' '(--searchstaleness)--searchstaleness=[The age of the cache, in seconds, before another registry request is made if using legacy search endpoint]:number:'
+  '--shell' '(--shell)--shell=[The shell to run for the `npm explore` command]:shell:_command_names -e'
+  '--shrinkwrap' '(--shrinkwrap --no-shrinkwrap)--shrinkwrap[deprecated: Alias for --package-lock]'
+  '--no-shrinkwrap' '(--shrinkwrap --no-shrinkwrap)--no-shrinkwrap[deprecated: negate --shrinkwrap: Alias for --package-lock]'
+  '--sign-git-commit' '(--sign-git-commit --no-sign-git-commit)--sign-git-commit[If set to true, then the `npm version` command will commit the new package version using `-S` to add a...]'
+  '--no-sign-git-commit' '(--sign-git-commit --no-sign-git-commit)--no-sign-git-commit[negate --sign-git-commit: If set to true, then the `npm version` command will commit the new package version using `-S` to add a...]'
+  '--sign-git-tag' '(--sign-git-tag --no-sign-git-tag)--sign-git-tag[If set to true, then the `npm version` command will tag the version using `-s` to add a signature]'
+  '--no-sign-git-tag' '(--sign-git-tag --no-sign-git-tag)--no-sign-git-tag[negate --sign-git-tag: If set to true, then the `npm version` command will tag the version using `-s` to add a signature]'
+  '--strict-peer-deps' '(--strict-peer-deps --no-strict-peer-deps)--strict-peer-deps[If set to `true`, and `--legacy-peer-deps` is not set, then _any_ conflicting `peerDependencies` will be...]'
+  '--no-strict-peer-deps' '(--strict-peer-deps --no-strict-peer-deps)--no-strict-peer-deps[negate --strict-peer-deps: If set to `true`, and `--legacy-peer-deps` is not set, then _any_ conflicting `peerDependencies` will be...]'
+  '--strict-allow-scripts' '(--strict-allow-scripts --no-strict-allow-scripts)--strict-allow-scripts[If `true`, turn the install-script policy from a warning into a hard error: any dependency with install...]'
+  '--no-strict-allow-scripts' '(--strict-allow-scripts --no-strict-allow-scripts)--no-strict-allow-scripts[negate --strict-allow-scripts: If `true`, turn the install-script policy from a warning into a hard error: any dependency with install...]'
+  '--strict-ssl' '(--strict-ssl --no-strict-ssl)--strict-ssl[Whether or not to do SSL key validation when making requests to the registry via https]'
+  '--no-strict-ssl' '(--strict-ssl --no-strict-ssl)--no-strict-ssl[negate --strict-ssl: Whether or not to do SSL key validation when making requests to the registry via https]'
+  '--tag' '(--tag)--tag=[If you ask npm to install a package and don'\''t tell it a specific version, then it will install the...]:tag:'
+  '--tag-version-prefix' '(--tag-version-prefix)--tag-version-prefix=[If set, alters the prefix used when tagging a new version when performing a version increment using `npm...]:tag-version-prefix:'
+  '--timing' '(--timing --no-timing)--timing[If true, writes timing information to a process specific json file in the cache or `logs-dir`]'
+  '--no-timing' '(--timing --no-timing)--no-timing[negate --timing: If true, writes timing information to a process specific json file in the cache or `logs-dir`]'
+  '--umask' '(--umask)--umask=[The "umask" value to use when setting the file creation mode on files and folders]:umask:'
+  '--unicode' '(--unicode --no-unicode)--unicode[When set to true, npm uses unicode characters in the tree output]'
+  '--no-unicode' '(--unicode --no-unicode)--no-unicode[negate --unicode: When set to true, npm uses unicode characters in the tree output]'
+  '--update-notifier' '(--update-notifier --no-update-notifier)--update-notifier[Set to false to suppress the update notification when using an older version of npm than the latest]'
+  '--no-update-notifier' '(--update-notifier --no-update-notifier)--no-update-notifier[negate --update-notifier: Set to false to suppress the update notification when using an older version of npm than the latest]'
+  '--usage' '(--usage --no-usage --help -\? -H -h)--usage[Show short usage output about the command specified]'
+  '--no-usage' '(--usage --no-usage --help -\? -H -h)--no-usage[negate --usage: Show short usage output about the command specified]'
+  '--user-agent' '(--user-agent)--user-agent=[Sets the User-Agent request header]:user-agent:'
+  '--userconfig' '(--userconfig)--userconfig=[The location of user-level configuration settings]:userconfig:_files'
+  '--version' '(--version --no-version -v)--version[If true, output the npm version and exit successfully]'
+  '--no-version' '(--version --no-version -v)--no-version[negate --version: If true, output the npm version and exit successfully]'
+  '--versions' '(--versions --no-versions)--versions[If true, output the npm version as well as node'\''s `process.versions` map and the version in the current...]'
+  '--no-versions' '(--versions --no-versions)--no-versions[negate --versions: If true, output the npm version as well as node'\''s `process.versions` map and the version in the current...]'
+  '--viewer' '(--viewer)--viewer=[The program to use to view help content]:viewer:(browser man woman)'
+  '--which' '(--which)--which=[If there are multiple funding sources, which 1-indexed source URL to open]:fundingSourceNumber:'
+  '--workspace' '*--workspace=[Enable running a command in the context of the configured workspaces of the current project while...]:workspace-name: _npm__workspaces'
+  '--workspaces' '(--workspaces --no-workspaces --ws)--workspaces[Set to true to run the command in the context of **all** configured workspaces]'
+  '--no-workspaces' '(--workspaces --no-workspaces --ws)--no-workspaces[negate --workspaces: Set to true to run the command in the context of **all** configured workspaces]'
+  '--workspaces-update' '(--workspaces-update --no-workspaces-update)--workspaces-update[If set to true, the npm cli will run an update after operations that may possibly change the workspaces...]'
+  '--no-workspaces-update' '(--workspaces-update --no-workspaces-update)--no-workspaces-update[negate --workspaces-update: If set to true, the npm cli will run an update after operations that may possibly change the workspaces...]'
+  '--yes' '(--yes --no-yes -n --no -y)--yes[Automatically answer "yes" to any prompts that npm might print on the command line]'
+  '--no-yes' '(--yes --no-yes -n --no -y)--no-yes[negate --yes: Automatically answer "yes" to any prompts that npm might print on the command line]'
+  '--enjoy-by' '(--before --enjoy-by)--enjoy-by=[same as --before: If passed to `npm install`, will rebuild the npm tree such that only versions that were available **on or...]:date:'
+  '-d' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)-d[same as --loglevel info]'
+  '--dd' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)--dd[same as --loglevel verbose]'
+  '--ddd' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)--ddd[same as --loglevel silly]'
+  '--quiet' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)--quiet[same as --loglevel warn]'
+  '-q' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)-q[same as --loglevel warn]'
+  '-s' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)-s[same as --loglevel silent]'
+  '--silent' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)--silent[same as --loglevel silent]'
+  '--verbose' '(--loglevel -d --dd --ddd --quiet -q -s --silent --verbose)--verbose[same as --loglevel verbose]'
+  '--desc' '(--description --no-description --desc)--desc[same as --description: Show the description in `npm search`]'
+  '--help' '(--usage --no-usage --help -\? -H -h)--help[same as --usage: Show short usage output about the command specified]'
+  '--local' '(--global --no-global --local -g)--local[same as --no-global]'
+  '-n' '(--yes --no-yes -n --no -y)-n[same as --no-yes]'
+  '--no' '(--yes --no-yes -n --no -y)--no[same as --no-yes]'
+  '--porcelain' '(--parseable --no-parseable --porcelain -p)--porcelain[same as --parseable: Output parseable results from commands that write to standard output]'
+  '--readonly' '(--read-only --no-read-only --readonly)--readonly[same as --read-only: This is used to mark a token as unable to publish when configuring limited access tokens with the `npm...]'
+  '--reg' '(--registry --reg)--reg=[same as --registry: The base URL of the npm registry]:registry:_urls'
+  '--iwr' '(--include-workspace-root --no-include-workspace-root --iwr)--iwr[same as --include-workspace-root: Include the workspace root when workspaces are enabled for a command]'
+  '--ws' '(--workspaces --no-workspaces --ws)--ws[same as --workspaces: Set to true to run the command in the context of **all** configured workspaces]'
+  '-a' '(--all --no-all -a)-a[Show or act on all packages, not just the ones your project directly depends on]'
+  '-c' '(--call -c)-c+[Optional companion option for `npm exec`, `npx` that allows for specifying a custom command to be run...]:call:'
+  '-f' '(--force --no-force -f)-f[Removes various protections against unfortunate side effects, common mistakes, unnecessary performance...]'
+  '-g' '(--global --no-global --local -g)-g[Operates in "global" mode, so that packages are installed into the `prefix` folder instead of the current...]'
+  '-L' '(--location -L)-L+[When passed to `npm config` this refers to which config file to use]:location:(global user project)'
+  '-l' '(--long --no-long -l)-l[Show extended information in `ls`, `search`, and `help-search`]'
+  '-m' '(--message -m)-m+[Commit message which is used by `npm version` when creating version commit]:message:'
+  '-p' '(--parseable --no-parseable --porcelain -p)-p[Output parseable results from commands that write to standard output]'
+  '-C' '(--prefix -C)-C+[The location to install global items]:prefix:_files -/'
+  '-S' '(--save --no-save -S)-S[Save installed packages to a `package.json` file as dependencies]'
+  '-B' '(--save-bundle --no-save-bundle -B)-B[If a package would be saved at install time by the use of `--save`, `--save-dev`, or `--save-optional`,...]'
+  '-D' '(--save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-peer --no-save-peer --save-prod --no-save-prod -P)-D[Save installed packages to a package.json file as `devDependencies`]'
+  '-E' '(--save-exact --no-save-exact -E)-E[Dependencies saved to package.json will be configured with an exact version rather than using npm'\''s...]'
+  '-O' '(--save-optional --no-save-optional -O --save-dev --no-save-dev -D --save-peer --no-save-peer --save-prod --no-save-prod -P)-O[Save installed packages to a package.json file as `optionalDependencies`]'
+  '-P' '(--save-prod --no-save-prod -P --save-dev --no-save-dev -D --save-optional --no-save-optional -O --save-peer --no-save-peer)-P[Save installed packages into `dependencies` specifically]'
+  '-?' '(--usage --no-usage --help -\? -H -h)-\?[Show short usage output about the command specified]'
+  '-H' '(--usage --no-usage --help -\? -H -h)-H[Show short usage output about the command specified]'
+  '-h' '(--usage --no-usage --help -\? -H -h)-h[Show short usage output about the command specified]'
+  '-v' '(--version --no-version -v)-v[If true, output the npm version and exit successfully]'
+  '-w' '*-w+[Enable running a command in the context of the configured workspaces of the current project while...]:workspace-name: _npm__workspaces'
+  '-y' '(--yes --no-yes -n --no -y)-y[Automatically answer "yes" to any prompts that npm might print on the command line]'
+)
+
+# Tokens `npm <command> --help` prints, per command scope (`cmd:sub` for the
+# per-subcommand parsers of stage and trust). Everything else is "(hidden)".
+typeset -gA _npm_visible_options
+_npm_visible_options=(
+  'access' '--json --otp --registry -h'
+  'adduser' '--auth-type --registry --scope -h'
+  'approve-scripts' '--all --allow-scripts-pending --allow-scripts-pin --json --no-allow-scripts-pin -a -h'
+  'audit' '--audit-level --dry-run --force --foreground-scripts --ignore-scripts --include --include-attestations --include-workspace-root --install-links --json --no-package-lock --omit --package-lock --package-lock-only --workspace --workspaces -f -h -w'
+  'bugs' '--browser --include-workspace-root --no-browser --registry --workspace --workspaces -h -w'
+  'cache' '--cache -h'
+  'ci' '--allow-directory --allow-file --allow-git --allow-remote --allow-scripts --audit --bin-links --dangerously-allow-all-scripts --dry-run --foreground-scripts --fund --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --no-audit --no-bin-links --no-fund --omit --strict-allow-scripts --strict-peer-deps --workspace --workspaces -h -w'
+  'completion' '-h'
+  'config' '--editor --global --json --location --long -L -g -h -l'
+  'dedupe' '--allow-directory --allow-file --allow-git --allow-remote --audit --bin-links --dry-run --fund --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --no-audit --no-bin-links --no-fund --no-package-lock --omit --package-lock --strict-peer-deps --workspace --workspaces -h -w'
+  'deny-scripts' '--all --allow-scripts-pending --allow-scripts-pin --json --no-allow-scripts-pin -a -h'
+  'deprecate' '--dry-run --otp --registry -h'
+  'diff' '--diff --diff-dst-prefix --diff-ignore-all-space --diff-name-only --diff-no-prefix --diff-src-prefix --diff-text --diff-unified --global --include-workspace-root --tag --workspace --workspaces -g -h -w'
+  'dist-tag' '--include-workspace-root --workspace --workspaces -h -w'
+  'docs' '--browser --include-workspace-root --no-browser --registry --workspace --workspaces -h -w'
+  'doctor' '--registry -h'
+  'edit' '--editor -h'
+  'exec' '--allow-scripts --call --dangerously-allow-all-scripts --include-workspace-root --package --strict-allow-scripts --workspace --workspaces -c -h -w'
+  'explain' '--json --workspace -h -w'
+  'explore' '--shell -h'
+  'find-dupes' '--audit --bin-links --fund --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --no-audit --no-bin-links --no-fund --no-package-lock --omit --package-lock --strict-peer-deps --workspace --workspaces -h -w'
+  'fund' '--browser --json --no-browser --no-unicode --unicode --which --workspace -h -w'
+  'get' '--long -h -l'
+  'help' '--viewer -h'
+  'help-search' '--long -h -l'
+  'init' '--force --include-workspace-root --init-author-name --init-author-url --init-license --init-module --init-private --init-type --init-version --no-workspaces-update --scope --workspace --workspaces --workspaces-update --yes -f -h -w -y'
+  'install' '--allow-directory --allow-file --allow-git --allow-remote --allow-scripts --audit --before --bin-links --cpu --dangerously-allow-all-scripts --dry-run --foreground-scripts --fund --global --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --libc --min-release-age --min-release-age-exclude --no-audit --no-bin-links --no-fund --no-package-lock --no-save --omit --os --package-lock --package-lock-only --prefer-dedupe --save --save-bundle --save-dev --save-exact --save-optional --save-peer --save-prod --strict-allow-scripts --strict-peer-deps --workspace --workspaces -E -S -g -h -w'
+  'install-ci-test' '--allow-directory --allow-file --allow-git --allow-remote --allow-scripts --audit --bin-links --dangerously-allow-all-scripts --dry-run --foreground-scripts --fund --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --no-audit --no-bin-links --no-fund --omit --strict-allow-scripts --strict-peer-deps --workspace --workspaces -h -w'
+  'install-scripts' '--all --allow-scripts-pin --dry-run --json --no-allow-scripts-pin -a -h'
+  'install-test' '--allow-directory --allow-file --allow-git --allow-remote --allow-scripts --audit --before --bin-links --cpu --dangerously-allow-all-scripts --dry-run --foreground-scripts --fund --global --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --libc --min-release-age --min-release-age-exclude --no-audit --no-bin-links --no-fund --no-package-lock --no-save --omit --os --package-lock --package-lock-only --prefer-dedupe --save --save-bundle --save-dev --save-exact --save-optional --save-peer --save-prod --strict-allow-scripts --strict-peer-deps --workspace --workspaces -E -S -g -h -w'
+  'link' '--allow-directory --allow-file --allow-git --allow-remote --audit --bin-links --dry-run --fund --global --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --no-audit --no-bin-links --no-fund --no-package-lock --no-save --omit --package-lock --save --save-bundle --save-dev --save-exact --save-optional --save-peer --save-prod --strict-peer-deps --workspace --workspaces -E -S -g -h -w'
+  'll' '--all --depth --global --include --include-workspace-root --install-links --json --link --long --no-unicode --omit --package-lock-only --parseable --unicode --workspace --workspaces -a -g -h -l -p -w'
+  'login' '--auth-type --registry --scope -h'
+  'logout' '--registry --scope -h'
+  'ls' '--all --depth --global --include --include-workspace-root --install-links --json --link --long --no-unicode --omit --package-lock-only --parseable --unicode --workspace --workspaces -a -g -h -l -p -w'
+  'org' '--json --otp --parseable --registry -h -p'
+  'outdated' '--all --before --global --json --long --min-release-age --min-release-age-exclude --parseable --workspace -a -g -h -l -p -w'
+  'owner' '--otp --registry --workspace --workspaces -h -w'
+  'pack' '--dry-run --ignore-scripts --include-workspace-root --json --pack-destination --workspace --workspaces -h -w'
+  'ping' '--registry -h'
+  'pkg' '--force --json --workspace --workspaces -f -h -w'
+  'prefix' '--global -g -h'
+  'profile' '--json --otp --parseable --registry -h -p'
+  'prune' '--dry-run --foreground-scripts --ignore-scripts --include --include-workspace-root --install-links --json --omit --workspace --workspaces -h -w'
+  'publish' '--access --dry-run --include-workspace-root --otp --provenance --provenance-file --tag --workspace --workspaces -h -w'
+  'query' '--before --expect-result-count --expect-results --global --include-workspace-root --min-release-age --min-release-age-exclude --package-lock-only --workspace --workspaces -g -h -w'
+  'rebuild' '--allow-scripts --bin-links --dangerously-allow-all-scripts --foreground-scripts --global --ignore-scripts --include-workspace-root --install-links --no-bin-links --strict-allow-scripts --workspace --workspaces -g -h -w'
+  'repo' '--browser --include-workspace-root --no-browser --registry --workspace --workspaces -h -w'
+  'restart' '--ignore-scripts --script-shell -h'
+  'root' '--global -g -h'
+  'run' '--foreground-scripts --if-present --ignore-scripts --include-workspace-root --script-shell --workspace --workspaces -h -w'
+  'sbom' '--omit --package-lock-only --sbom-format --sbom-type --workspace --workspaces -h -w'
+  'search' '--color --description --json --no-color --no-description --offline --parseable --prefer-offline --prefer-online --registry --searchexclude --searchlimit --searchopts -h -p'
+  'set' '--global --location -L -g -h'
+  'shrinkwrap' '-h'
+  'stage' '-h'
+  'stage:publish' '--access --dry-run --include-workspace-root --otp --provenance --provenance-file --tag --workspace --workspaces -h -w'
+  'stage:list' '--json --registry -h'
+  'stage:view' '--json --registry -h'
+  'stage:approve' '--otp --registry -h'
+  'stage:reject' '--otp --registry -h'
+  'stage:download' '--json --registry -h'
+  'star' '--no-unicode --otp --registry --unicode -h'
+  'stars' '--registry -h'
+  'start' '--ignore-scripts --script-shell -h'
+  'stop' '--ignore-scripts --script-shell -h'
+  'team' '--json --otp --parseable --registry -h -p'
+  'test' '--ignore-scripts --script-shell -h'
+  'token' '--bypass-2fa --cidr --expires --name --orgs --orgs-permission --otp --packages --packages-all --packages-and-scopes-permission --password --read-only --registry --scopes --token-description -h'
+  'trust' '-h'
+  'trust:github' '--allow-publish --allow-stage-publish --allow-staged-publish --dry-run --env --environment --file --json --registry --repo --repository --yes -h -y'
+  'trust:gitlab' '--allow-publish --allow-stage-publish --allow-staged-publish --dry-run --env --environment --file --json --project --registry --yes -h -y'
+  'trust:circleci' '--allow-publish --allow-stage-publish --allow-staged-publish --context-id --dry-run --json --org-id --pipeline-definition-id --project-id --registry --vcs-origin --yes -h -y'
+  'trust:list' '--json --registry -h'
+  'trust:revoke' '--dry-run --id --registry -h'
+  'undeprecate' '--dry-run --otp --registry -h'
+  'uninstall' '--global --include-workspace-root --install-links --no-save --save --save-bundle --save-dev --save-optional --save-peer --save-prod --workspace --workspaces -S -g -h -w'
+  'unpublish' '--dry-run --force --workspace --workspaces -f -h -w'
+  'unstar' '--no-unicode --otp --registry --unicode -h'
+  'update' '--allow-scripts --audit --before --bin-links --dangerously-allow-all-scripts --dry-run --foreground-scripts --fund --global --global-style --ignore-scripts --include --include-workspace-root --install-links --install-strategy --legacy-bundling --min-release-age --min-release-age-exclude --no-audit --no-bin-links --no-fund --no-package-lock --no-save --omit --package-lock --save --save-bundle --save-dev --save-optional --save-peer --save-prod --strict-allow-scripts --strict-peer-deps --workspace --workspaces -S -g -h -w'
+  'version' '--allow-same-version --commit-hooks --git-tag-version --ignore-scripts --include-workspace-root --json --no-commit-hooks --no-git-tag-version --no-save --no-workspaces-update --preid --save --save-bundle --save-dev --save-optional --save-peer --save-prod --sign-git-tag --workspace --workspaces --workspaces-update -S -h -w'
+  'view' '--include-workspace-root --json --workspace --workspaces -h -w'
+  'whoami' '--registry -h'
+  '' '-h -l'
+)
+
+# Options only the trust subcommands accept (their own definitions).
+typeset -gA _npm_scoped_option_specs
+_npm_scoped_option_specs=(
+  'trust:github' '--file	(--file)--file=[(required) Name of workflow file within a repositories .GitHub folder (must end in yaml, yml)]:file:
+--repository	(--repository --repo)--repository=[Name of the repository in the format owner/repo]:repository:
+--repo	(--repository --repo)--repo=[same as --repository: Name of the repository in the format owner/repo]:repository:
+--environment	(--environment --env)--environment=[CI environment name]:environment:
+--env	(--environment --env)--env=[same as --environment: CI environment name]:environment:
+--allow-publish	(--allow-publish --no-allow-publish)--allow-publish[Allow npm publish for this trusted publisher configuration]
+--no-allow-publish	(--allow-publish --no-allow-publish)--no-allow-publish[negate --allow-publish: Allow npm publish for this trusted publisher configuration]
+--allow-stage-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--allow-stage-publish[Allow npm stage publish for this trusted publisher configuration]
+--allow-staged-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--allow-staged-publish[same as --allow-stage-publish: Allow npm stage publish for this trusted publisher configuration]
+--no-allow-stage-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--no-allow-stage-publish[negate --allow-stage-publish: Allow npm stage publish for this trusted publisher configuration]
+--dry-run	(--dry-run --no-dry-run)--dry-run[Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--no-dry-run	(--dry-run --no-dry-run)--no-dry-run[negate --dry-run: Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--json	(--json --no-json)--json[Whether or not to output JSON data, rather than the normal output]
+--no-json	(--json --no-json)--no-json[negate --json: Whether or not to output JSON data, rather than the normal output]
+--registry	(--registry)--registry=[The base URL of the npm registry]:registry:_urls
+--yes	(--yes -y --no-yes)--yes[Automatically answer "yes" to any prompts that npm might print on the command line]
+-y	(--yes -y --no-yes)-y[Automatically answer "yes" to any prompts that npm might print on the command line]
+--no-yes	(--yes -y --no-yes)--no-yes[negate --yes: Automatically answer "yes" to any prompts that npm might print on the command line]'
+  'trust:gitlab' '--file	(--file)--file=[(required) Name of pipeline file (e.g., .gitlab-ci.yml)]:file:
+--project	(--project)--project=[Name of the project in the format group/project or group/subgroup/project]:project:
+--environment	(--environment --env)--environment=[CI environment name]:environment:
+--env	(--environment --env)--env=[same as --environment: CI environment name]:environment:
+--allow-publish	(--allow-publish --no-allow-publish)--allow-publish[Allow npm publish for this trusted publisher configuration]
+--no-allow-publish	(--allow-publish --no-allow-publish)--no-allow-publish[negate --allow-publish: Allow npm publish for this trusted publisher configuration]
+--allow-stage-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--allow-stage-publish[Allow npm stage publish for this trusted publisher configuration]
+--allow-staged-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--allow-staged-publish[same as --allow-stage-publish: Allow npm stage publish for this trusted publisher configuration]
+--no-allow-stage-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--no-allow-stage-publish[negate --allow-stage-publish: Allow npm stage publish for this trusted publisher configuration]
+--dry-run	(--dry-run --no-dry-run)--dry-run[Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--no-dry-run	(--dry-run --no-dry-run)--no-dry-run[negate --dry-run: Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--json	(--json --no-json)--json[Whether or not to output JSON data, rather than the normal output]
+--no-json	(--json --no-json)--no-json[negate --json: Whether or not to output JSON data, rather than the normal output]
+--registry	(--registry)--registry=[The base URL of the npm registry]:registry:_urls
+--yes	(--yes -y --no-yes)--yes[Automatically answer "yes" to any prompts that npm might print on the command line]
+-y	(--yes -y --no-yes)-y[Automatically answer "yes" to any prompts that npm might print on the command line]
+--no-yes	(--yes -y --no-yes)--no-yes[negate --yes: Automatically answer "yes" to any prompts that npm might print on the command line]'
+  'trust:circleci' '--org-id	(--org-id)--org-id=[(required) CircleCI organization UUID]:org-id:
+--project-id	(--project-id)--project-id=[(required) CircleCI project UUID]:project-id:
+--pipeline-definition-id	(--pipeline-definition-id)--pipeline-definition-id=[(required) CircleCI pipeline definition UUID]:pipeline-definition-id:
+--vcs-origin	(--vcs-origin)--vcs-origin=[(required) CircleCI repository origin in format '\''provider/owner/repo'\'']:vcs-origin:
+--context-id	*--context-id=[CircleCI context UUID to match]:context-id:
+--allow-publish	(--allow-publish --no-allow-publish)--allow-publish[Allow npm publish for this trusted publisher configuration]
+--no-allow-publish	(--allow-publish --no-allow-publish)--no-allow-publish[negate --allow-publish: Allow npm publish for this trusted publisher configuration]
+--allow-stage-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--allow-stage-publish[Allow npm stage publish for this trusted publisher configuration]
+--allow-staged-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--allow-staged-publish[same as --allow-stage-publish: Allow npm stage publish for this trusted publisher configuration]
+--no-allow-stage-publish	(--allow-stage-publish --allow-staged-publish --no-allow-stage-publish)--no-allow-stage-publish[negate --allow-stage-publish: Allow npm stage publish for this trusted publisher configuration]
+--dry-run	(--dry-run --no-dry-run)--dry-run[Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--no-dry-run	(--dry-run --no-dry-run)--no-dry-run[negate --dry-run: Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--json	(--json --no-json)--json[Whether or not to output JSON data, rather than the normal output]
+--no-json	(--json --no-json)--no-json[negate --json: Whether or not to output JSON data, rather than the normal output]
+--registry	(--registry)--registry=[The base URL of the npm registry]:registry:_urls
+--yes	(--yes -y --no-yes)--yes[Automatically answer "yes" to any prompts that npm might print on the command line]
+-y	(--yes -y --no-yes)-y[Automatically answer "yes" to any prompts that npm might print on the command line]
+--no-yes	(--yes -y --no-yes)--no-yes[negate --yes: Automatically answer "yes" to any prompts that npm might print on the command line]'
+  'trust:list' '--json	(--json --no-json)--json[Whether or not to output JSON data, rather than the normal output]
+--no-json	(--json --no-json)--no-json[negate --json: Whether or not to output JSON data, rather than the normal output]
+--registry	(--registry)--registry=[The base URL of the npm registry]:registry:_urls'
+  'trust:revoke' '--id	(--id)--id=[(required) ID of the trusted relationship to revoke]:id:
+--dry-run	(--dry-run --no-dry-run)--dry-run[Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--no-dry-run	(--dry-run --no-dry-run)--no-dry-run[negate --dry-run: Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done]
+--registry	(--registry)--registry=[The base URL of the npm registry]:registry:_urls'
+)
+
+typeset -gA _npm_command_descriptions
+_npm_command_descriptions=(
+  'access' 'Set access level on published packages'
+  'adduser' 'Add a registry user account'
+  'approve-scripts' 'Approve install scripts for specific dependencies'
+  'audit' 'Run a security audit'
+  'bugs' 'Report bugs for a package in a web browser'
+  'cache' 'Manipulates packages and npx cache'
+  'ci' 'Clean install a project'
+  'completion' 'Tab Completion for npm'
+  'config' 'Manage the npm configuration files'
+  'dedupe' 'Reduce duplication in the package tree'
+  'deny-scripts' 'Deny install scripts for specific dependencies'
+  'deprecate' 'Deprecate a version of a package'
+  'diff' 'The registry diff command'
+  'dist-tag' 'Modify package distribution tags'
+  'docs' 'Open documentation for a package in a web browser'
+  'doctor' 'Check the health of your npm environment'
+  'edit' 'Edit an installed package'
+  'exec' 'Run a command from a local or remote npm package'
+  'explain' 'Explain installed packages'
+  'explore' 'Browse an installed package'
+  'find-dupes' 'Find duplication in the package tree'
+  'fund' 'Retrieve funding information'
+  'get' 'Get a value from the npm configuration'
+  'help' 'Get help on npm'
+  'help-search' 'Search npm help documentation'
+  'init' 'Create a package.json file'
+  'install' 'Install a package'
+  'install-ci-test' 'Install a project with a clean slate and run tests'
+  'install-scripts' 'Manage install-script approvals for dependencies'
+  'install-test' 'Install package(s) and run tests'
+  'link' 'Symlink a package folder'
+  'll' 'List installed packages'
+  'login' 'Login to a registry user account'
+  'logout' 'Log out of the registry'
+  'ls' 'List installed packages'
+  'org' 'Manage orgs'
+  'outdated' 'Check for outdated packages'
+  'owner' 'Manage package owners'
+  'pack' 'Create a tarball from a package'
+  'ping' 'Ping npm registry'
+  'pkg' 'Manages your package.json'
+  'prefix' 'Display prefix'
+  'profile' 'Change settings on your registry profile'
+  'prune' 'Remove extraneous packages'
+  'publish' 'Publish a package'
+  'query' 'Retrieve a filtered list of packages'
+  'rebuild' 'Rebuild a package'
+  'repo' 'Open package repository page in the browser'
+  'restart' 'Restart a package'
+  'root' 'Display npm root'
+  'run' 'Run arbitrary package scripts'
+  'sbom' 'Generate a Software Bill of Materials (SBOM)'
+  'search' 'Search for packages'
+  'set' 'Set a value in the npm configuration'
+  'shrinkwrap' 'Lock down dependency versions for publication'
+  'stage' 'Stage packages for publishing, deferring proof-of-presence (2FA) to a later point in time'
+  'star' 'Mark your favorite packages'
+  'stars' 'View packages marked as favorites'
+  'start' 'Start a package'
+  'stop' 'Stop a package'
+  'team' 'Manage organization teams and team memberships'
+  'test' 'Test a package'
+  'token' 'Manage your authentication tokens'
+  'trust' 'Create a trusted relationship between a package and a OIDC provider'
+  'undeprecate' 'Undeprecate a version of a package'
+  'uninstall' 'Remove a package'
+  'unpublish' 'Remove a package from the registry'
+  'unstar' 'Remove an item from your favorite packages'
+  'update' 'Update packages'
+  'version' 'Bump a package version'
+  'view' 'View registry info'
+  'whoami' 'Display npm username'
+)
+
+typeset -gA _npm_aliases
+_npm_aliases=(
+  'author' 'owner'
+  'home' 'docs'
+  'issues' 'bugs'
+  'info' 'view'
+  'show' 'view'
+  'find' 'search'
+  'add' 'install'
+  'unlink' 'uninstall'
+  'remove' 'uninstall'
+  'rm' 'uninstall'
+  'r' 'uninstall'
+  'un' 'uninstall'
+  'rb' 'rebuild'
+  'list' 'ls'
+  'ln' 'link'
+  'create' 'init'
+  'i' 'install'
+  'it' 'install-test'
+  'cit' 'install-ci-test'
+  'u' 'update'
+  'up' 'update'
+  'c' 'config'
+  's' 'search'
+  'se' 'search'
+  'tst' 'test'
+  't' 'test'
+  'ddp' 'dedupe'
+  'v' 'view'
+  'run-script' 'run'
+  'clean-install' 'ci'
+  'clean-install-test' 'install-ci-test'
+  'x' 'exec'
+  'why' 'explain'
+  'la' 'll'
+  'verison' 'version'
+  'ic' 'ci'
+  'innit' 'init'
+  'in' 'install'
+  'ins' 'install'
+  'inst' 'install'
+  'insta' 'install'
+  'instal' 'install'
+  'isnt' 'install'
+  'isnta' 'install'
+  'isntal' 'install'
+  'isntall' 'install'
+  'install-clean' 'ci'
+  'isntall-clean' 'ci'
+  'hlep' 'help'
+  'dist-tags' 'dist-tag'
+  'upgrade' 'update'
+  'udpate' 'update'
+  'rum' 'run'
+  'sit' 'install-ci-test'
+  'urn' 'run'
+  'ogr' 'org'
+  'add-user' 'adduser'
+)
+
+# Aliases dispatched but not offered: misspellings and pinned prefixes of install.
+typeset -ga _npm_unlisted_aliases=( innit in ins inst insta instal isnt isnta isntal isntall isntall-clean hlep udpate rum urn ogr sit verison )
+
+typeset -gA _npm_subcommands
+_npm_subcommands=(
+  'access' 'list:list packages or collaborators
+get:get the access status of a package
+set:set package status or MFA requirement
+grant:grant a team access to a package
+revoke:revoke a team'\''s access to a package'
+  'audit' 'fix:install compatible updates to vulnerable dependencies
+signatures:verify registry signatures and provenance attestations'
+  'cache' 'add:add a package to the cache
+clean:delete cache entries
+ls:list cache entries
+verify:verify and garbage-collect the cache
+npx:manage the npx cache
+rm:(hidden) alias for clean
+clear:(hidden) alias for clean
+check:(hidden) alias for verify'
+  'config' 'set:set config keys
+get:print config values
+delete:delete config keys
+list:show all config settings
+edit:open the config file in an editor
+fix:repair invalid config
+rm:(hidden) alias for delete
+del:(hidden) alias for delete
+ls:(hidden) alias for list'
+  'dist-tag' 'add:tag a package version
+rm:remove a tag
+ls:list the tags of a package
+a:(hidden) alias for add
+set:(hidden) alias for add
+s:(hidden) alias for add
+r:(hidden) alias for rm
+del:(hidden) alias for rm
+d:(hidden) alias for rm
+remove:(hidden) alias for rm
+l:(hidden) alias for ls
+sl:(hidden) alias for ls
+list:(hidden) alias for ls'
+  'install-scripts' 'approve:approve install scripts of dependencies
+deny:deny install scripts of dependencies
+ls:list install-script approvals
+prune:remove stale approvals
+list:(hidden) alias for ls'
+  'org' 'set:add a user to an org or change their role
+rm:remove a user from an org
+ls:list the members of an org
+add:(hidden) alias for set'
+  'owner' 'add:add a package owner
+rm:remove a package owner
+ls:list package owners
+list:(hidden) alias for ls
+remove:(hidden) alias for rm'
+  'pkg' 'get:print package.json fields
+set:set package.json fields
+delete:delete package.json fields
+fix:normalize package.json'
+  'profile' 'enable-2fa:enable two-factor authentication
+disable-2fa:disable two-factor authentication
+get:show profile properties
+set:set a profile property
+enable-tfa:(hidden) alias for enable-2fa
+enable2fa:(hidden) alias for enable-2fa
+enabletfa:(hidden) alias for enable-2fa
+disable-tfa:(hidden) alias for disable-2fa
+disable2fa:(hidden) alias for disable-2fa
+disabletfa:(hidden) alias for disable-2fa'
+  'team' 'create:create a team
+destroy:delete a team
+add:add a user to a team
+rm:remove a user from a team
+ls:list teams of a scope or members of a team'
+  'token' 'list:list your tokens
+revoke:revoke a token
+create:create a token
+ls:(hidden) alias for list
+rm:(hidden) alias for revoke
+delete:(hidden) alias for revoke
+remove:(hidden) alias for revoke'
+  'stage' 'publish:Stage a package for publishing, deferring proof-of-presence (2FA) to a later point in time
+list:List all staged package versions
+view:View details of a specific staged package
+approve:Approve a staged package, publishing it to the npm registry
+reject:Reject a staged package, removing it from the registry
+download:Download the tarball of a staged package for inspection'
+  'trust' 'github:Create a trusted relationship between a package and GitHub Actions
+gitlab:Create a trusted relationship between a package and GitLab CI/CD
+circleci:Create a trusted relationship between a package and CircleCI
+list:List trusted relationships for a package
+revoke:Revoke a trusted relationship for a package'
+)
+
+# Config keys with descriptions, for npm config get/set/delete.
+typeset -ga _npm_config_keys
+_npm_config_keys=(
+  '_auth:A basic-auth string to use when authenticating against the npm registry'
+  'access:If you do not want your scoped package to be publicly viewable (and installable) set `--access=restricted`'
+  'all:Show or act on all packages, not just the ones your project directly depends on'
+  'allow-same-version:Prevents throwing an error when `npm version` is used to set the new version to the same value as the...'
+  'allow-directory:Limits the ability for npm to install dependencies from directories'
+  'allow-file:Limits the ability for npm to install dependencies from tarball files'
+  'allow-git:Limits the ability for npm to fetch dependencies from git references'
+  'allow-remote:Limits the ability for npm to fetch dependencies from urls'
+  'allow-scripts:Comma-separated list of packages whose install-time lifecycle scripts (`preinstall`, `install`,...'
+  'also:(deprecated) When set to `dev` or `development`, this is an alias for `--include=dev`'
+  'audit:When "true" submit audit reports alongside the current npm command to the default registry and all...'
+  'audit-level:The minimum level of vulnerability for `npm audit` to exit with a non-zero exit code'
+  'auth-type:What authentication strategy to use with `login`'
+  'before:If passed to `npm install`, will rebuild the npm tree such that only versions that were available **on or...'
+  'bin-links:Tells npm to create symlinks (or `.cmd` shims on Windows) for package executables'
+  'browser:The browser that is called by npm commands to open websites'
+  'bypass-2fa:When creating a Granular Access Token with `npm token create`, setting this to true will allow the token...'
+  'ca:The Certificate Authority signing certificate that is trusted for SSL connections to the registry'
+  'cache:The location of npm'\''s cache directory'
+  'cache-max:(deprecated) `--cache-max=0` is an alias for `--prefer-online`'
+  'cache-min:(deprecated) `--cache-min=9999 (or bigger)` is an alias for `--prefer-offline`'
+  'cafile:A path to a file containing one or multiple Certificate Authority signing certificates'
+  'call:Optional companion option for `npm exec`, `npx` that allows for specifying a custom command to be run...'
+  'cert:(deprecated) A client certificate to pass when accessing the registry'
+  'cidr:This is a list of CIDR address to be used when configuring limited access tokens with the `npm token...'
+  'color:If false, never shows colors'
+  'commit-hooks:Run git commit hooks when using the `npm version` command'
+  'cpu:Override CPU architecture of native modules to install'
+  'dangerously-allow-all-scripts:If `true`, bypass the `allowScripts` policy entirely and run every dependency install script regardless of...'
+  'depth:The depth to go when recursing packages for `npm ls`'
+  'description:Show the description in `npm search`'
+  'dev:(deprecated) Alias for `--include=dev`'
+  'diff:Define arguments to compare in `npm diff`'
+  'diff-ignore-all-space:Ignore whitespace when comparing lines in `npm diff`'
+  'diff-name-only:Prints only filenames when using `npm diff`'
+  'diff-no-prefix:Do not show any source or destination prefix in `npm diff` output'
+  'diff-dst-prefix:Destination prefix to be used in `npm diff` output'
+  'diff-src-prefix:Source prefix to be used in `npm diff` output'
+  'diff-text:Treat all files as text in `npm diff`'
+  'diff-unified:The number of lines of context to print in `npm diff`'
+  'dry-run:Indicates that you don'\''t want npm to make any changes and that it should only report what it would have done'
+  'editor:The command to run for `npm edit` and `npm config edit`'
+  'engine-strict:If set to true, then npm will stubbornly refuse to install (or even consider installing) any package that...'
+  'expect-result-count:Tells to expect a specific number of results from the command'
+  'expect-results:Tells npm whether or not to expect results from the command'
+  'expires:When creating a Granular Access Token with `npm token create`, this sets the expiration in days'
+  'fetch-retries:The "retries" config for the `retry` module to use when fetching packages from the registry'
+  'fetch-retry-factor:The "factor" config for the `retry` module to use when fetching packages'
+  'fetch-retry-maxtimeout:The "maxTimeout" config for the `retry` module to use when fetching packages'
+  'fetch-retry-mintimeout:The "minTimeout" config for the `retry` module to use when fetching packages'
+  'fetch-timeout:The maximum amount of time to wait for HTTP requests to complete'
+  'force:Removes various protections against unfortunate side effects, common mistakes, unnecessary performance...'
+  'foreground-scripts:Run all build scripts (ie, `preinstall`, `install`, and `postinstall`) scripts for installed packages in...'
+  'format-package-lock:Format `package-lock.json` or `npm-shrinkwrap.json` as a human readable file'
+  'fund:When "true" displays the message at the end of each `npm install` acknowledging the number of dependencies...'
+  'git:The command to use for git commands'
+  'git-tag-version:Tag the commit when using the `npm version` command'
+  'global:Operates in "global" mode, so that packages are installed into the `prefix` folder instead of the current...'
+  'globalconfig:The config file to read for global config options'
+  'global-style:(deprecated) Only install direct dependencies in the top level `node_modules`, but hoist on deeper dependencies'
+  'heading:The string that starts all the debugging log output'
+  'https-proxy:A proxy to use for outgoing https requests'
+  'if-present:If true, npm will not exit with an error code when `run` is invoked for a script that isn'\''t defined in the...'
+  'ignore-scripts:If true, npm does not run scripts specified in package.json files'
+  'include:Option that allows for defining which types of dependencies to install'
+  'include-staged:Allow installing "staged" published packages, as defined by [npm RFC PR...'
+  'include-workspace-root:Include the workspace root when workspaces are enabled for a command'
+  'include-attestations:When used with `npm audit signatures --json`, includes the full sigstore attestation bundles in the JSON...'
+  'init-author-email:The value `npm init` should use by default for the package author'\''s email'
+  'init-author-name:The value `npm init` should use by default for the package author'\''s name'
+  'init-author-url:The value `npm init` should use by default for the package author'\''s homepage'
+  'init-license:The value `npm init` should use by default for the package license'
+  'init-module:A module that will be loaded by the `npm init` command'
+  'init-type:The value that `npm init` should use by default for the package.json type field'
+  'init-version:The value that `npm init` should use by default for the package version number, if not already set in...'
+  'init-private:The value `npm init` should use by default for the package'\''s private flag'
+  'init.author.email:(deprecated) Alias for `--init-author-email`'
+  'init.author.name:(deprecated) Alias for `--init-author-name`'
+  'init.author.url:(deprecated) Alias for `--init-author-url`'
+  'init.license:(deprecated) Alias for `--init-license`'
+  'init.module:(deprecated) Alias for `--init-module`'
+  'init.version:(deprecated) Alias for `--init-version`'
+  'install-links:When set file\: protocol dependencies will be packed and installed as regular dependencies instead of...'
+  'install-strategy:Sets the strategy for installing packages in node_modules'
+  'json:Whether or not to output JSON data, rather than the normal output'
+  'key:(deprecated) A client key to pass when accessing the registry'
+  'legacy-bundling:(deprecated) Instead of hoisting package installs in `node_modules`, install packages in the same manner that they are...'
+  'legacy-peer-deps:Causes npm to completely ignore `peerDependencies` when building a package tree, as in npm versions 3...'
+  'libc:Override libc of native modules to install'
+  'link:Used with `npm ls`, limiting output to only those packages that are linked'
+  'local-address:The IP address of the local interface to use when making connections to the npm registry'
+  'location:When passed to `npm config` this refers to which config file to use'
+  'lockfile-version:Set the lockfile format version to be used in package-lock.json and npm-shrinkwrap-json files'
+  'loglevel:What level of logs to report'
+  'logs-dir:The location of npm'\''s log directory'
+  'logs-max:The maximum number of log files to store'
+  'long:Show extended information in `ls`, `search`, and `help-search`'
+  'name:When creating a Granular Access Token with `npm token create`, this sets the name/description for the token'
+  'maxsockets:The maximum number of connections to use per origin (protocol/host/port combination)'
+  'message:Commit message which is used by `npm version` when creating version commit'
+  'min-release-age:If set, npm will build the npm tree such that only versions that were available more than the given number...'
+  'min-release-age-exclude:A list of package names or `minimatch` glob patterns that are exempt from the `min-release-age` (and...'
+  'node-gyp:This is the location of the "node-gyp" bin'
+  'node-options:Options to pass through to Node.js via the `NODE_OPTIONS` environment variable'
+  'noproxy:Domain extensions that should bypass any proxies'
+  'offline:Force offline mode\: no network requests will be done during install'
+  'omit:Dependency types to omit from the installation tree on disk'
+  'omit-lockfile-registry-resolved:This option causes npm to create lock files without a `resolved` key for registry dependencies'
+  'only:(deprecated) When set to `prod` or `production`, this is an alias for `--omit=dev`'
+  'orgs:When creating a Granular Access Token with `npm token create`, this limits the token access to specific...'
+  'optional:(deprecated) Alias for --include=optional or --omit=optional'
+  'os:Override OS of native modules to install'
+  'otp:This is a one-time password from a two-factor authenticator'
+  'package:The package or packages to install for [`npm exec`](/commands/npm-exec)'
+  'package-lock:If set to false, then ignore `package-lock.json` files when installing'
+  'package-lock-only:If set to true, the current operation will only use the `package-lock.json`, ignoring `node_modules`'
+  'pack-destination:Directory in which `npm pack` will save tarballs'
+  'packages:When creating a Granular Access Token with `npm token create`, this limits the token access to specific...'
+  'parseable:Output parseable results from commands that write to standard output'
+  'allow-scripts-pending:List packages with install scripts that are not yet covered by the `allowScripts` policy, without...'
+  'allow-scripts-pin:Write pinned (`pkg@version`) entries when approving install scripts'
+  'prefer-dedupe:Prefer to deduplicate packages if possible, rather than choosing a newer version of a dependency'
+  'prefer-offline:If true, staleness checks for cached data will be bypassed, but missing data will be requested from the server'
+  'prefer-online:If true, staleness checks for cached data will be forced, making the CLI look for updates immediately even...'
+  'prefix:The location to install global items'
+  'preid:The "prerelease identifier" to use as a prefix for the "prerelease" part of a semver'
+  'production:(deprecated) Alias for `--omit=dev`'
+  'progress:When set to `true`, npm will display a progress bar during time intensive operations, if `process.stderr`...'
+  'provenance:When publishing from a supported cloud CI/CD system, the package will be publicly linked to where it was...'
+  'provenance-file:When publishing, the provenance bundle at the given path will be used'
+  'proxy:A proxy to use for outgoing http requests'
+  'read-only:This is used to mark a token as unable to publish when configuring limited access tokens with the `npm...'
+  'rebuild-bundle:Rebuild bundled dependencies after installation'
+  'registry:The base URL of the npm registry'
+  'replace-registry-host:Defines behavior for replacing the registry host in a lockfile with the configured registry'
+  'save:Save installed packages to a `package.json` file as dependencies'
+  'save-bundle:If a package would be saved at install time by the use of `--save`, `--save-dev`, or `--save-optional`,...'
+  'save-dev:Save installed packages to a package.json file as `devDependencies`'
+  'save-exact:Dependencies saved to package.json will be configured with an exact version rather than using npm'\''s...'
+  'save-optional:Save installed packages to a package.json file as `optionalDependencies`'
+  'save-peer:Save installed packages to a package.json file as `peerDependencies`'
+  'save-prefix:Configure how versions of packages installed to a package.json file via `--save` or `--save-dev` get prefixed'
+  'save-prod:Save installed packages into `dependencies` specifically'
+  'sbom-format:SBOM format to use when generating SBOMs'
+  'sbom-type:The type of package described by the generated SBOM'
+  'scope:Associate an operation with a scope for a scoped registry'
+  'scopes:When creating a Granular Access Token with `npm token create`, this limits the token access to specific scopes'
+  'packages-all:When creating a Granular Access Token with `npm token create`, grants the token access to all packages...'
+  'packages-and-scopes-permission:When creating a Granular Access Token with `npm token create`, sets the permission level for packages and...'
+  'orgs-permission:When creating a Granular Access Token with `npm token create`, sets the permission level for organizations'
+  'password:Password for authentication'
+  'token-description:Description text for the token when using `npm token create`'
+  'script-shell:The shell to use for scripts run with the `npm exec`, `npm run` and `npm init <package-spec>` commands'
+  'searchexclude:Space-separated options that limit the results from search'
+  'searchlimit:Number of items to limit search results to'
+  'searchopts:Space-separated options that are always passed to search'
+  'searchstaleness:The age of the cache, in seconds, before another registry request is made if using legacy search endpoint'
+  'shell:The shell to run for the `npm explore` command'
+  'shrinkwrap:(deprecated) Alias for --package-lock'
+  'sign-git-commit:If set to true, then the `npm version` command will commit the new package version using `-S` to add a...'
+  'sign-git-tag:If set to true, then the `npm version` command will tag the version using `-s` to add a signature'
+  'strict-peer-deps:If set to `true`, and `--legacy-peer-deps` is not set, then _any_ conflicting `peerDependencies` will be...'
+  'strict-allow-scripts:If `true`, turn the install-script policy from a warning into a hard error\: any dependency with install...'
+  'strict-ssl:Whether or not to do SSL key validation when making requests to the registry via https'
+  'tag:If you ask npm to install a package and don'\''t tell it a specific version, then it will install the...'
+  'tag-version-prefix:If set, alters the prefix used when tagging a new version when performing a version increment using `npm...'
+  'timing:If true, writes timing information to a process specific json file in the cache or `logs-dir`'
+  'umask:The "umask" value to use when setting the file creation mode on files and folders'
+  'unicode:When set to true, npm uses unicode characters in the tree output'
+  'update-notifier:Set to false to suppress the update notification when using an older version of npm than the latest'
+  'usage:Show short usage output about the command specified'
+  'user-agent:Sets the User-Agent request header'
+  'userconfig:The location of user-level configuration settings'
+  'version:If true, output the npm version and exit successfully'
+  'versions:If true, output the npm version as well as node'\''s `process.versions` map and the version in the current...'
+  'viewer:The program to use to view help content'
+  'which:If there are multiple funding sources, which 1-indexed source URL to open'
+  'workspace:Enable running a command in the context of the configured workspaces of the current project while...'
+  'workspaces:Set to true to run the command in the context of **all** configured workspaces'
+  'workspaces-update:If set to true, the npm cli will run an update after operations that may possibly change the workspaces...'
+  'yes:Automatically answer "yes" to any prompts that npm might print on the command line'
+)
+
+# npm config set refuses deprecated keys.
+typeset -ga _npm_deprecated_keys=( also cache-max cache-min cert dev global-style init.author.email init.author.name init.author.url init.license init.module init.version key legacy-bundling only optional production shrinkwrap )
+
+# Value action per config key, for `npm config set <key>=<value>`.
+typeset -gA _npm_config_values
+_npm_config_values=(
+  '_auth' ''
+  'access' '(restricted public private)'
+  'all' '(true false)'
+  'allow-same-version' '(true false)'
+  'allow-directory' '(all none root)'
+  'allow-file' '(all none root)'
+  'allow-git' '(all none root)'
+  'allow-remote' '(all none root)'
+  'allow-scripts' ''
+  'also' '(dev development)'
+  'audit' '(true false)'
+  'audit-level' '(info low moderate high critical none)'
+  'auth-type' '(legacy web)'
+  'before' ''
+  'bin-links' '(true false)'
+  'browser' ' _npm__browsers'
+  'bypass-2fa' '(true false)'
+  'ca' ''
+  'cache' '_files -/'
+  'cache-max' ''
+  'cache-min' ''
+  'cafile' '_files'
+  'call' ''
+  'cert' ''
+  'cidr' ''
+  'color' '(always true false)'
+  'commit-hooks' '(true false)'
+  'cpu' '(arm arm64 ia32 loong64 mips mipsel ppc ppc64 riscv64 s390 s390x x64)'
+  'dangerously-allow-all-scripts' '(true false)'
+  'depth' ''
+  'description' '(true false)'
+  'dev' '(true false)'
+  'diff' ''
+  'diff-ignore-all-space' '(true false)'
+  'diff-name-only' '(true false)'
+  'diff-no-prefix' '(true false)'
+  'diff-dst-prefix' ''
+  'diff-src-prefix' ''
+  'diff-text' '(true false)'
+  'diff-unified' ''
+  'dry-run' '(true false)'
+  'editor' '_command_names -e'
+  'engine-strict' '(true false)'
+  'expect-result-count' ''
+  'expect-results' '(true false)'
+  'expires' ''
+  'fetch-retries' ''
+  'fetch-retry-factor' ''
+  'fetch-retry-maxtimeout' ''
+  'fetch-retry-mintimeout' ''
+  'fetch-timeout' ''
+  'force' '(true false)'
+  'foreground-scripts' '(true false)'
+  'format-package-lock' '(true false)'
+  'fund' '(true false)'
+  'git' '_command_names -e'
+  'git-tag-version' '(true false)'
+  'global' '(true false)'
+  'globalconfig' '_files'
+  'global-style' '(true false)'
+  'heading' ''
+  'https-proxy' '_urls'
+  'if-present' '(true false)'
+  'ignore-scripts' '(true false)'
+  'include' '(prod dev optional peer)'
+  'include-staged' '(true false)'
+  'include-workspace-root' '(true false)'
+  'include-attestations' '(true false)'
+  'init-author-email' ''
+  'init-author-name' ''
+  'init-author-url' '_urls'
+  'init-license' ''
+  'init-module' '_files'
+  'init-type' ''
+  'init-version' ''
+  'init-private' '(true false)'
+  'init.author.email' ''
+  'init.author.name' ''
+  'init.author.url' '_urls'
+  'init.license' ''
+  'init.module' '_files'
+  'init.version' ''
+  'install-links' '(true false)'
+  'install-strategy' '(hoisted nested shallow linked)'
+  'json' '(true false)'
+  'key' ''
+  'legacy-bundling' '(true false)'
+  'legacy-peer-deps' '(true false)'
+  'libc' '(glibc musl)'
+  'link' '(true false)'
+  'local-address' ' _npm__local_addresses'
+  'location' '(global user project)'
+  'lockfile-version' '(1 2 3)'
+  'loglevel' '(silent error warn notice http info verbose silly)'
+  'logs-dir' '_files -/'
+  'logs-max' ''
+  'long' '(true false)'
+  'name' ''
+  'maxsockets' ''
+  'message' ''
+  'min-release-age' ''
+  'min-release-age-exclude' ''
+  'node-gyp' '_command_names -e'
+  'node-options' ''
+  'noproxy' ''
+  'offline' '(true false)'
+  'omit' '(dev optional peer)'
+  'omit-lockfile-registry-resolved' '(true false)'
+  'only' '(prod production)'
+  'orgs' ''
+  'optional' '(true false)'
+  'os' '(aix android darwin freebsd linux openbsd sunos win32)'
+  'otp' ''
+  'package' ''
+  'package-lock' '(true false)'
+  'package-lock-only' '(true false)'
+  'pack-destination' ''
+  'packages' ''
+  'parseable' '(true false)'
+  'allow-scripts-pending' '(true false)'
+  'allow-scripts-pin' '(true false)'
+  'prefer-dedupe' '(true false)'
+  'prefer-offline' '(true false)'
+  'prefer-online' '(true false)'
+  'prefix' '_files -/'
+  'preid' ''
+  'production' '(true false)'
+  'progress' '(true false)'
+  'provenance' '(true false)'
+  'provenance-file' '_files'
+  'proxy' '_urls'
+  'read-only' '(true false)'
+  'rebuild-bundle' '(true false)'
+  'registry' '_urls'
+  'replace-registry-host' '(npmjs never always)'
+  'save' '(true false)'
+  'save-bundle' '(true false)'
+  'save-dev' '(true false)'
+  'save-exact' '(true false)'
+  'save-optional' '(true false)'
+  'save-peer' '(true false)'
+  'save-prefix' ''
+  'save-prod' '(true false)'
+  'sbom-format' '(cyclonedx spdx)'
+  'sbom-type' '(library application framework)'
+  'scope' ''
+  'scopes' ''
+  'packages-all' '(true false)'
+  'packages-and-scopes-permission' '(read-only read-write no-access)'
+  'orgs-permission' '(read-only read-write no-access)'
+  'password' ''
+  'token-description' ''
+  'script-shell' '_command_names -e'
+  'searchexclude' ''
+  'searchlimit' ''
+  'searchopts' ''
+  'searchstaleness' ''
+  'shell' '_command_names -e'
+  'shrinkwrap' '(true false)'
+  'sign-git-commit' '(true false)'
+  'sign-git-tag' '(true false)'
+  'strict-peer-deps' '(true false)'
+  'strict-allow-scripts' '(true false)'
+  'strict-ssl' '(true false)'
+  'tag' ''
+  'tag-version-prefix' ''
+  'timing' '(true false)'
+  'umask' ''
+  'unicode' '(true false)'
+  'update-notifier' '(true false)'
+  'usage' '(true false)'
+  'user-agent' ''
+  'userconfig' '_files'
+  'version' '(true false)'
+  'versions' '(true false)'
+  'viewer' '(browser man woman)'
+  'which' ''
+  'workspace' ' _npm__workspaces'
+  'workspaces' '(true false)'
+  'workspaces-update' '(true false)'
+  'yes' '(true false)'
+)
+
+# -----------------------------------------------------------------------------
+# Small JavaScript readers run with the user's node: npm itself needs node, and
+# one node start (~40 ms) is far cheaper than one npm start (~250 ms).
+# -----------------------------------------------------------------------------
+
+# Scripts of a package.json, as `name:command` lines.
+typeset -g _npm_js_scripts='try{const s=require(process.argv[1]).scripts||{};for(const[k,v]of Object.entries(s))console.log(k.replace(/:/g,"\\:")+":"+String(v).replace(/\s+/g," ").slice(0,80))}catch{}'
+
+# Top-level fields of a package.json.
+typeset -g _npm_js_fields='try{for(const k of Object.keys(require(process.argv[1])))console.log(k.replace(/:/g,"\\:"))}catch{}'
+
+# Workspaces of the nearest package.json (walking up) that declares any, as
+# `name:path` lines.
+typeset -g _npm_js_workspaces='try{const fs=require("fs"),p=require("path");let d=process.argv[1],ws;for(;;){try{ws=require(p.join(d,"package.json")).workspaces}catch{}if(ws)break;const u=p.dirname(d);if(u===d)process.exit(0);d=u}const pats=Array.isArray(ws)?ws:ws.packages||[];for(const pat of pats)for(const m of fs.globSync(pat,{cwd:d})){try{const n=require(p.join(d,m,"package.json")).name;console.log((n||m).replace(/:/g,"\\:")+":"+m)}catch{}}}catch{}'
+
+# Local interface addresses, the same source npm validates --local-address with.
+typeset -g _npm_js_addresses='for(const[n,a]of Object.entries(require("os").networkInterfaces()))for(const i of a)console.log(i.address.replace(/:/g,"\\:")+":"+n+" "+i.family)'
+
+# -----------------------------------------------------------------------------
+# Option specs.
+# -----------------------------------------------------------------------------
+
+# Build the option specs for a command scope into $reply: every accepted token,
+# with "(hidden)" leading the description of those `--help` does not print.
+_npm__option_specs() {
+  local scope=$1 tok spec line
+  local -A vis own
+  for tok in ${(s: :)_npm_visible_options[$scope]}; do
+    vis[$tok]=1
+  done
+  for line in ${(f)_npm_scoped_option_specs[$scope]}; do
+    own[${line%%$'\t'*}]=${line#*$'\t'}
+  done
+  reply=()
+  for tok spec in "${(@kv)_npm_option_specs}"; do
+    (( $+own[$tok] )) && continue
+    if (( $+vis[$tok] )); then
+      reply+=( "$spec" )
+    else
+      reply+=( "${spec/\[/[(hidden) }" )
+    fi
+  done
+  for tok spec in "${(@kv)own}"; do
+    if (( $+vis[$tok] )); then
+      reply+=( "$spec" )
+    else
+      reply+=( "${spec/\[/[(hidden) }" )
+    fi
+  done
+}
+
+# Run _arguments for a command scope: its options plus the given positional specs.
+_npm__args() {
+  local scope=$1
+  shift
+  local -a reply
+  _npm__option_specs "$scope"
+  _arguments -s -S : "${reply[@]}" "$@"
+}
+
+# -----------------------------------------------------------------------------
+# Commands.
+# -----------------------------------------------------------------------------
+
+# Resolve a typed command name the way npm's deref() does: camelCase to
+# kebab-case, exact command, alias, then a unique prefix of any command or alias.
+_npm__deref() {
+  emulate -L zsh -o extendedglob
+  local c=$1 a
+  local -a names cands
+  [[ $c == *[A-Z]* ]] && c=${c//(#b)([A-Z])/-${(L)match[1]}}
+  if (( $+_npm_command_descriptions[$c] )); then
+    REPLY=$c
+    return 0
+  fi
+  if (( $+_npm_aliases[$c] )); then
+    REPLY=$_npm_aliases[$c]
+    return 0
+  fi
+  REPLY=
+  [[ -n $c ]] || return 1
+  names=( ${(k)_npm_command_descriptions} ${(k)_npm_aliases} )
+  cands=( ${(M)names:#${(b)c}*} )
+  (( $#cands == 1 )) || return 1
+  a=$cands[1]
+  while (( $+_npm_aliases[$a] )); do
+    a=$_npm_aliases[$a]
+  done
+  REPLY=$a
+}
+
+_npm__commands() {
+  local k ret=1
+  local -a cmds als
+  for k in ${(ko)_npm_command_descriptions}; do
+    cmds+=( "${k}:${_npm_command_descriptions[$k]//:/\\:}" )
+  done
+  for k in ${(ko)_npm_aliases}; do
+    (( ${_npm_unlisted_aliases[(Ie)$k]} )) && continue
+    als+=( "${k}:alias for ${_npm_aliases[$k]}" )
+  done
+  _describe -t commands 'npm command' cmds && ret=0
+  _describe -t command-aliases 'npm command alias' als && ret=0
+  return ret
+}
+
+_npm__subcommands() {
+  local -a subs
+  subs=( ${(f)_npm_subcommands[$1]} )
+  _describe -t subcommands "npm $1 subcommand" subs
+}
+
+# -----------------------------------------------------------------------------
+# Local state.
+# -----------------------------------------------------------------------------
+
+# Directory npm treats as the local prefix for a file or directory named $1:
+# --prefix/-C from the command line, else the nearest ancestor holding $1.
+_npm__find_up() {
+  local i dir w
+  for (( i = 2; i <= $#_npm_line_words; i++ )); do
+    w=$_npm_line_words[i]
+    case $w in
+      (--prefix|-C) dir=$_npm_line_words[i+1] ;;
+      (--prefix=*) dir=${w#--prefix=} ;;
+    esac
+  done
+  if [[ -n $dir ]]; then
+    REPLY=${dir/#\~/$HOME}
+    return 0
+  fi
+  dir=$PWD
+  while :; do
+    if [[ -e $dir/$1 ]]; then
+      REPLY=$dir
+      return 0
+    fi
+    [[ $dir == / ]] && break
+    dir=${dir:h}
+  done
+  REPLY=
+  return 1
+}
+
+# Whether the command line operates on the global prefix.
+_npm__is_global() {
+  local -a w
+  local i
+  w=( "${_npm_line_words[@]}" )
+  (( ${w[(I)(-g|--global|--location=global|-[A-Za-z]#g[A-Za-z]#)]} )) && return 0
+  i=${w[(I)(-L|--location)]}
+  (( i )) && [[ $w[i+1] == global ]]
+}
+
+_npm__global_root() {
+  REPLY=$(_call_program npm-global-root npm root -g --no-update-notifier --loglevel=silent 2>/dev/null)
+  [[ -n $REPLY ]]
+}
+
+# Packages directly under a node_modules directory: the local one, or the
+# global one when -g is on the line.
+_npm__installed() {
+  local root expl REPLY
+  local -a pkgs
+  if _npm__is_global; then
+    _npm__global_root || return 1
+    root=$REPLY
+  else
+    if ! _npm__find_up node_modules; then
+      _message 'installed package (no node_modules found)'
+      return 1
+    fi
+    root=$REPLY/node_modules
+  fi
+  pkgs=( $root/[^.@]*(N-/) $root/@*/[^.]*(N-/) )
+  pkgs=( ${pkgs#$root/} )
+  _wanted packages expl 'installed package' compadd -a - pkgs
+}
+
+_npm__global_packages() {
+  local root expl REPLY
+  local -a pkgs
+  _npm__global_root || return 1
+  root=$REPLY
+  pkgs=( $root/[^.@]*(N-/) $root/@*/[^.]*(N-/) )
+  pkgs=( ${pkgs#$root/} )
+  _wanted packages expl 'globally installed package' compadd -a - pkgs
+}
+
+# npm link takes a globally installed package name or a package folder.
+_npm__link_targets() {
+  local ret=1
+  _npm__global_packages && ret=0
+  _files -/ && ret=0
+  return ret
+}
+
+# Executables of the local node_modules/.bin, for npm exec.
+_npm__bins() {
+  local expl REPLY
+  local -a bins
+  if _npm__find_up node_modules; then
+    bins=( $REPLY/node_modules/.bin/*(N:t) )
+  fi
+  if (( $#bins )); then
+    _wanted commands expl 'local package binary' compadd -a - bins
+  else
+    _message 'package spec or command'
+  fi
+}
+
+# A package spec for install: complete paths once the word looks like one
+# (npm itself completes only folders), otherwise there is nothing local to offer.
+_npm__package_specs() {
+  if [[ $PREFIX == (.|/|\~)* || $PREFIX == */* && $PREFIX != @*/* ]]; then
+    _files
+  else
+    _message 'package spec (name[@version], scope/name, git url, tarball or folder)'
+  fi
+}
+
+_npm__scripts() {
+  local dir REPLY
+  local -a scripts
+  if ! _npm__find_up package.json; then
+    _message 'script (no package.json found)'
+    return 1
+  fi
+  dir=$REPLY
+  scripts=( ${(f)"$(_call_program npm-scripts node -e '"$_npm_js_scripts"' '"$dir/package.json"' 2>/dev/null)"} )
+  _describe -t scripts 'package script' scripts
+}
+
+_npm__pkg_fields() {
+  local dir expl REPLY
+  local -a fields
+  _npm__find_up package.json || return 1
+  dir=$REPLY
+  fields=( ${(f)"$(_call_program npm-pkg-fields node -e '"$_npm_js_fields"' '"$dir/package.json"' 2>/dev/null)"} )
+  _wanted fields expl 'package.json field' compadd "$@" -a - fields
+}
+
+# npm pkg set <field>=<value>.
+_npm__pkg_kv() {
+  if compset -P '*='; then
+    _message "value of ${IPREFIX%=}"
+  else
+    _npm__pkg_fields -qS=
+  fi
+}
+
+_npm__workspaces() {
+  local -a ws
+  ws=( ${(f)"$(_call_program npm-workspaces node -e '"$_npm_js_workspaces"' '"$PWD"' 2>/dev/null)"} )
+  if (( $#ws )); then
+    _describe -t workspaces 'workspace' ws
+  else
+    _message 'workspace name or path'
+  fi
+}
+
+_npm__local_addresses() {
+  local -a addrs
+  addrs=( ${(f)"$(_call_program npm-addresses node -e '"$_npm_js_addresses"' 2>/dev/null)"} )
+  _describe -t addresses 'local address' addrs
+}
+
+_npm__browsers() {
+  _alternative 'values:value:(true false)' 'commands:browser command:_command_names -e'
+}
+
+_npm__help_topics() {
+  local expl npmroot
+  local -aU topics
+  npmroot=${commands[npm]:A:h:h}
+  if [[ -d $npmroot/man ]]; then
+    topics=( help $npmroot/man/man[0-9]/*.[0-9](N:t:r) )
+    topics=( ${topics#npm-} )
+  else
+    # A shim (nodenv, volta) hides the package; ask npm's own completion.
+    local -x COMP_CWORD=2 COMP_LINE='npm help ' COMP_POINT=9
+    topics=( ${(f)"$(_call_program npm-help-topics npm completion --no-update-notifier --loglevel=silent -- npm help "''" 2>/dev/null)"} )
+  fi
+  _wanted topics expl 'help topic' compadd -a - topics
+}
+
+# -----------------------------------------------------------------------------
+# Config keys and values.
+# -----------------------------------------------------------------------------
+
+_npm__config_keys() {
+  _describe -t config-keys 'config key' _npm_config_keys "$@"
+}
+
+_npm__config_value() {
+  local key=$1 expl action
+  local -a vals
+  action=$_npm_config_values[$key]
+  case $action in
+    ('('*')')
+      vals=( ${(z)${${action#\(}%\)}} )
+      _wanted values expl "value of $key" compadd -a - vals
+      ;;
+    (?*) eval "${action# }" ;;
+    (*) _message "value of $key" ;;
+  esac
+}
+
+# npm config set <key>=<value>; deprecated keys are refused by npm.
+_npm__config_kv() {
+  local k
+  local -a keys
+  if compset -P '*='; then
+    _npm__config_value "${IPREFIX%=}"
+    return
+  fi
+  for k in $_npm_config_keys; do
+    (( ${_npm_deprecated_keys[(Ie)${k%%:*}]} )) || keys+=( "$k" )
+  done
+  _describe -t config-keys 'config key' keys -qS=
+}
+
+# -----------------------------------------------------------------------------
+# Fixed value sets.
+# -----------------------------------------------------------------------------
+
+_npm__versions() {
+  local -a v
+  v=(
+    'major:bump the major version'
+    'minor:bump the minor version'
+    'patch:bump the patch version'
+    'premajor:bump to a prerelease of the next major'
+    'preminor:bump to a prerelease of the next minor'
+    'prepatch:bump to a prerelease of the next patch'
+    'prerelease:bump the prerelease number'
+    'from-git:use the latest git tag'
+  )
+  _describe -t versions 'new version (or an explicit semver)' v
+}
+
+_npm__doctor_checks() {
+  local -a v
+  v=(
+    'connection:check the connection to the registry'
+    'registry:check the registry configuration'
+    'versions:check node and npm versions'
+    'environment:check git and PATH'
+    'permissions:check permissions of the cache and install folders'
+    'cache:verify the cache'
+    'ping:(hidden) same group as connection'
+  )
+  _describe -t checks 'doctor check' v
+}
+
+_npm__access_settings() {
+  local -a v
+  v=(
+    'status=public:make the package public'
+    'status=private:make the package private'
+    'mfa=none:require no two-factor authentication to publish'
+    'mfa=publish:require two-factor authentication to publish'
+    'mfa=automation:require two-factor authentication or an automation token'
+    '2fa=none:(hidden) same as mfa=none'
+    '2fa=publish:(hidden) same as mfa=publish'
+    '2fa=automation:(hidden) same as mfa=automation'
+  )
+  _describe -t settings 'access setting' v
+}
+
+_npm__profile_keys() {
+  local expl
+  local -a keys
+  if [[ $1 == set ]]; then
+    keys=( email password fullname homepage freenode twitter github )
+  else
+    keys=( name email 'two-factor auth' fullname homepage freenode twitter github created updated )
+  fi
+  _wanted keys expl 'profile property' compadd -a - keys
+}
+
+_npm__access_list_kinds() {
+  local -a v
+  v=(
+    'packages:packages a user, scope or team can access'
+    'collaborators:users with access to a package'
+  )
+  _describe -t kinds 'what to list' v
+}
+
+_npm__cache_npx_actions() {
+  local -a v
+  v=(
+    'ls:list the npx cache'
+    'rm:remove npx cache entries'
+    'info:show npx cache entries'
+  )
+  _describe -t actions 'npx cache action' v
+}
+
+# -----------------------------------------------------------------------------
+# Command handlers.
+# -----------------------------------------------------------------------------
+
+# Commands whose first argument is an action handled by their exec() switch.
+_npm__with_subcommands() {
+  local cmd=$1 curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local -a reply
+  _npm__option_specs "$cmd"
+  _arguments -C -s -S : "${reply[@]}" "(-)1:subcommand: _npm__subcommands $cmd" '(-)*::arg:->args' && ret=0
+  [[ $state == args ]] || return ret
+
+  local sub=$words[1]
+  curcontext="${curcontext%:*}-$sub:"
+  case $cmd:$sub in
+    (access:list)
+      _npm__args access '1:what: _npm__access_list_kinds' '2:user, scope, scope\:team or package:' '3:package or user:' ;;
+    (access:get) _npm__args access '1:property:(status)' '2:package:' ;;
+    (access:set) _npm__args access '1:setting: _npm__access_settings' '2:package:' ;;
+    (access:grant) _npm__args access '1:permission:(read-only read-write)' '2:scope\:team:' '3:package:' ;;
+    (access:revoke) _npm__args access '1:scope\:team:' '2:package:' ;;
+
+    (cache:add) _npm__args cache '*:package spec:' ;;
+    (cache:(clean|rm|clear)) _npm__args cache '*:cache key:' ;;
+    (cache:ls) _npm__args cache '*:name@version:' ;;
+    (cache:(verify|check)) _npm__args cache ;;
+    (cache:npx) _npm__args cache '1:action: _npm__cache_npx_actions' '*:npx cache key:' ;;
+
+    (config:set) _npm__args config '*:key=value: _npm__config_kv' ;;
+    (config:(get|delete|rm|del)) _npm__args config '*:config key: _npm__config_keys' ;;
+    (config:(list|ls|edit|fix)) _npm__args config ;;
+
+    (dist-tag:(add|a|set|s)) _npm__args dist-tag '1:package spec (with version):' '2:tag:' ;;
+    (dist-tag:(rm|r|del|d|remove)) _npm__args dist-tag '1:package spec:' '2:tag:' ;;
+    (dist-tag:(ls|l|sl|list)) _npm__args dist-tag '1:package spec:' ;;
+
+    (install-scripts:(approve|deny)) _npm__args install-scripts '*:package: _npm__installed' ;;
+    (install-scripts:(ls|list|prune)) _npm__args install-scripts ;;
+
+    (org:(set|add)) _npm__args org '1:org name:' '2:username:' '3:role:(developer admin owner)' ;;
+    (org:(rm|ls)) _npm__args org '1:org name:' '2:username:' ;;
+
+    (owner:(add|rm|remove)) _npm__args owner '1:user:' '2:package spec:' ;;
+    (owner:(ls|list)) _npm__args owner '1:package spec:' ;;
+
+    (pkg:(get|delete)) _npm__args pkg '*:field: _npm__pkg_fields' ;;
+    (pkg:set) _npm__args pkg '*:field=value: _npm__pkg_kv' ;;
+    (pkg:fix) _npm__args pkg ;;
+
+    (profile:(enable-2fa|enable-tfa|enable2fa|enabletfa))
+      _npm__args profile '1:mode:(auth-only auth-and-writes)' ;;
+    (profile:(disable-2fa|disable-tfa|disable2fa|disabletfa)) _npm__args profile ;;
+    (profile:get) _npm__args profile '1:property: _npm__profile_keys get' ;;
+    (profile:set) _npm__args profile '1:property: _npm__profile_keys set' '2:value:' ;;
+
+    (team:(create|destroy)) _npm__args team '1:scope\:team:' ;;
+    (team:(add|rm)) _npm__args team '1:scope\:team:' '2:user:' ;;
+    (team:ls) _npm__args team '1:scope or scope\:team:' ;;
+
+    (token:(revoke|rm|delete|remove)) _npm__args token '*:token id or token:' ;;
+    (token:(list|ls|create)) _npm__args token ;;
+
+    (stage:publish) _npm__args stage:publish '1:package spec:_files' ;;
+    (stage:list) _npm__args stage:list '1:package spec:' ;;
+    (stage:(view|approve|reject|download)) _npm__args stage:$sub '1:stage id:' ;;
+
+    (trust:(github|gitlab|circleci|list|revoke)) _npm__args trust:$sub '1:package:' ;;
+
+    (*) _message "unknown npm $cmd subcommand: $sub" ;;
+  esac
+}
+
+_npm__dispatch() {
+  local cmd=$1
+  case $cmd in
+    (access|cache|config|dist-tag|install-scripts|org|owner|pkg|profile|stage|team|token|trust)
+      _npm__with_subcommands $cmd ;;
+    (audit) _npm__args audit '1:subcommand: _npm__subcommands audit' ;;
+    (approve-scripts|deny-scripts) _npm__args $cmd '*:package: _npm__installed' ;;
+    (bugs|docs|repo) _npm__args $cmd '*:package name: _npm__installed' ;;
+    (deprecate) _npm__args $cmd '1:package spec:' '2:message:' ;;
+    (undeprecate|unpublish) _npm__args $cmd '1:package spec:' ;;
+    (diff) _npm__args $cmd '*:path:_files' ;;
+    (doctor) _npm__args $cmd '*:check: _npm__doctor_checks' ;;
+    (edit|explore) _npm__args $cmd '1:package: _npm__installed' ;;
+    (exec) _npm__args $cmd '1:command: _npm__bins' '*::argument:_normal' ;;
+    (explain|fund|ll|ls|outdated|prune|rebuild|uninstall|update)
+      _npm__args $cmd '*:package: _npm__installed' ;;
+    (get) _npm__args $cmd '*:config key: _npm__config_keys' ;;
+    (set) _npm__args $cmd '*:key=value: _npm__config_kv' ;;
+    (help) _npm__args $cmd '1:help topic: _npm__help_topics' '*:term:' ;;
+    (help-search|search) _npm__args $cmd '*:search term:' ;;
+    (init) _npm__args $cmd '1:initializer (package spec or @scope):' ;;
+    (install|install-test) _npm__args $cmd '*:package spec: _npm__package_specs' ;;
+    (link) _npm__args $cmd '1:package: _npm__link_targets' ;;
+    (pack|publish) _npm__args $cmd '*:package spec or folder:_files' ;;
+    (query) _npm__args $cmd '1:selector:' ;;
+    (restart|start|stop|test) _npm__args $cmd '*:argument:_files' ;;
+    (run) _npm__args $cmd '1:script: _npm__scripts' '*:argument:_files' ;;
+    (star|unstar) _npm__args $cmd '*:package spec:' ;;
+    (stars) _npm__args $cmd '1:user:' ;;
+    (version) _npm__args $cmd '1:new version: _npm__versions' ;;
+    (view) _npm__args $cmd '1:package spec:' '*:field:' ;;
+    (*) _npm__args $cmd ;;
+  esac
+}
+
+function _npm() {
+  local curcontext=$curcontext state state_descr line ret=1
+  local -A opt_args
+  local -a reply _npm_line_words
+  _npm_line_words=( "${words[@]}" )
+
+  # `(-)` stops this call from claiming options after the command name: every
+  # config option is also a root option, and `npm uninstall -g <TAB>` would
+  # otherwise leave the command handler with only the current word.
+  _npm__option_specs ''
+  _arguments -C -s -S : "${reply[@]}" '(-)1: : _npm__commands' '(-)*::arg:->args' && ret=0
+
+  case $state in
+    (args)
+      local REPLY
+      if _npm__deref "$words[1]"; then
+        curcontext="${curcontext%:*:*}:npm-$REPLY:"
+        _npm__dispatch "$REPLY" && ret=0
+      else
+        _message "unknown npm command: $words[1]"
+      fi
+      ;;
+  esac
+
+  return ret
+}
+
+_npm "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
