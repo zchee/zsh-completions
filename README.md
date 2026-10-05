@@ -135,6 +135,7 @@ fork, fix or wrote myself.
 | mypy | Optional static typing for Python 2 and 3 (PEP484) |
 | ninja | Ninja is a small build system with a focus on speed |
 | nosetests | nose is nicer testing for python |
+| npm | Node.js package manager |
 | nvim | Vim-fork focused on extensibility and agility |
 | pip |  |
 | prlctl | Parallels Desktop command-line utility is used to perform administration tasks on virtual machines |
