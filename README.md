@@ -138,6 +138,7 @@ fork, fix or wrote myself.
 | npm | Node.js package manager |
 | nvim | Vim-fork focused on extensibility and agility |
 | pip |  |
+| pnpm | Fast, disk space efficient package manager |
 | prlctl | Parallels Desktop command-line utility is used to perform administration tasks on virtual machines |
 | prlsrvctl | Parallels Desktop command-line utility is used to perform management tasks |
 | procexp | Going over the top(1) |

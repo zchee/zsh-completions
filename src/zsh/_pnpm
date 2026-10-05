@@ -437,6 +437,29 @@ _pnpm__passthrough_at() {
   [[ $PREFIX != -* ]] && (( CURRENT > 1 ))
 }
 
+# Index (in $words) of the first positional word strictly before the cursor,
+# in REPLY: the (sub)command a dispatcher hands the rest of the line to.
+# Options the root or the command also knows may sit before or after it, so
+# this scan replaces a `*::` state, which loses the command word when a known
+# option follows it. The array named by $1 lists the option tokens of the
+# current command that take a separate value.
+(( $+functions[_pnpm__command_at] )) ||
+_pnpm__command_at() {
+  local -a _vo
+  _vo=(${(P)1} $_pnpm_global_value_options)
+  local -i i=2
+  while (( i < CURRENT )); do
+    case $words[i] in
+      (--) return 1 ;;
+      (--*=*) ;;
+      (-?*) (( ${_vo[(Ie)$words[i]]} )) && (( i++ )) ;;
+      (*) REPLY=$i; return 0 ;;
+    esac
+    (( i++ ))
+  done
+  return 1
+}
+
 # The pnpm command line words that pick the project: -C/--dir/--prefix and
 # -w/--workspace-root, from the line as typed.
 (( $+functions[_pnpm__project_args] )) ||
@@ -1677,32 +1700,25 @@ _pnpm__cmd_tasks_status() {
 
 (( $+functions[_pnpm__cmd_tasks] )) ||
 _pnpm__cmd_tasks() {
-  local curcontext=$curcontext state state_descr line ret=1
-  typeset -A opt_args
+  local -a vopts=()
+  if _pnpm__command_at vopts; then
+    shift $(( REPLY - 1 )) words; (( CURRENT -= REPLY - 1 ))
+    local curcontext=${curcontext%:*:*}:pnpm-tasks-$words[1]:
+    case $words[1] in
+      (status) _pnpm__cmd_tasks_status ;;
+      (*) _files ;;
+    esac
+    return
+  fi
+  local -a subcommands=(
+    'status:Show running and waiting tasks in concurrency groups'
+  )
   local -a reply
   _pnpm__globals
-  _arguments -s -S -C : $reply \
+  _arguments -s -S : $reply \
     '(- *)-h[Print help (see more with '\''--help'\'')]' \
     '(- *)--help[Print help (see more with '\''--help'\'')]' \
-    ': :->sub' \
-    '*::arg:->args' && ret=0
-  case $state in
-    (sub)
-      local -a subcommands=(
-        'status:Show running and waiting tasks in concurrency groups'
-      )
-      _describe -t subcommands 'tasks subcommand' subcommands && ret=0
-      _message '(hidden) task arguments'
-      ;;
-    (args)
-      curcontext=${curcontext%:*:*}:pnpm-tasks-$words[1]:
-      case $words[1] in
-        (status) _pnpm__cmd_tasks_status && ret=0 ;;
-        (*) _files && ret=0 ;;
-      esac
-      ;;
-  esac
-  return ret
+    '1: : _alternative "subcommands:tasks subcommand: _describe -t subcommands \"tasks subcommand\" subcommands" "args: : _message \"(hidden) task arguments\""'
 }
 
 (( $+functions[_pnpm__cmd_pipeline] )) ||
@@ -2134,36 +2150,30 @@ _pnpm__cmd_config_list() {
 
 (( $+functions[_pnpm__cmd_config] )) ||
 _pnpm__cmd_config() {
-  local curcontext=$curcontext state state_descr line ret=1
-  typeset -A opt_args
+  local -a vopts=()
+  if _pnpm__command_at vopts; then
+    shift $(( REPLY - 1 )) words; (( CURRENT -= REPLY - 1 ))
+    local curcontext=${curcontext%:*:*}:pnpm-config-$words[1]:
+    case $words[1] in
+      (set) _pnpm__cmd_config_set ;;
+      (get) _pnpm__cmd_config_get ;;
+      (delete) _pnpm__cmd_config_delete ;;
+      (list) _pnpm__cmd_config_list ;;
+    esac
+    return
+  fi
+  local -a subcommands=(
+    'set:Set the config key to the value provided'
+    'get:Print the config value for the provided key'
+    'delete:Remove the config key from the config file'
+    'list:Show all the config settings'
+  )
   local -a reply
   _pnpm__globals
-  _arguments -s -S -C : $reply \
+  _arguments -s -S : $reply \
     '(- *)-h[Print help (see more with '\''--help'\'')]' \
     '(- *)--help[Print help (see more with '\''--help'\'')]' \
-    ': :->sub' \
-    '*::arg:->args' && ret=0
-  case $state in
-    (sub)
-      local -a subcommands=(
-        'set:Set the config key to the value provided'
-        'get:Print the config value for the provided key'
-        'delete:Remove the config key from the config file'
-        'list:Show all the config settings'
-      )
-      _describe -t subcommands 'config subcommand' subcommands && ret=0
-      ;;
-    (args)
-      curcontext=${curcontext%:*:*}:pnpm-config-$words[1]:
-      case $words[1] in
-        (set) _pnpm__cmd_config_set && ret=0 ;;
-        (get) _pnpm__cmd_config_get && ret=0 ;;
-        (delete) _pnpm__cmd_config_delete && ret=0 ;;
-        (list) _pnpm__cmd_config_list && ret=0 ;;
-      esac
-      ;;
-  esac
-  return ret
+    '1: : _describe -t subcommands "config subcommand" subcommands'
 }
 
 (( $+functions[_pnpm__cmd_get] )) ||
@@ -2228,36 +2238,30 @@ _pnpm__cmd_pkg_fix() {
 
 (( $+functions[_pnpm__cmd_pkg] )) ||
 _pnpm__cmd_pkg() {
-  local curcontext=$curcontext state state_descr line ret=1
-  typeset -A opt_args
+  local -a vopts=()
+  if _pnpm__command_at vopts; then
+    shift $(( REPLY - 1 )) words; (( CURRENT -= REPLY - 1 ))
+    local curcontext=${curcontext%:*:*}:pnpm-pkg-$words[1]:
+    case $words[1] in
+      (get) _pnpm__cmd_pkg_get ;;
+      (set) _pnpm__cmd_pkg_set ;;
+      (delete) _pnpm__cmd_pkg_delete ;;
+      (fix) _pnpm__cmd_pkg_fix ;;
+    esac
+    return
+  fi
+  local -a subcommands=(
+    'get:Retrieves a value from package.json'
+    'set:Sets a value in package.json'
+    'delete:Deletes a key from package.json'
+    'fix:Auto corrects common errors in package.json'
+  )
   local -a reply
   _pnpm__globals
-  _arguments -s -S -C : $reply \
+  _arguments -s -S : $reply \
     '(- *)-h[Print help (see more with '\''--help'\'')]' \
     '(- *)--help[Print help (see more with '\''--help'\'')]' \
-    ': :->sub' \
-    '*::arg:->args' && ret=0
-  case $state in
-    (sub)
-      local -a subcommands=(
-        'get:Retrieves a value from package.json'
-        'set:Sets a value in package.json'
-        'delete:Deletes a key from package.json'
-        'fix:Auto corrects common errors in package.json'
-      )
-      _describe -t subcommands 'pkg subcommand' subcommands && ret=0
-      ;;
-    (args)
-      curcontext=${curcontext%:*:*}:pnpm-pkg-$words[1]:
-      case $words[1] in
-        (get) _pnpm__cmd_pkg_get && ret=0 ;;
-        (set) _pnpm__cmd_pkg_set && ret=0 ;;
-        (delete) _pnpm__cmd_pkg_delete && ret=0 ;;
-        (fix) _pnpm__cmd_pkg_fix && ret=0 ;;
-      esac
-      ;;
-  esac
-  return ret
+    '1: : _describe -t subcommands "pkg subcommand" subcommands'
 }
 
 (( $+functions[_pnpm__cmd_pack_app] )) ||
@@ -2316,36 +2320,30 @@ _pnpm__cmd_store_path() {
 
 (( $+functions[_pnpm__cmd_store] )) ||
 _pnpm__cmd_store() {
-  local curcontext=$curcontext state state_descr line ret=1
-  typeset -A opt_args
+  local -a vopts=()
+  if _pnpm__command_at vopts; then
+    shift $(( REPLY - 1 )) words; (( CURRENT -= REPLY - 1 ))
+    local curcontext=${curcontext%:*:*}:pnpm-store-$words[1]:
+    case $words[1] in
+      (status) _pnpm__cmd_store_status ;;
+      (add) _pnpm__cmd_store_add ;;
+      (prune) _pnpm__cmd_store_prune ;;
+      (path) _pnpm__cmd_store_path ;;
+    esac
+    return
+  fi
+  local -a subcommands=(
+    'status:Checks for modified packages in the store. Returns exit code 0 if the content of the package is the same as it was at the time of unpacking'
+    'add:Functionally equivalent to pnpm add, except this adds new packages to the store directly without modifying any projects or files outside of...'
+    'prune:Removes unreferenced packages from the store. Unreferenced packages are packages that are not used by any projects on the system.'
+    'path:Returns the path to the active store directory'
+  )
   local -a reply
   _pnpm__globals
-  _arguments -s -S -C : $reply \
+  _arguments -s -S : $reply \
     '(- *)-h[Print help (see more with '\''--help'\'')]' \
     '(- *)--help[Print help (see more with '\''--help'\'')]' \
-    ': :->sub' \
-    '*::arg:->args' && ret=0
-  case $state in
-    (sub)
-      local -a subcommands=(
-        'status:Checks for modified packages in the store. Returns exit code 0 if the content of the package is the same as it was at the time of unpacking'
-        'add:Functionally equivalent to pnpm add, except this adds new packages to the store directly without modifying any projects or files outside of...'
-        'prune:Removes unreferenced packages from the store. Unreferenced packages are packages that are not used by any projects on the system.'
-        'path:Returns the path to the active store directory'
-      )
-      _describe -t subcommands 'store subcommand' subcommands && ret=0
-      ;;
-    (args)
-      curcontext=${curcontext%:*:*}:pnpm-store-$words[1]:
-      case $words[1] in
-        (status) _pnpm__cmd_store_status && ret=0 ;;
-        (add) _pnpm__cmd_store_add && ret=0 ;;
-        (prune) _pnpm__cmd_store_prune && ret=0 ;;
-        (path) _pnpm__cmd_store_path && ret=0 ;;
-      esac
-      ;;
-  esac
-  return ret
+    '1: : _describe -t subcommands "store subcommand" subcommands'
 }
 
 (( $+functions[_pnpm__cmd_cache_list] )) ||
@@ -2409,40 +2407,34 @@ _pnpm__cmd_cache_prune() {
 
 (( $+functions[_pnpm__cmd_cache] )) ||
 _pnpm__cmd_cache() {
-  local curcontext=$curcontext state state_descr line ret=1
-  typeset -A opt_args
+  local -a vopts=()
+  if _pnpm__command_at vopts; then
+    shift $(( REPLY - 1 )) words; (( CURRENT -= REPLY - 1 ))
+    local curcontext=${curcontext%:*:*}:pnpm-cache-$words[1]:
+    case $words[1] in
+      (list) _pnpm__cmd_cache_list ;;
+      (list-registries) _pnpm__cmd_cache_list_registries ;;
+      (path) _pnpm__cmd_cache_path ;;
+      (view) _pnpm__cmd_cache_view ;;
+      (delete) _pnpm__cmd_cache_delete ;;
+      (prune) _pnpm__cmd_cache_prune ;;
+    esac
+    return
+  fi
+  local -a subcommands=(
+    'list:Lists the available packages metadata cache. Supports filtering by glob'
+    'list-registries:Lists all registries that have their metadata cache locally'
+    'path:Prints the path to the cache directory'
+    'view:Views information from the specified package'\''s cache'
+    'delete:Deletes metadata cache for the specified package(s). Supports patterns'
+    'prune:Deletes registry metadata cache directories that this version of pnpm can no longer read'
+  )
   local -a reply
   _pnpm__globals
-  _arguments -s -S -C : $reply \
+  _arguments -s -S : $reply \
     '(- *)-h[Print help (see more with '\''--help'\'')]' \
     '(- *)--help[Print help (see more with '\''--help'\'')]' \
-    ': :->sub' \
-    '*::arg:->args' && ret=0
-  case $state in
-    (sub)
-      local -a subcommands=(
-        'list:Lists the available packages metadata cache. Supports filtering by glob'
-        'list-registries:Lists all registries that have their metadata cache locally'
-        'path:Prints the path to the cache directory'
-        'view:Views information from the specified package'\''s cache'
-        'delete:Deletes metadata cache for the specified package(s). Supports patterns'
-        'prune:Deletes registry metadata cache directories that this version of pnpm can no longer read'
-      )
-      _describe -t subcommands 'cache subcommand' subcommands && ret=0
-      ;;
-    (args)
-      curcontext=${curcontext%:*:*}:pnpm-cache-$words[1]:
-      case $words[1] in
-        (list) _pnpm__cmd_cache_list && ret=0 ;;
-        (list-registries) _pnpm__cmd_cache_list_registries && ret=0 ;;
-        (path) _pnpm__cmd_cache_path && ret=0 ;;
-        (view) _pnpm__cmd_cache_view && ret=0 ;;
-        (delete) _pnpm__cmd_cache_delete && ret=0 ;;
-        (prune) _pnpm__cmd_cache_prune && ret=0 ;;
-      esac
-      ;;
-  esac
-  return ret
+    '1: : _describe -t subcommands "cache subcommand" subcommands'
 }
 
 (( $+functions[_pnpm__cmd_cat_file] )) ||
@@ -2814,21 +2806,17 @@ _pnpm__commands() {
 # or a prefix (`pm`, `recursive`, `with <version>`) standing in for it.
 (( $+functions[_pnpm__root] )) ||
 _pnpm__root() {
-  local curcontext=$curcontext state state_descr line ret=1
-  typeset -A opt_args
+  local -a vopts=()
+  if _pnpm__command_at vopts; then
+    shift $(( REPLY - 1 )) words; (( CURRENT -= REPLY - 1 ))
+    local curcontext=${curcontext%:*:*}:pnpm-$words[1]:
+    _pnpm__dispatch
+    return
+  fi
   local -a reply
   _pnpm__globals
-  _arguments -s -S -C : $reply $_pnpm_root_specs \
-    '1: :->command' \
-    '*::arg:->args' && ret=0
-  case $state in
-    (command) _pnpm__commands && ret=0 ;;
-    (args)
-      curcontext=${curcontext%:*:*}:pnpm-$words[1]:
-      _pnpm__dispatch && ret=0
-      ;;
-  esac
-  return ret
+  _arguments -s -S : $reply $_pnpm_root_specs \
+    '1: : _pnpm__commands'
 }
 
 (( $+functions[_pnpm__dispatch] )) ||
