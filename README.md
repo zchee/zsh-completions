@@ -147,6 +147,7 @@ fork, fix or wrote myself.
 | rdm | rtags daemon |
 | shellcheck |  |
 | swig | Simplified wrapper and interface generator |
+| tart | [github.com/openai/tart: macOS and Linux VMs on Apple Silicon](https://github.com/openai/tart) |
 | travis |  |
 | tshark | Dump and analyze network traffic (Wireshark) |
 | vint | Fast and highly extensible Vim script language lint implemented by Python |

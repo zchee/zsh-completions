@@ -1,0 +1,518 @@
+#compdef tart
+
+# -----------------------------------------------------------------------------
+#
+# Copyright 2026, The zsh-completions Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of que nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# -----------------------------------------------------------------------------
+#
+# tart -- macOS and Linux VMs on Apple Silicon, built on Virtualization.framework.
+#
+# Upstream: https://github.com/openai/tart (tag 2.40.1)
+# Version:  tart 2.40.1 (Homebrew openai/tools/tart)
+#
+# tart is Swift, built on swift-argument-parser. The surface below was derived
+# from:
+#   - `tart --experimental-dump-help`, ArgumentParser's tool-info JSON for the
+#     whole registered tree; it carries `.hidden` and `.private` items and the
+#     `shouldDisplay: false` command;
+#   - Sources/tart/Commands/*.swift at the 2.40.1 tag, which enumerates the same
+#     set: `help: .hidden`, `visibility: .private`, `shouldDisplay: false`;
+#   - `tart <command> --help-hidden`, for what is documented;
+#   - `tart --generate-completion-script zsh`, for which VM-name completer each
+#     positional uses.
+# Every hidden item was confirmed against the binary with a parse-time oracle
+# that rejects `--zz-definitely-not-a-flag` by name, e.g.
+#   tart clone a b --deduplicate --zz-definitely-not-a-flag
+#     -> Error: Unknown option '--zz-definitely-not-a-flag'
+#   tart clone a b --zzdedup --zz-definitely-not-a-flag
+#     -> Error: Unknown option '--zzdedup'
+# `run` validates the VM before it reports unknown options, so --graphics was
+# confirmed through its own exclusion check instead:
+#   tart run zzvm --graphics --no-graphics
+#     -> Error: --graphics and --no-graphics are mutually exclusive
+#
+# Items marked "(hidden)" are accepted but absent from `tart <path> --help`:
+#   fqn                        `shouldDisplay: false`; prints a VM's
+#                              fully-qualified name. `tart help fqn` works.
+#   clone --deduplicate        `.hidden`; uses a cached image with shared
+#   pull --deduplicate         layers as the base and records the bytes saved
+#   prune --cache-budget       `.hidden`; deprecated spelling of --space-budget
+#   prune --gc                 `.hidden`; garbage-collects the OCI cache
+#   run --graphics             `visibility: .private`; forces the UI window even
+#                              with VNC. `.private` is missing even from
+#                              --help-hidden; only the JSON dump shows it.
+#   --help-hidden              ArgumentParser's, on every path
+#   help -h, --help            the `help` command's own help flags, which
+#                              print the root usage
+#
+# Accepted, but deliberately not completed:
+#   --generate-completion-script, --experimental-dump-help
+#                              ArgumentParser plumbing at the root
+#   ---completion              ArgumentParser's completion entry point; used
+#                              below as the source of VM names
+#   help -help                 registered on `help` only; elsewhere `-help` is
+#                              -h bundled with other short flags (`-elph`
+#                              prints help too), so -h already covers it
+#
+# Platform notes: `suspend` is registered only on macOS 14 and later. run
+# --recovery, --vnc, --vnc-experimental, --rosetta, --suspendable,
+# --capture-system-keys, --no-trackpad, --provisioning-opts and set
+# --random-serial exist only in arm64 builds; all are offered here.
+#
+# Dynamic values:
+#   VM names     `tart ---completion <command> -- positional@<n> ...`, which runs
+#                the binary's own completer for that positional (all, local or
+#                running VMs) in about 30 ms. `tart list` takes 4-5 s, because
+#                it garbage-collects and measures disks first, so it is only
+#                the fallback for a binary whose completion protocol changed.
+#   OCI refs     the cached `registry/repository:tag` names from the same
+#                source, for pull, push and the registry hosts of login/logout
+#
+# -----------------------------------------------------------------------------
+
+_tart__message() {
+  _message "${1:-value}"
+}
+
+# Sets reply to the VM names tart offers for positional <index> of <command>,
+# with the `\:` escapes the binary adds for zsh removed.
+_tart__vm_list() {
+  local cmd=$1 idx=$2 out l name running
+  local -a line
+
+  # The completers ignore the command line, but the parser needs one of this
+  # shape: the words so far, with the current (empty) word last.
+  line=( tart ${cmd} )
+  repeat ${idx} line+=( x )
+  line+=( '' )
+
+  out=$(_call_program vms ${tart_bin:-tart} ---completion ${cmd} -- positional@${idx} $(( ${#line} - 1 )) 0 ${(q)line[@]} 2>/dev/null </dev/null)
+  if (( $? )); then
+    case ${cmd} in
+      (stop|suspend)
+        out=
+        running=0
+        for l in ${(f)"$(_call_program vms ${tart_bin:-tart} list --source local --format json 2>/dev/null </dev/null)"}; do
+          case ${l} in
+            (*'"Name"'*) name=${${l#*: \"}%\"*} ;;
+            (*'"Running"'*true*) running=1 ;;
+            (*'}'*)
+              (( running )) && out+="${name}"$'\n'
+              name= running=0
+              ;;
+          esac
+        done
+        ;;
+      (run|set|get|ip|exec|rename|import)
+        out=$(_call_program vms ${tart_bin:-tart} list --source local --quiet 2>/dev/null </dev/null)
+        ;;
+      (*)
+        out=$(_call_program vms ${tart_bin:-tart} list --quiet 2>/dev/null </dev/null)
+        ;;
+    esac
+  fi
+
+  reply=( ${(f)out//\\:/:} )
+}
+
+# VM names for positional <index> of <command>: local VMs, and the OCI cache
+# entries (registry/repository:tag or @digest) where the command accepts them.
+_tart__vms() {
+  local cmd=$1 idx=$2 descr expl ret=1
+  local -a reply local_vms oci_vms
+
+  _tart__vm_list ${cmd} ${idx}
+  oci_vms=( ${(M)reply:#*/*} )
+  local_vms=( ${reply:#*/*} )
+
+  case ${cmd} in
+    (stop|suspend) descr='running VM' ;;
+    (*) descr='local VM' ;;
+  esac
+
+  if (( ! ${#reply} )); then
+    _tart__message "${descr} (none found)"
+    return 1
+  fi
+
+  _wanted -V local-vms expl ${descr} compadd -a local_vms && ret=0
+  _wanted -V oci-vms expl 'OCI VM from the cache' compadd -a oci_vms && ret=0
+  return ret
+}
+
+# Cached OCI references, usable as remote VM names. With -t, only tag
+# references, the form a push can target.
+_tart__oci_refs() {
+  local expl
+  local -a reply refs
+
+  _tart__vm_list clone 0
+  refs=( ${(M)reply:#*/*} )
+  [[ $1 == -t ]] && refs=( ${refs:#*@*} )
+
+  if (( ${#refs} )); then
+    _wanted -V oci-vms expl 'remote VM name (registry/repository:tag)' compadd -a refs
+  else
+    _tart__message 'remote VM name (registry/repository:tag)'
+  fi
+}
+
+# Registry hosts seen in the OCI cache.
+_tart__registry_hosts() {
+  local expl
+  local -a reply hosts
+
+  _tart__vm_list clone 0
+  hosts=( ${(u)${(M)reply:#*/*}%%/*} )
+
+  if (( ${#hosts} )); then
+    _wanted hosts expl 'registry host' compadd -a hosts
+  else
+    _tart__message 'registry host'
+  fi
+}
+
+_tart__commands() {
+  local -a commands
+  commands=(
+    'create:Create a VM'
+    'clone:Clone a VM'
+    'run:Run a VM'
+    'set:Modify VM'\''s configuration'
+    'get:Get a VM'\''s configuration'
+    'list:List created VMs'
+    'login:Login to a registry'
+    'logout:Logout from a registry'
+    'ip:Get VM'\''s IP address'
+    'exec:Execute a command in a running VM'
+    'pull:Pull a VM from a registry'
+    'push:Push a VM to a registry'
+    'import:Import VM from a compressed .tvm file'
+    'export:Export VM to a compressed .tvm file'
+    'prune:Prune OCI and IPSW caches or local VMs'
+    'rename:Rename a local VM'
+    'stop:Stop a VM'
+    'delete:Delete a VM'
+    'suspend:Suspend a VM'
+    'fqn:(hidden) Get a fully-qualified VM name'
+  )
+  [[ $1 == -h ]] || commands+=( 'help:Show subcommand help information.' )
+  _describe -t commands 'tart command' commands
+}
+
+# The comma-separated options shared by --root-disk-opts and the :options
+# suffix of --disk.
+_tart__disk_options() {
+  _values -s , 'disk option' \
+    'ro[attach the disk read-only]' \
+    'sync[data synchronization with the permanent storage]:mode:((none\:"no synchronization; faster, more data loss on a crash" fsync\:"synchronize, without ensuring the data was written" full\:"synchronize and ensure the data was written"))' \
+    'caching[data caching]:mode:((automatic\:"let Virtualization.framework decide" cached\:"enable data caching" uncached\:"disable data caching"))'
+}
+
+# --disk path[:options]: a disk image, a block device, a cached OCI VM whose
+# disk is mounted, or an NBD URL; options follow the last colon of a path that
+# exists.
+_tart__disk_attachment() {
+  local target=${PREFIX%:*}
+
+  if [[ ${PREFIX} == *:* && -e ${target/#\~/$HOME} ]]; then
+    compset -P '*:'
+    _tart__disk_options
+    return
+  fi
+
+  _alternative \
+    'files:disk image or block device:_files' \
+    'oci-vms:cached OCI VM: _tart__oci_refs'
+}
+
+# --dir [name:]path[:options].
+_tart__dir_share() {
+  local dir
+
+  [[ ${PREFIX} == [^/~.:]##:* ]] && compset -P '[^:]##:'
+
+  dir=${PREFIX%:*}
+  if [[ ${PREFIX} == *:* && -d ${dir/#\~/$HOME} ]]; then
+    compset -P '*:'
+    _values -s , 'directory share option' \
+      'ro[mount the share read-only]' \
+      'tag[mount tag (default com.apple.virtio-fs.automount)]:tag: '
+    return
+  fi
+
+  _files -/
+}
+
+# --from-ipsw: a local .ipsw file, a URL, or "latest".
+_tart__ipsw() {
+  _alternative \
+    'keywords:keyword:((latest\:"fetch the latest supported IPSW"))' \
+    'files:IPSW file:_files -g "*.ipsw(-.)"'
+}
+
+_tart__bridged_interfaces() {
+  _alternative \
+    'keywords:keyword:((list\:"list the available bridged interfaces"))' \
+    'interfaces:network interface:_net_interfaces'
+}
+
+_tart__provisioning_options() {
+  _values -s , 'provisioning option' \
+    'fullName[full name of the person]:full name: ' \
+    'username[username for logging into the guest]:username: ' \
+    'password[password for the guest]:password: ' \
+    'logsInAutomatically[log the person in automatically at startup]:bool:(true false)' \
+    'enablesRemoteLogin[enable Remote Login (SSH) in the guest]:bool:(true false)'
+}
+
+function _tart() {
+  local curcontext=$curcontext state line ret=1
+  local tart_bin=${words[1]}
+  typeset -A opt_args
+
+  local -a common_options
+  common_options=(
+    '--version[Show the version.]'
+    '(- *)'{-h,--help}'[Show help information.]'
+    '(- *)--help-hidden[(hidden) Show help information, including hidden options.]'
+  )
+
+  local -a concurrency_option
+  concurrency_option=(
+    '--insecure[connect to the OCI registry via insecure HTTP protocol]'
+    '--concurrency=[network concurrency to use with the OCI-compatible registry (default: 4)]:concurrency: '
+  )
+
+  _arguments -C -s -S : \
+    $common_options \
+    '1: :->command' \
+    '*::arg:->args' && ret=0
+
+  case ${state} in
+    (command)
+      _tart__commands && ret=0
+      ;;
+    (args)
+      curcontext="${curcontext%:*:*}:tart-${words[1]}:"
+      case ${words[1]} in
+        (create)
+          _arguments -s -S : \
+            $common_options \
+            '--from-ipsw=[create a macOS VM using path to the IPSW file or URL (or "latest", to fetch the latest supported IPSW automatically)]:path or URL:_tart__ipsw' \
+            '--linux[create a Linux VM]' \
+            '--disk-size=[Disk size in GB (default: 50)]:disk size (GB): ' \
+            '--disk-format=[Disk image format (default: raw)]:format:((raw\:"raw disk image" asif\:"Apple Sparse Image Format, macOS 26 Tahoe or later"))' \
+            '1:new VM name: ' && ret=0
+          ;;
+        (clone)
+          _arguments -s -S : \
+            $common_options \
+            $concurrency_option \
+            '--deduplicate[(hidden) use a cached image with shared layers as the base and record the bytes saved]' \
+            '--stacked[create a stacked disk that uses the source image as an immutable base]' \
+            '--overwrite[overwrite an existing local VM]' \
+            '--prune-limit=[limit automatic pruning to n gigabytes (default: 100)]:n (GB): ' \
+            '1:source VM: _tart__vms clone 0' \
+            '2:new VM name: ' && ret=0
+          ;;
+        (run)
+          _arguments -s -S : \
+            $common_options \
+            '(--graphics --capture-system-keys)--no-graphics[Don'\''t open a UI window.]' \
+            '(--no-graphics)--graphics[(hidden) Force open a UI window, even when VNC is enabled.]' \
+            '--serial[Open serial console in /dev/ttySXX]' \
+            '--serial-path=[Attach an externally created serial console]:serial console path:_files' \
+            '--no-audio[Disable audio pass-through to host.]' \
+            '--no-usb-accessories[Disable USB accessories.]' \
+            '--no-clipboard[Disable clipboard sharing between host and guest.]' \
+            '--recovery[Boot into recovery mode]' \
+            '(--vnc-experimental --capture-system-keys)--vnc[Use screen sharing instead of the built-in UI.]' \
+            '(--vnc --capture-system-keys)--vnc-experimental[Use Virtualization.Framework'\''s VNC server instead of the built-in UI.]' \
+            '*--disk=[Additional disk attachment in the form of path\[:options\]]:path[\:options]:_tart__disk_attachment' \
+            '--rosetta=[Attaches a Rosetta share to the guest Linux VM with a specific tag]:tag: ' \
+            '*--dir=[Additional directory share in the form of \[name:\]path\[:options\]]:[name\:]path[\:options]:_tart__dir_share' \
+            '--nested[Enable nested virtualization if possible]' \
+            '(--net-softnet --net-softnet-allow --net-softnet-block --net-softnet-control-fd --net-softnet-expose --net-host)*--net-bridged=[Use bridged networking instead of the default shared (NAT) networking]:interface name:_tart__bridged_interfaces' \
+            '(--net-bridged --net-host)--net-softnet[Use software networking provided by Softnet instead of the default shared (NAT) networking]' \
+            '(--net-bridged --net-host)--net-softnet-allow=[Comma-separated list of CIDRs to allow the traffic to when using Softnet isolation]:comma-separated CIDRs: ' \
+            '(--net-bridged --net-host)--net-softnet-block=[Comma-separated list of CIDRs to block the traffic to when using Softnet isolation]:comma-separated CIDRs: ' \
+            '(--net-bridged --net-host)--net-softnet-control-fd=[Connected Unix stream socket file descriptor to use for the Softnet control channel]:file descriptor (> 2): ' \
+            '(--net-bridged --net-host)--net-softnet-expose=[Comma-separated list of TCP ports to expose (EXTERNAL_PORT\:INTERNAL_PORT)]:comma-separated port specifications: ' \
+            '(--net-bridged --net-softnet --net-softnet-allow --net-softnet-block --net-softnet-control-fd --net-softnet-expose)--net-host[Restrict network access to the host-only network]' \
+            '--root-disk-opts=[Set the root disk options]:options:_tart__disk_options' \
+            '(--no-trackpad --no-keyboard --no-pointer)--suspendable[Disables audio and entropy devices and switches to only Mac-specific input devices.]' \
+            '(--no-graphics --vnc --vnc-experimental)--capture-system-keys[Whether system hot keys should be sent to the guest instead of the host]' \
+            '(--suspendable)--no-trackpad[Don'\''t add trackpad as a pointing device on macOS VMs]' \
+            '(--suspendable)--no-pointer[Disable the pointer]' \
+            '(--suspendable)--no-keyboard[Disable the keyboard]' \
+            '--provisioning-opts=[Provision a macOS guest on first boot using the guest provisioning API]:key=value,...:_tart__provisioning_options' \
+            '1:VM name: _tart__vms run 0' && ret=0
+          ;;
+        (set)
+          _arguments -s -S : \
+            $common_options \
+            '--cpu=[Number of VM CPUs]:CPUs: ' \
+            '--memory=[VM memory size in megabytes]:memory (MB): ' \
+            '--display=[VM display resolution in a format of WIDTHxHEIGHT\[pt|px\]]:WIDTHxHEIGHT[pt|px]: ' \
+            '(--no-display-refit)--display-refit[Automatically reconfigure the VM'\''s display to fit the window]' \
+            '(--display-refit)--no-display-refit[Do not reconfigure the VM'\''s display to fit the window]' \
+            '--random-mac[Generate a new random MAC address for the VM.]' \
+            '--random-serial[Generate a new random serial number for the macOS VM.]' \
+            '--disk=[Replace the VM'\''s disk contents with the disk contents at path.]:path:_files' \
+            '--disk-size=[Resize the VMs disk to the specified size in GB (it can only grow)]:disk size (GB): ' \
+            '1:VM name: _tart__vms set 0' && ret=0
+          ;;
+        (get)
+          _arguments -s -S : \
+            $common_options \
+            '--format=[Output format (default: text)]:format:(text json)' \
+            '1:VM name: _tart__vms get 0' && ret=0
+          ;;
+        (list)
+          _arguments -s -S : \
+            $common_options \
+            '--source=[Only display VMs from the specified source]:source:((local\:"local VMs" oci\:"VMs in the OCI cache"))' \
+            '--format=[Output format (default: text)]:format:(text json)' \
+            '(-q --quiet)'{-q,--quiet}'[Only display VM names.]' && ret=0
+          ;;
+        (login)
+          _arguments -s -S : \
+            $common_options \
+            '--username=[username]:username: ' \
+            '--password-stdin[read the password from standard input]' \
+            '--insecure[connect to the OCI registry via insecure HTTP protocol]' \
+            '--no-validate[skip validation of the registry'\''s credentials before logging-in]' \
+            '1:registry host: _tart__registry_hosts' && ret=0
+          ;;
+        (logout)
+          _arguments -s -S : \
+            $common_options \
+            '1:registry host: _tart__registry_hosts' && ret=0
+          ;;
+        (ip)
+          _arguments -s -S : \
+            $common_options \
+            '--wait=[Number of seconds to wait for a potential VM booting (default: 0)]:seconds: ' \
+            '--resolver=[Strategy for resolving IP address (default: dhcp)]:resolver:((dhcp\:"parse the DHCP reservation and lease files on the host" arp\:"parse the host ARP table; works with bridged networking" agent\:"ask the Tart Guest Agent in the VM"))' \
+            '1:VM name: _tart__vms ip 0' && ret=0
+          ;;
+        (exec)
+          # Everything after the VM name is the guest command, tart's own
+          # options included, so options stop at the first argument.
+          _arguments -s -S -A '-*' : \
+            $common_options \
+            '-i[Attach host'\''s standard input to a remote command]' \
+            '-t[Allocate a remote pseudo-terminal (PTY)]' \
+            '1:VM name: _tart__vms exec 0' \
+            '*:::guest command: _normal' && ret=0
+          ;;
+        (pull)
+          _arguments -s -S : \
+            $common_options \
+            $concurrency_option \
+            '--deduplicate[(hidden) use a cached image with shared layers as the base and record the bytes saved]' \
+            '1:remote VM name: _tart__oci_refs' && ret=0
+          ;;
+        (push)
+          _arguments -s -S : \
+            $common_options \
+            $concurrency_option \
+            '--chunk-size=[chunk size in MB if registry supports chunked uploads (default: 0)]:chunk size (MB): ' \
+            '*--label=[additional metadata to attach to the OCI image configuration]:key=value: ' \
+            '--populate-cache[cache pushed images locally]' \
+            '1:local or remote VM name: _tart__vms push 0' \
+            '*:remote VM name: _tart__oci_refs -t' && ret=0
+          ;;
+        (import)
+          _arguments -s -S : \
+            $common_options \
+            '1:path to a .tvm file:_files -g "*.tvm(-.)"' \
+            '2:destination VM name: _tart__vms import 1' && ret=0
+          ;;
+        (export)
+          _arguments -s -S : \
+            $common_options \
+            '1:source VM name: _tart__vms export 0' \
+            '2:destination .tvm file:_files -g "*.tvm(-.)"' && ret=0
+          ;;
+        (prune)
+          _arguments -s -S : \
+            $common_options \
+            '--entries=[Entries to remove (default: caches)]:entries:((caches\:"OCI and IPSW caches" vms\:"local VMs"))' \
+            '--older-than=[Remove entries that were last accessed more than n days ago]:n (days): ' \
+            '(--space-budget)--cache-budget=[(hidden) deprecated; use --space-budget instead]:n (GB): ' \
+            '(--cache-budget)--space-budget=[Remove the least recently used entries that do not fit the space budget of n gigabytes]:n (GB): ' \
+            '--gc[(hidden) garbage-collect the OCI cache]' && ret=0
+          ;;
+        (rename)
+          _arguments -s -S : \
+            $common_options \
+            '1:VM name: _tart__vms rename 0' \
+            '2:new VM name: ' && ret=0
+          ;;
+        (stop)
+          _arguments -s -S : \
+            $common_options \
+            '(-t --timeout)'{-t=,--timeout=}'[Seconds to wait for graceful termination before forcefully terminating the VM (default: 30)]:seconds: ' \
+            '1:VM name: _tart__vms stop 0' && ret=0
+          ;;
+        (delete)
+          _arguments -s -S : \
+            $common_options \
+            '*:VM name: _tart__vms delete 0' && ret=0
+          ;;
+        (suspend)
+          _arguments -s -S : \
+            $common_options \
+            '1:VM name: _tart__vms suspend 0' && ret=0
+          ;;
+        (fqn)
+          _arguments -s -S : \
+            $common_options \
+            '1:VM name: _tart__vms fqn 0' && ret=0
+          ;;
+        (help)
+          _arguments -s -S : \
+            '--version[Show the version.]' \
+            '(- *)'{-h,--help}'[(hidden) Show help information.]' \
+            '1:command: _tart__commands -h' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+_tart "$@"
+
+# vim: ft=zsh sw=2 ts=2 et
