@@ -33,34 +33,46 @@
 #
 # -----------------------------------------------------------------------------
 #
-# agy 1.2.8 (Google Antigravity CLI)
+# agy 1.4.3 (Google Antigravity CLI)
 #
 # Source of truth: `agy --help` and `agy <cmd> --help`, plus the flags those
-# never print. Entries marked `(hidden)` are accepted by agy 1.2.8 but appear
+# never print. Entries marked `(hidden)` are accepted by agy 1.4.3 but appear
 # in no `--help` output.
 #
-# 1.2.8 over 1.1.23: a `remote-control` subcommand (start|status|stop, with
-# `start --name` and `--session`); root `--remote-control` is now documented;
-# and three new hidden globals for a host application, `--host_bridge_url`,
-# `--host_bridge_token` and `--use_host_auth`. Nothing was removed.
+# 1.4.3 over 1.2.8: `--effort` gained `xhigh` and `max`, `--mode` gained
+# `auto`; `agy plugin list` takes `--json` and `agy plugin validate` takes
+# `--strict` and `--json`. New hidden globals: `--remote-agent`,
+# `--read_host_bridge_token_from_stdin` and three `--protosanitizer_*`
+# switches. `--host_bridge_token` was removed. Projects moved from
+# `<gemini_dir>/projects.json` to one file per project under
+# `<gemini_dir>/config/projects/`, and plain `agy plugin list` is no longer
+# JSON, so both dynamic helpers read the new sources.
 #
 # `agy --help` lists all twelve top-level subcommands and `agy plugin` all
-# nine of its verbs, so there are no hidden subcommands. The single hidden
-# subcommand option is `agy plugin import --force`, named only in the
-# "already imported, use --force to re-import" line.
+# nine of its verbs. The hidden subcommands are:
+#   - `agy remote-control serve`, the foreground daemon that `start` registers
+#     with launchd/systemd. It takes no options of its own (the daemon's
+#     global flags go before `remote-control`) and refuses to run before
+#     sign-in.
+#   - `help` under `agy mcp` and `agy remote-control`, which prints the same
+#     usage text as `-h`.
+# The single hidden subcommand option is `agy plugin import --force`, named
+# only in the "already imported, use --force to re-import" line.
 #
 # Where `-h`/`--help` is actually accepted differs per subcommand, and agy is
 # unforgiving about it:
 #   - `agent`, `agents`, `changelog`, `models`, `install`, `mic-serve`,
-#     every `mcp` verb and every `remote-control` verb accept them.
+#     every `mcp` verb and `remote-control start|status|stop` accept them.
 #   - `agy plugin`, `agy mcp` and `agy remote-control` accept them as aliases
 #     for their usage text.
 #   - `agy update` defines no flags at all and rejects `-h` outright.
 #   - `agy help` reads its first word as a subcommand name, so `-h` comes back
 #     as `unknown subcommand: -h`.
-#   - the `plugin` verbs parse no flags: `agy plugin uninstall -h` tries to
-#     uninstall a plugin literally named `-h`. Only `import` reads `--force`.
-# None of those four exceptions are offered below.
+#   - the `plugin` verbs parse no flags except `list --json`,
+#     `validate --strict --json` and `import --force`: `agy plugin uninstall
+#     -h` tries to uninstall a plugin literally named `-h`, and `list` and
+#     `validate` reject `-h` as an unknown option.
+# None of those exceptions are offered below.
 #
 # -----------------------------------------------------------------------------
 
@@ -68,17 +80,60 @@ _agy__message() {
   _message "${1:-value}"
 }
 
-# Directory that holds agy state. `--gemini_dir` on the current command line
-# wins, otherwise the built-in default.
-_agy__gemini_dir() {
+# Value of a root option on the command line, or nothing. `_agy` saves the
+# whole line in `_agy_line` before dispatching, because a subcommand's
+# `$words` no longer holds the root options.
+_agy__root_option() {
+  local -a line
   local -i i
-  for (( i = 1; i <= ${#words}; i++ )); do
-    case ${words[i]} in
-      --gemini_dir=*) print -r -- "${words[i]#--gemini_dir=}"; return ;;
-      --gemini_dir)   print -r -- "${words[i+1]}"; return ;;
+  local value
+  line=( "${(@)_agy_line:-${(@)words}}" )
+  for (( i = 1; i <= ${#line}; i++ )); do
+    case ${line[i]} in
+      --$1=*) value="${(Q)line[i]#--$1=}"; break ;;
+      --$1)   value="${(Q)line[i+1]}"; break ;;
     esac
   done
-  print -r -- "${HOME}/.gemini"
+  [[ ${value} == \~(/*|) ]] && value="${HOME}${value#\~}"
+  print -r -- "${value}"
+}
+
+# Directory that holds agy state. `--gemini_dir` on the current command line
+# wins, otherwise the built-in default. A relative value resolves against
+# $HOME, as agy does.
+_agy__gemini_dir() {
+  local dir
+  dir="$(_agy__root_option gemini_dir)"
+  if [[ -z ${dir} ]]; then
+    dir="${HOME}/.gemini"
+  elif [[ ${dir} != /* ]]; then
+    dir="${HOME}/${dir}"
+  fi
+  print -r -- "${dir}"
+}
+
+# Application data directory, `--app_data_dir` relative to the Gemini dir.
+_agy__app_data_dir() {
+  local dir gemini_dir
+  gemini_dir="$(_agy__gemini_dir)"
+  dir="$(_agy__root_option app_data_dir)"
+  if [[ -z ${dir} ]]; then
+    dir="${gemini_dir}/antigravity-cli"
+  elif [[ ${dir} != /* ]]; then
+    dir="${gemini_dir}/${dir}"
+  fi
+  print -r -- "${dir}"
+}
+
+# State-directory flags from the command line, quoted for `_call_program`, so
+# helper commands read the same state as the command being completed.
+_agy__state_args() {
+  local value
+  reply=()
+  value="$(_agy__root_option gemini_dir)"
+  [[ -n ${value} ]] && reply+=( "--gemini_dir=${(q)value}" )
+  value="$(_agy__root_option app_data_dir)"
+  [[ -n ${value} ]] && reply+=( "--app_data_dir=${(q)value}" )
 }
 
 # `agy models` reaches the network and takes a few seconds, so its result is
@@ -105,7 +160,8 @@ _agy__models() {
   fi
 
   if (( ! ${#models} )); then
-    lines=( ${(f)"$(_call_program models agy models 2>/dev/null </dev/null)"} )
+    _agy__state_args
+    lines=( ${(f)"$(_call_program models agy ${reply} models 2>/dev/null </dev/null)"} )
     models=( ${${lines:#}//$'\t'/:} )
     if (( ${#models} )); then
       mkdir -p -- ${cache_file:h} 2>/dev/null &&
@@ -123,7 +179,8 @@ _agy__models() {
 _agy__agents() {
   local -a lines agents
 
-  lines=( ${(f)"$(_call_program agents agy agent 2>/dev/null </dev/null)"} )
+  _agy__state_args
+  lines=( ${(f)"$(_call_program agents agy ${reply} agent 2>/dev/null </dev/null)"} )
   agents=( ${${lines:#}//$'\t'/:} )
 
   if (( ${#agents} )); then
@@ -133,15 +190,19 @@ _agy__agents() {
   fi
 }
 
+# Each project is `<gemini_dir>/config/projects/<id>.json` holding its `id`
+# and display `name`; --project takes either.
 _agy__projects() {
-  local projects_json
-  local -a projects
+  local file content id name
+  local -a projects match mbegin mend
 
-  projects_json="$(_agy__gemini_dir)/projects.json"
-  if [[ -r ${projects_json} ]]; then
-    projects=( ${(f)"$(sed -n 's/^[[:space:]]*"[^"]*"[[:space:]]*:[[:space:]]*"\(.*\)",\{0,1\}$/\1/p' -- ${projects_json} 2>/dev/null)"} )
-    projects=( ${(u)projects:#} )
-  fi
+  for file in "$(_agy__gemini_dir)"/config/projects/*.json(N.); do
+    content="$(< ${file})" 2>/dev/null || continue
+    id=${file:t:r} name=
+    [[ ${content} =~ '"id"[[:space:]]*:[[:space:]]*"([^"]+)"' ]] && id=${match[1]}
+    [[ ${content} =~ '"name"[[:space:]]*:[[:space:]]*"([^"]+)"' ]] && name=${match[1]}
+    projects+=( "${id//:/\\:}${name:+:${name}}" )
+  done
 
   if (( ${#projects} )); then
     _describe -t projects 'project' projects
@@ -155,7 +216,7 @@ _agy__conversations() {
   local dir
   local -a ids
 
-  dir="$(_agy__gemini_dir)/antigravity-cli/conversations"
+  dir="$(_agy__app_data_dir)/conversations"
   if [[ -d ${dir} ]]; then
     ids=( ${dir}/*.db(Nom:t:r) )
   fi
@@ -170,7 +231,8 @@ _agy__conversations() {
 _agy__mcp_servers() {
   local -a lines servers
 
-  lines=( ${(f)"$(_call_program mcp-servers agy mcp list 2>/dev/null </dev/null)"} )
+  _agy__state_args
+  lines=( ${(f)"$(_call_program mcp-servers agy ${reply} mcp list 2>/dev/null </dev/null)"} )
   servers=( ${${${(M)lines:#[^[:space:]]*}:#NAME[[:space:]]*}%%[[:space:]]*} )
 
   if (( ${#servers} )); then
@@ -180,11 +242,14 @@ _agy__mcp_servers() {
   fi
 }
 
+# `plugin list --json` is an array of objects; only their own `name` keys sit
+# at four spaces of indentation.
 _agy__installed_plugins() {
   local -a plugins
 
-  plugins=( ${(f)"$(_call_program plugins agy plugin list 2>/dev/null </dev/null |
-    sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\(.*\)",\{0,1\}$/\1/p')"} )
+  _agy__state_args
+  plugins=( ${(f)"$(_call_program plugins agy ${reply} plugin list --json 2>/dev/null </dev/null |
+    sed -n 's/^    "name": "\(.*\)",\{0,1\}$/\1/p')"} )
   plugins=( ${(u)plugins:#} )
 
   if (( ${#plugins} )); then
@@ -222,9 +287,9 @@ _agy__plugin_commands() {
     'import:import plugins from gemini or claude'
     'install:install a plugin (supports plugin@marketplace)'
     'link:generate link to a marketplace'
-    'list:list imported plugins'
+    'list:list installed plugins'
     'uninstall:uninstall a plugin'
-    'validate:validate a plugin'
+    "validate:check a plugin's manifest and files"
   )
   _describe -t plugin-commands 'plugin command' commands
 }
@@ -235,6 +300,7 @@ _agy__mcp_commands() {
     'add:add or update an MCP server configuration'
     'disable:disable an MCP server'
     'enable:enable an MCP server'
+    'help:(hidden) show mcp usage'
     'list:list all configured MCP servers'
     'remove:remove an MCP server configuration'
   )
@@ -244,6 +310,8 @@ _agy__mcp_commands() {
 _agy__remote_control_commands() {
   local -a commands
   commands=(
+    'help:(hidden) show remote-control usage'
+    'serve:(hidden) run the remote-control daemon in the foreground (what start registers)'
     'start:register and start the remote-control daemon'
     'status:show the daemon status'
     'stop:stop the daemon and unregister it'
@@ -279,16 +347,16 @@ _agy__top_option_specs() {
     '--conversation=[resume a previous conversation by ID]:conversation:_agy__conversations'
     '--dangerously-skip-permissions[auto-approve all tool permission requests without prompting]'
     '--disable-slash-commands[disable slash command and skill expansion in print mode]'
-    '--effort=[reasoning effort for the current CLI session]:effort:(low medium high)'
-    '--input-format=[input format for print mode; stream-json also requires --output-format stream-json]:format:(text stream-json)'
-    '--json-schema=[JSON schema string or path enforcing structured output; needs --output-format json or stream-json]:schema:_files'
+    '--effort=[reasoning effort for the current CLI session]:effort:(low medium high xhigh max)'
+    '--input-format=[input format for print mode; stream-json reads NDJSON from stdin and requires --output-format stream-json]:format:(text stream-json)'
+    '--json-schema=[JSON schema string or path to a schema file enforcing structured output]:schema:_files'
     '--log-file=[override CLI log file path]:path:_files'
-    '--mode=[agent execution mode for this session]:mode:(accept-edits plan)'
+    '--mode=[agent execution mode for this session]:mode:(accept-edits auto plan)'
     '--model=[model for the current CLI session]:model:_agy__models'
     '--new-project[create a new project for this session]'
     '--output-format=[output format for print mode]:format:(text json stream-json)'
     '(-p --print --prompt -i --prompt-interactive)'{-p,--print,--prompt}'=[run a single prompt non-interactively and print the response]:prompt: _agy__message "prompt"'
-    '--print-timeout=[timeout for print mode wait]:duration: _agy__message "duration such as 5m0s"'
+    '--print-timeout=[time limit for print mode; 0 waits until the turn completes]:duration: _agy__message "duration such as 5m0s"'
     '--project=[project ID or project name for the current CLI session]:project:_agy__projects'
     '(-i --prompt-interactive -p --print --prompt)'{-i,--prompt-interactive}'=[run an initial prompt interactively and continue the session]:prompt: _agy__message "prompt"'
     '--remote-control[create a remote connection for the CLI session on start up]'
@@ -296,10 +364,11 @@ _agy__top_option_specs() {
     '(- *)-h[show help]'
     '(- *)--help=-[show help, optionally filtering flags by regexp]::pattern: _agy__message "flag name regexp"'
 
-    # --- hidden: Antigravity Hub and remote control -------------------------
+    # --- hidden: Antigravity Hub, remote control and remote agents ----------
     '--hub[(hidden) run in hub server mode serving the Antigravity Hub web UI on a local port]'
     '--hub-port=[(hidden) port for the hub web UI, 0 selects the default]:port: _agy__message "port number"'
     '--remote-control-name=[(hidden) instance name for remote control mode]:name: _agy__message "instance name"'
+    "--remote-agent[(hidden) run this session's conversations on remote agents; --project then names a remote project ID]"
 
     # --- hidden: stripped from --help in external builds -------------------
     '--app_data_dir=[(hidden) path where application data is stored, relative to the Gemini dir]:directory:_files -/'
@@ -312,7 +381,7 @@ _agy__top_option_specs() {
     '--release_base_url=[(hidden) base URL of the release server for the auto-updater]:url: _agy__message "release server base url"'
     '--csrf_token=[(hidden) CSRF token for the language server]:token: _agy__message "csrf token"'
     '--host_bridge_url=[(hidden) loopback base URL of a host that serves HostBridgeService]:url: _agy__message "loopback url such as http://127.0.0.1:PORT"'
-    '--host_bridge_token=[(hidden) bearer token for the host bridge]:token: _agy__message "bearer token"'
+    '--read_host_bridge_token_from_stdin[(hidden) read the bearer token for the host bridge from stdin]'
     '--use_host_auth[(hidden) use HostAuthProvider via HostBridgeService for OAuth authentication]'
 
     # --- hidden: base logging and runtime flags ----------------------------
@@ -332,6 +401,9 @@ _agy__top_option_specs() {
     '--util_status_save_stack_trace[(hidden) save and display the full stack trace of non-ok util statuses]'
     '--syslog_on_start[(hidden) write to syslog on program start-up]'
     '--mlock_style=[(hidden) how memory will be locked]:style:(none startup all executable)'
+    '--protosanitizer_use_old_annotation_sets[(hidden) use old Datapol annotation sets for proto data sanitization]'
+    '--protosanitizer_use_streamz_for_sanitization_monitoring[(hidden) export sanitization metrics on /streamz]'
+    '--protosanitizer_use_sensitivity_based_logic[(hidden) use sensitivity-based field sanitizers for proto data sanitization]'
   )
 }
 
@@ -450,10 +522,14 @@ _agy__complete_plugin() {
 
   curcontext="${curcontext%:*:*}:agy-plugin-$words[1]:"
 
-  # The plugin verbs parse no flags: a leading -h becomes a positional, and
-  # `agy plugin uninstall -h` really does try to uninstall a plugin named "-h".
-  # Only `import` reads an option, and only --force.
+  # The plugin verbs parse almost no flags: a leading -h becomes a positional,
+  # and `agy plugin uninstall -h` really does try to uninstall a plugin named
+  # "-h". Only `list --json`, `validate --strict --json` and `import --force`
+  # are read.
   case $words[1] in
+    list)
+      _arguments -s '--json[print installed plugins as JSON]'
+      ;;
     import)
       _arguments -s \
         '--force[(hidden) re-import plugins that were already imported]' \
@@ -466,15 +542,18 @@ _agy__complete_plugin() {
       _arguments -s '1:plugin:_agy__installed_plugins'
       ;;
     validate)
-      _arguments -s '1::path:_files -/'
+      _arguments -s \
+        '--strict[fail on warnings as well as errors]' \
+        '--json[print a machine-readable report]' \
+        '1::plugin directory or plugin.json:_files -g "plugin.json(-.)"'
       ;;
     link)
       _arguments -s \
         '1:marketplace: _agy__message "marketplace name"' \
         '2:target: _agy__message "link target"'
       ;;
-    list|help)
-      _agy__message "agy plugin $words[1] takes no options or arguments"
+    help)
+      _agy__message "agy plugin help takes no options or arguments"
       ;;
   esac
 }
@@ -517,6 +596,9 @@ _agy__complete_remote_control() {
     status|stop)
       _arguments -s ${specs[@]}
       ;;
+    serve|help)
+      _agy__message "agy remote-control $words[1] takes no options or arguments"
+      ;;
   esac
 }
 
@@ -529,8 +611,9 @@ _agy__complete_help() {
 function _agy() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
-  local -a specs
+  local -a specs _agy_line
 
+  _agy_line=( "${words[@]}" )
   _agy__top_option_specs
   specs=("${reply[@]}")
 
