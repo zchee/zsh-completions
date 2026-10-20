@@ -35,35 +35,47 @@
 #
 # https://github.com/docker/sbx-releases
 #
-# sbx (Docker Sandboxes) v0.42.0-rc1-175-g732ea0916
-#   Homebrew cask sbx@nightly, build nightly-202608311035-732ea09
+# sbx (Docker Sandboxes) v0.49.1-539-g178d51002
+#   Homebrew cask sbx@nightly, build nightly-202610200317-178d510
 #
-# Derived from `sbx <path> --help` over all 106 documented command paths, then
+# Derived from `sbx <path> --help` over all 124 documented command paths, then
 # extended with the surface the help output suppresses; every added item was
 # verified against sbx as shipped.
 #
 # Items marked "(hidden)" are accepted by sbx but never listed by `--help`:
 #
-#   * commands:  events, gui (+ status), settings (+ get/list/set/unset),
-#                ssh (+ setup, setup remove, known-hosts, proxy), ssh-connect,
-#                inspect, mount, umount, docker-cli-plugin-metadata,
-#                daemon inspect, policy init set-default
-#   * flags:     --app-name (root, marked hidden);
-#                create/run/create <agent>: --branch, --no-share-skills,
-#                --secrets, --pull, and run's --detached/--patch-settings;
-#                create <agent>: --patch-settings;
-#                secret ls/rm: --host, --env, --placeholder;
-#                secret rm/set/set-custom: --global (deprecated, so hidden);
-#                secret set/set-custom: --backend
-#   * gated:     --display, --nested, --gpu, --usb (create/run) and run's
-#                --model are registered behind the feature flags
-#                feature.sandbox-{display,nested,gpu,usb} / feature.model, so
-#                they parse but only act when the feature is on
+#   * commands:  events, gui (+ status), inspect, mount, umount,
+#                compose (+ up/down/pull/stop/metadata, the Docker Compose
+#                provider entrypoint), ssh (+ setup, known-hosts, proxy),
+#                ssh-connect, docker-cli-plugin-metadata, daemon inspect,
+#                policy approval (+ inspect/ls/respond, feature-gated),
+#                setup ssh-key (+ initialize/remove/rotate, feature-gated)
+#   * flags:     --app-name, --ui-origin, --cloud-api-url (root, persistent);
+#                create/run: --branch, --no-share-skills, --secrets;
+#                run and create <agent>: --patch-settings;
+#                run: --model, --provider, --overflow-provider,
+#                --overflow-model, --variant (feature.model);
+#                secret ls/rm: --host, --env-name, --placeholder;
+#                secret set/set-custom: --backend;
+#                daemon start: --launcher, --launch-deadline;
+#                settings ls: --all
+#   * deprecated (hidden, still parsed): -g/--global on secret rm/set/
+#                set-custom and on policy allow|deny|rm network;
+#                mcp add --skip_auth (use --skip-auth)
+#   * gated:     --display, --nested, --4k, --gpu, --usb (create/run; env run
+#                has --nested) are registered behind the feature flags
+#                feature.sandbox-{display,nested,4k,gpu,usb}, so they parse
+#                but only act when the feature is on
 #
-# `ssh` and its subcommands sit behind feature.ssh, and the whole subtree is
-# hidden. Aliases (ls/list, rm/remove/delete, secret rm unset, skills add a,
-# skills update upgrade, volume inspect get, create docker-agent cagent) are
-# completed too; sbx lists them only in the aliased command's own --help.
+# Removed since v0.42: `ssh setup remove` (now the documented
+# `setup ssh remove`), `policy init set-default`, run's --detached, and the
+# hidden `--env` filter on secret ls/rm (renamed --env-name). `settings list`
+# became an alias of the documented `settings ls`.
+#
+# Aliases (ls/list, rm/remove/delete, secret rm unset, skills add a,
+# skills update upgrade, volume inspect get, create docker-agent cagent, and
+# the rest sbx prints) are completed too; sbx lists them only in the aliased
+# command's own --help.
 #
 # Values for positional arguments come from sbx's own completion endpoint
 # (`sbx __complete ...`), which resolves sandbox names, MCP servers, secret
@@ -71,8 +83,8 @@
 #
 # The completion RPC itself -- `__complete` and `__completeNoDesc` -- is
 # deliberately left out: it is plumbing for this file to call, not a command
-# anyone types. `docker-cli-plugin-metadata` is kept: it is the docker/cli
-# plugin handshake, and it is runnable by hand.
+# anyone types. `docker-cli-plugin-metadata` and `compose` are kept: they
+# are host handshakes (docker/cli and Docker Compose), and both run by hand.
 #
 # -----------------------------------------------------------------------------
 
@@ -105,10 +117,11 @@ function _sbx() {
   local -a global_opts
   global_opts=(
     "(--cloud)--cloud[Dispatch to Docker Cloud Sandboxes API instead of local sandboxd (supported by a growing set of verbs — run 'sbx...]"
-    "(--cloud-api-url)--cloud-api-url=[Cloud Sandboxes API base URL; only used with --cloud. Defaults to prod (https://api.sandboxes-cloud.docker.com). Set...]:cloud-api-url:"
     "(-D --debug)"{-D,--debug}"[Enable debug logging]"
     "(- : *)"{-h,--help}"[Show help for the command]"
     "(--app-name)--app-name=[(hidden) Storagekit application name for isolated daemon instance (for development/debugging)]:app-name:"
+    "(--ui-origin)--ui-origin=[(hidden) Internal source of a CLI session launched from a UI]:ui-origin:"
+    "(--cloud-api-url)--cloud-api-url=[(hidden) Cloud Sandboxes API base URL for --cloud, and for move, login, and the TUI. Defaults to prod...]:cloud-api-url:"
   )
 
   _arguments -C -s -S \
@@ -120,7 +133,7 @@ function _sbx() {
     command)
       local -a commands
       commands=(
-        "attach:Attach to a running cloud sandbox"
+        "attach:Attach to a cloud sandbox, starting it first if it is stopped"
         "completion:Generate the autocompletion script for the specified shell"
         "cp:Copy files or directories between a sandbox and the host"
         "create:Create a sandbox for an agent"
@@ -131,7 +144,7 @@ function _sbx() {
         "help:Help about any command"
         "kit:(Experimental) Manage kit artifacts"
         "login:Sign in to Docker"
-        "logout:Stop all running sandboxes and sign out of Docker"
+        "logout:Stop running local sandboxes and sign out of Docker"
         "ls:List sandboxes"
         "mcp:Manage MCP servers"
         "move:Move a sandbox between local and cloud"
@@ -142,26 +155,28 @@ function _sbx() {
         "rm:Remove one or more sandboxes"
         "run:Run an agent in a sandbox"
         "secret:Manage stored secrets"
+        "settings:Manage Docker Sandboxes settings"
         "setup:(Experimental) Detect host configuration and prepare Docker Sandboxes"
         "skills:(Experimental) Manage skills available in sandboxes"
         "stop:Stop one or more sandboxes without removing them"
         "template:Manage sandbox templates"
-        "ttl:Inspect or extend a cloud sandbox's TTL"
+        "ttl:Show or extend a cloud sandbox's TTL"
         "tui:Open the interactive TUI dashboard"
         "version:Show Docker Sandboxes version information"
         "volume:Manage persistent volumes (cloud-only)"
         "events:(hidden) Stream sandbox events from the daemon"
         "gui:(hidden) Manage GUI systray app"
-        "settings:(hidden) Manage Docker Sandboxes settings"
+        "inspect:(hidden) Show details for a sandbox"
+        "mount:(hidden) Bind-mount a host path inside a running sandbox"
+        "umount:(hidden) Remove a runtime bind mount from a sandbox"
+        "compose:(hidden) Docker Compose provider entrypoint"
         "ssh:(hidden) Configure SSH access to sandboxes (experimental)"
         "ssh-connect:(hidden) Internal ProxyCommand helper: mint a cert if needed and pipe to the gateway"
-        "inspect:(hidden) Show details for a sandbox"
-        "mount:(hidden) Bind-mount a host path into a running sandbox at runtime"
-        "umount:(hidden) Revoke a previously-exposed host path"
         "docker-cli-plugin-metadata:(hidden) Print the Docker CLI plugin metadata JSON"
         "delete:(alias of rm)"
         "list:(alias of ls)"
         "remove:(alias of rm)"
+        "secrets:(alias of secret)"
       )
       _describe -t commands "sbx command" commands && ret=0
       ;;
@@ -172,6 +187,9 @@ function _sbx() {
           ;;
         completion)
           _sbx__completion && ret=0
+          ;;
+        compose)
+          _sbx__compose && ret=0
           ;;
         cp)
           _sbx__cp && ret=0
@@ -245,7 +263,7 @@ function _sbx() {
         run)
           _sbx__run && ret=0
           ;;
-        secret)
+        secret|secrets)
           _sbx__secret && ret=0
           ;;
         settings)
@@ -290,14 +308,13 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__attach] )) || _sbx__attach() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--detach-keys)--detach-keys=[Override the detach gesture that leaves the agent running (Docker-style, e.g. \"ctrl-\\\", \"ctrl-x,ctrl-d\"). Default:...]:detach-keys:"
+    "(--detach-keys)--detach-keys=[Override the detach gesture that leaves the session running (Docker-style, e.g. \"ctrl-\\\", \"ctrl-x,ctrl-d\"). Default:...]:detach-keys:"
   )
 
   _arguments -s -S \
@@ -307,7 +324,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__completion] )) || _sbx__completion() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -348,7 +364,175 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__completion__bash] )) || _sbx__completion__bash() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__completion__fish] )) || _sbx__completion__fish() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__completion__powershell] )) || _sbx__completion__powershell() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__completion__zsh] )) || _sbx__completion__zsh() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__compose] )) || _sbx__compose() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--project-name)--project-name=[compose project name]:project-name:"
+  )
+
+  _arguments -C -s -S \
+    $global_opts \
+    $opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "down:Compose provider verb: down SERVICE"
+        "metadata:Compose provider verb: print provider metadata"
+        "pull:Compose provider verb: pull SERVICE"
+        "stop:Compose provider verb: stop SERVICE"
+        "up:Compose provider verb: up SERVICE"
+      )
+      _describe -t commands "compose command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        down)
+          _sbx__compose__down && ret=0
+          ;;
+        metadata)
+          _sbx__compose__metadata && ret=0
+          ;;
+        pull)
+          _sbx__compose__pull && ret=0
+          ;;
+        stop)
+          _sbx__compose__stop && ret=0
+          ;;
+        up)
+          _sbx__compose__up && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__compose__down] )) || _sbx__compose__down() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__compose__metadata] )) || _sbx__compose__metadata() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__compose__pull] )) || _sbx__compose__pull() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--created)--created=[Creation time of the local daemon cache entry, when present]:created:"
+    "(--digest)--digest=[Image ID in compose's local daemon cache, when present]:digest:"
+    "(--image)--image=[Image reference as compose resolved it]:image:"
+    "(--policy)--policy=[missing (a usable version suffices) or always (ensure freshness)]:policy:"
+    "(--source)--source=[Authority verdict: local (sync from compose's local daemon) or registry (resolve upstream)]:source:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__compose__stop] )) || _sbx__compose__stop() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__compose__up] )) || _sbx__compose__up() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__cp] )) || _sbx__cp() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -365,7 +549,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__create] )) || _sbx__create() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -373,35 +556,37 @@ function _sbx() {
   local -a opts
   opts=(
     "*--allow-network=[Network pattern to allow for cloud sandbox egress (cloud only; can be specified multiple times)]:allow-network:"
-    "(--clone)--clone[Run the agent on a private in-container clone of the host Git repository (mounted read-only) instead of bind-mounting...]"
-    "(--cpus)--cpus=[Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs)]:int:"
-    "(--deny-network)--deny-network=[Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the...]:deny-network:"
+    "(--clone)--clone[Run the agent on a private in-container clone of the host Git repository (mounted read-only) instead of...]"
+    "(--cpus)--cpus=[Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs, at most 16 on Linux arm64)]:int:"
+    "*--deny-network=[Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the...]:deny-network:"
     "*"{-e+,--env=}"[Set an environment variable in the sandbox (can be repeated): KEY=VALUE, or a bare KEY to take the value from the...]:env:"
-    "*--env-file=[Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an earlier...]:env-file:"
+    "*--env-file=[Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an...]:env-file:"
     "(--image-ref)--image-ref=[OCI image reference for inline-mode cloud create (mutually exclusive with --template; requires --cpus and --memory)]:image-ref:"
-    "*--kit=[(Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple...]:kit:"
+    "*--kit=[(Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple times]:kit:"
     "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
     "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
     "(-m --memory)"{-m+,--memory=}"[Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32...]:memory:"
+    "*--mount=[Bind a host directory to a kit host-mount@1 path (can be repeated): HOST:SANDBOX_PATH. Can only be used when...]:mount:"
     "(--name)--name=[Name for the sandbox (defaults to <agent>-<workdir>; at least two characters, starting with a letter or number,...]:name:"
-    "(--on-timeout)--on-timeout=[What happens when --ttl lapses: 'delete' (default) tombstones the sandbox, or 'stop' stops it in place so it can be...]:on-timeout:(delete stop)"
+    "(--no-progress)--no-progress[Suppress progress output]"
+    "(--on-timeout)--on-timeout=[What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps...]:on-timeout:(delete stop)"
     "(--platform)--platform=[Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the...]:platform:(linux/amd64 linux/arm64)"
     "(--profile)--profile=[Governance profile to assign to the sandbox]:profile:"
     "*"{-p+,--publish=}"[Publish a sandbox port to the host (can be repeated): \[\[HOST_IP:\]HOST_PORT:\]SANDBOX_PORT\[/PROTOCOL\]]:publish:"
-    "(-q --quiet)"{-q,--quiet}"[Suppress verbose output]"
-    "(--skills)--skills=[Shared skills store mode: off, readonly, or readwrite (mounted at the agent's skills directory, e.g....]:skills:(off readonly readwrite)"
+    "(--pull)--pull=[Image pull policy (always|missing|never; default: never for saved local snapshots, missing for v3 kit compositions,...]:pull:(always missing never)"
+    "(--skills)--skills=[Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in...]:skills:(off readonly readwrite)"
     "*--static-mcp=[MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp...]:static-mcp:"
     "(-t --template)"{-t+,--template=}"[Container image to use for the sandbox (default: agent-specific image)]:template:"
-    "(--ttl)--ttl=[Cloud sandbox time-to-live before it times out (e.g. 30m, 2h; cloud only; default: server-side)]:duration:"
+    "(--ttl)--ttl=[Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only;...]:duration:"
     "*"{-v+,--volume=}"[(Experimental) Attach an existing persistent volume, NAME:MOUNTPATH (cloud only, experimental; repeatable)]:volume:"
     "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory (e.g. ~/.claude/skills)]"
+    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory (e.g. ~/.claude/skills). Applies only when creating a...]"
     "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
     "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox; container windows render on the host compositor...]"
     "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM, macOS Apple Silicon M3+ only (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox, e.g. abcd:1234 (feature.sandbox-usb)]:usb:"
+    "(--4k)--4k[(hidden) Force the 4k-page guest kernel for workloads incompatible with larger memory pages; macOS hosts only...]"
+    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox; Linux x86_64, single NVIDIA GPU (feature.sandbox-gpu)]"
+    "*--usb=[(hidden) Pass a host USB device through to the sandbox, e.g. abcd:1234 or id=1234:ABCD,serial=SERIAL...]:usb:"
   )
 
   _arguments -C -s -S \
@@ -454,7 +639,7 @@ function _sbx() {
           _sbx__create__shell && ret=0
           ;;
         *)
-          _files && ret=0
+          _sbx__dyn 'agent sandbox_kit path' && ret=0
           ;;
       esac
       ;;
@@ -462,7 +647,134 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__create__claude] )) || _sbx__create__claude() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__codex] )) || _sbx__create__codex() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__cursor] )) || _sbx__create__cursor() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__devin] )) || _sbx__create__devin() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__docker_agent] )) || _sbx__create__docker_agent() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__gemini] )) || _sbx__create__gemini() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__opencode] )) || _sbx__create__opencode() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__create__shell] )) || _sbx__create__shell() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__daemon] )) || _sbx__daemon() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -476,12 +788,12 @@ function _sbx() {
     command)
       local -a commands
       commands=(
-        "log-level:Inspect or change sandboxd's per-category log levels"
+        "log-level:Show or change sandboxd's per-category log levels"
         "restart:Restart the sandboxd daemon"
         "start:Start the sandboxd daemon"
-        "status:Check sandboxd daemon status"
+        "status:Show sandboxd daemon status"
         "stop:Stop the sandboxd daemon"
-        "inspect:(hidden) Dump a read-only debug snapshot of the running daemon"
+        "inspect:(hidden) Dump a read-only debug snapshot of the running daemon's internal state"
       )
       _describe -t commands "daemon command" commands && ret=0
       ;;
@@ -511,15 +823,113 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__daemon__log_level] )) || _sbx__daemon__log_level() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "set:Set a category's log level (target: proxy, general, or all)"
+      )
+      _describe -t commands "daemon log-level command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        set)
+          _sbx__daemon__log_level__set && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__daemon__log_level__set] )) || _sbx__daemon__log_level__set() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'target level'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__daemon__restart] )) || _sbx__daemon__restart() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__daemon__start] )) || _sbx__daemon__start() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-d --detach)"{-d,--detach}"[Run daemon in background]"
+    "(--policy)--policy=[Initialize the global network policy: \"allow-all\", \"balanced\", or \"deny-all\"]:policy:"
+    "(--launcher)--launcher[(hidden) Start the daemon without waiting, print its process identity, and exit]"
+    "(--launch-deadline)--launch-deadline=[(hidden) Unix time in milliseconds after which the launcher must not start the daemon]:launch-deadline:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__daemon__status] )) || _sbx__daemon__status() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__daemon__stop] )) || _sbx__daemon__stop() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__daemon__inspect] )) || _sbx__daemon__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__diagnose] )) || _sbx__diagnose() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--json)--json[Output in JSON format (alias for --output json)]"
-    "(-o --output)"{-o+,--output=}"[Output format: \"json\" or \"github-issue\"]:output:"
+    "(--format)--format=[Output format: table, json, yaml or github-issue]:format:"
+    "(--json)--json[Output in JSON format]"
     "(--upload)--upload[Upload diagnostics to Docker support]"
   )
 
@@ -529,7 +939,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__docker_cli_plugin_metadata] )) || _sbx__docker_cli_plugin_metadata() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -539,7 +948,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__env] )) || _sbx__env() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -584,14 +992,135 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__env__create] )) || _sbx__env__create() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--clone)--clone[Override workspace.clone in sbxenv.yaml (see 'sbx create --clone')]"
+    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
+    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
+    "(-f --force)"{-f,--force}"[Apply the environment plan without asking]"
+    "*--kit-arg=[(Experimental) Value for an argument a kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
+    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
+    "(--name)--name=[Name for the sandbox, overriding 'name:' in sbxenv.yaml and the derived <agent>-<directory> (every 'sbx env' command...]:name:"
+    "(--on-timeout)--on-timeout=[What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps...]:on-timeout:"
+    "(--skip-host-commands)--skip-host-commands[Skip host lifecycle commands and disable environment MCP commands until a later env run without this flag]"
+    "(--ttl)--ttl=[Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only;...]:duration:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__env__exec] )) || _sbx__env__exec() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-d --detach)"{-d,--detach}"[Detached mode (not supported)]"
+    "(--detach-keys)--detach-keys=[Override the key sequence for detaching a container]:detach-keys:"
+    "*"{-e+,--env=}"[Set environment variables]:env:"
+    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
+    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
+    "*--env-file=[Read in a file of environment variables]:env-file:"
+    "(-i --interactive)"{-i,--interactive}"[Keep STDIN open even if not attached]"
+    "(--name)--name=[Name for the sandbox, overriding 'name:' in sbxenv.yaml and the derived <agent>-<directory> (every 'sbx env' command...]:name:"
+    "(--privileged)--privileged[Give extended privileges to the command]"
+    "(-t --tty)"{-t,--tty}"[Allocate a pseudo-TTY]"
+    "(-u --user)"{-u+,--user=}"[Username or UID (format: <name|uid>\[:<group|gid>\])]:user:"
+    "(-w --workdir)"{-w+,--workdir=}"[Working directory inside the container]:workdir:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__env__plan] )) || _sbx__env__plan() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--clone)--clone[Override workspace.clone in sbxenv.yaml (see 'sbx create --clone')]"
+    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
+    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
+    "*--kit-arg=[(Experimental) Value for an argument a kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
+    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
+    "(--name)--name=[Name for the sandbox, overriding 'name:' in sbxenv.yaml and the derived <agent>-<directory> (every 'sbx env' command...]:name:"
+    "(--skip-host-commands)--skip-host-commands[Plan without the host lifecycle commands and command-backed MCP servers the environment declares]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__env__rm] )) || _sbx__env__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
+    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts and delete even if in use (e.g. an open SSH connection)]"
+    "(--name)--name=[Name for the sandbox, overriding 'name:' in sbxenv.yaml and the derived <agent>-<directory> (every 'sbx env' command...]:name:"
+    "(--prune-bindings)--prune-bindings[Also remove this environment's bindings from the global credentials.yaml]"
+    "(--skip-host-commands)--skip-host-commands[Skip host preRemove commands and disable owned host MCP commands; successful environment removal deletes their...]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__env__run] )) || _sbx__env__run() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--clone)--clone[Override workspace.clone in sbxenv.yaml (see 'sbx create --clone')]"
+    "(-d --detach)"{-d,--detach}"[Create/start the sandbox without attaching]"
+    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
+    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
+    "(-f --force)"{-f,--force}"[Apply the environment plan without asking]"
+    "*--kit-arg=[(Experimental) Value for an argument a kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
+    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
+    "(--name)--name=[Name for the sandbox, overriding 'name:' in sbxenv.yaml and the derived <agent>-<directory> (every 'sbx env' command...]:name:"
+    "(--on-timeout)--on-timeout=[What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps...]:on-timeout:"
+    "(--skip-host-commands)--skip-host-commands[Skip host lifecycle commands and disable environment MCP commands until a later env run without this flag]"
+    "(--ttl)--ttl=[Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only;...]:duration:"
+    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM, macOS Apple Silicon M3+ only (feature.sandbox-nested)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__events] )) || _sbx__events() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--json)--json[Print raw newline-delimited JSON instead of formatted text]"
+    "(--json)--json[Output in JSON format]"
   )
 
   _arguments -s -S \
@@ -601,14 +1130,13 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__exec] )) || _sbx__exec() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(-d --detach)"{-d,--detach}"[Detached mode: run command in the background]"
+    "(-d --detach)"{-d,--detach}"[Detached mode (not supported)]"
     "(--detach-keys)--detach-keys=[Override the key sequence for detaching a container]:detach-keys:"
     "*"{-e+,--env=}"[Set environment variables]:env:"
     "*--env-file=[Read in a file of environment variables]:env-file:"
@@ -622,11 +1150,10 @@ function _sbx() {
   _arguments -s -S \
     $global_opts \
     $opts \
-    "*: : _sbx__dyn 'sandbox command arg'" && ret=0
+    "*: : _sbx__dyn 'sandbox arg'" && ret=0
 
   return ret
 }
-
 (( $+functions[_sbx__gui] )) || _sbx__gui() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -655,24 +1182,32 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__gui__status] )) || _sbx__gui__status() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__inspect] )) || _sbx__inspect() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
     "(--json)--json[Output in JSON format]"
   )
 
   _arguments -s -S \
     $global_opts \
     $opts \
-    "*: : _sbx__dyn 'sandbox_name'" && ret=0
+    "*: : _sbx__dyn 'sandbox'" && ret=0
 
   return ret
 }
-
 (( $+functions[_sbx__kit] )) || _sbx__kit() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -687,7 +1222,8 @@ function _sbx() {
       local -a commands
       commands=(
         "add:Add a mixin to a sandbox"
-        "inspect:Display details about a kit artifact"
+        "builder:Manage the kit builder sandbox"
+        "inspect:Show kit artifact details"
         "pack:Package a directory as a kit artifact"
         "provenance:Show the SLSA provenance attached to a kit"
         "pull:Pull a kit artifact from an OCI registry"
@@ -702,6 +1238,9 @@ function _sbx() {
       case $words[1] in
         add)
           _sbx__kit__add && ret=0
+          ;;
+        builder)
+          _sbx__kit__builder && ret=0
           ;;
         inspect)
           _sbx__kit__inspect && ret=0
@@ -733,7 +1272,354 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__kit__add] )) || _sbx__kit__add() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
+    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'sandbox reference'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder] )) || _sbx__kit__builder() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "history:Show kit build history in the builder sandbox"
+        "rm:Remove the kit builder sandbox and its build cache"
+        "status:Show the kit builder sandbox and build-cache state"
+      )
+      _describe -t commands "kit builder command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        history)
+          _sbx__kit__builder__history && ret=0
+          ;;
+        rm)
+          _sbx__kit__builder__rm && ret=0
+          ;;
+        status)
+          _sbx__kit__builder__status && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history] )) || _sbx__kit__builder__history() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "export:Export a kit build record into a bundle"
+        "inspect:Show a kit build record"
+        "logs:Show a kit build's logs"
+        "ls:List kit build records"
+        "rm:Remove kit build records"
+        "trace:Show the execution trace of a kit build"
+      )
+      _describe -t commands "kit builder history command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        export)
+          _sbx__kit__builder__history__export && ret=0
+          ;;
+        inspect)
+          _sbx__kit__builder__history__inspect && ret=0
+          ;;
+        logs)
+          _sbx__kit__builder__history__logs && ret=0
+          ;;
+        ls)
+          _sbx__kit__builder__history__ls && ret=0
+          ;;
+        rm)
+          _sbx__kit__builder__history__rm && ret=0
+          ;;
+        trace)
+          _sbx__kit__builder__history__trace && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history__export] )) || _sbx__kit__builder__history__export() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'args'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history__inspect] )) || _sbx__kit__builder__history__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'args'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history__logs] )) || _sbx__kit__builder__history__logs() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'args'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history__ls] )) || _sbx__kit__builder__history__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'args'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history__rm] )) || _sbx__kit__builder__history__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-y --yes)"{-y,--yes}"[Skip confirmation prompt (buildx --force still controls running build records)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'args'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__history__trace] )) || _sbx__kit__builder__history__trace() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'args'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__rm] )) || _sbx__kit__builder__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts and delete even if in use]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__builder__status] )) || _sbx__kit__builder__status() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__inspect] )) || _sbx__kit__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
+    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
+    "(--offline)--offline[Skip the daemon-backed kit policy check; local directory or ZIP references only]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__pack] )) || _sbx__kit__pack() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-o --output)"{-o+,--output=}"[Output file path; must end in .zip (default: <name>.zip)]:output:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__provenance] )) || _sbx__kit__provenance() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--certificate-identity)--certificate-identity=[Exact keyless signer identity (certificate SAN)]:certificate-identity:"
+    "(--certificate-identity-regexp)--certificate-identity-regexp=[Keyless signer identity regexp (certificate SAN)]:certificate-identity-regexp:"
+    "(--certificate-oidc-issuer)--certificate-oidc-issuer=[Exact keyless OIDC issuer]:certificate-oidc-issuer:"
+    "(--certificate-oidc-issuer-regexp)--certificate-oidc-issuer-regexp=[Keyless OIDC issuer regexp]:certificate-oidc-issuer-regexp:"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--insecure-ignore-tlog)--insecure-ignore-tlog[Do not require a Rekor transparency-log entry (for private keyless signatures)]"
+    "(--json)--json[Output in JSON format]"
+    "(--key)--key=[Public key for key-based verification (PEM)]:key:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'reference'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__pull] )) || _sbx__kit__pull() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-o --output)"{-o+,--output=}"[Output file path (default: derived from reference + format)]:output:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'reference'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__push] )) || _sbx__kit__push() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--identity-token)--identity-token=[OIDC identity token for keyless signing; defaults to the ambient CI provider, then an interactive browser login]:identity-token:"
+    "(--identity-token-file)--identity-token-file=[File holding the OIDC identity token; keeps it out of the process arguments]:identity-token-file:"
+    "(--key)--key=[Private key for key-based signing (PEM); omit for keyless signing]:key:"
+    "(--sign)--sign[Sign the pushed kit and attach the signature as an OCI referrer]"
+    "(--tlog-upload)--tlog-upload[Upload the keyless signature to the Rekor transparency log; set false for private kits (default true)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files -/" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__sign] )) || _sbx__kit__sign() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--identity-token)--identity-token=[OIDC identity token for keyless signing; defaults to the ambient CI provider, then an interactive browser login]:identity-token:"
+    "(--identity-token-file)--identity-token-file=[File holding the OIDC identity token; keeps it out of the process arguments]:identity-token-file:"
+    "(--key)--key=[Private key for key-based signing (PEM); omit for keyless signing]:key:"
+    "(--tlog-upload)--tlog-upload[Upload the keyless signature to the Rekor transparency log; set false for private kits (default true)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__validate] )) || _sbx__kit__validate() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
+    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
+    "(--offline)--offline[Skip the daemon-backed kit policy check; local directory or ZIP references only]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__kit__verify] )) || _sbx__kit__verify() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--certificate-identity)--certificate-identity=[Exact keyless signer identity (certificate SAN)]:certificate-identity:"
+    "(--certificate-identity-regexp)--certificate-identity-regexp=[Keyless signer identity regexp (certificate SAN)]:certificate-identity-regexp:"
+    "(--certificate-oidc-issuer)--certificate-oidc-issuer=[Exact keyless OIDC issuer]:certificate-oidc-issuer:"
+    "(--certificate-oidc-issuer-regexp)--certificate-oidc-issuer-regexp=[Keyless OIDC issuer regexp]:certificate-oidc-issuer-regexp:"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--insecure-ignore-tlog)--insecure-ignore-tlog[Do not require a Rekor transparency-log entry (for private keyless signatures)]"
+    "(--json)--json[Output in JSON format]"
+    "(--key)--key=[Public key for key-based verification (PEM)]:key:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__login] )) || _sbx__login() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -750,14 +1636,13 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__logout] )) || _sbx__logout() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(-y --yes)"{-y,--yes}"[Skip confirmation prompt]"
+    "(-f --force)"{-f,--force}"[Skip confirmation prompt]"
   )
 
   _arguments -s -S \
@@ -766,13 +1651,13 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__ls] )) || _sbx__ls() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
     "(--json)--json[Output in JSON format]"
     "(-q --quiet)"{-q,--quiet}"[Only display sandbox names]"
   )
@@ -783,7 +1668,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__mcp] )) || _sbx__mcp() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -800,9 +1684,10 @@ function _sbx() {
         "add:Register an MCP server"
         "auth:Authorize MCP servers"
         "inspect:Show MCP server details"
-        "load:Load an already-registered MCP server into a running sandbox"
-        "ls:List MCP servers, grouped by the gateway that serves them"
+        "load:Load an already-registered MCP server into a sandbox"
+        "ls:List MCP servers"
         "rm:Remove a registered MCP server"
+        "unload:Unload an MCP server from a running sandbox"
       )
       _describe -t commands "mcp command" commands && ret=0
       ;;
@@ -826,13 +1711,213 @@ function _sbx() {
         rm)
           _sbx__mcp__rm && ret=0
           ;;
+        unload)
+          _sbx__mcp__unload && ret=0
+          ;;
       esac
       ;;
   esac
 
   return ret
 }
+(( $+functions[_sbx__mcp__add] )) || _sbx__mcp__add() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "*--args=[Command-line arguments for the command]:args:"
+    "(--callback-port)--callback-port=[Local port to bind the OAuth callback listener to during add-time authorization (default: OS-assigned ephemeral...]:int:"
+    "(--client-id)--client-id=[OAuth client id for a pre-registered client (with --url; may be used with or without --oauth-authorization-server)....]:client-id:"
+    "(--command)--command=[Executable to run for a local stdio server]:command:"
+    "(--dir)--dir=[Working directory (cwd) for a --command host server]:dir:"
+    "(--disable-http2)--disable-http2[Do not negotiate HTTP/2 for this remote server, leaving HTTP/1.1. Applies to --url servers.]"
+    "*--header=[Custom HTTP header to send to a remote --url endpoint, in curl form 'Name: value' (repeatable). A \${placeholder} in...]:header:"
+    "(--local)--local[Run registry OCI server locally via docker run]"
+    "(--no-scope)--no-scope[Request no scopes during add-time authorization, so the authorization server applies its own default grant....]"
+    "(--oauth-authorization-server)--oauth-authorization-server=[Path or http(s) URL to an RFC 8414 oauth-authorization-server metadata JSON document]:oauth-authorization-server:"
+    "(--resource)--resource=[RFC 8707 resource indicator to send during OAuth: an absolute URI (scheme and host, no fragment) naming the server...]:resource:"
+    "*--scope=[Default OAuth scope to request at consent time (repeatable; a scope the server's advertised metadata does not...]:scope:"
+    "(--skip-auth)--skip-auth[Register an OAuth server without starting the hosted OAuth flow]"
+    "(--skip-ssrf-check)--skip-ssrf-check[Skip SSRF checks for this add, including OAuth authorization-server metadata and redirects (operator asserts the...]"
+    "(--url)--url=[MCP server manifest URL, remote endpoint URL, or dhi.io image ref]:url:"
+    "(--skip_auth)--skip_auth[(hidden) Deprecated spelling of --skip-auth]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'name --url url --command'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__auth] )) || _sbx__mcp__auth() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--all)--all[Apply to all registered OAuth servers]"
+    "(--format)--format=[Output format: \"text\" or \"json\" (default \"text\")]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(--no-scope)--no-scope[Request no scopes at all for this run, so the authorization server applies its own default grant. Suppresses...]"
+    "*--scope=[OAuth scope to authorize for this run (repeatable; overrides the recorded default; unrecognized scopes warn but are...]:scope:"
+    "(--verbose)--verbose[Print authorization polling progress]"
+  )
+
+  _arguments -C -s -S \
+    $global_opts \
+    $opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "rm:Remove MCP server OAuth credentials"
+        "status:Show MCP server OAuth status"
+      )
+      _describe -t commands "mcp auth command" commands && ret=0
+      _sbx__dyn "argument" && ret=0
+      ;;
+    args)
+      case $words[1] in
+        rm)
+          _sbx__mcp__auth__rm && ret=0
+          ;;
+        status)
+          _sbx__mcp__auth__status && ret=0
+          ;;
+        *)
+          _sbx__dyn 'server' && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__mcp__auth__rm] )) || _sbx__mcp__auth__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--all)--all[Apply to all registered OAuth servers]"
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts]"
+    "(--format)--format=[Output format: \"text\" or \"json\" (default \"text\")]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'server'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__auth__status] )) || _sbx__mcp__auth__status() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--all)--all[Apply to all registered OAuth servers]"
+    "(--format)--format=[Output format: \"text\" or \"json\" (default \"text\")]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'server'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__inspect] )) || _sbx__mcp__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'name'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__load] )) || _sbx__mcp__load() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--sandbox)--sandbox=[Target sandbox name (required)]:sandbox:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'name --sandbox sandbox'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__ls] )) || _sbx__mcp__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display MCP server names]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__rm] )) || _sbx__mcp__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts]"
+    "(--registration-only)--registration-only[Remove only the local registration without starting the daemon; keep credentials and running MCP processes]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'name'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__mcp__unload] )) || _sbx__mcp__unload() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--sandbox)--sandbox=[Target sandbox name (required)]:sandbox:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'name --sandbox sandbox'" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__mount] )) || _sbx__mount() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -843,16 +1928,17 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__move] )) || _sbx__move() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(-f --force)"{-f,--force}"[Skip the confirmation prompt when moving a sandbox whose workspace files won't travel to the cloud]"
-    "(--name)--name=[Name for the destination sandbox (default: derived from the source ID)]:name:"
-    "(--to)--to=[Destination of the move: 'local' (cloud→local) or 'cloud' (local→cloud)]:to:(local cloud)"
+    "(-f --force)"{-f,--force}"[Skip the move confirmation prompt]"
+    "(--name)--name=[Name for the destination sandbox (default: 'moved-' + the source name; a cloud destination always adds a short...]:name:"
+    "(--on-timeout)--on-timeout=[What happens to the destination cloud sandbox when its TTL lapses: 'stop' stops it in place so it can be started...]:on-timeout:"
+    "(--to)--to=[Destination of the move: 'local' (cloud to local) or 'cloud' (local to cloud)]:to:(local cloud)"
+    "(--ttl)--ttl=[Time-to-live for the destination cloud sandbox (15s to 24h, e.g. 30m, 2h; only with --to cloud; default: server-side)]:duration:"
   )
 
   _arguments -s -S \
@@ -862,7 +1948,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__policy] )) || _sbx__policy() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -880,12 +1965,14 @@ function _sbx() {
         "check:Check whether policy allows an access request"
         "deny:Add a deny rule for sandboxes"
         "init:Initialize the global network policy"
-        "inspect:Inspect policy or rule details"
+        "inspect:Show policy or rule details"
         "log:Show sandbox policy logs"
         "ls:List sandbox policies"
         "profile:Manage policy profiles"
+        "refresh:Force an immediate policy refresh"
         "reset:Reset policies to defaults"
         "rm:Remove a policy rule"
+        "approval:(hidden) Review and respond to pending approvals"
       )
       _describe -t commands "policy command" commands && ret=0
       ;;
@@ -893,6 +1980,9 @@ function _sbx() {
       case $words[1] in
         allow)
           _sbx__policy__allow && ret=0
+          ;;
+        approval)
+          _sbx__policy__approval && ret=0
           ;;
         check)
           _sbx__policy__check && ret=0
@@ -915,6 +2005,9 @@ function _sbx() {
         profile)
           _sbx__policy__profile && ret=0
           ;;
+        refresh)
+          _sbx__policy__refresh && ret=0
+          ;;
         reset)
           _sbx__policy__reset && ret=0
           ;;
@@ -927,16 +2020,195 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__policy__allow] )) || _sbx__policy__allow() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
-(( $+functions[_sbx__ports] )) || _sbx__ports() {
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "network:Allow network access to specified hosts"
+      )
+      _describe -t commands "policy allow command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        network)
+          _sbx__policy__allow__network && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__policy__allow__network] )) || _sbx__policy__allow__network() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--json)--json[Output in JSON format (for port listing)]"
-    "*--publish=[Publish a port (can be repeated): \[\[HOST_IP:\]HOST_PORT:\]SANDBOX_PORT\[/PROTOCOL\] (local) or SANDBOX_PORT (cloud)]:publish:"
-    "*--unpublish=[Unpublish a port (can be repeated): \[HOST_IP:\]HOST_PORT:SANDBOX_PORT\[/PROTOCOL\] (local) or SANDBOX_PORT (cloud)]:unpublish:"
+    "*--method=[Restrict the rule to these HTTP methods (comma-separated); use ANY to match all methods]:method:"
+    "(--path)--path=[Restrict the rule to this HTTP path glob (e.g. /repos/**); defaults to /**]:path:"
+    "(--protocol)--protocol=[Network protocol: tcp or udp; repeat or comma-separate for both]:protocol:(tcp udp)"
+    "*--query=[Require an HTTP query parameter (name=value pattern); repeatable]:query:"
+    "(--sandbox)--sandbox=[Scope the rule to a specific sandbox (default: all sandboxes)]:sandbox:"
+    "(-g --global)"{-g,--global}"[(hidden) Apply the rule globally to all sandboxes (deprecated; global is the default)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn '--sandbox sandbox resources'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__check] )) || _sbx__policy__check() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "network:Check network access to a host"
+      )
+      _describe -t commands "policy check command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        network)
+          _sbx__policy__check__network && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__policy__check__network] )) || _sbx__policy__check__network() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(--protocol)--protocol=[Network protocol to evaluate: tcp or udp]:protocol:(tcp udp)"
+    "(--sandbox)--sandbox=[Evaluate in a specific sandbox policy context]:sandbox:"
+    "(--verbose)--verbose[Show the exact policy request fields]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn '--sandbox sandbox target'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__deny] )) || _sbx__policy__deny() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "network:Deny network access to specified hosts"
+      )
+      _describe -t commands "policy deny command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        network)
+          _sbx__policy__deny__network && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__policy__deny__network] )) || _sbx__policy__deny__network() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "*--method=[Restrict the rule to these HTTP methods (comma-separated); use ANY to match all methods]:method:"
+    "(--path)--path=[Restrict the rule to this HTTP path glob (e.g. /repos/**); defaults to /**]:path:"
+    "(--protocol)--protocol=[Restrict the rule to one protocol: tcp or udp (default tcp,udp)]:protocol:(tcp udp)"
+    "*--query=[Require an HTTP query parameter (name=value pattern); repeatable]:query:"
+    "(--sandbox)--sandbox=[Scope the rule to a specific sandbox (default: all sandboxes)]:sandbox:"
+    "(-g --global)"{-g,--global}"[(hidden) Apply the rule globally to all sandboxes (deprecated; global is the default)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn '--sandbox sandbox resources'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__init] )) || _sbx__policy__init() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--sandbox)--sandbox=[Target a single cloud sandbox's policy (cloud only)]:sandbox:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'allow-all balanced deny-all'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__inspect] )) || _sbx__policy__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'policy rule'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__log] )) || _sbx__policy__log() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(--limit)--limit=[Maximum number of log entries to show]:int:"
+    "(--type)--type=[Filter logs by type: \"all\", \"network\", or \"filesystem\" (filesystem logs are not supported yet; default \"all\")...]:type:"
   )
 
   _arguments -s -S \
@@ -946,17 +2218,70 @@ function _sbx() {
 
   return ret
 }
-
-(( $+functions[_sbx__prune] )) || _sbx__prune() {
+(( $+functions[_sbx__policy__ls] )) || _sbx__policy__ls() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--dry-run)--dry-run[List the sandboxes that would be removed without removing them]"
-    "*--filter=[Filter candidates (supported: since=DURATION — stopped for longer than DURATION)]:filter:"
-    "(-f --force)"{-f,--force}"[Skip confirmation prompts and remove even if in use (e.g. an open SSH connection)]"
-    "(--json)--json[Output the --dry-run listing in JSON format]"
+    "(--created-via)--created-via=[Filter policies by how they were created: \"default\", \"added\", \"provisioned\", or \"approval\"]:created-via:"
+    "(--decision)--decision=[Filter policies by decision: \"allow\" or \"deny\"]:decision:"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--include-inactive)--include-inactive[Show inactive policy rules hidden by remote governance]"
+    "(--json)--json[Output in JSON format]"
+    "(--profile)--profile=[Filter policies by governance profile]:profile:"
+    "(--protocol)--protocol=[Filter network rules by protocol: tcp or udp]:protocol:(tcp udp)"
+    "(-q --quiet)"{-q,--quiet}"[Only display rule IDs (network patterns with --cloud)]"
+    "(--source)--source=[Filter policies by source: \"local\", \"org\", or \"kit\"]:source:"
+    "(--type)--type=[Filter policies by type: \"all\", \"network\", \"http\", \"filesystem\" (default \"all\") (default \"all\")]:type:"
+    "(--wide)--wide[Show detailed rule-level output with rule IDs and resources]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'sandbox'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__profile] )) || _sbx__policy__profile() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "ls:List policy profiles"
+        "list:(alias of ls)"
+      )
+      _describe -t commands "policy profile command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        list|ls)
+          _sbx__policy__profile__ls && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__policy__profile__ls] )) || _sbx__policy__profile__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display profile names]"
   )
 
   _arguments -s -S \
@@ -965,7 +2290,198 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__policy__refresh] )) || _sbx__policy__refresh() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__reset] )) || _sbx__policy__reset() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompt]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__rm] )) || _sbx__policy__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "network:Remove a network rule"
+      )
+      _describe -t commands "policy rm command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        network)
+          _sbx__policy__rm__network && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__policy__rm__network] )) || _sbx__policy__rm__network() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts]"
+    "(--id)--id=[Remove by rule ID]:id:"
+    "*--method=[Restrict the rule to these HTTP methods (comma-separated); use ANY to match all methods]:method:"
+    "(--path)--path=[Restrict the rule to this HTTP path glob (e.g. /repos/**); defaults to /**]:path:"
+    "*--query=[Require an HTTP query parameter (name=value pattern); repeatable]:query:"
+    "(--resource)--resource=[Remove by resource value(s), comma-separated]:resource:"
+    "(--sandbox)--sandbox=[Scope the removal to a specific sandbox (default: global policy)]:sandbox:"
+    "(-g --global)"{-g,--global}"[(hidden) Apply the rule globally to all sandboxes (deprecated; global is the default)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn '--sandbox sandbox'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__approval] )) || _sbx__policy__approval() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "inspect:Inspect a pending approval"
+        "ls:List pending approvals"
+        "respond:Respond to a pending approval"
+      )
+      _describe -t commands "policy approval command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        inspect)
+          _sbx__policy__approval__inspect && ret=0
+          ;;
+        ls)
+          _sbx__policy__approval__ls && ret=0
+          ;;
+        respond)
+          _sbx__policy__approval__respond && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__policy__approval__inspect] )) || _sbx__policy__approval__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'approval-id'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__approval__ls] )) || _sbx__policy__approval__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display approval IDs]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__policy__approval__respond] )) || _sbx__policy__approval__respond() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--option)--option=[Option ID offered by the approval]:option:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'approval-id --option option-id'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__ports] )) || _sbx__ports() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "*--publish=[Publish a port (can be repeated): \[\[HOST_IP:\]HOST_PORT:\]SANDBOX_PORT\[/PROTOCOL\] (local) or SANDBOX_PORT\[/tcp\] (cloud)]:publish:"
+    "*--unpublish=[Unpublish a port (can be repeated): \[HOST_IP:\]HOST_PORT:SANDBOX_PORT\[/PROTOCOL\] (local) or SANDBOX_PORT\[/tcp\] (cloud)]:unpublish:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'sandbox'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__prune] )) || _sbx__prune() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--dry-run)--dry-run[List the sandboxes that would be removed without removing them]"
+    "*--filter=[Filter candidates (supported: until=TIMESTAMP — stopped before TIMESTAMP)]:filter:"
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts and remove even if in use (e.g. an open SSH connection)]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__reset] )) || _sbx__reset() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -982,7 +2498,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__rm] )) || _sbx__rm() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -991,6 +2506,8 @@ function _sbx() {
   opts=(
     "(--all)--all[Remove all sandboxes]"
     "(-f --force)"{-f,--force}"[Skip confirmation prompts and delete even if in use (e.g. an open SSH connection)]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
   )
 
   _arguments -s -S \
@@ -1000,7 +2517,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__run] )) || _sbx__run() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1008,39 +2524,46 @@ function _sbx() {
   local -a opts
   opts=(
     "*--allow-network=[Network pattern to allow for cloud sandbox egress (cloud only; can be specified multiple times)]:allow-network:"
-    "(--clone)--clone[Run the agent on a private in-container clone of the host Git repository; must be set at sandbox creation time (no-op...]"
-    "(--cpus)--cpus=[Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs)]:int:"
-    "(--deny-network)--deny-network=[Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the...]:deny-network:"
-    "(--detach-keys)--detach-keys=[Override the detach gesture that leaves the agent running (Docker-style, e.g. \"ctrl-\\\", \"ctrl-x,ctrl-d\"). Default:...]:detach-keys:"
+    "(--clone)--clone[Run the agent on a private in-container clone of the host Git repository; must be set at sandbox creation time...]"
+    "(--cpus)--cpus=[Number of CPUs to allocate to the sandbox (0 = auto: all host CPUs, at most 16 on Linux arm64)]:int:"
+    "*--deny-network=[Add a per-sandbox network deny rule at creation time. Can be specified multiple times. The rule applies only to the...]:deny-network:"
+    "(-d --detach)"{-d,--detach}"[Start the sandbox and print its ID without opening an agent session]"
+    "(--detach-keys)--detach-keys=[Override the detach gesture that leaves the session running (Docker-style, e.g. \"ctrl-\\\", \"ctrl-x,ctrl-d\"). Default:...]:detach-keys:"
     "*"{-e+,--env=}"[Set an environment variable in the sandbox (can be repeated): KEY=VALUE, or a bare KEY to take the value from the...]:env:"
-    "*--env-file=[Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an earlier...]:env-file:"
+    "*--env-file=[Read environment variables from a file (can be repeated). --env wins over any file; a later file wins over an...]:env-file:"
     "(--image-ref)--image-ref=[OCI image reference for inline-mode cloud create (mutually exclusive with --template; requires --cpus and --memory)]:image-ref:"
-    "*--kit=[(Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple...]:kit:"
+    "*--kit=[(Experimental) Additional kit reference (must be a mixin; directory, ZIP, git, or OCI). Can be specified multiple times]:kit:"
     "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
     "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
     "(-m --memory)"{-m+,--memory=}"[Memory limit in binary units (e.g., 512m, 8g). Minimum: 512 MiB. Default: 50% of host memory, clamped to 512 MiB–32...]:memory:"
+    "*--mount=[Bind a host directory to a kit host-mount@1 path (can be repeated): HOST:SANDBOX_PATH. Can only be used when...]:mount:"
     "(--name)--name=[Name for the sandbox (default: <agent>-<workdir>)]:name:"
     "(--new)--new[Always create a new cloud sandbox instead of prompting to reuse an existing one (cloud only)]"
-    "(--on-timeout)--on-timeout=[What happens when --ttl lapses: 'delete' (default) tombstones the sandbox, or 'stop' stops it in place so it can be...]:on-timeout:(delete stop)"
+    "(--on-timeout)--on-timeout=[What happens when --ttl lapses: 'stop' stops the sandbox in place so it can be started again later, 'restart' keeps...]:on-timeout:(delete stop)"
     "(--platform)--platform=[Target platform: linux/amd64 or linux/arm64 (cloud only). With --image-ref, omitting it lets the server resolve the...]:platform:(linux/amd64 linux/arm64)"
     "(--profile)--profile=[Governance profile to assign to the sandbox]:profile:"
-    "*"{-p+,--publish=}"[Publish a sandbox port to the host (can be repeated): \[\[HOST_IP:\]HOST_PORT:\]SANDBOX_PORT\[/PROTOCOL\]. Applied when the...]:publish:"
-    "(--skills)--skills=[Shared skills store mode: off, readonly, or readwrite (mounted at the agent's skills directory, e.g....]:skills:(off readonly readwrite)"
+    "*"{-p+,--publish=}"[Publish a sandbox port to the host (can be repeated): \[\[HOST_IP:\]HOST_PORT:\]SANDBOX_PORT\[/PROTOCOL\]. Applied when...]:publish:"
+    "(--pull)--pull=[Image pull policy (always|missing|never; default: never for saved local snapshots, missing for v3 kit compositions,...]:pull:(always missing never)"
+    "(--rm)--rm[Remove the sandbox after the agent session exits]"
+    "(--skills)--skills=[Shared skills store mode for the agent's skills directory (e.g. ~/.claude/skills): off, readonly (store linked in...]:skills:(off readonly readwrite)"
     "*--static-mcp=[MCP server names that form the sandbox's fixed (static) MCP set. Accepts a comma-separated list (--static-mcp...]:static-mcp:"
     "(-t --template)"{-t+,--template=}"[Container image to use for the sandbox (default: agent-specific image)]:template:"
-    "(--ttl)--ttl=[Cloud sandbox time-to-live before it times out (e.g. 30m, 2h; cloud only; default: server-side)]:duration:"
+    "(--ttl)--ttl=[Cloud sandbox time-to-live before it times out (e.g. 30m, 2h, 1h30m; units are case-insensitive; cloud only;...]:duration:"
     "*"{-v+,--volume=}"[(Experimental) Attach an existing persistent volume, NAME:MOUNTPATH (cloud only, experimental; repeatable)]:volume:"
     "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory (e.g. ~/.claude/skills)]"
+    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory (e.g. ~/.claude/skills). Applies only when creating a...]"
     "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(-d --detached)"{-d,--detached}"[(hidden) Run the agent detached]"
+    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox; container windows render on the host compositor...]"
+    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM, macOS Apple Silicon M3+ only (feature.sandbox-nested)]"
+    "(--4k)--4k[(hidden) Force the 4k-page guest kernel for workloads incompatible with larger memory pages; macOS hosts only...]"
+    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox; Linux x86_64, single NVIDIA GPU (feature.sandbox-gpu)]"
+    "*--usb=[(hidden) Pass a host USB device through to the sandbox, e.g. abcd:1234 or id=1234:ABCD,serial=SERIAL...]:usb:"
     "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--model)--model=[(hidden) Local model (GGUF reference or short name) to serve and route the agent's API calls through (feature.model)]:model:"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
+    "(--model)--model=[(hidden) Local model (GGUF reference or short name, e.g. qwen3.5:0.8b) to serve and route the agent's API calls...]:model:"
+    "(--provider)--provider=[(hidden) Where --model is served from: llmman (default) or an already-running ollama (feature.model)]:provider:(llmman ollama)"
+    "(--overflow-provider)--overflow-provider=[(hidden) Hosted provider that serves requests too large for the local --model (feature.model)]:overflow-provider:"
+    "(--overflow-model)--overflow-model=[(hidden) The --overflow-provider model that serves requests too large for --model (feature.model)]:overflow-model:"
+    "(--variant)--variant=[(hidden) Start --model at this variant: none, thinking, or a reasoning level the model offers (feature.model)]:variant:(none thinking minimal low medium high xhigh max)"
   )
 
   _arguments -s -S \
@@ -1050,7 +2573,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__secret] )) || _sbx__secret() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1099,7 +2621,132 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__secret__import] )) || _sbx__secret__import() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--all)--all[Import every detected env var without prompting]"
+    "(--dry-run)--dry-run[Show what would be imported without writing]"
+    "(-f --force)"{-f,--force}"[Overwrite an existing stored entry without confirmation]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__secret__ls] )) || _sbx__secret__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(-g --global)"{-g,--global}"[Only list global secrets]"
+    "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display secret names]"
+    "(--sandbox)--sandbox=[Only list secrets for one sandbox]:sandbox:"
+    "(--service)--service=[Filter by secret service name]:service:"
+    "(--host)--host=[(hidden) Custom mode: filter by host or IP]:host:"
+    "(--env-name)--env-name=[(hidden) Custom mode: filter by environment variable name]:env-name:"
+    "(--placeholder)--placeholder=[(hidden) Custom mode: filter by placeholder]:placeholder:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__secret__rm] )) || _sbx__secret__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--all)--all[Remove every stored secret across all scopes]"
+    "(--all-sandboxes)--all-sandboxes[Remove registry credentials injected into every sandbox (requires --registry)]"
+    "(-f --force)"{-f,--force}"[Delete without confirmation prompt]"
+    "(--registry)--registry=[Registry hostname to remove pull credentials for]:registry:"
+    "(--sandbox)--sandbox=[Scope the removal to one sandbox (default: all scopes when choosing interactively, global with SERVICE)]:sandbox:"
+    "(--host)--host=[(hidden) Custom mode: host or IP address]:host:"
+    "(--env-name)--env-name=[(hidden) Custom mode: environment variable name]:env-name:"
+    "(--placeholder)--placeholder=[(hidden) Custom mode: placeholder value]:placeholder:"
+    "(-g --global)"{-g,--global}"[(hidden) Use global secret scope (deprecated; global is the default)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__secret__set] )) || _sbx__secret__set() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--all-sandboxes)--all-sandboxes[Inject registry credentials into every sandbox (requires --registry)]"
+    "(--command)--command=[Use a command's standard output as the secret value]:command:"
+    "(-f --force)"{-f,--force}"[Overwrite an existing secret when --token is used]"
+    "(--no-verify)--no-verify[Skip checking the --ref or --command source when storing it]"
+    "(--oauth)--oauth[Start OAuth flow and store OAuth tokens (openai/global only) With --cloud: openai or anthropic, stored only in the...]"
+    "(--password-stdin)--password-stdin[Read registry password or token from stdin (use with --registry)]"
+    "(--ref)--ref=[Use a 1Password op:// reference or AWS Secrets Manager ARN as the secret source]:ref:"
+    "(--refresh)--refresh=[Secret refresh policy: on-demand or after a duration (default: 55m)]:refresh:"
+    "(--registry)--registry=[Registry hostname for pull credentials (e.g. ghcr.io)]:registry:"
+    "(--registry-auth-endpoint)--registry-auth-endpoint=[Trusted HTTPS auth endpoint for a cross-host registry realm]:registry-auth-endpoint:"
+    "(--sandbox)--sandbox=[Scope the secret to one sandbox instead of its default scope]:sandbox:"
+    "(--show-error)--show-error[Show resolver standard error if the initial check fails (may contain secrets)]"
+    "(-t --token)"{-t+,--token=}"[Secret value (less secure: visible in shell history)]:token:"
+    "(--username)--username=[Registry username (use with --registry; omit for token-only auth)]:username:"
+    "(--backend)--backend=[(hidden) Resolver backend for --ref: auto (default), sdk, or cli]:backend:(auto sdk cli)"
+    "(-g --global)"{-g,--global}"[(hidden) Use global secret scope (deprecated; global is the default)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'service'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__secret__set_custom] )) || _sbx__secret__set_custom() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--command)--command=[Use a command's standard output as the secret value]:command:"
+    "(--env)--env=[Set this env var in the sandbox to the placeholder value]:env:"
+    "(--format)--format=[How the value fills the header, with one %s; default \"Bearer %s\" when --header is omitted (with --cloud)]:format:"
+    "(--header)--header=[HTTP header the proxy sets to the secret on requests to --host; default Authorization (with --cloud)]:header:"
+    "*--host=[Host, IP, or wildcard pattern (e.g. *.example.com); repeatable; with --cloud, exact DNS names only]:host:"
+    "(--name)--name=[Secret name; default derived from the first --host (with --cloud)]:name:"
+    "(--no-verify)--no-verify[Skip checking the --ref or --command source when storing it]"
+    "(--placeholder)--placeholder=[Placeholder value; use {rand} for a random suffix (e.g. sk-{rand})]:placeholder:"
+    "(--ref)--ref=[Use a 1Password op:// reference or AWS Secrets Manager ARN as the secret source]:ref:"
+    "(--refresh)--refresh=[Secret refresh policy: on-demand (default) or after a duration]:refresh:"
+    "(--sandbox)--sandbox=[Scope the secret to one sandbox (default: all sandboxes)]:sandbox:"
+    "(--show-error)--show-error[Show resolver standard error if the initial check fails (may contain secrets)]"
+    "(-t --token)"{-t+,--token=}"[Secret value (less secure: visible in shell history)]:token:"
+    "(--value)--value=[Secret value (less secure: visible in shell history)]:value:"
+    "(--backend)--backend=[(hidden) Resolver backend for --ref: auto (default), sdk, or cli]:backend:(auto sdk cli)"
+    "(-g --global)"{-g,--global}"[(hidden) Use global secret scope (deprecated; global is the default)]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__settings] )) || _sbx__settings() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1114,10 +2761,10 @@ function _sbx() {
       local -a commands
       commands=(
         "get:Get the value of a setting"
-        "list:List all settings"
+        "ls:List settings"
         "set:Set a setting override"
         "unset:Remove a setting override"
-        "ls:(alias of list)"
+        "list:(alias of ls)"
       )
       _describe -t commands "settings command" commands && ret=0
       ;;
@@ -1127,7 +2774,7 @@ function _sbx() {
           _sbx__settings__get && ret=0
           ;;
         list|ls)
-          _sbx__settings__list && ret=0
+          _sbx__settings__ls && ret=0
           ;;
         set)
           _sbx__settings__set && ret=0
@@ -1141,7 +2788,62 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__settings__get] )) || _sbx__settings__get() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'key'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__settings__ls] )) || _sbx__settings__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(--no-trunc)--no-trunc[Show full values and descriptions, one setting per block]"
+    "(-q --quiet)"{-q,--quiet}"[Only display setting keys]"
+    "(--all)--all[(hidden) Include feature flags]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__settings__set] )) || _sbx__settings__set() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'key value'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__settings__unset] )) || _sbx__settings__unset() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'key'" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__setup] )) || _sbx__setup() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1156,17 +2858,17 @@ function _sbx() {
       local -a commands
       commands=(
         "ssh:Set up SSH client config for the sandbox endpoint"
+        "ssh-key:(hidden) Manage the SSH key that signs commits from cloud sandboxes"
       )
       _describe -t commands "setup command" commands && ret=0
-      _sbx__dyn "argument" && ret=0
       ;;
     args)
       case $words[1] in
         ssh)
           _sbx__setup__ssh && ret=0
           ;;
-        *)
-          _files && ret=0
+        ssh-key)
+          _sbx__setup__ssh_key && ret=0
           ;;
       esac
       ;;
@@ -1174,7 +2876,136 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__setup__ssh] )) || _sbx__setup__ssh() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--alias)--alias=[ssh_config Host pattern to write (default \"*.sbx\")]:alias:"
+    "(--auto-create)--auto-create[enable managed Codex and Claude Desktop profiles on macOS and Windows]"
+  )
+
+  _arguments -C -s -S \
+    $global_opts \
+    $opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "remove:Remove SSH config and desktop targets; keep sandboxes"
+      )
+      _describe -t commands "setup ssh command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        remove)
+          _sbx__setup__ssh__remove && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__setup__ssh__remove] )) || _sbx__setup__ssh__remove() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__setup__ssh_key] )) || _sbx__setup__ssh_key() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -C -s -S \
+    $global_opts \
+    "1: :->command" \
+    "*:: :->args" && ret=0
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        "initialize:Create the SSH key that signs commits from cloud sandboxes"
+        "remove:Remove the SSH key that signs commits from cloud sandboxes"
+        "rotate:Replace the SSH key that signs commits from cloud sandboxes"
+      )
+      _describe -t commands "setup ssh-key command" commands && ret=0
+      ;;
+    args)
+      case $words[1] in
+        initialize)
+          _sbx__setup__ssh_key__initialize && ret=0
+          ;;
+        remove)
+          _sbx__setup__ssh_key__remove && ret=0
+          ;;
+        rotate)
+          _sbx__setup__ssh_key__rotate && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+(( $+functions[_sbx__setup__ssh_key__initialize] )) || _sbx__setup__ssh_key__initialize() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__setup__ssh_key__remove] )) || _sbx__setup__ssh_key__remove() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompt]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__setup__ssh_key__rotate] )) || _sbx__setup__ssh_key__rotate() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompt]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__skills] )) || _sbx__skills() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1223,7 +3054,82 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__skills__add] )) || _sbx__skills__add() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Overwrite existing skills without prompting]"
+    "*"{-s+,--skill=}"[Add only the named skill (repeatable or comma-separated)]:skill:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'repository'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__skills__import] )) || _sbx__skills__import() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--dry-run)--dry-run[Preview which skills would be imported without copying anything]"
+    "(-f --force)"{-f,--force}"[Overwrite existing skills without prompting]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__skills__ls] )) || _sbx__skills__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display skill names]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__skills__rm] )) || _sbx__skills__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'skill'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__skills__update] )) || _sbx__skills__update() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'skill'" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__ssh] )) || _sbx__ssh() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1237,9 +3143,9 @@ function _sbx() {
     command)
       local -a commands
       commands=(
-        "setup:(hidden) Set up SSH client config for the sandbox endpoint"
-        "known-hosts:(hidden) Print the daemon SSH host key (for ssh KnownHostsCommand)"
-        "proxy:(hidden) Relay stdio to the sandbox SSH endpoint (internal ProxyCommand)"
+        "known-hosts:Print the daemon SSH host key (for ssh KnownHostsCommand)"
+        "proxy:Relay stdio to the sandbox SSH endpoint (internal ProxyCommand entrypoint)"
+        "setup:Set up SSH client config for the sandbox endpoint"
       )
       _describe -t commands "ssh command" commands && ret=0
       ;;
@@ -1260,7 +3166,48 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__ssh__setup] )) || _sbx__ssh__setup() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--alias)--alias=[ssh_config Host pattern to write (default \"*.sbx\")]:alias:"
+    "(--auto-create)--auto-create[enable managed Codex and Claude Desktop profiles on macOS and Windows]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__ssh__known_hosts] )) || _sbx__ssh__known_hosts() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  _arguments -s -S \
+    $global_opts \
+    "*: : _sbx__dyn 'host'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__ssh__proxy] )) || _sbx__ssh__proxy() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--profile)--profile=[managed SSH profile id]:profile:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'host'" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__ssh_connect] )) || _sbx__ssh_connect() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1277,18 +3224,23 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__stop] )) || _sbx__stop() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
   _arguments -s -S \
     $global_opts \
-    "*: : _sbx__dyn 'sandbox sandbox'" && ret=0
+    $opts \
+    "*: : _sbx__dyn 'sandbox'" && ret=0
 
   return ret
 }
-
 (( $+functions[_sbx__template] )) || _sbx__template() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1302,7 +3254,7 @@ function _sbx() {
     command)
       local -a commands
       commands=(
-        "inspect:Show full metadata for a single template"
+        "inspect:Show template details"
         "load:Load an image from a tar file into the sandbox runtime"
         "ls:List template images"
         "rm:Remove a template image"
@@ -1336,24 +3288,112 @@ function _sbx() {
 
   return ret
 }
+(( $+functions[_sbx__template__inspect] )) || _sbx__template__inspect() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'name id'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__template__load] )) || _sbx__template__load() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--capture-mode)--capture-mode=[What gets captured for this template. \"disk\" (default) captures only the filesystem — cold-boot from a standard OCI...]:capture-mode:"
+    "(--cpus)--cpus=[vCPUs; with --memory-mib must name a billable shape (required with --cloud)]:int:"
+    "(--description)--description=[Optional template description (--cloud only)]:description:"
+    "(--memory-mib)--memory-mib=[Memory in MiB; --cpus/--memory-mib must name a billable shape: micro (1 vCPU / 2048 MiB), small (2 vCPU / 4096 MiB),...]:int:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: :_files" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__template__ls] )) || _sbx__template__ls() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display template names]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__template__rm] )) || _sbx__template__rm() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(-f --force)"{-f,--force}"[Skip confirmation prompts]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'tag id name'" && ret=0
+
+  return ret
+}
+(( $+functions[_sbx__template__save] )) || _sbx__template__save() {
+  local context curcontext=$curcontext state line ret=1
+  typeset -A opt_args
+
+  local -a opts
+  opts=(
+    "(--capture-mode)--capture-mode=[What gets captured for this template. \"disk\" (default) captures only the filesystem — cold-boot from a standard OCI...]:capture-mode:"
+    "(--description)--description=[Description for the template (cloud only)]:description:"
+    "(-o --output)"{-o+,--output=}"[Also export the image to a tar file]:output:"
+  )
+
+  _arguments -s -S \
+    $global_opts \
+    $opts \
+    "*: : _sbx__dyn 'sandbox tag'" && ret=0
+
+  return ret
+}
 (( $+functions[_sbx__ttl] )) || _sbx__ttl() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--json)--json[Output as JSON]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
   )
 
   _arguments -s -S \
     $global_opts \
     $opts \
-    "*: : _sbx__dyn 'duration sandbox'" && ret=0
+    "*: : _sbx__dyn '+duration sandbox'" && ret=0
 
   return ret
 }
-
 (( $+functions[_sbx__tui] )) || _sbx__tui() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1363,7 +3403,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__umount] )) || _sbx__umount() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1374,14 +3413,14 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__version] )) || _sbx__version() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
-    "(--json)--json[Output in JSON format, including the server version and, when the backend reports them, the runtime component versions]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
   )
 
   _arguments -s -S \
@@ -1390,7 +3429,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__volume] )) || _sbx__volume() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -1405,9 +3443,9 @@ function _sbx() {
       local -a commands
       commands=(
         "create:Create a new persistent volume"
-        "inspect:Show details for a volume"
+        "inspect:Show volume details"
         "ls:List persistent volumes"
-        "rm:Delete a persistent volume"
+        "rm:Remove a persistent volume"
         "delete:(alias of rm)"
         "get:(alias of inspect)"
         "list:(alias of ls)"
@@ -1435,1510 +3473,13 @@ function _sbx() {
 
   return ret
 }
-
-(( $+functions[_sbx__completion__bash] )) || _sbx__completion__bash() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__completion__fish] )) || _sbx__completion__fish() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__completion__powershell] )) || _sbx__completion__powershell() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__completion__zsh] )) || _sbx__completion__zsh() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--no-descriptions)--no-descriptions[disable completion descriptions]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__claude] )) || _sbx__create__claude() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__codex] )) || _sbx__create__codex() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__cursor] )) || _sbx__create__cursor() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__devin] )) || _sbx__create__devin() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__docker_agent] )) || _sbx__create__docker_agent() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__gemini] )) || _sbx__create__gemini() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__opencode] )) || _sbx__create__opencode() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__create__shell] )) || _sbx__create__shell() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--patch-settings)--patch-settings[(hidden) Intercept claude settings API call and patch payload]"
-    "(--branch)--branch=[(hidden) Git branch name (used with --clone)]:branch:"
-    "(--no-share-skills)--no-share-skills[(hidden) Disable mounting a persistent shared skills directory]"
-    "(--secrets)--secrets=[(hidden) Secrets scope (global|local)]:secrets:(global local)"
-    "(--pull)--pull=[(hidden) Image pull policy (always|missing|never)]:pull:(always missing never)"
-    "(--display)--display[(hidden) Provision a wayland display socket inside the sandbox (feature.sandbox-display)]"
-    "(--nested)--nested[(hidden) Enable nested virtualization in the sandbox VM (feature.sandbox-nested)]"
-    "(--gpu)--gpu[(hidden) Pass the host GPU through to the sandbox (feature.sandbox-gpu)]"
-    "*--usb=[(hidden) Pass a host USB device through to the sandbox (feature.sandbox-usb)]:usb:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__inspect] )) || _sbx__daemon__inspect() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__log_level] )) || _sbx__daemon__log_level() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -C -s -S \
-    $global_opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "set:Set a category's log level (target: proxy, general, or all)"
-      )
-      _describe -t commands "daemon log-level command" commands && ret=0
-      _sbx__dyn "argument" && ret=0
-      ;;
-    args)
-      case $words[1] in
-        set)
-          _sbx__daemon__log_level__set && ret=0
-          ;;
-        *)
-          _files && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__restart] )) || _sbx__daemon__restart() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__start] )) || _sbx__daemon__start() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-d --detach)"{-d,--detach}"[Run daemon in background]"
-    "(--policy)--policy=[Initialize the global network policy: \"allow-all\", \"balanced\", or \"deny-all\"]:policy:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__status] )) || _sbx__daemon__status() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output as JSON]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__stop] )) || _sbx__daemon__stop() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__env__create] )) || _sbx__env__create() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-y --auto-approve)"{-y,--auto-approve}"[Apply the environment plan without asking]"
-    "(--clone)--clone[Override workspace.clone in sbxenv.yaml (see 'sbx create --clone')]"
-    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
-    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
-    "*--kit-arg=[(Experimental) Value for an argument a kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
-    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
-    "(--skip-host-commands)--skip-host-commands[Skip the host lifecycle commands the environment declares]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__env__exec] )) || _sbx__env__exec() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-d --detach)"{-d,--detach}"[Detached mode: run command in the background]"
-    "(--detach-keys)--detach-keys=[Override the key sequence for detaching a container]:detach-keys:"
-    "*"{-e+,--env=}"[Set environment variables]:env:"
-    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
-    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
-    "*--env-file=[Read in a file of environment variables]:env-file:"
-    "(-i --interactive)"{-i,--interactive}"[Keep STDIN open even if not attached]"
-    "(--privileged)--privileged[Give extended privileges to the command]"
-    "(-t --tty)"{-t,--tty}"[Allocate a pseudo-TTY]"
-    "(-u --user)"{-u+,--user=}"[Username or UID (format: <name|uid>\[:<group|gid>\])]:user:"
-    "(-w --workdir)"{-w+,--workdir=}"[Working directory inside the container]:workdir:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__env__plan] )) || _sbx__env__plan() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--clone)--clone[Override workspace.clone in sbxenv.yaml (see 'sbx create --clone')]"
-    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
-    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
-    "*--kit-arg=[(Experimental) Value for an argument a kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
-    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
-    "(--skip-host-commands)--skip-host-commands[Plan without the host lifecycle commands the environment declares]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__env__rm] )) || _sbx__env__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
-    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
-    "(-f --force)"{-f,--force}"[Skip confirmation prompts and delete even if in use (e.g. an open SSH connection)]"
-    "(--prune-bindings)--prune-bindings[Also remove this environment's bindings from the global credentials.yaml]"
-    "(--skip-host-commands)--skip-host-commands[Skip the host lifecycle commands the environment declares]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__env__run] )) || _sbx__env__run() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-y --auto-approve)"{-y,--auto-approve}"[Apply the environment plan without asking]"
-    "(--clone)--clone[Override workspace.clone in sbxenv.yaml (see 'sbx create --clone')]"
-    "(-d --detached)"{-d,--detached}"[Create/start the sandbox without attaching]"
-    "*--env-arg=[(Experimental) Value for an argument the environment file declares, as name=value (can be repeated)]:env-arg:"
-    "*--env-args-file=[(Experimental) File of name=value environment arguments, one per line (can be repeated); --env-arg overrides]:env-args-file:"
-    "*--kit-arg=[(Experimental) Value for an argument a kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
-    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
-    "(--skip-host-commands)--skip-host-commands[Skip the host lifecycle commands the environment declares]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__gui__status] )) || _sbx__gui__status() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__add] )) || _sbx__kit__add() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
-    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'sandbox reference'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__inspect] )) || _sbx__kit__inspect() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-    "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
-    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__pack] )) || _sbx__kit__pack() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-o --output)"{-o+,--output=}"[Output ZIP file path (default: <name>.zip)]:output:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__provenance] )) || _sbx__kit__provenance() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--certificate-identity)--certificate-identity=[Exact keyless signer identity (certificate SAN)]:certificate-identity:"
-    "(--certificate-identity-regexp)--certificate-identity-regexp=[Keyless signer identity regexp (certificate SAN)]:certificate-identity-regexp:"
-    "(--certificate-oidc-issuer)--certificate-oidc-issuer=[Exact keyless OIDC issuer]:certificate-oidc-issuer:"
-    "(--certificate-oidc-issuer-regexp)--certificate-oidc-issuer-regexp=[Keyless OIDC issuer regexp]:certificate-oidc-issuer-regexp:"
-    "(--insecure-ignore-tlog)--insecure-ignore-tlog[Do not require a Rekor transparency-log entry (for private keyless signatures)]"
-    "(--json)--json[Output in JSON format]"
-    "(--key)--key=[Public key for key-based verification (PEM)]:key:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'reference'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__pull] )) || _sbx__kit__pull() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-o --output)"{-o+,--output=}"[Output file path (default: derived from reference + format)]:output:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'reference'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__push] )) || _sbx__kit__push() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--identity-token)--identity-token=[OIDC identity token for keyless signing; defaults to the ambient CI provider, then an interactive browser login]:identity-token:"
-    "(--identity-token-file)--identity-token-file=[File holding the OIDC identity token; keeps it out of the process arguments]:identity-token-file:"
-    "(--key)--key=[Private key for key-based signing (PEM); omit for keyless signing]:key:"
-    "(--sign)--sign[Sign the pushed kit and attach the signature as an OCI referrer]"
-    "(--tlog-upload)--tlog-upload[Upload the keyless signature to the Rekor transparency log; set false for private kits (default true)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files -/" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__sign] )) || _sbx__kit__sign() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--identity-token)--identity-token=[OIDC identity token for keyless signing; defaults to the ambient CI provider, then an interactive browser login]:identity-token:"
-    "(--identity-token-file)--identity-token-file=[File holding the OIDC identity token; keeps it out of the process arguments]:identity-token-file:"
-    "(--key)--key=[Private key for key-based signing (PEM); omit for keyless signing]:key:"
-    "(--tlog-upload)--tlog-upload[Upload the keyless signature to the Rekor transparency log; set false for private kits (default true)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__validate] )) || _sbx__kit__validate() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-    "*--kit-arg=[(Experimental) Value for an argument the kit declares, as name=value for every kit or kit.name=value for one (can be...]:kit-arg:"
-    "*--kit-args-file=[(Experimental) File of name=value kit arguments, one per line (can be repeated); --kit-arg overrides]:kit-args-file:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__kit__verify] )) || _sbx__kit__verify() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--certificate-identity)--certificate-identity=[Exact keyless signer identity (certificate SAN)]:certificate-identity:"
-    "(--certificate-identity-regexp)--certificate-identity-regexp=[Keyless signer identity regexp (certificate SAN)]:certificate-identity-regexp:"
-    "(--certificate-oidc-issuer)--certificate-oidc-issuer=[Exact keyless OIDC issuer]:certificate-oidc-issuer:"
-    "(--certificate-oidc-issuer-regexp)--certificate-oidc-issuer-regexp=[Keyless OIDC issuer regexp]:certificate-oidc-issuer-regexp:"
-    "(--insecure-ignore-tlog)--insecure-ignore-tlog[Do not require a Rekor transparency-log entry (for private keyless signatures)]"
-    "(--json)--json[Output in JSON format]"
-    "(--key)--key=[Public key for key-based verification (PEM)]:key:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__add] )) || _sbx__mcp__add() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "*--args=[Command-line arguments for the command]:args:"
-    "(--client-id)--client-id=[OAuth client id for a pre-registered client (with --url; may be used with or without --oauth-authorization-server). A...]:client-id:"
-    "(--command)--command=[Executable to run for a local stdio server]:command:"
-    "(--dir)--dir=[Working directory (cwd) for a --command host server]:dir:"
-    "(--local)--local[Run registry OCI server locally via docker run]"
-    "(--no-scope)--no-scope[Request no scopes during add-time authorization, so the authorization server applies its own default grant....]"
-    "(--oauth-authorization-server)--oauth-authorization-server=[Path or http(s) URL to an RFC 8414 oauth-authorization-server metadata JSON document]:oauth-authorization-server:"
-    "*--scope=[Default OAuth scope to request at consent time (repeatable; must be advertised by the server's authorization...]:scope:"
-    "(--skip-auth)--skip-auth[Register an OAuth server without starting the hosted OAuth flow]"
-    "(--skip-ssrf-check)--skip-ssrf-check[Silence the SSRF check for this add: a --url whose host resolves to a private/metadata address is registered either...]"
-    "(--url)--url=[MCP server manifest URL, remote endpoint URL, or dhi.io image ref]:url:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'name --url url --command cmd'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__auth] )) || _sbx__mcp__auth() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all)--all[Apply to all registered OAuth servers]"
-    "(--format)--format=[Output format: \"text\" or \"json\" (default \"text\")]:format:"
-    "(--json)--json[Output in JSON format (alias for --format json)]"
-    "(--no-scope)--no-scope[Request no scopes at all for this run, so the authorization server applies its own default grant. Suppresses both the...]"
-    "*--scope=[OAuth scope to authorize for this run (repeatable; overrides the recorded default; must be advertised by the server's...]:scope:"
-    "(--verbose)--verbose[Print authorization polling progress]"
-  )
-
-  _arguments -C -s -S \
-    $global_opts \
-    $opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "rm:Remove MCP server OAuth credentials"
-        "status:Show MCP server OAuth status"
-      )
-      _describe -t commands "mcp auth command" commands && ret=0
-      _sbx__dyn "argument" && ret=0
-      ;;
-    args)
-      case $words[1] in
-        rm)
-          _sbx__mcp__auth__rm && ret=0
-          ;;
-        status)
-          _sbx__mcp__auth__status && ret=0
-          ;;
-        *)
-          _files && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__inspect] )) || _sbx__mcp__inspect() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'name'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__load] )) || _sbx__mcp__load() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--sandbox)--sandbox=[Target sandbox name (required)]:sandbox:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'name --sandbox sandbox'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__ls] )) || _sbx__mcp__ls() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__rm] )) || _sbx__mcp__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'name'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__allow] )) || _sbx__policy__allow() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -C -s -S \
-    $global_opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "network:Allow network access to specified hosts"
-      )
-      _describe -t commands "policy allow command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        network)
-          _sbx__policy__allow__network && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__check] )) || _sbx__policy__check() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -C -s -S \
-    $global_opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "network:Check network access to a host"
-      )
-      _describe -t commands "policy check command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        network)
-          _sbx__policy__check__network && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__deny] )) || _sbx__policy__deny() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -C -s -S \
-    $global_opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "network:Deny network access to specified hosts"
-      )
-      _describe -t commands "policy deny command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        network)
-          _sbx__policy__deny__network && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__init] )) || _sbx__policy__init() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--sandbox)--sandbox=[Target a single cloud sandbox's policy (cloud only)]:sandbox:"
-  )
-
-  _arguments -C -s -S \
-    $global_opts \
-    $opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "set-default:(hidden) Alias of sbx policy init"
-      )
-      _describe -t commands "policy init command" commands && ret=0
-      _sbx__dyn "argument" && ret=0
-      ;;
-    args)
-      case $words[1] in
-        set-default)
-          _sbx__policy__init__set_default && ret=0
-          ;;
-        *)
-          _files && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__inspect] )) || _sbx__policy__inspect() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'policy-or-rule'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__log] )) || _sbx__policy__log() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-    "(--limit)--limit=[Maximum number of log entries to show]:int:"
-    "(-q --quiet)"{-q,--quiet}"[Only display log entries]"
-    "(--type)--type=[Filter logs by type: \"all\", \"network\", or \"filesystem\" (filesystem logs are not supported yet; default \"all\")...]:type:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'sandbox'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__ls] )) || _sbx__policy__ls() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--decision)--decision=[Filter policies by decision: \"allow\" or \"deny\"]:decision:"
-    "(--include-inactive)--include-inactive[Show inactive policy rules hidden by remote governance]"
-    "(--json)--json[Output filtered policy rules as JSON]"
-    "(--profile)--profile=[Filter policies by governance profile]:profile:"
-    "(--source)--source=[Filter policies by source: \"local\", \"org\", or \"kit\"]:source:"
-    "(--type)--type=[Filter policies by type: \"all\", \"network\", or \"filesystem\" (default \"all\") (default \"all\")]:type:"
-    "(--wide)--wide[Show detailed rule-level output with rule IDs and resources]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'sandbox'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__profile] )) || _sbx__policy__profile() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -C -s -S \
-    $global_opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "ls:List policy profiles"
-        "list:(alias of ls)"
-      )
-      _describe -t commands "policy profile command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        list|ls)
-          _sbx__policy__profile__ls && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__reset] )) || _sbx__policy__reset() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-f --force)"{-f,--force}"[Skip confirmation prompt]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__rm] )) || _sbx__policy__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -C -s -S \
-    $global_opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "network:Remove a network rule"
-      )
-      _describe -t commands "policy rm command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        network)
-          _sbx__policy__rm__network && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__secret__import] )) || _sbx__secret__import() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all)--all[Import every detected env var without prompting]"
-    "(--dry-run)--dry-run[Show what would be imported without writing]"
-    "(-f --force)"{-f,--force}"[Overwrite an existing stored entry without confirmation]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'service'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__secret__ls] )) || _sbx__secret__ls() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-g --global)"{-g,--global}"[Only list global secrets]"
-    "(--json)--json[Output in JSON format]"
-    "(--sandbox)--sandbox=[Only list secrets for one sandbox]:sandbox:"
-    "(--service)--service=[Filter by secret service name]:service:"
-    "(--host)--host=[(hidden) Custom mode: filter by host or IP]:host:"
-    "(--env)--env=[(hidden) Custom mode: filter by environment variable name]:env:"
-    "(--placeholder)--placeholder=[(hidden) Custom mode: filter by placeholder]:placeholder:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__secret__rm] )) || _sbx__secret__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all)--all[Remove every stored secret across all scopes]"
-    "(--all-sandboxes)--all-sandboxes[Remove registry credentials injected into every sandbox (requires --registry)]"
-    "(-f --force)"{-f,--force}"[Delete without confirmation prompt]"
-    "(--registry)--registry=[Registry hostname to remove pull credentials for]:registry:"
-    "(--sandbox)--sandbox=[Scope the removal to one sandbox (default: global)]:sandbox:"
-    "(--host)--host=[(hidden) Custom mode: host or IP address]:host:"
-    "(--env)--env=[(hidden) Custom mode: environment variable name]:env:"
-    "(--placeholder)--placeholder=[(hidden) Custom mode: placeholder value]:placeholder:"
-    "(-g --global)"{-g,--global}"[(hidden) Use global secret scope (deprecated; global is the default)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'service'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__secret__set] )) || _sbx__secret__set() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all-sandboxes)--all-sandboxes[Inject registry credentials into every sandbox (requires --registry)]"
-    "(--command)--command=[Use a command's standard output as the secret value]:command:"
-    "(-f --force)"{-f,--force}"[Overwrite an existing secret when --token is used]"
-    "(--no-verify)--no-verify[Skip checking the --ref or --command source when storing it]"
-    "(--oauth)--oauth[Start OAuth flow and store OAuth tokens (openai/global only) With --cloud: openai or anthropic, stored only in the...]"
-    "(--password-stdin)--password-stdin[Read registry password or token from stdin (use with --registry)]"
-    "(--ref)--ref=[Use a 1Password op:// reference or AWS Secrets Manager ARN as the secret source]:ref:"
-    "(--refresh)--refresh=[Secret refresh policy: on-demand or after a duration (default: 55m)]:refresh:"
-    "(--registry)--registry=[Registry hostname for pull credentials (e.g. ghcr.io)]:registry:"
-    "(--sandbox)--sandbox=[Scope the secret to one sandbox instead of its default scope]:sandbox:"
-    "(--show-error)--show-error[Show resolver standard error if the initial check fails (may contain secrets)]"
-    "(-t --token)"{-t+,--token=}"[Secret value (less secure: visible in shell history)]:token:"
-    "(--username)--username=[Registry username (use with --registry; omit for token-only auth)]:username:"
-    "(--backend)--backend=[(hidden) Resolver backend for --ref: auto (default), sdk, or cli]:backend:(auto sdk cli)"
-    "(-g --global)"{-g,--global}"[(hidden) Use global secret scope (deprecated; global is the default)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'service'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__secret__set_custom] )) || _sbx__secret__set_custom() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--command)--command=[Use a command's standard output as the secret value]:command:"
-    "(--env)--env=[Set this env var in the sandbox to the placeholder value]:env:"
-    "*--host=[Host, IP, or wildcard pattern (e.g. *.example.com); repeatable]:host:"
-    "(--no-verify)--no-verify[Skip checking the --ref or --command source when storing it]"
-    "(--placeholder)--placeholder=[Placeholder value; use {rand} for a random suffix (e.g. sk-{rand})]:placeholder:"
-    "(--ref)--ref=[Use a 1Password op:// reference or AWS Secrets Manager ARN as the secret source]:ref:"
-    "(--refresh)--refresh=[Secret refresh policy: on-demand (default) or after a duration]:refresh:"
-    "(--sandbox)--sandbox=[Scope the secret to one sandbox (default: all sandboxes)]:sandbox:"
-    "(--show-error)--show-error[Show resolver standard error if the initial check fails (may contain secrets)]"
-    "(-t --token)"{-t+,--token=}"[Secret value (less secure: visible in shell history)]:token:"
-    "(--value)--value=[Secret value (less secure: visible in shell history)]:value:"
-    "(--backend)--backend=[(hidden) Resolver backend for --ref: auto (default), sdk, or cli]:backend:(auto sdk cli)"
-    "(-g --global)"{-g,--global}"[(hidden) Use global secret scope (deprecated; global is the default)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__settings__get] )) || _sbx__settings__get() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'key'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__settings__list] )) || _sbx__settings__list() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all)--all[Include feature flags in the output]"
-    "(--json)--json[Output in JSON format]"
-    "(--no-trunc)--no-trunc[Show full values and descriptions, one setting per block]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__settings__set] )) || _sbx__settings__set() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'key value'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__settings__unset] )) || _sbx__settings__unset() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'key'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__setup__ssh] )) || _sbx__setup__ssh() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--alias)--alias=[ssh_config Host pattern to write (default \"*.sbx\")]:alias:"
-  )
-
-  _arguments -C -s -S \
-    $global_opts \
-    $opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "remove:Remove SSH client config for the current local app instance"
-      )
-      _describe -t commands "setup ssh command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        remove)
-          _sbx__setup__ssh__remove && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__skills__add] )) || _sbx__skills__add() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-f --force)"{-f,--force}"[Overwrite existing skills without prompting]"
-    "*"{-s+,--skill=}"[Add only the named skill (repeatable or comma-separated)]:skill:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'repository'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__skills__import] )) || _sbx__skills__import() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--dry-run)--dry-run[Preview which skills would be imported without copying anything]"
-    "(-f --force)"{-f,--force}"[Overwrite existing skills without prompting]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__skills__ls] )) || _sbx__skills__ls() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__skills__rm] )) || _sbx__skills__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(-f --force)"{-f,--force}"[Skip confirmation prompts]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'skill'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__skills__update] )) || _sbx__skills__update() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'skill'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__ssh__known_hosts] )) || _sbx__ssh__known_hosts() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'host'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__ssh__proxy] )) || _sbx__ssh__proxy() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'host'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__ssh__setup] )) || _sbx__ssh__setup() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--alias)--alias=[ssh_config Host pattern to write (default \"*.sbx\")]:alias:"
-  )
-
-  _arguments -C -s -S \
-    $global_opts \
-    $opts \
-    "1: :->command" \
-    "*:: :->args" && ret=0
-
-  case $state in
-    command)
-      local -a commands
-      commands=(
-        "remove:(hidden) Remove SSH client config for the current local app instance"
-      )
-      _describe -t commands "ssh setup command" commands && ret=0
-      ;;
-    args)
-      case $words[1] in
-        remove)
-          _sbx__ssh__setup__remove && ret=0
-          ;;
-      esac
-      ;;
-  esac
-
-  return ret
-}
-
-(( $+functions[_sbx__template__inspect] )) || _sbx__template__inspect() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'name id'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__template__load] )) || _sbx__template__load() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--capture-mode)--capture-mode=[What gets captured for this template. \"disk\" (default) captures only the filesystem — cold-boot from a standard OCI...]:capture-mode:"
-    "(--cpus)--cpus=[Number of CPUs (1, 2, 4, 8, or 16; required with --cloud)]:int:"
-    "(--description)--description=[Optional template description (--cloud only)]:description:"
-    "(--memory-mib)--memory-mib=[Memory in MiB (512–32768, must satisfy 2:1/1:1/1:2 ratio with --cpus; required with --cloud)]:int:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: :_files" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__template__ls] )) || _sbx__template__ls() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__template__rm] )) || _sbx__template__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'tag id name'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__template__save] )) || _sbx__template__save() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--capture-mode)--capture-mode=[What gets captured for this template. \"disk\" (default) captures only the filesystem — cold-boot from a standard OCI...]:capture-mode:"
-    "(-d --description)"{-d+,--description=}"[Description for the template (cloud only)]:description:"
-    "(-o --output)"{-o+,--output=}"[Also export the image to a tar file]:output:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'sandbox tag'" && ret=0
-
-  return ret
-}
-
 (( $+functions[_sbx__volume__create] )) || _sbx__volume__create() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
     "(--json)--json[Output in JSON format]"
   )
 
@@ -2949,25 +3490,32 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__volume__inspect] )) || _sbx__volume__inspect() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
+  local -a opts
+  opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
+  )
+
   _arguments -s -S \
     $global_opts \
+    $opts \
     "*: : _sbx__dyn 'name'" && ret=0
 
   return ret
 }
-
 (( $+functions[_sbx__volume__ls] )) || _sbx__volume__ls() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
 
   local -a opts
   opts=(
+    "(--format)--format=[Output format: table, json or yaml]:format:"
     "(--json)--json[Output in JSON format]"
+    "(-q --quiet)"{-q,--quiet}"[Only display volume names]"
   )
 
   _arguments -s -S \
@@ -2976,7 +3524,6 @@ function _sbx() {
 
   return ret
 }
-
 (( $+functions[_sbx__volume__rm] )) || _sbx__volume__rm() {
   local context curcontext=$curcontext state line ret=1
   typeset -A opt_args
@@ -2984,191 +3531,14 @@ function _sbx() {
   local -a opts
   opts=(
     "(-f --force)"{-f,--force}"[Skip confirmation prompt]"
+    "(--format)--format=[Output format: table, json or yaml]:format:"
+    "(--json)--json[Output in JSON format]"
   )
 
   _arguments -s -S \
     $global_opts \
     $opts \
     "*: : _sbx__dyn 'name'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__daemon__log_level__set] )) || _sbx__daemon__log_level__set() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts \
-    "*: : _sbx__dyn 'target level'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__auth__rm] )) || _sbx__mcp__auth__rm() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all)--all[Apply to all registered OAuth servers]"
-    "(--format)--format=[Output format: \"text\" or \"json\" (default \"text\")]:format:"
-    "(--json)--json[Output in JSON format (alias for --format json)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'server-name'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__mcp__auth__status] )) || _sbx__mcp__auth__status() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--all)--all[Apply to all registered OAuth servers]"
-    "(--format)--format=[Output format: \"text\" or \"json\" (default \"text\")]:format:"
-    "(--json)--json[Output in JSON format (alias for --format json)]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn 'server-name'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__allow__network] )) || _sbx__policy__allow__network() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--sandbox)--sandbox=[Scope the rule to a specific sandbox (default: all sandboxes)]:sandbox:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn '--sandbox sandbox resources'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__check__network] )) || _sbx__policy__check__network() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-    "(--sandbox)--sandbox=[Evaluate in a specific sandbox policy context]:sandbox:"
-    "(--verbose)--verbose[Show the exact policy request fields]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn '--sandbox sandbox target'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__deny__network] )) || _sbx__policy__deny__network() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--sandbox)--sandbox=[Scope the rule to a specific sandbox (default: all sandboxes)]:sandbox:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn '--sandbox sandbox resources'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__init__set_default] )) || _sbx__policy__init__set_default() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--sandbox)--sandbox=[Target a single cloud sandbox's policy (cloud only)]:sandbox:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__profile__ls] )) || _sbx__policy__profile__ls() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--json)--json[Output in JSON format]"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__policy__rm__network] )) || _sbx__policy__rm__network() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--id)--id=[Remove by rule ID]:id:"
-    "(--resource)--resource=[Remove by resource value(s), comma-separated]:resource:"
-    "(--sandbox)--sandbox=[Scope the removal to a specific sandbox (default: global policy)]:sandbox:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts \
-    "*: : _sbx__dyn '--sandbox sandbox'" && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__setup__ssh__remove] )) || _sbx__setup__ssh__remove() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  _arguments -s -S \
-    $global_opts && ret=0
-
-  return ret
-}
-
-(( $+functions[_sbx__ssh__setup__remove] )) || _sbx__ssh__setup__remove() {
-  local context curcontext=$curcontext state line ret=1
-  typeset -A opt_args
-
-  local -a opts
-  opts=(
-    "(--alias)--alias=[ssh_config Host pattern to write (default \"*.sbx\")]:alias:"
-  )
-
-  _arguments -s -S \
-    $global_opts \
-    $opts && ret=0
 
   return ret
 }
