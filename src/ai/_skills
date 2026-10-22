@@ -35,24 +35,31 @@
 #
 # https://github.com/vercel-labs/skills
 #
-# 1.5.22 (skills)
+# 1.7.4 (skills)
 #
 # `skills` and `add-skill` are two names for the same entry point and ignore
 # argv[0], so their command surface is identical.  src/ai/_add-skill delegates
 # here.
 #
 # Items marked "(hidden)" are accepted by the CLI but never printed by
-# `skills --help`.
+# `skills --help`; each was confirmed against the 1.7.4 binary:
 #
-# Two options are documented in `--help` yet do not behave as documented; both
-# are marked in place and were confirmed against 1.5.22:
+#   * command aliases `install` and `i` (add), `r` (remove), `search`, `f`
+#     and `s` (find), and `check` (update).
+#   * `experimental_install` flags `--copy`, `--dry-run`, `--no-cleanup`,
+#     `--no-remote`, `-r/--recursive`, `--include` and `--exclude`.  The
+#     command hands its arguments to the `experimental_sync` parser, so these
+#     act on the node_modules entries of skills-lock.json.  `-a` and `-y` are
+#     parsed there too but always overridden, so they are not offered.
 #
-#   * `remove -s/--skill` - the flag is dropped and its value is read as a
-#     positional skill name, so `skills remove --skill '*'` reports
-#     "No matching skills found for: *".
-#   * `remove -a/--agent '*'` and `list -a/--agent '*'` - neither expands the
-#     wildcard, so '*' exits 1 with "Invalid agents: *".  Only `add` and
-#     `experimental_sync` expand '*'.
+# Not offered because the binary no longer accepts them:
+#
+#   * `use --dangerously-accept-openclaw-risks` - "Unknown option" since the
+#     OpenClaw gate was removed.
+#   * `experimental_sync -f/--force` - no longer parsed anywhere.
+#
+# `remove -a/--agent` and `list -a/--agent` still reject '*' ("Invalid
+# agents: *", exit 1); only `add` and `experimental_sync` expand it.
 #
 # -----------------------------------------------------------------------------
 
@@ -89,10 +96,11 @@ _skills__agent_list() {
     'deepagents:Deep Agents (universal)'
     'devin:Devin for Terminal'
     'dexto:Dexto (universal)'
-    'droid:Droid'
+    'droid:Droid (universal)'
     'eve:Eve'
     'firebender:Firebender (universal)'
     'forgecode:ForgeCode'
+    'fx:fx (universal)'
     'gemini-cli:Gemini CLI (universal)'
     'github-copilot:GitHub Copilot (universal)'
     'goose:Goose'
@@ -102,7 +110,7 @@ _skills__agent_list() {
     'jazz:Jazz'
     'junie:Junie'
     'iflow-cli:iFlow CLI'
-    'kilo:Kilo Code'
+    'kilo:Kilo Code (universal)'
     'kimchi:Kimchi'
     'kimi-code-cli:Kimi Code CLI (universal)'
     'kiro-cli:Kiro CLI'
@@ -117,7 +125,8 @@ _skills__agent_list() {
     'opencode:OpenCode (universal)'
     'openhands:OpenHands'
     'ona:Ona'
-    'pi:Pi'
+    'pi:Pi (universal)'
+    'posit-assistant:Posit Assistant'
     'qoder:Qoder'
     'qoder-cn:Qoder CN'
     'qwen-code:Qwen Code'
@@ -125,6 +134,7 @@ _skills__agent_list() {
     'reasonix:Reasonix'
     'rovodev:Rovo Dev'
     'roo:Roo Code'
+    'sarvam-code:Sarvam Code (universal)'
     'tabnine-cli:Tabnine CLI'
     'terramind:Terramind'
     'tinycloud:Tinycloud'
@@ -172,6 +182,7 @@ _skills__use_agents() {
   use_agents=(
     'claude-code:Claude Code (spawns claude)'
     'codex:Codex (spawns codex)'
+    'sarvam-code:Sarvam Code (spawns sarvam-code)'
   )
   _describe -t agents 'supported agent' use_agents
 }
@@ -214,9 +225,14 @@ _skills__skill_filter() {
 # $1 is the scope to use when the line carries no scope flag: `project` for
 # remove, which defaults to the project scope, or `both` for update, which
 # checks global and project when neither -g nor -p is given.
+#
+# With $2 set to `remove`, the values `remove` also accepts are offered: '*'
+# selects every skill, and an exact lock source removes every skill installed
+# from it.  `list --json` prints the same resolved source string that `remove`
+# matches against.
 _skills__installed_skills() {
-  local fallback=${1:-project} scope
-  local -a scopes names expl
+  local fallback=${1:-project} mode=$2 scope out ret=1
+  local -a scopes names sources wildcard expl
 
   if (( ${+opt_args[-g]} || ${+opt_args[--global]} )); then
     scopes=( '-g' )
@@ -229,19 +245,63 @@ _skills__installed_skills() {
   fi
 
   for scope in "${scopes[@]}"; do
-    names+=( ${(f)"$(_call_program installed-skills \
-      "DO_NOT_TRACK=1 ${(q)service} list $scope --json" 2>/dev/null |
-      sed -n 's/^ *"name": "\(.*\)",$/\1/p')"} )
+    out=$(_call_program installed-skills \
+      "DO_NOT_TRACK=1 ${(q)service} list $scope --json" 2>/dev/null)
+    names+=( ${(f)"$(print -r -- $out | sed -n 's/^ *"name": "\(.*\)",$/\1/p')"} )
+    [[ $mode == remove ]] &&
+      sources+=( ${(f)"$(print -r -- $out | sed -n 's/^ *"source": "\(.*\)",$/\1/p')"} )
   done
   names=( ${(u)names} )
+  sources=( ${(u)sources} )
 
-  # Plugin skills keep a ':' in their name, which _describe would read as a
-  # description separator, so add them with compadd.
-  if (( ${#names} )); then
-    _wanted skills expl 'installed skill' compadd -a names
+  if [[ $mode == remove ]]; then
+    wildcard=( '*:every installed skill' )
+    _describe -t wildcards 'skill selector' wildcard && ret=0
+  fi
+
+  # Plugin skills keep a ':' in their name, and sources are often URLs, which
+  # _describe would read as a description separator, so add them with compadd.
+  (( ${#names} )) &&
+    _wanted skills expl 'installed skill' compadd -a names && ret=0
+  (( ${#sources} )) &&
+    _wanted sources expl 'lock source (removes every skill from it)' compadd -a sources && ret=0
+
+  (( ret )) && _skills__message 'installed skill name'
+  return ret
+}
+
+# Patterns for `experimental_sync --include/--exclude`: a glob over the names
+# of the project's direct dependencies, optionally narrowed to one skill with
+# `<pkg>#<skill>`.  Both halves are read from disk without running anything.
+_skills__sync_patterns() {
+  local json field entry pkg
+  local -a pkgs skills expl
+
+  if compset -P '*\#'; then
+    pkg=${IPREFIX%\#}
+    skills=( node_modules/$pkg/{skills,dist/skills}/*/SKILL.md(N:h:t) )
+    if (( ${#skills} )); then
+      _wanted skills expl "skill shipped by $pkg" compadd -a skills
+    else
+      _skills__message "skill name shipped by $pkg"
+    fi
+    return
+  fi
+
+  [[ -r package.json ]] && json=$(<package.json)
+  for field in dependencies devDependencies optionalDependencies peerDependencies; do
+    [[ $json =~ "\"$field\"[[:space:]]*:[[:space:]]*\\{([^}]*)\\}" ]] || continue
+    for entry in "${(@s:,:)match[1]}"; do
+      [[ $entry =~ '"([^"]+)"[[:space:]]*:' ]] && pkgs+=( $match[1] )
+    done
+  done
+  pkgs=( ${(u)pkgs} )
+
+  if (( ${#pkgs} )); then
+    _wanted packages expl 'dependency (append #skill for one skill)' \
+      compadd -q -S ' ' -r '#' -a pkgs
   else
-    _skills__message 'installed skill name'
-    return 1
+    _skills__message '<pkg> or <pkg>#<skill> glob'
   fi
 }
 
@@ -274,6 +334,7 @@ _skills__source() {
   )
   # The recognised source aliases, plus the canonical target.
   known=(
+    'notion:skills from the connected Notion workspace (or a notion.so page URL)'
     'vercel-labs/agent-skills:the Vercel agent skills collection'
     'vercel-labs/vercel-skills:alias for vercel-labs/agent-skills'
     'coinbase/agentWallet:alias for coinbase/agentic-wallet-skills'
@@ -347,6 +408,7 @@ _skills__commands() {
     'experimental_install:restore skills from skills-lock.json'
     'init:initialize a skill, creating <name>/SKILL.md or ./SKILL.md'
     'experimental_sync:sync skills from node_modules into agent directories'
+    'sync:sync skills from node_modules (documented alias for experimental_sync)'
   )
   _describe -t commands 'command' commands
 }
@@ -365,7 +427,7 @@ _skills__add_rest() {
   esac
 
   (( _skills_nargs > 0 )) && {
-    _skills__message 'ignored: runAdd() reads only the first source'
+    _skills__message 'ignored: add reads only the first source'
     return 1
   }
   _skills__source
@@ -386,6 +448,7 @@ _skills__add() {
     '--copy[copy files instead of symlinking to agent directories]' \
     '--all[shorthand for --skill * --agent * -y]' \
     '--full-depth[search all subdirectories even when a root SKILL.md exists]' \
+    '--json[output results as JSON (machine-readable, no ANSI codes)]' \
     '*:source: _skills__add_rest'
 }
 
@@ -399,19 +462,22 @@ _skills__use() {
     '(-s --skill)'{-s,--skill}'[skill to use]:skill: _skills__message "skill name"' \
     '(-a --agent)'{-a,--agent}'[start one supported agent interactively]:agent: _skills__use_agents' \
     '--full-depth[search all subdirectories even when a root SKILL.md exists]' \
-    '--dangerously-accept-openclaw-risks[allow unverified OpenClaw community skills]' \
     '1:source: _skills__source'
 }
 
+# -s/--skill and bare words feed the same list, and both -a and -s keep
+# swallowing bare words, so the scan decides which list the current word
+# belongs to.
 _skills__remove_rest() {
   local REPLY
   integer _skills_nargs
 
-  _skills__scan '-a --agent' ''
+  _skills__scan '-a --agent -s --skill' ''
   [[ $REPLY == (-a|--agent) ]] && { _skills__agents; return }
-  _skills__installed_skills project
+  _skills__installed_skills project remove
 }
 
+# `--all` implies -y and exits 1 when combined with named skills.
 _skills__remove() {
   local -A opt_args
 
@@ -419,10 +485,10 @@ _skills__remove() {
     '(- *)'{-h,--help}'[show help]' \
     '(-g --global)'{-g,--global}'[remove from the global scope instead of the project scope]' \
     '(-y --yes)'{-y,--yes}'[skip confirmation prompts]' \
-    '--all[remove every installed skill from every agent]' \
-    "*"{-a,--agent}"[remove from specific agents (rejects '*', unlike add)]:agent: _skills__agents" \
-    '*'{-s,--skill}'[documented but dropped; the value is read as a skill name]:skill: _skills__installed_skills project' \
-    '*:skill: _skills__remove_rest'
+    '(-y --yes -s --skill *)--all[remove every installed skill (implies -y; refuses named skills)]' \
+    "*"{-a,--agent}"[remove from specific agents; omit to clean all agent links (rejects '*', unlike add)]:agent: _skills__agents" \
+    '(--all)*'{-s,--skill}"[skills to remove ('*' for all, or a lock source)]:skill: _skills__installed_skills project remove" \
+    '(--all)*:skill: _skills__remove_rest'
 }
 
 # `list` discards bare words, so nothing but an agent list can follow the flags.
@@ -477,22 +543,32 @@ _skills__init() {
     '*:argument: _skills__message "ignored: only the first name is read"'
 }
 
-# `experimental_install` ignores its argument list entirely.
-_skills__experimental_install() {
-  _arguments -C : \
-    '(- *)'{-h,--help}'[show help]' \
-    '*:argument: _skills__message "ignored: experimental_install takes no arguments"'
-}
-
-# `experimental_sync` never reads its positional arguments.
+# Neither command reads positional arguments.  -a, --include and --exclude
+# keep swallowing bare words, so the scan decides which list the current word
+# belongs to.  $1 is the command name for the message.
 _skills__sync_rest() {
   local REPLY
   integer _skills_nargs
 
-  _skills__scan '-a --agent' ''
-  [[ $REPLY == (-a|--agent) ]] && { _skills__agents_all; return }
-  _skills__message 'ignored: experimental_sync takes no positional arguments'
+  _skills__scan '-a --agent --include --exclude' ''
+  case $REPLY in
+    -a|--agent)          _skills__agents_all; return ;;
+    --include|--exclude) _skills__sync_patterns; return ;;
+  esac
+  _skills__message "ignored: $1 takes no positional arguments"
   return 1
+}
+
+# `experimental_install` hands its arguments to the experimental_sync parser
+# for the node_modules entries of skills-lock.json.  That parser's -a and -y
+# are overridden by the caller, so only the remaining sync flags are offered.
+_skills__experimental_install() {
+  local -A opt_args
+
+  _arguments -C : \
+    '(- *)'{-h,--help}'[show help]' \
+    "${(@)sync_flags/\[/[(hidden) }" \
+    '*:argument: _skills__sync_rest experimental_install'
 }
 
 _skills__experimental_sync() {
@@ -501,14 +577,27 @@ _skills__experimental_sync() {
   _arguments -C : \
     '(- *)'{-h,--help}'[show help]' \
     '(-y --yes)'{-y,--yes}'[skip confirmation prompts]' \
-    '(-f --force)'{-f,--force}'[(hidden) reinstall every discovered skill, ignoring skills-lock.json hashes]' \
-    '*'{-a,--agent}'[agents to install to]:agent: _skills__agents_all' \
-    '*:argument: _skills__sync_rest'
+    '*'{-a,--agent}"[agents to install to ('*' for all)]:agent: _skills__agents_all" \
+    "${sync_flags[@]}" \
+    '*:argument: _skills__sync_rest experimental_sync'
 }
 
 _skills() {
   local curcontext="$curcontext" state line ret=1
   typeset -A opt_args
+
+  # Shared by experimental_sync and experimental_install, which both run the
+  # experimental_sync argv parser.
+  local -a sync_flags
+  sync_flags=(
+    '--copy[copy skills instead of linking them to node_modules]'
+    '--dry-run[show what would change without changing anything]'
+    '--no-cleanup[keep skills whose package no longer ships them]'
+    '--no-remote[skip git sources listed in package.json skills fields]'
+    '(-r --recursive)'{-r,--recursive}'[also sync the dependencies of each workspace package]'
+    '*--include[only sync matching packages (<pkg>) or skills (<pkg>#<skill>)]:pattern: _skills__sync_patterns'
+    '*--exclude[skip matching packages (<pkg>) or skills (<pkg>#<skill>)]:pattern: _skills__sync_patterns'
+  )
 
   # No -s: every argv parser compares whole words, so short options do not
   # stack.  No -S either: '--' is not a recognised separator.
@@ -525,15 +614,15 @@ _skills() {
     args)
       curcontext="${curcontext%:*:*}:${service}-${words[1]}:"
       case ${words[1]} in
-        add|a|install|i)      _skills__add && ret=0 ;;
-        use)                  _skills__use && ret=0 ;;
-        remove|rm|r)          _skills__remove && ret=0 ;;
-        list|ls)              _skills__list && ret=0 ;;
-        find|search|f|s)      _skills__find && ret=0 ;;
-        update|upgrade|check) _skills__update && ret=0 ;;
-        init)                 _skills__init && ret=0 ;;
-        experimental_install) _skills__experimental_install && ret=0 ;;
-        experimental_sync)    _skills__experimental_sync && ret=0 ;;
+        add|a|install|i)        _skills__add && ret=0 ;;
+        use)                    _skills__use && ret=0 ;;
+        remove|rm|r)            _skills__remove && ret=0 ;;
+        list|ls)                _skills__list && ret=0 ;;
+        find|search|f|s)        _skills__find && ret=0 ;;
+        update|upgrade|check)   _skills__update && ret=0 ;;
+        init)                   _skills__init && ret=0 ;;
+        experimental_install)   _skills__experimental_install && ret=0 ;;
+        experimental_sync|sync) _skills__experimental_sync && ret=0 ;;
       esac
       ;;
   esac

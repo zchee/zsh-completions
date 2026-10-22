@@ -35,7 +35,7 @@
 #
 # https://github.com/vercel-labs/skills
 #
-# 1.5.22 (add-skill)
+# 1.7.4 (add-skill)
 #
 # `add-skill` is not a second CLI: it is a second name for the `skills` entry
 # point, which never inspects argv[0], so it accepts exactly the commands,
